@@ -1,6 +1,7 @@
 import { Button, Text } from '@react-navigation/elements';
 import { StyleSheet, View } from 'react-native';
 
+
 export function Home() {
   return (
     <View style={styles.container}>
@@ -10,6 +11,7 @@ export function Home() {
         Go to Profile
       </Button>
       <Button screen="Settings">Go to Settings</Button>
+      <Button screen='Category'>Go to Categoty</Button>
     </View>
   );
 }

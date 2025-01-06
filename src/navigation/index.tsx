@@ -13,6 +13,9 @@ import { Profile } from './screens/Profile';
 import { Settings } from './screens/Settings';
 import { Updates } from './screens/Updates';
 import { NotFound } from './screens/NotFound';
+import Category from './screens/Category';
+import CardList from './screens/CardList';
+
 
 const HomeTabs = createBottomTabNavigator({
   screens: {
@@ -89,6 +92,18 @@ const RootStack = createNativeStackNavigator({
       },
       linking: {
         path: '*',
+      },
+    },
+    Category: {
+      screen: Category,
+      options: {
+        title: 'Category',
+      },
+    },
+    CardList: {
+      screen: CardList,
+      options: {
+        title: 'ToDo',
       },
     },
   },
