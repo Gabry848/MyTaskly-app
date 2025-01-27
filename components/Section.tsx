@@ -13,13 +13,11 @@ type CardListScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Car
 
 const Section: React.FC<SectionProps> = ({ category, image, lista }) => {
   const navigation = useNavigation<CardListScreenNavigationProp>();
-  console.log("lista da section.tsx:", lista);
 
   return (
     <TouchableOpacity
       style={styles.view}
       onPress={() => {
-        console.log("cliccato su:", category);
         navigation.navigate("CardList", { lista });
       }}
     >
@@ -29,11 +27,13 @@ const Section: React.FC<SectionProps> = ({ category, image, lista }) => {
 
       <View style={styles.categoryContainer}>
         <Text style={styles.add}>{category}</Text>
-        <Text style={styles.title}>✅ 10 cose da fare</Text>{" "}
-        {/*//TODO: add a automate counter*/}
+        <Text style={styles.title}>✅ 10 cose da fare</Text>
+        {/*//TODO: add an automate counter*/}
       </View>
 
-      <View style={styles.controlsContainer}>ciao</View>
+      <View style={styles.controlsContainer}>
+        <Text>Ciao</Text>
+      </View>
     </TouchableOpacity>
   );
 };
