@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, Image, TouchableOpacity } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from '@react-navigation/stack';
 
+import AddTaskButton from "./AddTaskButton";
+
 interface SectionProps {
   category: string;
   image: string;
@@ -32,7 +34,7 @@ const Section: React.FC<SectionProps> = ({ category, image, lista }) => {
       </View>
 
       <View style={styles.controlsContainer}>
-        <Text>Ciao</Text>
+        <AddTaskButton />
       </View>
     </TouchableOpacity>
   );

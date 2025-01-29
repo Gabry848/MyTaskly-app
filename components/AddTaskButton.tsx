@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   KeyboardAvoidingView,
+  Modal,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -15,68 +16,54 @@ import Animated, {
 
 const AddTaskButton: React.FC = () => {
   const [formVisible, setFormVisible] = useState(false);
-
   const animationValue = useSharedValue(0);
 
   const toggleForm = () => {
-    if (formVisible) {
-      animationValue.value = 0;
-    } else {
-      animationValue.value = 1;
-    }
-    setFormVisible(!formVisible);
+    setFormVisible(true);
+    animationValue.value = withSpring(1, { damping: 12 });
+  };
+
+  const handleCancel = () => {
+    animationValue.value = withSpring(0, { damping: 12 });
+    setTimeout(() => setFormVisible(false), 300);
   };
 
   const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scaleY: withSpring(animationValue.value, { damping: 12 }) }],
-    opacity: withSpring(animationValue.value, { damping: 12 }),
+    transform: [{ scale: animationValue.value }],
+    opacity: animationValue.value,
   }));
-
-  const handleCancel = () => {
-    animationValue.value = withSpring(0, { damping: 12 }); // Animazione inversa
-    setTimeout(() => setFormVisible(false), 300); // Delay per completare l'animazione prima di nascondere
-  };
-  
 
   return (
     <View style={styles.container}>
-      {/* Add Task Button */}
       <TouchableOpacity style={styles.addButton} onPress={toggleForm}>
         <Text style={styles.addButtonText}>{formVisible ? 'Close' : 'Add Task'}</Text>
       </TouchableOpacity>
+      
+      <Modal visible={formVisible} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <Animated.View style={[styles.formContainer, animatedStyle]}>
+            <KeyboardAvoidingView behavior="padding" style={styles.formContent}>
+              <Text style={styles.label}>Title</Text>
+              <TextInput style={styles.input} placeholder="Enter task title" />
 
-      {/* Animated Form */}
-      <Animated.View style={[styles.formContainer, animatedStyle]}>
-        {formVisible && (
-          <KeyboardAvoidingView behavior="padding" style={styles.formContent}>
-            <Text style={styles.label}>Title</Text>
-            <TextInput style={styles.input} placeholder="Enter task title" />
+              <Text style={styles.label}>Description</Text>
+              <TextInput style={styles.input} placeholder="Enter task description" multiline />
 
-            <Text style={styles.label}>Description</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter task description"
-              multiline
-            />
+              <Text style={styles.label}>Due Date</Text>
+              <TextInput style={styles.input} placeholder="Enter due date (e.g. 2025-01-30)" />
 
-            <Text style={styles.label}>Due Date</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter due date (e.g. 2025-01-30)"
-            />
-
-            {/* Save and Cancel Buttons */}
-            <View style={styles.buttonRow}>
-              <TouchableOpacity style={styles.submitButton}>
-                <Text style={styles.submitButtonText}>Save</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
-          </KeyboardAvoidingView>
-        )}
-      </Animated.View>
+              <View style={styles.buttonRow}>
+                <TouchableOpacity style={styles.submitButton}>
+                  <Text style={styles.submitButtonText}>Save</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </KeyboardAvoidingView>
+          </Animated.View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -97,20 +84,25 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   formContainer: {
-    width: '100%',
+    width: '80%',
     backgroundColor: '#F9F9F9',
     borderRadius: 8,
     overflow: 'hidden',
-    marginTop: 8,
-    position: 'absolute', // Ensure it doesn't take up space when hidden
+    padding: 16,
   },
   formContent: {
     padding: 16,
   },
   label: {
     fontSize: 14,
-    color: '#333',
+    color: '#333333',
     marginBottom: 4,
   },
   input: {
