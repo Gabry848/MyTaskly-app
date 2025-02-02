@@ -34,7 +34,7 @@ const Section: React.FC<SectionProps> = ({ category, image, lista }) => {
       </View>
 
       <View style={styles.controlsContainer}>
-        <AddTaskButton />
+        add task
       </View>
     </TouchableOpacity>
   );

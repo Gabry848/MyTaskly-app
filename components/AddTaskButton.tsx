@@ -14,9 +14,17 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 
-const AddTaskButton: React.FC = () => {
+type AddTaskButtonProps = {
+  onSave?: (title: string, description: string, dueDate: string, priority: number) => void;
+};
+
+const AddTaskButton: React.FC<AddTaskButtonProps> = ({ onSave }) => {
   const [formVisible, setFormVisible] = useState(false);
   const animationValue = useSharedValue(0);
+  const [priority, setPriority] = useState<number>(1);
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [dueDate, setDueDate] = useState('');
 
   const toggleForm = () => {
     setFormVisible(true);
@@ -44,16 +52,50 @@ const AddTaskButton: React.FC = () => {
           <Animated.View style={[styles.formContainer, animatedStyle]}>
             <KeyboardAvoidingView behavior="padding" style={styles.formContent}>
               <Text style={styles.label}>Title</Text>
-              <TextInput style={styles.input} placeholder="Enter task title" />
+              <TextInput
+                style={styles.input}
+                placeholder="Enter task title"
+                value={title}
+                onChangeText={setTitle}
+              />
 
               <Text style={styles.label}>Description</Text>
-              <TextInput style={styles.input} placeholder="Enter task description" multiline />
+              <TextInput
+                style={styles.input}
+                placeholder="Enter task description"
+                multiline
+                value={description}
+                onChangeText={setDescription}
+              />
 
               <Text style={styles.label}>Due Date</Text>
-              <TextInput style={styles.input} placeholder="Enter due date (e.g. 2025-01-30)" />
+              <TextInput
+                style={styles.input}
+                placeholder="Enter due date (e.g. 2025-01-30)"
+                value={dueDate}
+                onChangeText={setDueDate}
+              />
+              
+              <Text style={styles.label}>Priority</Text>
+              <View style={styles.priorityContainer}>
+                <TouchableOpacity style={[styles.priorityButton, priority === 1 && styles.selectedPriority]} onPress={() => setPriority(1)}>
+                  <Text style={styles.priorityText}>Bassa</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.priorityButton, priority === 2 && styles.selectedPriority]} onPress={() => setPriority(2)}>
+                  <Text style={styles.priorityText}>Media</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.priorityButton, priority === 3 && styles.selectedPriority]} onPress={() => setPriority(3)}>
+                  <Text style={styles.priorityText}>Alta</Text>
+                </TouchableOpacity>
+              </View>
 
               <View style={styles.buttonRow}>
-                <TouchableOpacity style={styles.submitButton}>
+                <TouchableOpacity
+                  style={styles.submitButton}
+                  onPress={() => {
+                    onSave?.(title, description, dueDate, priority);
+                  }}
+                >
                   <Text style={styles.submitButtonText}>Save</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
@@ -112,6 +154,27 @@ const styles = StyleSheet.create({
     padding: 8,
     marginBottom: 12,
     fontSize: 14,
+  },
+  priorityContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginVertical: 10,
+  },
+  priorityButton: {
+    borderWidth: 1,
+    borderColor: '#777',
+    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    marginHorizontal: 4,
+  },
+  selectedPriority: {
+    backgroundColor: '#007BFF',
+    borderColor: '#007BFF',
+  },
+  priorityText: {
+    fontSize: 16,
+    color: '#333',
   },
   buttonRow: {
     flexDirection: 'row',

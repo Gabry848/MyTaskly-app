@@ -4,6 +4,8 @@ import Section from "../../../components/Category";
 import AddTask from "../../../components/AddTaskButton";
 //import data from "../../../data/data.json";
 
+import axios from 'axios';
+
 type DataType = {
   macchina: {
     title: string;
@@ -29,77 +31,76 @@ type DataType = {
 };
 
 const data = {
-  "macchina": [
-      {
-          "title": "Task 1",
-          "image": "https://picsum.photos/200/300",
-          "descrizione": "Descrizione 100 🙃🙃",
-          "importanza": 3,
-          "scadenza": "2021-08-01"
-      },
-      {
-          "title": "Task 2",
-          "image": "https://picsum.photos/200/300",
-          "descrizione": "Descrizione 2",
-          "importanza": 2,
-          "scadenza": "2021-08-02"
-      },
-      {
-          "title": "Task 3",
-          "image": "https://picsum.photos/200/300",
-          "descrizione": "Descrizione 3",
-          "importanza": 1,
-          "scadenza": "2021-08-03"
-      }
+  macchina: [
+    {
+      title: "Task 1",
+      image: "https://picsum.photos/200/300",
+      descrizione: "Descrizione 100 🙃🙃",
+      importanza: 3,
+      scadenza: "2021-08-01",
+    },
+    {
+      title: "Task 2",
+      image: "https://picsum.photos/200/300",
+      descrizione: "Descrizione 2",
+      importanza: 2,
+      scadenza: "2021-08-02",
+    },
+    {
+      title: "Task 3",
+      image: "https://picsum.photos/200/300",
+      descrizione: "Descrizione 3",
+      importanza: 1,
+      scadenza: "2021-08-03",
+    },
   ],
-  "casa": [
-      {
-          "title": "Bollo macchina",
-          "image": "https://picsum.photos/200/300",
-          "descrizione": "pagare il bollo della macchina",
-          "importanza": 3,
-          "scadenza": "2021-08-04"
-      },
-      {
-          "title": "Task 4",
-          "image": "https://picsum.photos/200/300",
-          "descrizione": "Descrizione 4",
-          "importanza": 3,
-          "scadenza": "2021-08-04"
-      },
-      {
-          "title": "Task 6",
-          "image": "https://picsum.photos/200/300",
-          "descrizione": "Descrizione 6",
-          "importanza": 1,
-          "scadenza": "2021-08-06"
-      }
+  casa: [
+    {
+      title: "Bollo macchina",
+      image: "https://picsum.photos/200/300",
+      descrizione: "pagare il bollo della macchina",
+      importanza: 3,
+      scadenza: "2021-08-04",
+    },
+    {
+      title: "Task 4",
+      image: "https://picsum.photos/200/300",
+      descrizione: "Descrizione 4",
+      importanza: 3,
+      scadenza: "2021-08-04",
+    },
+    {
+      title: "Task 6",
+      image: "https://picsum.photos/200/300",
+      descrizione: "Descrizione 6",
+      importanza: 1,
+      scadenza: "2021-08-06",
+    },
   ],
-  "categoria3": [
-      {
-          "title": "Task 7",
-          "image": "https://picsum.photos/200/300",
-          "descrizione": "Descrizione 7",
-          "importanza": 3,
-          "scadenza": "2021-08-07"
-      },
-      {
-          "title": "Task 8",
-          "image": "https://picsum.photos/200/300",
-          "descrizione": "Descrizione 8",
-          "importanza": 2,
-          "scadenza": "2021-08-08"
-      },
-      {
-          "title": "Task 9",
-          "image": "https://picsum.photos/200/300",
-          "descrizione": "Descrizione 9",
-          "importanza": 1,
-          "scadenza": "2021-08-09"
-      }
-  ]
-}
-
+  categoria3: [
+    {
+      title: "Task 7",
+      image: "https://picsum.photos/200/300",
+      descrizione: "Descrizione 7",
+      importanza: 3,
+      scadenza: "2021-08-07",
+    },
+    {
+      title: "Task 8",
+      image: "https://picsum.photos/200/300",
+      descrizione: "Descrizione 8",
+      importanza: 2,
+      scadenza: "2021-08-08",
+    },
+    {
+      title: "Task 9",
+      image: "https://picsum.photos/200/300",
+      descrizione: "Descrizione 9",
+      importanza: 1,
+      scadenza: "2021-08-09",
+    },
+  ],
+};
 
 export function Home() {
   return (
@@ -123,10 +124,21 @@ export function Home() {
           />
         ))}
       </ScrollView>
-      <AddTask />
+      <AddTask onSave={(title: string, description: string, dueDate: string, priority: number) => {
+        console.log(title, description, dueDate, priority);
+        console.log(Object.isFrozen(data.macchina));
+        data.macchina.push({
+          title: title || "Default Title",
+          image: "https://picsum.photos/200/300",
+          descrizione: description || "Default Description",
+          importanza: priority || 1,
+          scadenza: dueDate || "2021-08-01",
+        });
+        
+      }} />
     </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
@@ -163,4 +175,3 @@ const styles = StyleSheet.create({
     marginTop: 30,
   },
 });
-
