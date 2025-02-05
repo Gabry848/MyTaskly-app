@@ -1,6 +1,6 @@
 import React, { Fragment } from "react";
 import { View, Text, StyleSheet, Image, ScrollView } from "react-native";
-import Section from "../../../components/Category";
+import Section from "../../../components/Section";
 import AddTask from "../../../components/AddTaskButton";
 //import data from "../../../data/data.json";
 

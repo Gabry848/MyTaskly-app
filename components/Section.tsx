@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet, Image, TouchableOpacity } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import { StackNavigationProp } from '@react-navigation/stack';
+import { StackNavigationProp } from "@react-navigation/stack";
 
 import AddTaskButton from "./AddTaskButton";
 
@@ -11,7 +11,14 @@ interface SectionProps {
   lista: Lista[];
 }
 
-type CardListScreenNavigationProp = StackNavigationProp<RootStackParamList, 'CardList'>;
+type CardListScreenNavigationProp = StackNavigationProp<
+  RootStackParamList,
+  "CardList"
+>;
+
+interface ExtendedCardListProps extends CardListProps {
+  categoryName: string;
+}
 
 const Section: React.FC<SectionProps> = ({ category, image, lista }) => {
   const navigation = useNavigation<CardListScreenNavigationProp>();
@@ -20,7 +27,7 @@ const Section: React.FC<SectionProps> = ({ category, image, lista }) => {
     <TouchableOpacity
       style={styles.view}
       onPress={() => {
-        navigation.navigate("CardList", { lista });
+        navigation.navigate("CardList", { categoryName: category, lista: lista,  });
       }}
     >
       <View style={styles.imageContainer}>
@@ -33,9 +40,7 @@ const Section: React.FC<SectionProps> = ({ category, image, lista }) => {
         {/*//TODO: add an automate counter*/}
       </View>
 
-      <View style={styles.controlsContainer}>
-        add task
-      </View>
+      <View style={styles.controlsContainer}>add task</View>
     </TouchableOpacity>
   );
 };

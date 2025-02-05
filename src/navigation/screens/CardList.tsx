@@ -29,7 +29,7 @@ const getData = async () => {
 
 const CardList: React.FC = () => {
   const route = useRoute<RouteProp<RootStackParamList, "CardList">>();
-  const { lista } = route.params;
+  const lista = route.params.lista;
 
   const [filtroImportanza, setFiltroImportanza] = useState("Tutte");
   const [filtroScadenza, setFiltroScadenza] = useState("Tutte");

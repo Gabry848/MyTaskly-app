@@ -1,3 +1,8 @@
+interface CardListProps {
+  categoryName: string;
+  lista: Lista[];
+}
+
 interface Lista {
   title: string;
   image: string;
@@ -9,6 +14,5 @@ interface Lista {
 type RootStackParamList = {
   Home: undefined;
   Category: undefined;
-  CardList: { lista: Lista[] };
-  // ...existing code...
+  CardList: { lista: Lista[]; categoryName: string };
 };
