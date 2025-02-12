@@ -1,7 +1,9 @@
 import React, { Fragment } from "react";
-import { View, Text, StyleSheet, Image, ScrollView } from "react-native";
+import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity } from "react-native";
 import Section from "../../../components/Section";
 import AddTask from "../../../components/AddTaskButton";
+import Badge from "../../../components/Badge"; // nuovo import
+import { useNavigation } from "@react-navigation/native"; // nuovo import
 //import data from "../../../data/data.json";
 
 import axios from 'axios';
@@ -103,8 +105,11 @@ const data = {
 };
 
 export function Home() {
+  const navigation = useNavigation();
+
   return (
-    <View>
+    <View style={{ flex: 1 }}>
+      <Badge letter="U" onPress={() => navigation.navigate("Login")} />
       <ScrollView style={styles.container}>
         <View style={styles.imageContainer}>
           <Text style={styles.title}>Aggiungi una nuova attività</Text>
@@ -136,6 +141,9 @@ export function Home() {
         });
         
       }} />
+      <TouchableOpacity onPress={() => navigation.navigate("Register")}>
+        <Text>Settings</Text>
+      </TouchableOpacity>
     </View>
   );
 }

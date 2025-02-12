@@ -14,6 +14,9 @@ import { Settings } from './screens/Settings';
 import { Updates } from './screens/Updates';
 import { NotFound } from './screens/NotFound';
 import CardList from './screens/CardList';
+import UserSettigs from './screens/UserSettigs';
+import Login from './screens/Login';
+import Register from './screens/Register';
 
 
 const HomeTabs = createBottomTabNavigator({
@@ -99,7 +102,25 @@ const RootStack = createNativeStackNavigator({
         title: 'ToDo',
       },
     },
-  },
+    UserSettings: {
+      screen: UserSettigs,
+      options: {
+        title: 'User Settings',
+      },
+    },
+    Login: {
+      screen: Login,
+      options: {
+        title: 'Login',
+      },
+    },
+    Register: {
+      screen: Register,
+      options: {
+        title: 'Register',
+      }
+    }
+  }
 });
 
 export const Navigation = createStaticNavigation(RootStack);
