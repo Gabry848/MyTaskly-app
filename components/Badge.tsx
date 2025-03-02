@@ -1,5 +1,5 @@
 import React from "react";
-import { Text, TouchableOpacity, StyleSheet } from "react-native";
+import { Text, TouchableOpacity, StyleSheet, View } from "react-native";
 import { useNavigation } from "@react-navigation/native"; // nuovo import
 import requestData from "../src/config/requestData.json";
 
@@ -10,33 +10,39 @@ type BadgeProps = {
   letter: string;
 };
 
+
 export default function Badge({ letter }: BadgeProps) {
   const navigation = useNavigation();
 
+  async function handlePress() {
+    const login_data = check_login({
+      loginTime: requestData.user.loginTime,
+      bearerDuration: requestData.user.bearerDuration,
+      refreshDuration: requestData.user.refreshDuration,
+    });
+
+    if (login_data.isAuthenticated) {
+      console.log("Utente loggato");
+      navigation.navigate("Profile", { user: letter });
+    } else if (login_data.canRefresh) {
+      console.log("Utente non loggato, ma può fare refresh");
+      await refreshToken(requestData);
+      // Se necessario, puoi anche navigare dopo il refresh
+      // navigation.navigate("Profile", { user: letter });
+    } else {
+      console.log("Utente non loggato e non può fare refresh");
+      navigation.navigate("Login");
+    }
+  }
 
   return (
     <TouchableOpacity
       style={styles.badge}
-      onPress={() => {
-        const login_data = check_login({
-          loginTime: requestData.user.loginTime,
-          bearerDuration: requestData.user.bearerDuration,
-          refreshDuration: requestData.user.refreshDuration,
-        });
-
-        if (login_data.isAuthenticated) {
-          console.log("Utente loggato");
-          
-        } else if (login_data.canRefresh) {
-          console.log("Utente non loggato, ma può fare refresh");
-          refreshToken(requestData);
-        } else {
-          navigation.navigate("Login")
-          console.log("Utente non loggato e non può fare refresh");
-        }
-      }}
-    >
-      <Text style={styles.text}>{letter}</Text>
+      onPressIn={() => handlePress()}>
+        <View>
+          <Text style={styles.text}>{letter}</Text>
+        </View>
+      
     </TouchableOpacity>
   );
 }

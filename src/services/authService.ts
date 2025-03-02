@@ -1,6 +1,10 @@
 import dayjs from "dayjs";
 import axios from "axios";
+import RequestDats from "../config/requestData.json";
 
+axios.defaults.baseURL = RequestDats.httpRequest.BaseURL;
+
+// ...existing code...
 /**
  * Esegue il login dell'utente
  *
@@ -8,27 +12,12 @@ import axios from "axios";
  * @param {string} password - La password dell'utente
  * @param {Object} requestData - L'oggetto requestData che contiene i dati dell'utente
  * @returns {Promise<Object>} - Un oggetto che contiene lo stato del login e i token
- */
-async function login(
-  email: any,
-  password: any,
-  requestData: {
-    user: {
-      email: any;
-      bearerToken: any;
-      refreshToken: any;
-      loginTime: string;
-      bearerDuration: any;
-      refreshDuration: any;
-    };
-    tokenExpiration: string | null;
-    refreshTokenExpiration: string | null;
-  }
-) {
+ */ 
+async function login(username: any, password: any) {
   try {
     // Esegui la richiesta di login
     const response = await axios.post("/login", {
-      email: email,
+      username: username,
       password: password,
     });
 
@@ -46,18 +35,13 @@ async function login(
       : null;
 
     // Aggiorna i dati dell'utente
-    requestData.user.email = email;
-    requestData.user.bearerToken = bearer_token;
-    requestData.user.refreshToken = refresh_token;
-    requestData.user.loginTime = currentTime.format();
-    requestData.user.bearerDuration = bearerDuration;
-    requestData.user.refreshDuration = refreshDuration;
-    requestData.tokenExpiration = tokenExpiration
-      ? tokenExpiration.format()
-      : null;
-    requestData.refreshTokenExpiration = refreshTokenExpiration
-      ? refreshTokenExpiration.format()
-      : null;
+    writeData({
+      bearerToken: bearer_token,
+      refreshToken: refresh_token,
+      loginTime: currentTime.format(),
+      bearerDuration: bearerDuration,
+      refreshDuration: refreshDuration,
+    });
 
     return {
       success: true,
@@ -242,6 +226,23 @@ async function refreshToken(requestData: {
       error: error,
     };
   }
+}
+
+// function to write the information in the file requestData.json
+// write only data canged
+function writeData(userDataCanged: any) {
+  const fs = require("fs");
+  const path = require("path");
+  const filePath = path.join(__dirname, "../config/requestData.json");
+  const data = require(filePath);
+
+  for (const key in userDataCanged) {
+    if (userDataCanged[key] !== undefined) {
+      data.user[key] = userDataCanged[key];
+    }
+  }
+
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
 }
 
 // Esporta le funzioni

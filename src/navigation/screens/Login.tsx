@@ -1,25 +1,52 @@
 import React from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Dimensions } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Dimensions,
+} from "react-native";
 import { FontAwesome } from "@expo/vector-icons";
+import { login } from "../../services/authService";
 
 const { width } = Dimensions.get("window");
 
 const LoginScreen = () => {
+  // login function use authServicec to login
+  function handleLogin() {
+    console.log("Login");
+
+    login("Gabry848", "password123");
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.avatar} />
-      <View style={[styles.inputContainer, { width: width * 0.9 }]}> 
+      <View style={[styles.inputContainer, { width: width * 0.9 }]}>
         <FontAwesome name="user" size={20} color="white" style={styles.icon} />
-        <TextInput placeholder="Username" placeholderTextColor="white" style={[styles.input, { width: width * 0.75 }]} />
+        <TextInput
+          placeholder="Username"
+          placeholderTextColor="white"
+          style={[styles.input, { width: width * 0.75 }]}
+        />
       </View>
-      <View style={[styles.inputContainer, { width: width * 0.9 }]}> 
+      <View style={[styles.inputContainer, { width: width * 0.9 }]}>
         <FontAwesome name="lock" size={20} color="white" style={styles.icon} />
-        <TextInput placeholder="Password" placeholderTextColor="white" style={[styles.input, { width: width * 0.75 }]} secureTextEntry />
+        <TextInput
+          placeholder="Password"
+          placeholderTextColor="white"
+          style={[styles.input, { width: width * 0.75 }]}
+          secureTextEntry
+        />
       </View>
-      <TouchableOpacity style={[styles.loginButton, { width: width * 0.9 }]}>
+      <TouchableOpacity
+        style={[styles.loginButton, { width: width * 0.9 }]}
+        onPress={() => console.log("Login")}
+      >
         <Text style={styles.loginText}>Login Now</Text>
       </TouchableOpacity>
-      <View style={[styles.optionsContainer, { width: width * 0.9 }]}> 
+      <View style={[styles.optionsContainer, { width: width * 0.9 }]}>
         <TouchableOpacity>
           <Text style={styles.optionText}>Remember me</Text>
         </TouchableOpacity>

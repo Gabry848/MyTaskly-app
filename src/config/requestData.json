@@ -10,7 +10,7 @@
         "loginTime": ""
     },
     "httpRequest": {
-        "basicIP": "taskly-production.up.railway.app",
+        "BaseURL": "taskly-production.up.railway.app",
         "sections": "categorie",
         "tasks": "impegni"
     }
