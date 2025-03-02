@@ -1,5 +1,12 @@
 import React from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Dimensions } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Dimensions,
+} from "react-native";
 import { FontAwesome } from "@expo/vector-icons";
 
 const { width } = Dimensions.get("window");
@@ -8,21 +15,45 @@ const RegisterScreen = () => {
   return (
     <View style={styles.container}>
       <View style={styles.avatar} />
-      <View style={[styles.inputContainer, { width: width * 0.9 }]}> 
+      <View style={[styles.inputContainer, { width: width * 0.9 }]}>
         <FontAwesome name="user" size={20} color="white" style={styles.icon} />
-        <TextInput placeholder="Username" placeholderTextColor="white" style={[styles.input, { width: width * 0.75 }]} />
+        <TextInput
+          placeholder="Username"
+          placeholderTextColor="white"
+          style={[styles.input, { width: width * 0.75 }]}
+        />
       </View>
-      <View style={[styles.inputContainer, { width: width * 0.9 }]}> 
-        <FontAwesome name="envelope" size={20} color="white" style={styles.icon} />
-        <TextInput placeholder="Email" placeholderTextColor="white" style={[styles.input, { width: width * 0.75 }]} keyboardType="email-address" />
+      <View style={[styles.inputContainer, { width: width * 0.9 }]}>
+        <FontAwesome
+          name="envelope"
+          size={20}
+          color="white"
+          style={styles.icon}
+        />
+        <TextInput
+          placeholder="Email"
+          placeholderTextColor="white"
+          style={[styles.input, { width: width * 0.75 }]}
+          keyboardType="email-address"
+        />
       </View>
-      <View style={[styles.inputContainer, { width: width * 0.9 }]}> 
+      <View style={[styles.inputContainer, { width: width * 0.9 }]}>
         <FontAwesome name="lock" size={20} color="white" style={styles.icon} />
-        <TextInput placeholder="Password" placeholderTextColor="white" style={[styles.input, { width: width * 0.75 }]} secureTextEntry />
+        <TextInput
+          placeholder="Password"
+          placeholderTextColor="white"
+          style={[styles.input, { width: width * 0.75 }]}
+          secureTextEntry
+        />
       </View>
-      <View style={[styles.inputContainer, { width: width * 0.9 }]}> 
+      <View style={[styles.inputContainer, { width: width * 0.9 }]}>
         <FontAwesome name="lock" size={20} color="white" style={styles.icon} />
-        <TextInput placeholder="Confirm Password" placeholderTextColor="white" style={[styles.input, { width: width * 0.75 }]} secureTextEntry />
+        <TextInput
+          placeholder="Confirm Password"
+          placeholderTextColor="white"
+          style={[styles.input, { width: width * 0.75 }]}
+          secureTextEntry
+        />
       </View>
       <TouchableOpacity style={[styles.registerButton, { width: width * 0.9 }]}>
         <Text style={styles.registerText}>Register Now</Text>

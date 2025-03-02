@@ -1,0 +1,17 @@
+{
+    "user": {
+        "username": "",
+        "password": "",
+        "email": "",
+        "bearerToken": "",
+        "refreshToken": "",
+        "bearerDuration": "",
+        "refreshDuration": "",
+        "loginTime": ""
+    },
+    "httpRequest": {
+        "basicIP": "taskly-production.up.railway.app",
+        "sections": "categorie",
+        "tasks": "impegni"
+    }
+}

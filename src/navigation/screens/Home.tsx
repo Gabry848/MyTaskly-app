@@ -1,12 +1,17 @@
 import React, { Fragment } from "react";
-import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  ScrollView,
+  TouchableOpacity,
+} from "react-native";
 import Section from "../../../components/Section";
 import AddTask from "../../../components/AddTaskButton";
 import Badge from "../../../components/Badge"; // nuovo import
 import { useNavigation } from "@react-navigation/native"; // nuovo import
 //import data from "../../../data/data.json";
-
-import axios from 'axios';
 
 type DataType = {
   macchina: {
@@ -107,9 +112,17 @@ const data = {
 export function Home() {
   const navigation = useNavigation();
 
+  React.useLayoutEffect(() => {
+    navigation.setOptions({
+      title: 'Home',
+      headerRight: () => (
+        <Badge letter="U"/>
+      ),
+    });
+  }, [navigation]);
+
   return (
     <View style={{ flex: 1 }}>
-      <Badge letter="U" onPress={() => navigation.navigate("Login")} />
       <ScrollView style={styles.container}>
         <View style={styles.imageContainer}>
           <Text style={styles.title}>Aggiungi una nuova attività</Text>
@@ -129,18 +142,24 @@ export function Home() {
           />
         ))}
       </ScrollView>
-      <AddTask onSave={(title: string, description: string, dueDate: string, priority: number) => {
-        console.log(title, description, dueDate, priority);
-        console.log(Object.isFrozen(data.macchina));
-        data.macchina.push({
-          title: title || "Default Title",
-          image: "https://picsum.photos/200/300",
-          descrizione: description || "Default Description",
-          importanza: priority || 1,
-          scadenza: dueDate || "2021-08-01",
-        });
-        
-      }} />
+      <AddTask
+        onSave={(
+          title: string,
+          description: string,
+          dueDate: string,
+          priority: number
+        ) => {
+          console.log(title, description, dueDate, priority);
+          console.log(Object.isFrozen(data.macchina));
+          data.macchina.push({
+            title: title || "Default Title",
+            image: "https://picsum.photos/200/300",
+            descrizione: description || "Default Description",
+            importanza: priority || 1,
+            scadenza: dueDate || "2021-08-01",
+          });
+        }}
+      />
       <TouchableOpacity onPress={() => navigation.navigate("Register")}>
         <Text>Settings</Text>
       </TouchableOpacity>
@@ -181,5 +200,21 @@ const styles = StyleSheet.create({
     marginLeft: 20, // added margin to separate the image from the text
     marginEnd: 20,
     marginTop: 30,
+  },
+  headerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    marginTop: 15,
+    marginBottom: 10,
+  },
+  feedTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "black",
+  },
+  badgeStyle: {
+    marginLeft: 10, // Spazio tra il testo e il badge
   },
 });
