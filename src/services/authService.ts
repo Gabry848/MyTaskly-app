@@ -155,6 +155,89 @@ async function login(username: any, password: any) {
 }
 
 /**
+ * Registra un nuovo utente
+ *
+ * @param {string} username - Il nome utente desiderato
+ * @param {string} email - L'email dell'utente
+ * @param {string} password - La password dell'utente
+ * @returns {Promise<Object>} - Un oggetto che contiene lo stato della registrazione e i token
+ */
+async function register(username: string, email: string, password: string) {
+  try {
+    console.log("=== REGISTRAZIONE NUOVO UTENTE ===");
+    console.log(`Tentativo di registrazione per: ${username}`);
+    
+    // Esegui la richiesta di registrazione
+    const response = await axios.post(
+      "/register",
+      {
+        username: username,
+        email: email,
+        password: password,
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    console.log("Risposta dal server:", response.status);
+    
+    // Estrai i dati dalla risposta
+    const { bearer_token, refresh_token, bearer_duration, refresh_duration } = response.data;
+
+    // Calcola le date di scadenza
+    const currentTime = dayjs();
+    const tokenExpiration = bearer_duration
+      ? currentTime.add(parseInt(bearer_duration), "second")
+      : null;
+    const refreshTokenExpiration = refresh_duration
+      ? currentTime.add(parseInt(refresh_duration), "second")
+      : null;
+
+    console.log("Token ricevuti e date di scadenza calcolate");
+    
+    // Aggiorna i dati dell'utente
+    await updateAuthData({
+      bearerToken: bearer_token,
+      refreshToken: refresh_token,
+      loginTime: currentTime.format(),
+      bearerDuration: bearer_duration,
+      refreshDuration: refresh_duration,
+      username: username,
+      email: email,
+    });
+
+    console.log("✅ Registrazione completata con successo");
+    console.log("===============================");
+
+    return {
+      success: true,
+      bearerToken: bearer_token,
+      refreshToken: refresh_token,
+      tokenExpiration: tokenExpiration?.format(),
+      refreshTokenExpiration: refreshTokenExpiration?.format(),
+      message: "Registrazione effettuata con successo",
+    };
+  } catch (error: any) {
+    console.error("❌ Errore durante la registrazione:", error.message);
+    if (error.response) {
+      console.error("Dettagli errore:", error.response.data);
+      console.error("Status code:", error.response.status);
+    }
+    console.log("===============================");
+    
+    return {
+      success: false,
+      message: error.response?.data?.message || "Errore durante la registrazione",
+      statusCode: error.response?.status,
+      error: error,
+    };
+  }
+}
+
+/**
  * Checks if the authentication tokens have expired based on their duration and login time.
  *
  * @returns {Promise<Object>} An object with the following properties:
@@ -369,6 +452,7 @@ async function logout() {
 // Esporta le funzioni
 export {
   login,
+  register,
   check_login,
   refreshToken,
   loadStoredData,

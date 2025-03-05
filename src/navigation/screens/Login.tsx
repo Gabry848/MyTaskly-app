@@ -6,10 +6,13 @@ import {
   TouchableOpacity,
   StyleSheet,
   Dimensions,
+  Image,
 } from "react-native";
 import { FontAwesome } from "@expo/vector-icons";
 import * as authService from "../../services/authService";
 import { useNavigation } from "@react-navigation/native"; 
+
+import { NotificationSnackbar } from "../../../components/NotificationSnackbar";
 
 
 const { width } = Dimensions.get("window");
@@ -20,13 +23,35 @@ const LoginScreen = () => {
   const [username, setUsername] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [showPassword, setShowPassword] = React.useState(false); // Stato per mostrare/nascondere password
+  const [notification, setNotification] = React.useState({
+    isVisible: false,
+    message: "",
+    isSuccess: true,
+    onFinish: () => {},
+  });
 
 
   // login function use authServicec to login
   async function handleLogin() {
 
     // faccio login con username e password presi dai campi di input
-    await authService.login(username, password);
+    const login_data = await authService.login(username, password);
+
+    if (login_data.success) {
+      setNotification({
+        isVisible: true,
+        message: "Login effettuato con successo",
+        isSuccess: true,
+        onFinish: () => {navigation.navigate("Profile", { user: username });},
+      });
+    } else {
+      setNotification({
+        isVisible: true,
+        message: "Username o password errati",
+        isSuccess: false,
+        onFinish: () => {},
+      });
+    }
   }
 
   // Funzione per invertire lo stato di visibilità della password
@@ -36,7 +61,12 @@ const LoginScreen = () => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.avatar} />
+      <View style={styles.avatar}>
+        <Image
+          source={require("../../../assets/circle-user.png")}
+          style={styles.avatarImage}
+        />
+      </View>
       <View style={[styles.inputContainer, { width: width * 0.9 }]}>
         <FontAwesome name="user" size={20} color="white" style={styles.icon} />
         <TextInput
@@ -87,6 +117,12 @@ const LoginScreen = () => {
       }}>
         <Text style={styles.signUpButtonText}>Create account</Text>
       </TouchableOpacity>
+      <NotificationSnackbar
+        isVisible={notification.isVisible}
+        message={notification.message}
+        isSuccess={notification.isSuccess}
+        onFinish={notification.onFinish}
+      />
     </View>
   );
 };
@@ -105,6 +141,12 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     backgroundColor: "white",
     marginBottom: 20,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  avatarImage: {
+    width: "100%",
+    height: "100%",
   },
   inputContainer: {
     flexDirection: "row",
