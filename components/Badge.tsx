@@ -1,6 +1,6 @@
 import React from "react";
 import { Text, TouchableOpacity, StyleSheet, View } from "react-native";
-import { useNavigation } from "@react-navigation/native"; // nuovo import
+import { useNavigation } from "@react-navigation/native";
 import requestData from "../src/config/requestData.json";
 
 
@@ -14,19 +14,16 @@ type BadgeProps = {
 export default function Badge({ letter }: BadgeProps) {
   const navigation = useNavigation();
 
-  async function handlePress() {
-    const login_data = check_login({
-      loginTime: requestData.user.loginTime,
-      bearerDuration: requestData.user.bearerDuration,
-      refreshDuration: requestData.user.refreshDuration,
-    });
 
-    if (login_data.isAuthenticated) {
+  async function handlePress() {
+    const login_data = check_login();
+
+    if ((await login_data).isAuthenticated) {
       console.log("Utente loggato");
       navigation.navigate("Profile", { user: letter });
-    } else if (login_data.canRefresh) {
+    } else if ((await login_data).canRefresh) {
       console.log("Utente non loggato, ma può fare refresh");
-      await refreshToken(requestData);
+      await refreshToken();
       // Se necessario, puoi anche navigare dopo il refresh
       // navigation.navigate("Profile", { user: letter });
     } else {

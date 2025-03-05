@@ -1,24 +1,289 @@
 import dayjs from "dayjs";
 import axios from "axios";
-import RequestDats from "../config/requestData.json";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-axios.defaults.baseURL = RequestDats.httpRequest.BaseURL;
+// Chiavi di AsyncStorage
+const STORAGE_KEYS = {
+  BASE_URL: "config.baseUrl",
+  USER_DATA: "auth.userData",
+  BEARER_TOKEN: "auth.bearerToken",
+  REFRESH_TOKEN: "auth.refreshToken",
+  LOGIN_TIME: "auth.loginTime",
+  BEARER_DURATION: "auth.bearerDuration",
+  REFRESH_DURATION: "auth.refreshDuration",
+};
 
-// ...existing code...
+// Inizializzazione dell'app
+async function initializeAuth() {
+  // Carica la baseURL per axios
+  const baseUrl = await AsyncStorage.getItem(STORAGE_KEYS.BASE_URL);
+
+  // Valore predefinito se non trovato
+  const defaultBaseUrl = "https://taskly-production.up.railway.app"; // Modifica con il tuo URL predefinito
+  await AsyncStorage.setItem(STORAGE_KEYS.BASE_URL, defaultBaseUrl);
+  axios.defaults.baseURL = defaultBaseUrl;
+}
+
+// Esegui l'inizializzazione
+initializeAuth();
+
+// Funzioni di utilità per AsyncStorage
+async function getUserData() {
+  try {
+    const userData = await AsyncStorage.getItem(STORAGE_KEYS.USER_DATA);
+    return userData ? JSON.parse(userData) : null;
+  } catch (error) {
+    console.error("Errore nel recupero dei dati utente:", error);
+    return null;
+  }
+}
+
+async function setUserData(data: any) {
+  try {
+    await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(data));
+  } catch (error) {
+    console.error("Errore nel salvataggio dei dati utente:", error);
+  }
+}
+
+// Funzione per aggiornare i dati di autenticazione
+async function updateAuthData(data: any) {
+  try {
+    if (data.bearerToken) {
+      await AsyncStorage.setItem(STORAGE_KEYS.BEARER_TOKEN, data.bearerToken);
+    }
+    if (data.refreshToken) {
+      await AsyncStorage.setItem(
+        STORAGE_KEYS.REFRESH_TOKEN,
+        data.refreshToken
+      );
+    }
+    if (data.loginTime) {
+      await AsyncStorage.setItem(STORAGE_KEYS.LOGIN_TIME, data.loginTime);
+    }
+    if (data.bearerDuration) {
+      await AsyncStorage.setItem(
+        STORAGE_KEYS.BEARER_DURATION,
+        data.bearerDuration
+      );
+    }
+    if (data.refreshDuration) {
+      await AsyncStorage.setItem(
+        STORAGE_KEYS.REFRESH_DURATION,
+        data.refreshDuration
+      );
+    }
+
+    // Aggiorna anche i dati utente aggregati
+    const userData = (await getUserData()) || {};
+    const updatedUserData = { ...userData, ...data };
+    await setUserData(updatedUserData);
+
+  } catch (error) {
+    console.error(
+      "Errore durante l'aggiornamento dei dati di autenticazione:",
+      error
+    );
+  }
+}
+
 /**
  * Esegue il login dell'utente
  *
  * @param {string} email - L'email dell'utente
  * @param {string} password - La password dell'utente
- * @param {Object} requestData - L'oggetto requestData che contiene i dati dell'utente
  * @returns {Promise<Object>} - Un oggetto che contiene lo stato del login e i token
- */ 
+ */
 async function login(username: any, password: any) {
   try {
-    // Esegui la richiesta di login
-    const response = await axios.post("/login", {
+    // Esegui la richiesta di login e gestisci gli errori
+    const response = await axios.post(
+      "/login", // URL completo
+      {
+        username: username,
+        password: password,
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    // Estrai i dati dalla risposta
+    const { bearer_token, refresh_token, bearer_duration, refresh_duration } =
+      response.data;
+
+    // Calcola le date di scadenza
+    const currentTime = dayjs();
+    const tokenExpiration = bearer_duration
+      ? currentTime.add(parseInt(bearer_duration), "second")
+      : null;
+    const refreshTokenExpiration = refresh_duration
+      ? currentTime.add(parseInt(refresh_duration), "second")
+      : null;
+
+    // Aggiorna i dati dell'utente
+    await updateAuthData({
+      bearerToken: bearer_token,
+      refreshToken: refresh_token,
+      loginTime: currentTime.format(),
+      bearerDuration: bearer_duration,
+      refreshDuration: refresh_duration,
       username: username,
-      password: password,
+    });
+
+    return {
+      success: true,
+      bearerToken: bearer_token,
+      refreshToken: refresh_token,
+      tokenExpiration: tokenExpiration?.format(),
+      refreshTokenExpiration: refreshTokenExpiration?.format(),
+      message: "Login effettuato con successo",
+    };
+  } catch (error: any) {
+    console.error("Errore durante il login:", error.message); // Log dell'errore
+    if (error.response) {
+      console.error("Dati della risposta di errore:", error.response.data);
+    }
+    return {
+      success: false,
+      message: error.response?.data?.message || "Errore durante il login",
+      error: error,
+    };
+  }
+}
+
+/**
+ * Checks if the authentication tokens have expired based on their duration and login time.
+ *
+ * @returns {Promise<Object>} An object with the following properties:
+ *   @property {boolean} isAuthenticated - True if the access token has not expired.
+ *   @property {boolean} canRefresh - True if the refresh token has not expired.
+ *   @property {boolean} tokenExpired - True if the access token is expired.
+ *   @property {boolean} refreshTokenExpired - True if the refresh token is expired.
+ *   @property {number} timeSinceLogin - Seconds elapsed since login.
+ *   @property {number} timeUntilExpiration - Seconds remaining until token expiration.
+ *   @property {number} timeUntilRefreshExpiration - Seconds remaining until refresh token expiration.
+ */
+async function check_login() {
+  try {
+    console.log("=== CONTROLLO STATO AUTENTICAZIONE ===");
+    const bearerToken = await AsyncStorage.getItem(STORAGE_KEYS.BEARER_TOKEN);
+    const refreshToken = await AsyncStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
+    console.log(`Token di accesso: ${bearerToken ? "Presente" : "Assente"}`);
+    console.log(`Refresh token: ${refreshToken ? "Presente" : "Assente"}`);
+
+    const loginTime = await AsyncStorage.getItem(STORAGE_KEYS.LOGIN_TIME);
+    const bearerDuration = await AsyncStorage.getItem(
+      STORAGE_KEYS.BEARER_DURATION
+    );
+    const refreshDuration = await AsyncStorage.getItem(
+      STORAGE_KEYS.REFRESH_DURATION
+    );
+
+    // Verifica se i parametri necessari sono presenti
+    if (!loginTime) {
+      console.log("❌ Nessuna informazione di login trovata");
+      return {
+        isAuthenticated: false,
+        canRefresh: false,
+        tokenExpired: true,
+        refreshTokenExpired: true,
+        timeSinceLogin: 0,
+        timeUntilExpiration: 0,
+        timeUntilRefreshExpiration: 0,
+      };
+    }
+
+    // Converti loginTime in oggetto dayjs
+    const loginTimeObj = dayjs(loginTime);
+    const currentTime = dayjs();
+
+    console.log("--- Informazioni temporali ---");
+    console.log(`Ora di login: ${loginTimeObj.format('YYYY-MM-DD HH:mm:ss')}`);
+    console.log(`Ora attuale: ${currentTime.format('YYYY-MM-DD HH:mm:ss')}`);
+
+    // Calcola il tempo trascorso dal login in secondi
+    const secondsSinceLogin = currentTime.diff(loginTimeObj, "second");
+    console.log(`Tempo trascorso dal login: ${secondsSinceLogin} secondi`);
+
+    // Converti le durate in secondi
+    const bearerDurationSeconds = bearerDuration
+      ? parseInt(bearerDuration, 10)
+      : 0;
+    const refreshDurationSeconds = refreshDuration
+      ? parseInt(refreshDuration, 10)
+      : 0;
+
+    console.log("--- Durata token ---");
+    console.log(`Durata token di accesso: ${bearerDurationSeconds} secondi`);
+    console.log(`Durata refresh token: ${refreshDurationSeconds} secondi`);
+
+    // Calcola il tempo rimanente prima della scadenza
+    const timeUntilExpiration = bearerDurationSeconds - secondsSinceLogin;
+    const timeUntilRefreshExpiration =
+      refreshDurationSeconds - secondsSinceLogin;
+
+    console.log("--- Tempo rimanente ---");
+    console.log(`Token di accesso: ${timeUntilExpiration} secondi rimanenti (${Math.floor(timeUntilExpiration/60)} minuti)`);
+    console.log(`Refresh token: ${timeUntilRefreshExpiration} secondi rimanenti (${Math.floor(timeUntilRefreshExpiration/60)} minuti)`);
+
+    // Determina se i token sono scaduti
+    const isTokenExpired = timeUntilExpiration <= 0;
+    const isRefreshTokenExpired = timeUntilRefreshExpiration <= 0;
+
+    console.log("--- Stato autenticazione ---");
+    console.log(`Token di accesso: ${isTokenExpired ? "❌ SCADUTO" : "✅ VALIDO"}`);
+    console.log(`Refresh token: ${isRefreshTokenExpired ? "❌ SCADUTO" : "✅ VALIDO"}`);
+    console.log("===============================");
+
+    // Aggiorna il risultato con lo stato dei token
+    return {
+      isAuthenticated: !isTokenExpired,
+      canRefresh: !isRefreshTokenExpired,
+      tokenExpired: isTokenExpired,
+      refreshTokenExpired: isRefreshTokenExpired,
+      timeSinceLogin: secondsSinceLogin,
+      timeUntilExpiration: Math.max(0, timeUntilExpiration),
+      timeUntilRefreshExpiration: Math.max(0, timeUntilRefreshExpiration),
+      loginTime: loginTimeObj.format(),
+      currentTime: currentTime.format(),
+    };
+  } catch (error) {
+    console.error("❌ ERRORE durante il controllo del login:", error);
+    return {
+      isAuthenticated: false,
+      canRefresh: false,
+      tokenExpired: true,
+      refreshTokenExpired: true,
+      timeSinceLogin: 0,
+      timeUntilExpiration: 0,
+      timeUntilRefreshExpiration: 0,
+    };
+  }
+}
+
+/**
+ * Rinnova il token di accesso utilizzando il refresh token
+ *
+ * @returns {Promise<Object>} - Un oggetto che contiene lo stato dell'operazione e i nuovi token
+ */
+async function refreshToken() {
+  try {
+    const refreshToken = await AsyncStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
+
+    // Verifica se è disponibile un refresh token
+    if (!refreshToken) {
+      return {
+        success: false,
+        message: "Nessun refresh token disponibile",
+      };
+    }
+
+    // Esegui la richiesta di refresh
+    const response = await axios.post("/refresh", {
+      refresh_token: refreshToken,
     });
 
     // Estrai i dati dalla risposta
@@ -35,179 +300,13 @@ async function login(username: any, password: any) {
       : null;
 
     // Aggiorna i dati dell'utente
-    writeData({
+    await updateAuthData({
       bearerToken: bearer_token,
-      refreshToken: refresh_token,
+      refreshToken: refresh_token || refreshToken, // Mantieni il vecchio refresh token se non ne viene fornito uno nuovo
       loginTime: currentTime.format(),
       bearerDuration: bearerDuration,
       refreshDuration: refreshDuration,
     });
-
-    return {
-      success: true,
-      bearerToken: bearer_token,
-      refreshToken: refresh_token,
-      tokenExpiration: tokenExpiration?.format(),
-      refreshTokenExpiration: refreshTokenExpiration?.format(),
-      message: "Login effettuato con successo",
-    };
-  } catch (error: any) {
-    console.error("Errore durante il login:", error);
-    return {
-      success: false,
-      message: error.response?.data?.message || "Errore durante il login",
-      error: error,
-    };
-  }
-}
-
-/**
- * Checks if the authentication tokens have expired based on their duration and login time.
- *
- * @param {Object} params - Parameters object
- * @param {string|null} params.loginTime - The time when the login occurred (format that dayjs can parse)
- * @param {number|string|null} params.bearerDuration - The duration of the bearer token in seconds
- * @param {number|string|null} params.refreshDuration - The duration of the refresh token in seconds
- * @returns {Object} An object with the following properties:
- *   @property {boolean} isAuthenticated - True if the access token has not expired.
- *   @property {boolean} canRefresh - True if the refresh token has not expired.
- *   @property {boolean} tokenExpired - True if the access token is expired.
- *   @property {boolean} refreshTokenExpired - True if the refresh token is expired.
- */
-function check_login(params: {
-  loginTime: string | null;
-  bearerDuration: number | string | null;
-  refreshDuration: number | string | null;
-}) {
-  const { loginTime, bearerDuration, refreshDuration } = params;
-
-  // Verifica se i parametri necessari sono presenti
-  if (!loginTime) {
-    return {
-      isAuthenticated: false,
-      canRefresh: false,
-      tokenExpired: true,
-      refreshTokenExpired: true,
-    };
-  }
-
-  // Converti loginTime in oggetto dayjs
-  const loginTimeObj = dayjs(loginTime);
-  const currentTime = dayjs();
-
-  // Calcola le date di scadenza basate sulla durata
-  const tokenExpiration = bearerDuration
-    ? loginTimeObj.add(
-        typeof bearerDuration === "string"
-          ? parseInt(bearerDuration)
-          : bearerDuration,
-        "second"
-      )
-    : null;
-
-  const refreshTokenExpiration = refreshDuration
-    ? loginTimeObj.add(
-        typeof refreshDuration === "string"
-          ? parseInt(refreshDuration)
-          : refreshDuration,
-        "second"
-      )
-    : null;
-
-  // Controlla se i token sono scaduti
-  const isTokenExpired = tokenExpiration
-    ? currentTime.isAfter(tokenExpiration)
-    : true;
-
-  const isRefreshTokenExpired = refreshTokenExpiration
-    ? currentTime.isAfter(refreshTokenExpiration)
-    : true;
-
-  // Aggiorna il risultato con lo stato dei token
-  return {
-    isAuthenticated: !isTokenExpired,
-    canRefresh: !isRefreshTokenExpired,
-    tokenExpired: isTokenExpired,
-    refreshTokenExpired: isRefreshTokenExpired,
-  };
-}
-
-/**
- * Rinnova il token di accesso utilizzando il refresh token
- *
- * @param {Object} requestData - L'oggetto requestData che contiene i dati dell'utente
- * @returns {Promise<Object>} - Un oggetto che contiene lo stato dell'operazione e i nuovi token
- */
-async function refreshToken(requestData: {
-  user: {
-    email: any;
-    bearerToken: any;
-    refreshToken: any;
-    loginTime: string;
-    bearerDuration: any;
-    refreshDuration: any;
-    username: any; // inutile (per fasre combaciare requestData)
-    password: any; // inutile
-  };
-  tokenExpiration?: string | null;
-  refreshTokenExpiration?: string | null;
-}) {
-  try {
-    // Verifica se è disponibile un refresh token
-    if (!requestData.user.refreshToken) {
-      return {
-        success: false,
-        message: "Nessun refresh token disponibile",
-      };
-    }
-
-    // Esegui la richiesta di refresh
-    const response = await axios.post("/refresh", {
-      refresh_token: requestData.user.refreshToken,
-    });
-
-    // Estrai i dati dalla risposta
-    const { bearer_token, refresh_token, bearerDuration, refreshDuration } =
-      response.data;
-
-    // Calcola le date di scadenza
-    const currentTime = dayjs();
-    const tokenExpiration = bearerDuration
-      ? currentTime.add(
-          typeof bearerDuration === "string"
-            ? parseInt(bearerDuration)
-            : bearerDuration,
-          "second"
-        )
-      : null;
-    const refreshTokenExpiration = refreshDuration
-      ? currentTime.add(
-          typeof refreshDuration === "string"
-            ? parseInt(refreshDuration)
-            : refreshDuration,
-          "second"
-        )
-      : null;
-
-    // Aggiorna i dati dell'utente
-    requestData.user.bearerToken = bearer_token;
-    requestData.user.refreshToken =
-      refresh_token || requestData.user.refreshToken; // Mantieni il vecchio refresh token se non ne viene fornito uno nuovo
-    requestData.user.loginTime = currentTime.format();
-    requestData.user.bearerDuration = bearerDuration;
-    requestData.user.refreshDuration = refreshDuration;
-
-    if (requestData.tokenExpiration !== undefined) {
-      requestData.tokenExpiration = tokenExpiration
-        ? tokenExpiration.format()
-        : null;
-    }
-
-    if (requestData.refreshTokenExpiration !== undefined) {
-      requestData.refreshTokenExpiration = refreshTokenExpiration
-        ? refreshTokenExpiration.format()
-        : null;
-    }
 
     return {
       success: true,
@@ -228,22 +327,51 @@ async function refreshToken(requestData: {
   }
 }
 
-// function to write the information in the file requestData.json
-// write only data canged
-function writeData(userDataCanged: any) {
-  const fs = require("fs");
-  const path = require("path");
-  const filePath = path.join(__dirname, "../config/requestData.json");
-  const data = require(filePath);
-
-  for (const key in userDataCanged) {
-    if (userDataCanged[key] !== undefined) {
-      data.user[key] = userDataCanged[key];
+/**
+ * Carica tutti i dati salvati da AsyncStorage
+ */
+async function loadStoredData() {
+  try {
+    // Caricare i dati di configurazione di base
+    const baseUrl = await AsyncStorage.getItem(STORAGE_KEYS.BASE_URL);
+    if (baseUrl) {
+      axios.defaults.baseURL = baseUrl;
     }
-  }
 
-  fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+    // Verificare se ci sono dati di autenticazione salvati
+    const userData = await getUserData();
+    return userData !== null;
+  } catch (error) {
+    console.error("Errore nel caricamento dei dati:", error);
+    return false;
+  }
+}
+
+/**
+ * Esegue il logout dell'utente rimuovendo tutti i dati di autenticazione
+ */
+async function logout() {
+  try {
+    await AsyncStorage.removeItem(STORAGE_KEYS.BEARER_TOKEN);
+    await AsyncStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+    await AsyncStorage.removeItem(STORAGE_KEYS.LOGIN_TIME);
+    await AsyncStorage.removeItem(STORAGE_KEYS.BEARER_DURATION);
+    await AsyncStorage.removeItem(STORAGE_KEYS.REFRESH_DURATION);
+    await AsyncStorage.removeItem(STORAGE_KEYS.USER_DATA);
+
+    return { success: true, message: "Logout effettuato con successo" };
+  } catch (error) {
+    console.error("Errore durante il logout:", error);
+    return { success: false, message: "Errore durante il logout" };
+  }
 }
 
 // Esporta le funzioni
-export { login, check_login, refreshToken };
+export {
+  login,
+  check_login,
+  refreshToken,
+  loadStoredData,
+  logout,
+  initializeAuth,
+};

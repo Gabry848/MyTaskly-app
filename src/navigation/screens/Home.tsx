@@ -11,7 +11,8 @@ import Section from "../../../components/Section";
 import AddTask from "../../../components/AddTaskButton";
 import Badge from "../../../components/Badge"; // nuovo import
 import { useNavigation } from "@react-navigation/native"; // nuovo import
-//import data from "../../../data/data.json";
+import * as authService from "../../services/authService";
+
 
 type DataType = {
   macchina: {
@@ -160,8 +161,8 @@ export function Home() {
           });
         }}
       />
-      <TouchableOpacity onPress={() => navigation.navigate("Register")}>
-        <Text>Settings</Text>
+      <TouchableOpacity onPress={() => authService.logout()}>
+        <Text>Logout</Text>
       </TouchableOpacity>
     </View>
   );

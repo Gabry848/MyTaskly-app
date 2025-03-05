@@ -40,7 +40,9 @@ const Section: React.FC<SectionProps> = ({ category, image, lista }) => {
         {/*//TODO: add an automate counter*/}
       </View>
 
-      <View style={styles.controlsContainer}>add task</View>
+      <View style={styles.controlsContainer}>
+        <Text>add task</Text>
+      </View>
     </TouchableOpacity>
   );
 };

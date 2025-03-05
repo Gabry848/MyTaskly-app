@@ -12,7 +12,7 @@ function getSections() {
   let token = requestData.user.bearerToken;
 
   return axios.get(
-    requestData.httpRequest.basicIP + requestData.httpRequest.sections,
+    requestData.httpRequest.BaseURL + requestData.httpRequest.sections,
     {
       headers: {
         Authorization: `Bearer ${token}`,

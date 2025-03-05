@@ -8,17 +8,31 @@ import {
   Dimensions,
 } from "react-native";
 import { FontAwesome } from "@expo/vector-icons";
-import { login } from "../../services/authService";
+import * as authService from "../../services/authService";
+import { useNavigation } from "@react-navigation/native"; 
+
 
 const { width } = Dimensions.get("window");
 
 const LoginScreen = () => {
-  // login function use authServicec to login
-  function handleLogin() {
-    console.log("Login");
+  const navigation = useNavigation();
+  
+  const [username, setUsername] = React.useState("");
+  const [password, setPassword] = React.useState("");
+  const [showPassword, setShowPassword] = React.useState(false); // Stato per mostrare/nascondere password
 
-    login("Gabry848", "password123");
+
+  // login function use authServicec to login
+  async function handleLogin() {
+
+    // faccio login con username e password presi dai campi di input
+    await authService.login(username, password);
   }
+
+  // Funzione per invertire lo stato di visibilità della password
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
 
   return (
     <View style={styles.container}>
@@ -26,6 +40,8 @@ const LoginScreen = () => {
       <View style={[styles.inputContainer, { width: width * 0.9 }]}>
         <FontAwesome name="user" size={20} color="white" style={styles.icon} />
         <TextInput
+          value={username}
+          onChangeText={setUsername}
           placeholder="Username"
           placeholderTextColor="white"
           style={[styles.input, { width: width * 0.75 }]}
@@ -36,13 +52,24 @@ const LoginScreen = () => {
         <TextInput
           placeholder="Password"
           placeholderTextColor="white"
-          style={[styles.input, { width: width * 0.75 }]}
-          secureTextEntry
+          style={[styles.input, { width: width * 0.65 }]} // Ridotto per fare spazio all'icona
+          secureTextEntry={!showPassword}
+          value={password}
+          onChangeText={setPassword}
         />
+        <TouchableOpacity onPress={togglePasswordVisibility} style={styles.eyeIcon}>
+          <FontAwesome 
+            name={showPassword ? "eye" : "eye-slash"} 
+            size={20} 
+            color="white" 
+          />
+        </TouchableOpacity>
       </View>
       <TouchableOpacity
         style={[styles.loginButton, { width: width * 0.9 }]}
-        onPress={() => console.log("Login")}
+        onPress={() => {
+          handleLogin();
+        }}
       >
         <Text style={styles.loginText}>Login Now</Text>
       </TouchableOpacity>
@@ -55,7 +82,9 @@ const LoginScreen = () => {
         </TouchableOpacity>
       </View>
       <Text style={styles.signUpText}>Not a member?</Text>
-      <TouchableOpacity style={styles.signUpButton}>
+      <TouchableOpacity style={styles.signUpButton} onPress={() => {
+        navigation.navigate("Register");
+      }}>
         <Text style={styles.signUpButtonText}>Create account</Text>
       </TouchableOpacity>
     </View>
@@ -93,6 +122,9 @@ const styles = StyleSheet.create({
     flex: 1,
     color: "white",
     height: 50,
+  },
+  eyeIcon: {
+    padding: 5,
   },
   loginButton: {
     backgroundColor: "#FF8A80",
