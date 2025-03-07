@@ -96,6 +96,10 @@ async function updateAuthData(data: any) {
  */
 async function login(username: any, password: any) {
   try {
+    console.log("=== LOGIN UTENTE ===");
+    console.log(`Tentativo di login per: ${username}`);
+    console.log("password:", password)
+    
     // Esegui la richiesta di login e gestisci gli errori
     const response = await axios.post(
       "/login", // URL completo

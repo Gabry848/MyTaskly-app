@@ -30,10 +30,8 @@ const LoginScreen = () => {
     onFinish: () => {},
   });
 
-
   // login function use authServicec to login
   async function handleLogin() {
-
     // faccio login con username e password presi dai campi di input
     const login_data = await authService.login(username, password);
 
@@ -42,14 +40,19 @@ const LoginScreen = () => {
         isVisible: true,
         message: "Login effettuato con successo",
         isSuccess: true,
-        onFinish: () => {navigation.navigate("Profile", { user: username });},
+        onFinish: () => {
+          navigation.navigate("Profile", { user: username });
+          setNotification({ ...notification, isVisible: false });
+        },
       });
     } else {
       setNotification({
         isVisible: true,
         message: "Username o password errati",
         isSuccess: false,
-        onFinish: () => {},
+        onFinish: () => {
+          setNotification({ ...notification, isVisible: false });
+        },
       });
     }
   }
@@ -82,7 +85,7 @@ const LoginScreen = () => {
         <TextInput
           placeholder="Password"
           placeholderTextColor="white"
-          style={[styles.input, { width: width * 0.65 }]} // Ridotto per fare spazio all'icona
+          style={[styles.input, { width: width * 0.65 }]}
           secureTextEntry={!showPassword}
           value={password}
           onChangeText={setPassword}
