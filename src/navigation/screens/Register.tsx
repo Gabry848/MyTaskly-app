@@ -8,10 +8,56 @@ import {
   Dimensions,
 } from "react-native";
 import { FontAwesome } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
+import * as authService from "../../services/authService";
+import { NotificationSnackbar } from "../../../components/NotificationSnackbar";
 
 const { width } = Dimensions.get("window");
 
 const RegisterScreen = () => {
+  const [username, setUsername] = React.useState("");
+  const [email, setEmail] = React.useState("");
+  const [password, setPassword] = React.useState("");
+  const [confirmPassword, setConfirmPassword] = React.useState("");
+  const [notification, setNotification] = React.useState({
+    isVisible: false,
+    message: "",
+    isSuccess: true,
+    onFinish: () => {},
+  });
+  const navigation = useNavigation();
+
+  async function handleRegister() {
+    if (password !== confirmPassword) {
+      setNotification({
+        isVisible: true,
+        message: "Passwords do not match",
+        isSuccess: false,
+        onFinish: () => setNotification({ ...notification, isVisible: false }),
+      });
+      return;
+    }
+    const result = await authService.register(username, email, password);
+    if (result.success) {
+      setNotification({
+        isVisible: true,
+        message: "Registrazione effettuata con successo",
+        isSuccess: true,
+        onFinish: () => {
+          setNotification({ ...notification, isVisible: false });
+          navigation.navigate("Login");
+        },
+      });
+    } else {
+      setNotification({
+        isVisible: true,
+        message: result.message || "Errore durante la registrazione",
+        isSuccess: false,
+        onFinish: () => setNotification({ ...notification, isVisible: false }),
+      });
+    }
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.avatar} />
@@ -21,6 +67,8 @@ const RegisterScreen = () => {
           placeholder="Username"
           placeholderTextColor="white"
           style={[styles.input, { width: width * 0.75 }]}
+          value={username}
+          onChangeText={setUsername}
         />
       </View>
       <View style={[styles.inputContainer, { width: width * 0.9 }]}>
@@ -35,6 +83,8 @@ const RegisterScreen = () => {
           placeholderTextColor="white"
           style={[styles.input, { width: width * 0.75 }]}
           keyboardType="email-address"
+          value={email}
+          onChangeText={setEmail}
         />
       </View>
       <View style={[styles.inputContainer, { width: width * 0.9 }]}>
@@ -44,6 +94,8 @@ const RegisterScreen = () => {
           placeholderTextColor="white"
           style={[styles.input, { width: width * 0.75 }]}
           secureTextEntry
+          value={password}
+          onChangeText={setPassword}
         />
       </View>
       <View style={[styles.inputContainer, { width: width * 0.9 }]}>
@@ -53,15 +105,26 @@ const RegisterScreen = () => {
           placeholderTextColor="white"
           style={[styles.input, { width: width * 0.75 }]}
           secureTextEntry
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
         />
       </View>
-      <TouchableOpacity style={[styles.registerButton, { width: width * 0.9 }]}>
+      <TouchableOpacity
+        style={[styles.registerButton, { width: width * 0.9 }]}
+        onPress={handleRegister}
+      >
         <Text style={styles.registerText}>Register Now</Text>
       </TouchableOpacity>
       <Text style={styles.loginText}>Already have an account?</Text>
       <TouchableOpacity style={styles.loginButton}>
         <Text style={styles.loginButtonText}>Login</Text>
       </TouchableOpacity>
+      <NotificationSnackbar
+        isVisible={notification.isVisible}
+        message={notification.message}
+        isSuccess={notification.isSuccess}
+        onFinish={notification.onFinish}
+      />
     </View>
   );
 };

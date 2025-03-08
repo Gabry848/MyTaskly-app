@@ -10,16 +10,15 @@ import {
 } from "react-native";
 import { FontAwesome } from "@expo/vector-icons";
 import * as authService from "../../services/authService";
-import { useNavigation } from "@react-navigation/native"; 
+import { useNavigation } from "@react-navigation/native";
 
 import { NotificationSnackbar } from "../../../components/NotificationSnackbar";
-
 
 const { width } = Dimensions.get("window");
 
 const LoginScreen = () => {
   const navigation = useNavigation();
-  
+
   const [username, setUsername] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [showPassword, setShowPassword] = React.useState(false); // Stato per mostrare/nascondere password
@@ -32,23 +31,54 @@ const LoginScreen = () => {
 
   // login function use authServicec to login
   async function handleLogin() {
-    // faccio login con username e password presi dai campi di input
-    const login_data = await authService.login(username, password);
+    try {
+      // faccio login con username e password presi dai campi di input
+      const login_data = await authService.login(username, password);
 
-    if (login_data.success) {
+      // Modifica tutte le chiamate setNotification con:
+      if (login_data.success) {
+        setNotification({
+          isVisible: true,
+          message: "Login effettuato con successo",
+          isSuccess: true,
+          onFinish: () => {
+            navigation.navigate("Profile", { user: username });
+            // Aggiornamento funzionale con reset di onFinish
+            setNotification((prev) => ({
+              ...prev,
+              isVisible: false,
+              onFinish: () => {}, // Reset a funzione vuota
+            }));
+          },
+        });
+      } else {
+        setNotification({
+          isVisible: true,
+          message: "Username o password errati",
+          isSuccess: false,
+          onFinish: () => {
+            // Aggiornamento funzionale con reset
+            setNotification((prev) => ({
+              ...prev,
+              isVisible: false,
+              onFinish: () => {},
+            }));
+          },
+        });
+      }
+    } catch (error) {
+      console.error("Errore durante il login:", error);
+      let errorMessage = "Errore durante il login. Riprova più tardi.";
+      if (
+        error instanceof Error &&
+        (error as any).response &&
+        (error as any).response.status === 401
+      ) {
+        errorMessage = "Credenziali non valide. Riprova.";
+      }
       setNotification({
         isVisible: true,
-        message: "Login effettuato con successo",
-        isSuccess: true,
-        onFinish: () => {
-          navigation.navigate("Profile", { user: username });
-          setNotification({ ...notification, isVisible: false });
-        },
-      });
-    } else {
-      setNotification({
-        isVisible: true,
-        message: "Username o password errati",
+        message: errorMessage,
         isSuccess: false,
         onFinish: () => {
           setNotification({ ...notification, isVisible: false });
@@ -90,11 +120,14 @@ const LoginScreen = () => {
           value={password}
           onChangeText={setPassword}
         />
-        <TouchableOpacity onPress={togglePasswordVisibility} style={styles.eyeIcon}>
-          <FontAwesome 
-            name={showPassword ? "eye" : "eye-slash"} 
-            size={20} 
-            color="white" 
+        <TouchableOpacity
+          onPress={togglePasswordVisibility}
+          style={styles.eyeIcon}
+        >
+          <FontAwesome
+            name={showPassword ? "eye" : "eye-slash"}
+            size={20}
+            color="white"
           />
         </TouchableOpacity>
       </View>
@@ -115,9 +148,12 @@ const LoginScreen = () => {
         </TouchableOpacity>
       </View>
       <Text style={styles.signUpText}>Not a member?</Text>
-      <TouchableOpacity style={styles.signUpButton} onPress={() => {
-        navigation.navigate("Register");
-      }}>
+      <TouchableOpacity
+        style={styles.signUpButton}
+        onPress={() => {
+          navigation.navigate("Register");
+        }}
+      >
         <Text style={styles.signUpButtonText}>Create account</Text>
       </TouchableOpacity>
       <NotificationSnackbar

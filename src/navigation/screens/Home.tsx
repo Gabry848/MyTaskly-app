@@ -164,6 +164,9 @@ export function Home() {
       <TouchableOpacity onPress={() => authService.logout()}>
         <Text>Logout</Text>
       </TouchableOpacity>
+      <TouchableOpacity onPress={() => console.log(authService.refreshToken())} style={styles.logoutButton}>
+        <Text>refresh</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -217,5 +220,11 @@ const styles = StyleSheet.create({
   },
   badgeStyle: {
     marginLeft: 10, // Spazio tra il testo e il badge
+  },
+  logoutButton: {
+    marginTop: 20,
+    padding: 10,
+    backgroundColor: 'lightblue',
+    borderRadius: 5,
   },
 });
