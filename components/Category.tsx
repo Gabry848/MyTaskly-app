@@ -16,26 +16,28 @@ type CardListScreenNavigationProp = StackNavigationProp<
   "CardList"
 >;
 
-interface ExtendedCardListProps extends CardListProps {
-  categoryName: string;
+
+interface CategoryProps {
+  title: string;
+  imageUrl?: string;
 }
 
-const Section: React.FC<SectionProps> = ({ category, image, lista }) => {
+const Category: React.FC<CategoryProps> = ({ title, imageUrl }) => {
   const navigation = useNavigation<CardListScreenNavigationProp>();
 
   return (
     <TouchableOpacity
       style={styles.view}
       onPress={() => {
-        navigation.navigate("CardList", { categoryName: category, lista: lista,  });
+        console.log("Navigating to CardList");
       }}
     >
       <View style={styles.imageContainer}>
-        <Image source={{ uri: image }} style={styles.image} />
+        {imageUrl && <Image source={{ uri: imageUrl }} style={styles.image} />}
       </View>
 
       <View style={styles.categoryContainer}>
-        <Text style={styles.add}>{category}</Text>
+        <Text style={styles.add}>{title}</Text>
         <Text style={styles.title}>✅ 10 cose da fare</Text>
         {/*//TODO: add an automate counter*/}
       </View>
@@ -134,4 +136,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Section;
+export default Category;

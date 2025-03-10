@@ -1,17 +1,7 @@
 import dayjs from "dayjs";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
-// Chiavi di AsyncStorage
-const STORAGE_KEYS = {
-  BASE_URL: "config.baseUrl",
-  USER_DATA: "auth.userData",
-  BEARER_TOKEN: "auth.bearerToken",
-  REFRESH_TOKEN: "auth.refreshToken",
-  LOGIN_TIME: "auth.loginTime",
-  BEARER_DURATION: "auth.bearerDuration",
-  REFRESH_DURATION: "auth.refreshDuration",
-};
+import { STORAGE_KEYS, DEFAULT_BASE_URL, API_ENDPOINTS } from "../constants/authConstants";
 
 // Inizializzazione dell'app
 async function initializeAuth() {
@@ -19,9 +9,8 @@ async function initializeAuth() {
   const baseUrl = await AsyncStorage.getItem(STORAGE_KEYS.BASE_URL);
 
   // Valore predefinito se non trovato
-  const defaultBaseUrl = "https://taskly-production.up.railway.app"; // Modifica con il tuo URL predefinito
-  await AsyncStorage.setItem(STORAGE_KEYS.BASE_URL, defaultBaseUrl);
-  axios.defaults.baseURL = defaultBaseUrl;
+  await AsyncStorage.setItem(STORAGE_KEYS.BASE_URL, DEFAULT_BASE_URL);
+  axios.defaults.baseURL = DEFAULT_BASE_URL;
 }
 
 // Esegui l'inizializzazione
@@ -98,7 +87,7 @@ async function login(username: any, password: any) {
 
     // Esegui la richiesta di login e gestisci gli errori
     const response = await axios.post(
-      "/login", // URL completo
+      API_ENDPOINTS.SIGNIN, // URL endpoint dalla costante
       {
         username: username,
         password: password,
@@ -169,9 +158,9 @@ async function register(username: string, email: string, password: string) {
 
     // Esegui la richiesta di registrazione
     const response = await axios.post(
-      "/register",
+      API_ENDPOINTS.SIGNUP,
       {
-        nome: username,
+        name: username,
         email: email,
         password: password,
       },
@@ -185,10 +174,10 @@ async function register(username: string, email: string, password: string) {
     console.log("Risposta dal server:", response.status);
 
     // Estrai i dati dalla risposta
-    const { utente_id } = response.data;
+    const { user_id } = response.data;
 
     console.log("✅ Registrazione completata con successo");
-    console.log("ID utente registrato:", utente_id);
+    console.log("ID utente registrato:", user_id);
     console.log("===============================");
 
     // Salva dati limitati dell'utente
@@ -200,7 +189,7 @@ async function register(username: string, email: string, password: string) {
 
     return {
       success: true,
-      utente_id: utente_id,
+      utente_id: user_id,
       message:
         "Registrazione effettuata con successo. Effettua il login per continuare.",
     };
@@ -367,7 +356,7 @@ async function refreshToken() {
 
     // Esegui la richiesta di refresh
     const response = await axios.post(
-      "/refresh",
+      API_ENDPOINTS.REFRESH,
       {
         refresh_token: refreshToken,
       },
@@ -455,6 +444,31 @@ async function logout() {
   } catch (error) {
     console.error("Errore durante il logout:", error);
     return { success: false, message: "Errore durante il logout" };
+  }
+}
+
+export async function getValidToken(): Promise<string | null> {
+  try {
+    const loginStatus = await check_login();
+    if (!loginStatus.isAuthenticated) {
+      // Token scaduto, prova a fare il refresh
+      const refreshResult = await refreshToken();
+      if (!refreshResult.success || !refreshResult.bearerToken) {
+        console.error(refreshResult.message || "Impossibile rinnovare il token");
+        return null;
+      }
+      return refreshResult.bearerToken;
+    }
+    // Token ancora valido, recupera quello esistente
+    const bearerToken = await AsyncStorage.getItem(STORAGE_KEYS.BEARER_TOKEN);
+    if (!bearerToken) {
+      console.error("Nessun bearer token disponibile");
+      return null;
+    }
+    return bearerToken;
+  } catch (error) {
+    console.error("Errore nel recupero del token valido:", error);
+    return null;
   }
 }
 

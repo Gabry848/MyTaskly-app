@@ -1,4 +1,4 @@
-import React, { Fragment } from "react";
+import React, { Fragment, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -7,141 +7,37 @@ import {
   ScrollView,
   TouchableOpacity,
 } from "react-native";
-import Section from "../../../components/Section";
+
 import AddTask from "../../../components/AddTaskButton";
 import Badge from "../../../components/Badge"; // nuovo import
 import { useNavigation } from "@react-navigation/native"; // nuovo import
 import * as authService from "../../services/authService";
-
-
-type DataType = {
-  macchina: {
-    title: string;
-    image: string;
-    descrizione: string;
-    importanza: number;
-    scadenza: string;
-  }[];
-  casa: {
-    title: string;
-    image: string;
-    descrizione: string;
-    importanza: number;
-    scadenza: string;
-  }[];
-  categoria3: {
-    title: string;
-    image: string;
-    descrizione: string;
-    importanza: number;
-    scadenza: string;
-  }[];
-};
-
-const data = {
-  macchina: [
-    {
-      title: "Task 1",
-      image: "https://picsum.photos/200/300",
-      descrizione: "Descrizione 100 🙃🙃",
-      importanza: 3,
-      scadenza: "2021-08-01",
-    },
-    {
-      title: "Task 2",
-      image: "https://picsum.photos/200/300",
-      descrizione: "Descrizione 2",
-      importanza: 2,
-      scadenza: "2021-08-02",
-    },
-    {
-      title: "Task 3",
-      image: "https://picsum.photos/200/300",
-      descrizione: "Descrizione 3",
-      importanza: 1,
-      scadenza: "2021-08-03",
-    },
-  ],
-  casa: [
-    {
-      title: "Bollo macchina",
-      image: "https://picsum.photos/200/300",
-      descrizione: "pagare il bollo della macchina",
-      importanza: 3,
-      scadenza: "2021-08-04",
-    },
-    {
-      title: "Task 4",
-      image: "https://picsum.photos/200/300",
-      descrizione: "Descrizione 4",
-      importanza: 3,
-      scadenza: "2021-08-04",
-    },
-    {
-      title: "Task 6",
-      image: "https://picsum.photos/200/300",
-      descrizione: "Descrizione 6",
-      importanza: 1,
-      scadenza: "2021-08-06",
-    },
-  ],
-  categoria3: [
-    {
-      title: "Task 7",
-      image: "https://picsum.photos/200/300",
-      descrizione: "Descrizione 7",
-      importanza: 3,
-      scadenza: "2021-08-07",
-    },
-    {
-      title: "Task 8",
-      image: "https://picsum.photos/200/300",
-      descrizione: "Descrizione 8",
-      importanza: 2,
-      scadenza: "2021-08-08",
-    },
-    {
-      title: "Task 9",
-      image: "https://picsum.photos/200/300",
-      descrizione: "Descrizione 9",
-      importanza: 1,
-      scadenza: "2021-08-09",
-    },
-  ],
-};
+import AddCategoryButton from "../../../components/AddCategoryButton"; // nuovo import
+import CategoryList from "../../../components/CategoryList"; // nuovo import
 
 export function Home() {
   const navigation = useNavigation();
 
   React.useLayoutEffect(() => {
     navigation.setOptions({
-      title: 'Home',
-      headerRight: () => (
-        <Badge letter="U"/>
-      ),
+      title: "Home",
+      headerRight: () => <Badge letter="U" />,
     });
   }, [navigation]);
 
   return (
     <View style={{ flex: 1 }}>
+      <View style={styles.imageContainer}>
+        <Text style={styles.title}>Aggiungi una nuova attività</Text>
+        <Image
+          source={{
+            uri: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJrZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgY2xhc3M9Imx1Y2lkZSBsdWNpZGUtbGlzdC10b2RvIj48cmVjdCB4PSIzIiB5PSI1IiB3aWR0aD0iNiIgaGVpZ2h0PSI2IiByeD0iMSIvPjxwYXRoIGQ9Im0zIDE3IDIgMiA0LTRoIi8+PHBhdGggZD0iTTEzIDZoOCIvPjxwYXRoIGQ9Ik0xMyAxMmg4Ii8+PHBhdGggZD0iTTEzIDE4aDgiLz48L3N2Zz4=",
+          }}
+          style={styles.image}
+        />
+      </View>
       <ScrollView style={styles.container}>
-        <View style={styles.imageContainer}>
-          <Text style={styles.title}>Aggiungi una nuova attività</Text>
-          <Image
-            source={{
-              uri: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWxpc3QtdG9kbyI+PHJlY3QgeD0iMyIgeT0iNSIgd2lkdGg9IjYiIGhlaWdodD0iNiIgcng9IjEiLz48cGF0aCBkPSJtMyAxNyAyIDIgNC00Ii8+PHBhdGggZD0iTTEzIDZoOCIvPjxwYXRoIGQ9Ik0xMyAxMmg4Ii8+PHBhdGggZD0iTTEzIDE4aDgiLz48L3N2Zz4=",
-            }}
-            style={styles.image}
-          />
-        </View>
-        {Object.keys(data).map((key) => (
-          <Section
-            key={key}
-            lista={data[key as keyof DataType]}
-            image="https://picsum.photos/200/300"
-            category={key}
-          />
-        ))}
+        <CategoryList />
       </ScrollView>
       <AddTask
         onSave={(
@@ -151,20 +47,16 @@ export function Home() {
           priority: number
         ) => {
           console.log(title, description, dueDate, priority);
-          console.log(Object.isFrozen(data.macchina));
-          data.macchina.push({
-            title: title || "Default Title",
-            image: "https://picsum.photos/200/300",
-            descrizione: description || "Default Description",
-            importanza: priority || 1,
-            scadenza: dueDate || "2021-08-01",
-          });
         }}
       />
+      <AddCategoryButton /> {/* Aggiungi il nuovo componente qui */}
       <TouchableOpacity onPress={() => authService.logout()}>
         <Text>Logout</Text>
       </TouchableOpacity>
-      <TouchableOpacity onPress={() => console.log(authService.refreshToken())} style={styles.logoutButton}>
+      <TouchableOpacity
+        onPress={() => console.log(authService.refreshToken())}
+        style={styles.logoutButton}
+      >
         <Text>refresh</Text>
       </TouchableOpacity>
     </View>
@@ -224,7 +116,7 @@ const styles = StyleSheet.create({
   logoutButton: {
     marginTop: 20,
     padding: 10,
-    backgroundColor: 'lightblue',
+    backgroundColor: "lightblue",
     borderRadius: 5,
   },
 });

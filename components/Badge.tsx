@@ -1,7 +1,6 @@
 import React from "react";
 import { Text, TouchableOpacity, StyleSheet, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import requestData from "../src/config/requestData.json";
 
 
 import { check_login, refreshToken } from "../src/services/authService";

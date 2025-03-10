@@ -39,5 +39,6 @@
     "@types/react": "~18.3.12",
     "typescript": "^5.7.2"
   },
-  "private": true
+  "private": true,
+  "proxy": "https://taskly-production.up.railway.app"
 }
