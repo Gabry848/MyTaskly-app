@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, Image, TouchableOpacity } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 
-import AddTaskButton from "./AddTaskButton";
 
 interface SectionProps {
   category: string;
@@ -11,10 +10,6 @@ interface SectionProps {
   lista: Lista[];
 }
 
-type CardListScreenNavigationProp = StackNavigationProp<
-  RootStackParamList,
-  "CardList"
->;
 
 
 interface CategoryProps {
@@ -22,14 +17,14 @@ interface CategoryProps {
   imageUrl?: string;
 }
 
-const Category: React.FC<CategoryProps> = ({ title, imageUrl }) => {
-  const navigation = useNavigation<CardListScreenNavigationProp>();
-
+export function Category({ title, imageUrl }: CategoryProps) {
+  const navigation = useNavigation()
   return (
     <TouchableOpacity
       style={styles.view}
       onPress={() => {
-        console.log("Navigating to CardList");
+        console.log("Navigating to TaskList");
+        navigation.navigate("TaskList", { category_name: title });
       }}
     >
       <View style={styles.imageContainer}>

@@ -16,7 +16,11 @@ import Animated, {
 } from 'react-native-reanimated';
 import { addCategory } from '../src/services/taskService';
 
-const AddCategoryButton: React.FC = () => {
+interface AddCategoryButtonProps {
+  onCategoryAdded: () => void; // Aggiungi la prop onCategoryAdded
+}
+
+const AddCategoryButton: React.FC<AddCategoryButtonProps> = ({ onCategoryAdded }) => {
   const [formVisible, setFormVisible] = useState(false);
   const animationValue = useSharedValue(0);
   const [name, setName] = useState('');
@@ -33,9 +37,14 @@ const AddCategoryButton: React.FC = () => {
   };
 
   const handleSave = async () => {
+    if (name.trim() === '' || description.trim() === '') {
+      console.error('Nome e descrizione non possono essere vuoti o contenere solo spazi.');
+      return;
+    }
     try {
       await addCategory({ name, description });
       handleCancel(); // Chiudi il form dopo il salvataggio
+      onCategoryAdded(); // Chiama la funzione onCategoryAdded
     } catch (error) {
       console.error('Errore nell\'aggiunta della categoria:', error);
     }

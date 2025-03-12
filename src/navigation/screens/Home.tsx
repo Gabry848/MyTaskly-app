@@ -1,4 +1,4 @@
-import React, { Fragment, useEffect, useState } from "react";
+import React, { useRef } from "react";
 import {
   View,
   Text,
@@ -17,6 +17,7 @@ import CategoryList from "../../../components/CategoryList"; // nuovo import
 
 export function Home() {
   const navigation = useNavigation();
+  const categoryListRef = useRef<{ reloadCategories: () => void } | null>(null);
 
   React.useLayoutEffect(() => {
     navigation.setOptions({
@@ -24,6 +25,12 @@ export function Home() {
       headerRight: () => <Badge letter="U" />,
     });
   }, [navigation]);
+
+  const handleCategoryAdded = () => {
+    if (categoryListRef.current) {
+      categoryListRef.current.reloadCategories();
+    }
+  };
 
   return (
     <View style={{ flex: 1 }}>
@@ -37,9 +44,9 @@ export function Home() {
         />
       </View>
       <ScrollView style={styles.container}>
-        <CategoryList />
+        <CategoryList ref={categoryListRef} />
       </ScrollView>
-      <AddTask
+      {/* <AddTask
         onSave={(
           title: string,
           description: string,
@@ -48,17 +55,8 @@ export function Home() {
         ) => {
           console.log(title, description, dueDate, priority);
         }}
-      />
-      <AddCategoryButton /> {/* Aggiungi il nuovo componente qui */}
-      <TouchableOpacity onPress={() => authService.logout()}>
-        <Text>Logout</Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        onPress={() => console.log(authService.refreshToken())}
-        style={styles.logoutButton}
-      >
-        <Text>refresh</Text>
-      </TouchableOpacity>
+      /> */}
+      <AddCategoryButton onCategoryAdded={handleCategoryAdded} /> {/* Aggiungi il nuovo componente qui */}
     </View>
   );
 }

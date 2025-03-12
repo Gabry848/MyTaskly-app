@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios from "axios";
 import { getValidToken } from "./authService";
 
 // Definizione dell'interfaccia Task
@@ -12,23 +12,34 @@ export interface Task {
   [key: string]: any; // per proprietà aggiuntive
 }
 
-// Funzione per ottenere tutti gli impegni
-export async function getTasks() {
+// Funzione per ottenere tutti gli impegni filtrandoli per categoria
+export async function getTasks(category_name?: string) {
   try {
     const token = await getValidToken();
     if (!token) {
-      console.error('Token non valido o scaduto');
       return [];
     }
-    const response = await axios.get('/tasks', {
+
+    if (category_name) {
+      // ogni spazio viene sostituito con %20
+      category_name = category_name.replace(/ /g, "%20");
+      const response = await axios.get(`/tasks/${category_name}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      return response.data;
+    }
+
+    const response = await axios.get(`/tasks/`, {
       headers: {
-        "Authorization": `Bearer ${token}`,
+        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
     });
     return response.data;
   } catch (error) {
-    console.error('Errore nel recupero degli impegni:', error);
     return [];
   }
 }
@@ -38,39 +49,46 @@ export async function addTask(task: Task) {
   try {
     const token = await getValidToken();
     if (!token) {
-      console.error('Token non valido o scaduto');
       return null;
     }
-    const response = await axios.post('/tasks', task, {
+    const response = await axios.post("/tasks", {
+      title: task.title,
+      description: task.description,
+      start_time: task.start_time,
+      end_time: task.end_time,
+      category_id: task.category_id,
+      priority: task.priority,
+      status: task.status,
+    }, {
       headers: {
         Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
     });
     return response.data;
   } catch (error) {
-    console.error('Errore nell\'aggiunta dell\'impegno:', error);
     throw error;
   }
 }
 
 // Funzione per aggiornare un impegno esistente
-export async function updateTask(taskId: string | number, updatedTask: Partial<Task>) {
+export async function updateTask(
+  taskId: string | number,
+  updatedTask: Partial<Task>
+) {
   try {
     const token = await getValidToken();
     if (!token) {
-      console.error('Token non valido o scaduto');
       return null;
     }
     const response = await axios.put(`/tasks/${taskId}`, updatedTask, {
       headers: {
         Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
     });
     return response.data;
   } catch (error) {
-    console.error('Errore nell\'aggiornamento dell\'impegno:', error);
     throw error;
   }
 }
@@ -80,7 +98,6 @@ export async function deleteTask(taskId: string | number) {
   try {
     const token = await getValidToken();
     if (!token) {
-      console.error('Token non valido o scaduto');
       return null;
     }
     const response = await axios.delete(`/tasks/${taskId}`, {
@@ -90,28 +107,28 @@ export async function deleteTask(taskId: string | number) {
     });
     return response.data;
   } catch (error) {
-    console.error('Errore nell\'eliminazione dell\'impegno:', error);
     throw error;
   }
 }
 
 // Funzione per aggiungere una nuova categoria
-export async function addCategory(category: { name: string; description?: string }) {
+export async function addCategory(category: {
+  name: string;
+  description?: string;
+}) {
   try {
     const token = await getValidToken();
     if (!token) {
-      console.error('Token non valido o scaduto');
       return null;
     }
-    const response = await axios.post('/categories', category, {
+    const response = await axios.post("/categories", category, {
       headers: {
         Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
     });
     return response.data;
   } catch (error) {
-    console.error('Errore nell\'aggiunta della categoria:', error);
     throw error;
   }
 }
@@ -121,18 +138,16 @@ export async function getCategories() {
   try {
     const token = await getValidToken();
     if (!token) {
-      console.error('Token non valido o scaduto');
       return null;
     }
-    const response = await axios.get(`/categories/`, {
+    const response = await axios.get(`/categories`, {
       headers: {
         Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
     });
     return response.data;
   } catch (error) {
-    console.error('Errore nel recupero della categoria:', error);
     throw error;
   }
 }
@@ -142,18 +157,16 @@ export async function deleteCategory(categoryName: string) {
   try {
     const token = await getValidToken();
     if (!token) {
-      console.error('Token non valido o scaduto');
       return null;
     }
     const response = await axios.delete(`/categories/${categoryName}`, {
       headers: {
         Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
     });
     return response.data;
   } catch (error) {
-    console.error('Errore nell\'eliminazione della categoria:', error);
     throw error;
   }
 }

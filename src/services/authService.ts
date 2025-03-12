@@ -81,13 +81,9 @@ async function updateAuthData(data: any) {
  */
 async function login(username: any, password: any) {
   try {
-    console.log("=== LOGIN UTENTE ===");
-    console.log(`Tentativo di login per: ${username}`);
-    console.log("password:", password);
-
     // Esegui la richiesta di login e gestisci gli errori
     const response = await axios.post(
-      API_ENDPOINTS.SIGNIN, // URL endpoint dalla costante
+      API_ENDPOINTS.SIGNIN,
       {
         username: username,
         password: password,
@@ -131,7 +127,8 @@ async function login(username: any, password: any) {
       message: "Login effettuato con successo",
     };
   } catch (error: any) {
-    console.error("Errore durante il login:", error.message); // Log dell'errore
+    console.error("Errore durante il login:", error.message); // Log dell'
+    console.error(username, password)
     if (error.response) {
       console.error("Dati della risposta di errore:", error.response.data);
     }
@@ -153,9 +150,6 @@ async function login(username: any, password: any) {
  */
 async function register(username: string, email: string, password: string) {
   try {
-    console.log("=== REGISTRAZIONE NUOVO UTENTE ===");
-    console.log(`Tentativo di registrazione per: ${username}`);
-
     // Esegui la richiesta di registrazione
     const response = await axios.post(
       API_ENDPOINTS.SIGNUP,
@@ -171,14 +165,8 @@ async function register(username: string, email: string, password: string) {
       }
     );
 
-    console.log("Risposta dal server:", response.status);
-
     // Estrai i dati dalla risposta
     const { user_id } = response.data;
-
-    console.log("✅ Registrazione completata con successo");
-    console.log("ID utente registrato:", user_id);
-    console.log("===============================");
 
     // Salva dati limitati dell'utente
     // await updateAuthData({
@@ -199,7 +187,6 @@ async function register(username: string, email: string, password: string) {
       console.error("Dettagli errore:", error.response.data);
       console.error("Status code:", error.response.status);
     }
-    console.log("===============================");
 
     return {
       success: false,
@@ -225,12 +212,6 @@ async function register(username: string, email: string, password: string) {
  */
 async function check_login() {
   try {
-    console.log("=== CONTROLLO STATO AUTENTICAZIONE ===");
-    const bearerToken = await AsyncStorage.getItem(STORAGE_KEYS.BEARER_TOKEN);
-    const refreshToken = await AsyncStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
-    console.log(`Token di accesso: ${bearerToken ? "Presente" : "Assente"}`);
-    console.log(`Refresh token: ${refreshToken ? "Presente" : "Assente"}`);
-
     const loginTime = await AsyncStorage.getItem(STORAGE_KEYS.LOGIN_TIME);
     const bearerDuration = await AsyncStorage.getItem(
       STORAGE_KEYS.BEARER_DURATION
@@ -241,7 +222,6 @@ async function check_login() {
 
     // Verifica se i parametri necessari sono presenti
     if (!loginTime) {
-      console.log("❌ Nessuna informazione di login trovata");
       return {
         isAuthenticated: false,
         canRefresh: false,
@@ -257,13 +237,8 @@ async function check_login() {
     const loginTimeObj = dayjs(loginTime);
     const currentTime = dayjs();
 
-    console.log("--- Informazioni temporali ---");
-    console.log(`Ora di login: ${loginTimeObj.format("YYYY-MM-DD HH:mm:ss")}`);
-    console.log(`Ora attuale: ${currentTime.format("YYYY-MM-DD HH:mm:ss")}`);
-
     // Calcola il tempo trascorso dal login in secondi
     const secondsSinceLogin = currentTime.diff(loginTimeObj, "second");
-    console.log(`Tempo trascorso dal login: ${secondsSinceLogin} secondi`);
 
     // Converti le durate in secondi
     const bearerDurationSeconds = bearerDuration
@@ -273,39 +248,14 @@ async function check_login() {
       ? parseInt(refreshDuration, 10)
       : 0;
 
-    console.log("--- Durata token ---");
-    console.log(`Durata token di accesso: ${bearerDurationSeconds} secondi`);
-    console.log(`Durata refresh token: ${refreshDurationSeconds} secondi`);
-
     // Calcola il tempo rimanente prima della scadenza
     const timeUntilExpiration = bearerDurationSeconds - secondsSinceLogin;
     const timeUntilRefreshExpiration =
       refreshDurationSeconds - secondsSinceLogin;
 
-    console.log("--- Tempo rimanente ---");
-    console.log(
-      `Token di accesso: ${timeUntilExpiration} secondi rimanenti (${Math.floor(
-        timeUntilExpiration / 60
-      )} minuti)`
-    );
-    console.log(
-      `Refresh token: ${timeUntilRefreshExpiration} secondi rimanenti (${Math.floor(
-        timeUntilRefreshExpiration / 60
-      )} minuti)`
-    );
-
     // Determina se i token sono scaduti
     const isTokenExpired = timeUntilExpiration <= 0;
     const isRefreshTokenExpired = timeUntilRefreshExpiration <= 0;
-
-    console.log("--- Stato autenticazione ---");
-    console.log(
-      `Token di accesso: ${isTokenExpired ? "❌ SCADUTO" : "✅ VALIDO"}`
-    );
-    console.log(
-      `Refresh token: ${isRefreshTokenExpired ? "❌ SCADUTO" : "✅ VALIDO"}`
-    );
-    console.log("===============================");
 
     // Aggiorna il risultato con lo stato dei token
     return {
@@ -320,7 +270,6 @@ async function check_login() {
       currentTime: currentTime.format(),
     };
   } catch (error) {
-    console.error("❌ ERRORE durante il controllo del login:", error);
     return {
       isAuthenticated: false,
       canRefresh: false,
@@ -349,10 +298,6 @@ async function refreshToken() {
         message: "Nessun refresh token disponibile",
       };
     }
-
-    console.log("=== REFRESH TOKEN ===");
-    console.log("Tentativo di refresh del token");
-    console.log("Refresh token:", refreshToken);
 
     // Esegui la richiesta di refresh
     const response = await axios.post(
@@ -398,7 +343,11 @@ async function refreshToken() {
       message: "Token rinnovato con successo",
     };
   } catch (error: any) {
-    console.error("Errore durante il refresh del token:", error);
+    // Se il refresh token è scaduto o non funziona, esegui il logout
+    if (error.response?.status === 401) {
+      await logout();
+    }
+
     return {
       success: false,
       message:
@@ -423,7 +372,7 @@ async function loadStoredData() {
     const userData = await getUserData();
     return userData !== null;
   } catch (error) {
-    console.error("Errore nel caricamento dei dati:", error);
+
     return false;
   }
 }
@@ -454,7 +403,6 @@ export async function getValidToken(): Promise<string | null> {
       // Token scaduto, prova a fare il refresh
       const refreshResult = await refreshToken();
       if (!refreshResult.success || !refreshResult.bearerToken) {
-        console.error(refreshResult.message || "Impossibile rinnovare il token");
         return null;
       }
       return refreshResult.bearerToken;
@@ -462,12 +410,11 @@ export async function getValidToken(): Promise<string | null> {
     // Token ancora valido, recupera quello esistente
     const bearerToken = await AsyncStorage.getItem(STORAGE_KEYS.BEARER_TOKEN);
     if (!bearerToken) {
-      console.error("Nessun bearer token disponibile");
       return null;
     }
     return bearerToken;
   } catch (error) {
-    console.error("Errore nel recupero del token valido:", error);
+
     return null;
   }
 }

@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Modal,
 } from 'react-native';
+//import DateTimePicker from '@react-native-community/datetimepicker';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -24,7 +25,8 @@ const AddTaskButton: React.FC<AddTaskButtonProps> = ({ onSave }) => {
   const [priority, setPriority] = useState<number>(1);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [dueDate, setDueDate] = useState('');
+  const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   const toggleForm = () => {
     setFormVisible(true);
@@ -34,6 +36,12 @@ const AddTaskButton: React.FC<AddTaskButtonProps> = ({ onSave }) => {
   const handleCancel = () => {
     animationValue.value = withSpring(0, { damping: 12 });
     setTimeout(() => setFormVisible(false), 300);
+  };
+
+  const handleDateChange = (event: any, selectedDate?: Date) => {
+    const currentDate = selectedDate || dueDate;
+    setShowDatePicker(false);
+    setDueDate(currentDate);
   };
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -69,12 +77,22 @@ const AddTaskButton: React.FC<AddTaskButtonProps> = ({ onSave }) => {
               />
 
               <Text style={styles.label}>Due Date</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter due date (e.g. 2025-01-30)"
-                value={dueDate}
-                onChangeText={setDueDate}
-              />
+              <TouchableOpacity onPress={() => setShowDatePicker(true)}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Select due date"
+                  value={dueDate ? dueDate.toISOString().split('T')[0] : ''}
+                  editable={false}
+                />
+              </TouchableOpacity>
+              {/* {showDatePicker && (
+                <DateTimePicker
+                  value={dueDate || new Date()}
+                  mode="date"
+                  display="default"
+                  onChange={handleDateChange}
+                />
+              )} */}
               
               <Text style={styles.label}>Priority</Text>
               <View style={styles.priorityContainer}>
@@ -93,7 +111,9 @@ const AddTaskButton: React.FC<AddTaskButtonProps> = ({ onSave }) => {
                 <TouchableOpacity
                   style={styles.submitButton}
                   onPress={() => {
-                    onSave?.(title, description, dueDate, priority);
+                    if (dueDate) {
+                      onSave?.(title, description, dueDate.toISOString(), priority);
+                    }
                   }}
                 >
                   <Text style={styles.submitButtonText}>Save</Text>

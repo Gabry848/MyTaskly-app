@@ -13,10 +13,10 @@ import { Profile } from './screens/Profile';
 import { Settings } from './screens/Settings';
 import { Updates } from './screens/Updates';
 import { NotFound } from './screens/NotFound';
-import CardList from './screens/CardList';
 import UserSettigs from './screens/UserSettigs';
 import Login from './screens/Login';
 import Register from './screens/Register';
+import TaskList from './screens/TaskList';
 
 
 const HomeTabs = createBottomTabNavigator({
@@ -60,7 +60,7 @@ const RootStack = createNativeStackNavigator({
     HomeTabs: {
       screen: HomeTabs,
       options: {
-        title: 'Home',
+        title: 'Taskly',
         headerShown: false,
       },
     },
@@ -96,8 +96,8 @@ const RootStack = createNativeStackNavigator({
         path: '*',
       },
     },
-    CardList: {
-      screen: CardList,
+    TaskList: {
+      screen: TaskList,
       options: {
         title: 'ToDo',
       },
