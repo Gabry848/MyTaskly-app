@@ -8,7 +8,7 @@ import {
   KeyboardAvoidingView,
   Modal,
 } from 'react-native';
-//import DateTimePicker from '@react-native-community/datetimepicker';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -85,14 +85,14 @@ const AddTaskButton: React.FC<AddTaskButtonProps> = ({ onSave }) => {
                   editable={false}
                 />
               </TouchableOpacity>
-              {/* {showDatePicker && (
+              {showDatePicker && (
                 <DateTimePicker
                   value={dueDate || new Date()}
                   mode="date"
                   display="default"
                   onChange={handleDateChange}
                 />
-              )} */}
+              )} 
               
               <Text style={styles.label}>Priority</Text>
               <View style={styles.priorityContainer}>

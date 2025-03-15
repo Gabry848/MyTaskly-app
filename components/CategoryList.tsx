@@ -2,7 +2,7 @@ import React, { useEffect, useState, forwardRef, useImperativeHandle } from 'rea
 import { getCategories } from '../src/services/taskService';
 import Category from './Category'; // Importa il componente Category
 import AddCategoryButton from './AddCategoryButton'; // Importa il componente AddCategoryButton
-import { View, StyleSheet, Text, Button, Dimensions } from 'react-native';
+import { View, StyleSheet, Text, Dimensions, TouchableOpacity } from 'react-native';
 interface CategoryType {
   id: string | number;
   name: string;
@@ -36,14 +36,20 @@ const CategoryList = forwardRef((props, ref) => {
     }
   }));
 
-  
-
   return (
     <View>
       <AddCategoryButton onCategoryAdded={() => {
           setLoading(true);
           fetchCategories();
       }} /> {/* Passa la funzione come prop */}
+      <View style={styles.headerContainer}>
+        <Text style={styles.headerTitle}>
+          <Text style={{ fontWeight: 'bold' }}>Le mie categorie</Text>
+        </Text>
+        <TouchableOpacity style={styles.reloadButton} onPress={fetchCategories}>
+          <Text style={styles.reloadButtonText}>🔄</Text>
+        </TouchableOpacity>
+      </View>
       {categories && categories.length > 0 ? (
         categories.map((category, index) => (
           <Category
@@ -56,7 +62,9 @@ const CategoryList = forwardRef((props, ref) => {
         !loading && (
           <View style={styles.noCategoriesContainer}>
             <Text style={styles.noCategoriesMessage}>Nessuna categoria disponibile al momento. Riprova più tardi!</Text>
-            <Button title="Ricarica" onPress={fetchCategories} color="#007bff" />
+            <TouchableOpacity style={styles.reloadButton} onPress={fetchCategories}>
+              <Text style={styles.reloadButtonText}>Ricarica</Text>
+            </TouchableOpacity>
           </View>
         )
       )}
@@ -81,12 +89,15 @@ const styles = StyleSheet.create({
   },
   reloadButton: {
     backgroundColor: '#007bff',
-    color: 'white',
-    padding: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    borderRadius: 8,
+    marginTop: 10
+  },
+  reloadButtonText: {
+    color: '#fff',
     fontSize: 16,
-    cursor: 'pointer',
-    borderRadius: 5,
-    marginTop: 10,
+    fontWeight: 'bold'
   },
   loadingSpinner: {
     display: 'flex',
@@ -103,6 +114,20 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
   },
+  iconButtonContainer: {
+    position: 'absolute',
+    top: 10,
+    right: 10
+  },
+  headerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    margin: 10
+  },
+  headerTitle: {
+    fontSize: 20
+  }
 });
 
 export default CategoryList;
