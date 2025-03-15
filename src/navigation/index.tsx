@@ -11,7 +11,7 @@ import Register from './screens/Register';
 
 const Stack = createNativeStackNavigator();
 
-const linking: LinkingOptions = {
+const linking: LinkingOptions<ReactNavigation.RootParamList> = {
   prefixes: ['https://taskly.com', 'taskly://'],
   config: {
     screens: {
@@ -37,7 +37,7 @@ const linking: LinkingOptions = {
 export default function RootStack() {
   return (
     <NavigationContainer linking={linking}>
-      <Stack.Navigator>
+      <Stack.Navigator id={undefined}>
         <Stack.Screen
           name="HomeTabs"
           component={HomeTabs}
