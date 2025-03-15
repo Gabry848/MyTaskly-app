@@ -50,13 +50,13 @@ async function updateAuthData(data: any) {
     if (data.bearerDuration) {
       await AsyncStorage.setItem(
         STORAGE_KEYS.BEARER_DURATION,
-        data.bearerDuration
+        data.bearerDuration.toString()
       );
     }
     if (data.refreshDuration) {
       await AsyncStorage.setItem(
         STORAGE_KEYS.REFRESH_DURATION,
-        data.refreshDuration
+        data.refreshDuration.toString()
       );
     }
 

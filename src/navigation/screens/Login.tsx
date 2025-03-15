@@ -42,7 +42,7 @@ const LoginScreen = () => {
           message: "Login effettuato con successo",
           isSuccess: true,
           onFinish: () => {
-            navigation.navigate("Profile", { user: username });
+            navigation.navigate("Profile");
             // Aggiornamento funzionale con reset di onFinish
             setNotification((prev) => ({
               ...prev,

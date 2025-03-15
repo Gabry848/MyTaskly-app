@@ -8,7 +8,6 @@ import {
   KeyboardAvoidingView,
   Modal,
 } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -25,8 +24,8 @@ const AddTaskButton: React.FC<AddTaskButtonProps> = ({ onSave }) => {
   const [priority, setPriority] = useState<number>(1);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
-  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [dueDate, setDueDate] = useState<string>('');
+  const [popupVisible, setPopupVisible] = useState(false);
 
   const toggleForm = () => {
     setFormVisible(true);
@@ -36,12 +35,6 @@ const AddTaskButton: React.FC<AddTaskButtonProps> = ({ onSave }) => {
   const handleCancel = () => {
     animationValue.value = withSpring(0, { damping: 12 });
     setTimeout(() => setFormVisible(false), 300);
-  };
-
-  const handleDateChange = (event: any, selectedDate?: Date) => {
-    const currentDate = selectedDate || dueDate;
-    setShowDatePicker(false);
-    setDueDate(currentDate);
   };
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -76,23 +69,21 @@ const AddTaskButton: React.FC<AddTaskButtonProps> = ({ onSave }) => {
                 onChangeText={setDescription}
               />
 
-              <Text style={styles.label}>Due Date</Text>
-              <TouchableOpacity onPress={() => setShowDatePicker(true)}>
+              <Text style={styles.label}>Due Date (YYYY-MM-DD)</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <TextInput
-                  style={styles.input}
-                  placeholder="Select due date"
-                  value={dueDate ? dueDate.toISOString().split('T')[0] : ''}
-                  editable={false}
+                  style={[styles.input, { flex: 1 }]}
+                  placeholder="Es. 2023-12-31"
+                  value={dueDate}
+                  onChangeText={setDueDate}
                 />
-              </TouchableOpacity>
-              {showDatePicker && (
-                <DateTimePicker
-                  value={dueDate || new Date()}
-                  mode="date"
-                  display="default"
-                  onChange={handleDateChange}
-                />
-              )} 
+                <TouchableOpacity
+                  style={{ marginLeft: 8, padding: 8, backgroundColor: '#007BFF', borderRadius: 4 }}
+                  onPress={() => setPopupVisible(true)}
+                >
+                  <Text style={{ color: '#FFF' }}>Set Date</Text>
+                </TouchableOpacity>
+              </View>
               
               <Text style={styles.label}>Priority</Text>
               <View style={styles.priorityContainer}>
@@ -112,7 +103,7 @@ const AddTaskButton: React.FC<AddTaskButtonProps> = ({ onSave }) => {
                   style={styles.submitButton}
                   onPress={() => {
                     if (dueDate) {
-                      onSave?.(title, description, dueDate.toISOString(), priority);
+                      onSave?.(title, description, dueDate, priority);
                     }
                   }}
                 >
@@ -124,6 +115,18 @@ const AddTaskButton: React.FC<AddTaskButtonProps> = ({ onSave }) => {
               </View>
             </KeyboardAvoidingView>
           </Animated.View>
+        </View>
+      </Modal>
+
+      <Modal visible={popupVisible} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.centeredPopup}>
+            <Text style={{ fontSize: 16, marginBottom: 16 }}>Imposta la data</Text>
+            {/* ...eventuali contenuti... */}
+            <TouchableOpacity style={{ marginTop: 16 }} onPress={() => setPopupVisible(false)}>
+              <Text style={{ color: '#007BFF', fontWeight: 'bold' }}>Conferma</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </Modal>
     </View>
@@ -225,6 +228,62 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  dateTimeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: '#CCC',
+    borderRadius: 8,
+    padding: 8,
+  },
+  dateTimeButton: {
+    backgroundColor: '#007BFF',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 4,
+    marginRight: 8,
+  },
+  dateTimeButtonText: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  dateTimeText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#333',
+  },
+  calendarContainer: {
+    backgroundColor: '#FFF',
+    borderRadius: 8,
+    padding: 16,
+    alignItems: 'center',
+    width: '80%',
+    height: '50%',
+    justifyContent: 'center',
+  },
+  closeCalendarButton: {
+    marginTop: 16,
+    backgroundColor: '#007BFF',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 4,
+  },
+  closeCalendarButtonText: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  centeredPopup: {
+    width: 300,
+    height: 200,
+    backgroundColor: '#FFF',
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
   },
 });
 

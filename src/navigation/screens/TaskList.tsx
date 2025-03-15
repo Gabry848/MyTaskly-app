@@ -88,36 +88,45 @@ export function TaskList({ route }: Props) {
       ) : (
         <>
           <View style={styles.filtersContainer}>
-            <Picker
-              selectedValue={filtroImportanza}
-              onValueChange={(itemValue) => setFiltroImportanza(itemValue)}
-              style={styles.picker}
-            >
-              <Picker.Item label="Tutte" value="Tutte" />
-              <Picker.Item label="Alta" value="1" />
-              <Picker.Item label="Media" value="2" />
-              <Picker.Item label="Bassa" value="3" />
-            </Picker>
+            <View style={styles.filterGroup}>
+              <Text style={styles.filterTitle}>Importanza</Text>
+              <Picker
+                selectedValue={filtroImportanza}
+                onValueChange={(itemValue) => setFiltroImportanza(itemValue)}
+                style={styles.picker}
+              >
+                <Picker.Item label="Tutte" value="Tutte" />
+                <Picker.Item label="Alta" value="1" />
+                <Picker.Item label="Media" value="2" />
+                <Picker.Item label="Bassa" value="3" />
+              </Picker>
+            </View>
 
-            <Picker
-              selectedValue={filtroScadenza}
-              onValueChange={(itemValue) => setFiltroScadenza(itemValue)}
-              style={styles.picker}
-            >
-              <Picker.Item label="Tutte" value="Tutte" />
-              {tasks.map((task, index) => (
-                <Picker.Item key={index} label={task.scadenza} value={task.scadenza} />
-              ))}
-            </Picker>
+            <View style={styles.filterGroup}>
+              <Text style={styles.filterTitle}>Scadenza</Text>
+              <Picker
+                selectedValue={filtroScadenza}
+                onValueChange={(itemValue) => setFiltroScadenza(itemValue)}
+                style={styles.picker}
+              >
+                <Picker.Item label="Tutte" value="Tutte" />
+                {tasks.map((task, index) => (
+                  <Picker.Item key={index} label={task.scadenza} value={task.scadenza} />
+                ))}
+              </Picker>
+            </View>
 
-            <Picker
-              selectedValue={ordineScadenza}
-              onValueChange={(itemValue) => setOrdineScadenza(itemValue)}
-              style={styles.picker}
-            >
-              <Picker.Item label="Recente" value="Recente" />
-              <Picker.Item label="Vecchio" value="Vecchio" />
-            </Picker>
+            <View style={styles.filterGroup}>
+              <Text style={styles.filterTitle}>Ordine</Text>
+              <Picker
+                selectedValue={ordineScadenza}
+                onValueChange={(itemValue) => setOrdineScadenza(itemValue)}
+                style={styles.picker}
+              >
+                <Picker.Item label="Recente" value="Recente" />
+                <Picker.Item label="Vecchio" value="Vecchio" />
+              </Picker>
+            </View>
           </View>
 
           <FlatList
@@ -156,18 +165,25 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 10,
   },
+  filterGroup: {
+    flex: 1,
+    marginHorizontal: 5,
+  },
+  filterTitle: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    marginBottom: 5,
+    textAlign: 'center',
+  },
   picker: {
     height: 50,
     width: "100%",
-    marginBottom: 0,
     backgroundColor: "#ffffff",
     borderWidth: 1,
     borderColor: "#ccc",
     borderRadius: 8,
     paddingHorizontal: 10,
-    elevation: 2, // ombra leggera su Android
-    flex: 1,
-    marginHorizontal: 5,
+    elevation: 2,
   },
 });
 

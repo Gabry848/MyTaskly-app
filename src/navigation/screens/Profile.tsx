@@ -1,34 +1,21 @@
-import { Text } from '@react-navigation/elements';
-import { StaticScreenProps } from '@react-navigation/native';
-import { StyleSheet, View } from 'react-native';
-import { TouchableOpacity } from 'react-native-gesture-handler';
-import * as authService from '../../services/authService';
+import React from "react";
+import { View, Text } from "react-native";
+import { Button } from "react-native";
+import { logout } from "../../services/authService";
 
 
-type Props = StaticScreenProps<{
-  user: string;
-}>;
+export default function Profile() {
+  function handleLogout() {
+    logout();
+  }
 
-export function Profile({ route }: Props) {
+
   return (
-    <View style={styles.container}>
-      <Text>{route.params.user}'s Profile</Text>
-      
-    <TouchableOpacity onPress={() => authService.logout()}>
-          <Text>Logout</Text>
-        </TouchableOpacity>
+    <View>
+      <Text>Hi utente</Text>
+      <Button title="Logout" onPress={handleLogout} />
+
     </View>
-
-
-
   );
-}
+};
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 10,
-  },
-});
