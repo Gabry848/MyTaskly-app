@@ -1,72 +1,22 @@
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { HeaderButton, Text } from '@react-navigation/elements';
-import {
-  createStaticNavigation,
-  StaticParamList,
-} from '@react-navigation/native';
+import React from 'react';
+import { NavigationContainer, LinkingOptions } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { Image } from 'react-native';
-import bell from '../assets/bell.png';
-import newspaper from '../assets/newspaper.png';
-import { Home } from './screens/Home';
-import { Profile } from './screens/Profile';
-import { Settings } from './screens/Settings';
-import { Updates } from './screens/Updates';
+import HomeTabs from './screens/Home';
+import Profile from './screens/Profile';
+import Settings from './screens/Settings';
 import { NotFound } from './screens/NotFound';
-import UserSettigs from './screens/UserSettigs';
+import TaskList from './screens/TaskList';
 import Login from './screens/Login';
 import Register from './screens/Register';
-import TaskList from './screens/TaskList';
 
+const Stack = createNativeStackNavigator();
 
-const HomeTabs = createBottomTabNavigator({
-  screens: {
-    Home: {
-      screen: Home,
-      options: {
-        title: 'Feed',
-        tabBarIcon: ({ color, size }) => (
-          <Image
-            source={newspaper}
-            tintColor={color}
-            style={{
-              width: size,
-              height: size,
-            }}
-          />
-        ),
-      },
-    },
-    Updates: {
-      screen: Updates,
-      options: {
-        tabBarIcon: ({ color, size }) => (
-          <Image
-            source={bell}
-            tintColor={color}
-            style={{
-              width: size,
-              height: size,
-            }}
-          />
-        ),
-      },
-    },
-  },
-});
-
-const RootStack = createNativeStackNavigator({
-  screens: {
-    HomeTabs: {
-      screen: HomeTabs,
-      options: {
-        title: 'Taskly',
-        headerShown: false,
-      },
-    },
-    Profile: {
-      screen: Profile,
-      linking: {
+const linking: LinkingOptions = {
+  prefixes: ['https://taskly.com', 'taskly://'],
+  config: {
+    screens: {
+      HomeTabs: 'home',
+      Profile: {
         path: ':user(@[a-zA-Z0-9-_]+)',
         parse: {
           user: (value) => value.replace(/^@/, ''),
@@ -75,60 +25,55 @@ const RootStack = createNativeStackNavigator({
           user: (value) => `@${value}`,
         },
       },
+      Settings: 'settings',
+      NotFound: '*',
+      TaskList: 'tasks',
+      Login: 'login',
+      Register: 'register',
     },
-    Settings: {
-      screen: Settings,
-      options: ({ navigation }) => ({
-        presentation: 'modal',
-        headerRight: () => (
-          <HeaderButton onPress={navigation.goBack}>
-            <Text>Close</Text>
-          </HeaderButton>
-        ),
-      }),
-    },
-    NotFound: {
-      screen: NotFound,
-      options: {
-        title: '404',
-      },
-      linking: {
-        path: '*',
-      },
-    },
-    TaskList: {
-      screen: TaskList,
-      options: {
-        title: 'ToDo',
-      },
-    },
-    UserSettings: {
-      screen: UserSettigs,
-      options: {
-        title: 'User Settings',
-      },
-    },
-    Login: {
-      screen: Login,
-      options: {
-        title: 'Login',
-      },
-    },
-    Register: {
-      screen: Register,
-      options: {
-        title: 'Register',
-      }
-    }
-  }
-});
+  },
+};
 
-export const Navigation = createStaticNavigation(RootStack);
-
-type RootStackParamList = StaticParamList<typeof RootStack>;
-
-declare global {
-  namespace ReactNavigation {
-    interface RootParamList extends RootStackParamList {}
-  }
+export default function RootStack() {
+  return (
+    <NavigationContainer linking={linking}>
+      <Stack.Navigator>
+        <Stack.Screen
+          name="HomeTabs"
+          component={HomeTabs}
+          options={{ title: 'Taskly', headerShown: false }}
+        />
+        <Stack.Screen
+          name="Profile"
+          component={Profile}
+          options={{ title: 'Profile' }}
+        />
+        <Stack.Screen
+          name="Settings"
+          component={Settings}
+          options={{ presentation: 'modal' }}
+        />
+        <Stack.Screen
+          name="NotFound"
+          component={NotFound}
+          options={{ title: '404' }}
+        />
+        <Stack.Screen
+          name="TaskList"
+          component={TaskList}
+          options={{ title: 'ToDo' }}
+        />
+        <Stack.Screen
+          name="Login"
+          component={Login}
+          options={{ title: 'Login' }}
+        />
+        <Stack.Screen
+          name="Register"
+          component={Register}
+          options={{ title: 'Register' }}
+        />
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
 }

@@ -5,17 +5,14 @@ import {
   StyleSheet,
   Image,
   ScrollView,
-  TouchableOpacity,
 } from "react-native";
 
-import AddTask from "../../../components/AddTaskButton";
 import Badge from "../../../components/Badge"; // nuovo import
 import { useNavigation } from "@react-navigation/native"; // nuovo import
-import * as authService from "../../services/authService";
 import AddCategoryButton from "../../../components/AddCategoryButton"; // nuovo import
 import CategoryList from "../../../components/CategoryList"; // nuovo import
 
-export function Home() {
+export default function Home() {
   const navigation = useNavigation();
   const categoryListRef = useRef<{ reloadCategories: () => void } | null>(null);
 

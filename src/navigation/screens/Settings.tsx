@@ -1,7 +1,8 @@
 import { Text } from '@react-navigation/elements';
+import React from 'react';
 import { StyleSheet, View } from 'react-native';
 
-export function Settings() {
+export default function Settings() {
   return (
     <View style={styles.container}>
       <Text>Settings Screen</Text>
