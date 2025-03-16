@@ -1,24 +1,22 @@
 import React from "react";
 import { View, Text, StyleSheet, Image, TouchableOpacity } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import { StackNavigationProp } from "@react-navigation/stack";
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../src/types';
 
-
-interface SectionProps {
-  category: string;
-  image: string;
-  lista: Lista[];
-}
-
-
+type CategoryScreenNavigationProp = StackNavigationProp<
+  RootStackParamList,
+  'TaskList'
+>;
 
 interface CategoryProps {
   title: string;
   imageUrl?: string;
 }
 
-export function Category({ title, imageUrl }: CategoryProps) {
-  const navigation = useNavigation()
+const Category: React.FC<CategoryProps> = ({ title, imageUrl }) => {
+  const navigation = useNavigation<CategoryScreenNavigationProp>();
+  
   return (
     <TouchableOpacity
       style={styles.view}

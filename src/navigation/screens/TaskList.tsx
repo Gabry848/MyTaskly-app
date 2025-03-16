@@ -3,9 +3,15 @@ import { View, Text, FlatList, StyleSheet, ActivityIndicator } from "react-nativ
 import { Picker } from "@react-native-picker/picker";
 import Card from "../../../components/Card"; // Assicurati di avere un componente Card separato
 import { getTasks, addTask } from "../../services/taskService"; // Importa la funzione getTasks e addTask
-import { StaticScreenProps } from '@react-navigation/native';
+import { RouteProp } from '@react-navigation/native';
+import { RootStackParamList } from '../../types'; // Assicurati di avere un file types.ts con RootStackParamList
 import AddTaskButton from "../../../components/AddTaskButton";
 
+type TaskListRouteProp = RouteProp<RootStackParamList, 'TaskList'>;
+
+type Props = {
+  route: TaskListRouteProp;
+};
 
 interface Task {
   title: string;
@@ -14,10 +20,6 @@ interface Task {
   importanza: number;
   scadenza: string;
 }
-
-type Props = StaticScreenProps<{
-  category_name: string;
-}>;
 
 export function TaskList({ route }: Props) {
   const [tasks, setTasks] = useState<Task[]>([]);

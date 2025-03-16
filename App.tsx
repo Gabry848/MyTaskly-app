@@ -6,6 +6,7 @@ import LoginScreen from "./src/navigation/screens/Login";
 import ProfileScreen from "./src/navigation/screens/Profile";
 import RegisterScreen from "./src/navigation/screens/Register";
 import HomeScreen from "./src/navigation/screens/Home";
+import TaskList from "./src/navigation/screens/TaskList"; // Aggiungi questa importazione
 
 const Stack = createStackNavigator();
 
@@ -18,6 +19,7 @@ export default function App() {
           <Stack.Screen name="Profile" component={ProfileScreen} />
           <Stack.Screen name="Register" component={RegisterScreen} />
           <Stack.Screen name="Home" component={HomeScreen} />
+          <Stack.Screen name="TaskList" component={TaskList} /> {/* Aggiungi questa riga */}
         </Stack.Navigator>
       </NavigationContainer>
     </GestureHandlerRootView>
