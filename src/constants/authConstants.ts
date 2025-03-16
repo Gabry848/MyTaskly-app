@@ -7,6 +7,10 @@ export const STORAGE_KEYS = {
   LOGIN_TIME: "auth.loginTime",
   BEARER_DURATION: "auth.bearerDuration",
   REFRESH_DURATION: "auth.refreshDuration",
+  USER_NAME: "auth.userName",
+  USER_EMAIL: "auth.userEmail",
+  USER_ID: "auth.userId",
+  USER_PASSWORD: "auth.userPassword",
 };
 
 // URL di default per l'API

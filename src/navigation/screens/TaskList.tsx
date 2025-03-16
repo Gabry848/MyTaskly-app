@@ -67,11 +67,10 @@ export function TaskList({ route }: Props) {
     const newTask = {
       title,
       description,
-      start_time: new Date().toISOString(),
       end_time: new Date(dueDate).toISOString(),
-      category_id: route.params.category_name,
+      category_name: route.params.category_name,
       priority: priority === 1 ? "Bassa" : priority === 2 ? "Media" : "Alta",
-      status: "pending",
+      status: "In sospeso",
     };
     try {
       const addedTask = await addTask(newTask);
@@ -80,7 +79,6 @@ export function TaskList({ route }: Props) {
       console.error("Errore nell'aggiunta del task:", error);
     }
   };
-
   return (
     <View style={styles.container}>
       <Text style={styles.title}>{route.params.category_name}</Text>

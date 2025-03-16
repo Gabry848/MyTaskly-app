@@ -1,14 +1,17 @@
 import axios from "axios";
 import { getValidToken } from "./authService";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { STORAGE_KEYS } from "../constants/authConstants";
 
 // Definizione dell'interfaccia Task
 export interface Task {
-  id?: string | number;
   title: string;
   description?: string;
-  completed?: boolean;
-  dueDate?: string;
+  status?: string;
+  end_time?: string;
   priority?: string;
+  category_name?: string;
+  user?: string; // aggiunto
   [key: string]: any; // per proprietà aggiuntive
 }
 
@@ -51,15 +54,18 @@ export async function addTask(task: Task) {
     if (!token) {
       return null;
     }
-    const response = await axios.post("/tasks", {
+    const username = await AsyncStorage.getItem(STORAGE_KEYS.USER_NAME);
+    const data = {
       title: task.title,
-      description: task.description,
-      start_time: task.start_time,
+      description: task.description || "",
       end_time: task.end_time,
-      category_id: task.category_id,
       priority: task.priority,
-      status: task.status,
-    }, {
+      status: task.status || "In sospeso",
+      category_name: task.category_name,
+      user: task.user || username,
+    };
+    console.log(data);
+    const response = await axios.post("/tasks", data, {
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",

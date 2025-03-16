@@ -3,6 +3,7 @@ import { getCategories } from '../src/services/taskService';
 import Category from './Category'; // Importa il componente Category
 import AddCategoryButton from './AddCategoryButton'; // Importa il componente AddCategoryButton
 import { View, StyleSheet, Text, Dimensions, TouchableOpacity } from 'react-native';
+
 interface CategoryType {
   id: string | number;
   name: string;

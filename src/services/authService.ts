@@ -59,11 +59,24 @@ async function updateAuthData(data: any) {
         data.refreshDuration.toString()
       );
     }
+    if (data.username) {
+      await AsyncStorage.setItem(STORAGE_KEYS.USER_NAME, data.username);
+    }
+    if (data.email) {
+      await AsyncStorage.setItem(STORAGE_KEYS.USER_EMAIL, data.email);
+    }
+    if (data.utente_id) {
+      await AsyncStorage.setItem(STORAGE_KEYS.USER_ID, data.utente_id.toString());
+    }
+    if (data.password) {
+      await AsyncStorage.setItem(STORAGE_KEYS.USER_PASSWORD, data.password);
+    }
 
     // Aggiorna anche i dati utente aggregati
     const userData = (await getUserData()) || {};
     const updatedUserData = { ...userData, ...data };
     await setUserData(updatedUserData);
+
   } catch (error) {
     console.error(
       "Errore durante l'aggiornamento dei dati di autenticazione:",
@@ -116,6 +129,7 @@ async function login(username: any, password: any) {
       bearerDuration: bearer_duration,
       refreshDuration: refresh_duration,
       username: username,
+      password: password, // TODO: aggiungere l'email e l'id dell'utente
     });
 
     return {
