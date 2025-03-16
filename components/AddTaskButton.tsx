@@ -16,6 +16,7 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
 } from "react-native-reanimated";
+import Badge from './Badge'; // Importa il componente Badge
 
 type AddTaskButtonProps = {
   onSave?: (

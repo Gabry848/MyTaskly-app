@@ -8,10 +8,11 @@ import { NotFound } from './screens/NotFound';
 import TaskList from './screens/TaskList';
 import Login from './screens/Login';
 import Register from './screens/Register';
+import { RootStackParamList } from '../types';
 
-const Stack = createNativeStackNavigator();
+const Stack = createNativeStackNavigator<RootStackParamList>();
 
-const linking: LinkingOptions<ReactNavigation.RootParamList> = {
+const linking: LinkingOptions<RootStackParamList> = {
   prefixes: ['https://taskly.com', 'taskly://'],
   config: {
     screens: {

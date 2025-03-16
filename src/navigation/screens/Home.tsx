@@ -1,11 +1,5 @@
 import React, { useRef } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  Image,
-  ScrollView,
-} from "react-native";
+import { View, Text, StyleSheet, Image, ScrollView } from "react-native";
 
 import Badge from "../../../components/Badge"; // nuovo import
 import { useNavigation } from "@react-navigation/native"; // nuovo import
@@ -31,20 +25,14 @@ export default function Home() {
 
   return (
     <View style={{ flex: 1 }}>
-      <View style={styles.imageContainer}>
-        <Text style={styles.title}>Aggiungi una nuova attività</Text>
-        <Image
-          source={{
-            uri: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJrZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgY2xhc3M9Imx1Y2lkZSBsdWNpZGUtbGlzdC10b2RvIj48cmVjdCB4PSIzIiB5PSI1IiB3aWR0aD0iNiIgaGVpZ2h0PSI2IiByeD0iMSIvPjxwYXRoIGQ9Im0zIDE3IDIgMiA0LTRoIi8+PHBhdGggZD0iTTEzIDZoOCIvPjxwYXRoIGQ9Ik0xMyAxMmg4Ii8+PHBhdGggZD0iTTEzIDE4aDgiLz48L3N2Zz4=",
-          }}
-          style={styles.image}
-        />
+      <View style={styles.header}>
+        <Text style={styles.headerText}>Taskly</Text>
+        <Badge letter="A" /> 
       </View>
       <ScrollView style={styles.container}>
         <CategoryList ref={categoryListRef} />
       </ScrollView>
       <AddCategoryButton onCategoryAdded={handleCategoryAdded} />
-      <Text>{/* Aggiungi il nuovo componente qui */}</Text>
     </View>
   );
 }
@@ -68,6 +56,23 @@ const styles = StyleSheet.create({
     width: "45%",
     lineHeight: 40, // added line height for spacing between lines
     color: "black",
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "100%",
+    padding: 30,
+    paddingTop: 35,
+    backgroundColor: "#F9c9F9",
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+    marginBottom: 20,
+  },
+  headerText: {
+    fontSize: 24,
+    fontWeight: "bold",
   },
   imageContainer: {
     flexDirection: "row",

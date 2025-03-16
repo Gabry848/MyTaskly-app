@@ -8,7 +8,16 @@ declare module '*.jpg' {
   export default value;
 }
 
+export interface TaskListRouteParams {
+  category_name: string;
+}
+
 export type RootStackParamList = {
-  Category: undefined;
-  TaskList: { category_name: string };
+  HomeTabs: undefined;
+  Profile: { user?: string };
+  Settings: undefined;
+  NotFound: undefined;
+  TaskList: { category_name: string};
+  Login: undefined;
+  Register: undefined;
 };
