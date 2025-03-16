@@ -43,17 +43,8 @@ export default function Home() {
       <ScrollView style={styles.container}>
         <CategoryList ref={categoryListRef} />
       </ScrollView>
-      {/* <AddTask
-        onSave={(
-          title: string,
-          description: string,
-          dueDate: string,
-          priority: number
-        ) => {
-          console.log(title, description, dueDate, priority);
-        }}
-      /> */}
-      <AddCategoryButton onCategoryAdded={handleCategoryAdded} /> {/* Aggiungi il nuovo componente qui */}
+      <AddCategoryButton onCategoryAdded={handleCategoryAdded} />
+      <Text>{/* Aggiungi il nuovo componente qui */}</Text>
     </View>
   );
 }

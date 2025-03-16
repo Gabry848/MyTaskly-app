@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -7,25 +7,35 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Modal,
-} from 'react-native';
+  SafeAreaView,
+  Button,
+} from "react-native";
+import { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
-} from 'react-native-reanimated';
+} from "react-native-reanimated";
 
 type AddTaskButtonProps = {
-  onSave?: (title: string, description: string, dueDate: string, priority: number) => void;
+  onSave?: (
+    title: string,
+    description: string,
+    dueDate: string,
+    priority: number
+  ) => void;
 };
 
 const AddTaskButton: React.FC<AddTaskButtonProps> = ({ onSave }) => {
   const [formVisible, setFormVisible] = useState(false);
   const animationValue = useSharedValue(0);
   const [priority, setPriority] = useState<number>(1);
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [dueDate, setDueDate] = useState<string>('');
-  const [popupVisible, setPopupVisible] = useState(false);
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [dueDate, setDueDate] = useState<string>("");
+
+  const [date, setDate] = useState(new Date());
+  const [open, setOpen] = useState(false);
 
   const toggleForm = () => {
     setFormVisible(true);
@@ -37,6 +47,29 @@ const AddTaskButton: React.FC<AddTaskButtonProps> = ({ onSave }) => {
     setTimeout(() => setFormVisible(false), 300);
   };
 
+  const onChange = (event: any, selectedDate?: Date) => {
+    const currentDate = selectedDate || date;
+    setDate(currentDate);
+    setDueDate(currentDate.toISOString().split('T')[0]);
+  };
+
+  const showMode = (currentMode: 'date' | 'time') => {
+    DateTimePickerAndroid.open({
+      value: date,
+      onChange,
+      mode: currentMode,
+      is24Hour: true,
+    });
+  };
+
+  const showDatepicker = () => {
+    showMode('date');
+  };
+
+  const showTimepicker = () => {
+    showMode('time');
+  };
+
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: animationValue.value }],
     opacity: animationValue.value,
@@ -45,9 +78,11 @@ const AddTaskButton: React.FC<AddTaskButtonProps> = ({ onSave }) => {
   return (
     <View style={styles.container}>
       <TouchableOpacity style={styles.addButton} onPress={toggleForm}>
-        <Text style={styles.addButtonText}>{formVisible ? 'Close' : 'Add Task'}</Text>
+        <Text style={styles.addButtonText}>
+          {formVisible ? "Close" : "Add Task"}
+        </Text>
       </TouchableOpacity>
-      
+
       <Modal visible={formVisible} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <Animated.View style={[styles.formContainer, animatedStyle]}>
@@ -68,9 +103,7 @@ const AddTaskButton: React.FC<AddTaskButtonProps> = ({ onSave }) => {
                 value={description}
                 onChangeText={setDescription}
               />
-
-              <Text style={styles.label}>Due Date (YYYY-MM-DD)</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
                 <TextInput
                   style={[styles.input, { flex: 1 }]}
                   placeholder="Es. 2023-12-31"
@@ -78,22 +111,45 @@ const AddTaskButton: React.FC<AddTaskButtonProps> = ({ onSave }) => {
                   onChangeText={setDueDate}
                 />
                 <TouchableOpacity
-                  style={{ marginLeft: 8, padding: 8, backgroundColor: '#007BFF', borderRadius: 4 }}
-                  onPress={() => setPopupVisible(true)}
+                  style={{
+                    marginLeft: 8,
+                    padding: 8,
+                    backgroundColor: "#007BFF",
+                    borderRadius: 4,
+                  }}
+                  onPress={showDatepicker} // Mostra il DatePicker
                 >
-                  <Text style={{ color: '#FFF' }}>Set Date</Text>
+                  <Text style={{ color: "#FFF" }}>Set Date</Text>
                 </TouchableOpacity>
               </View>
-              
+
               <Text style={styles.label}>Priority</Text>
               <View style={styles.priorityContainer}>
-                <TouchableOpacity style={[styles.priorityButton, priority === 1 && styles.selectedPriority]} onPress={() => setPriority(1)}>
+                <TouchableOpacity
+                  style={[
+                    styles.priorityButton,
+                    priority === 1 && styles.selectedPriority,
+                  ]}
+                  onPress={() => setPriority(1)}
+                >
                   <Text style={styles.priorityText}>Bassa</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.priorityButton, priority === 2 && styles.selectedPriority]} onPress={() => setPriority(2)}>
+                <TouchableOpacity
+                  style={[
+                    styles.priorityButton,
+                    priority === 2 && styles.selectedPriority,
+                  ]}
+                  onPress={() => setPriority(2)}
+                >
                   <Text style={styles.priorityText}>Media</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.priorityButton, priority === 3 && styles.selectedPriority]} onPress={() => setPriority(3)}>
+                <TouchableOpacity
+                  style={[
+                    styles.priorityButton,
+                    priority === 3 && styles.selectedPriority,
+                  ]}
+                  onPress={() => setPriority(3)}
+                >
                   <Text style={styles.priorityText}>Alta</Text>
                 </TouchableOpacity>
               </View>
@@ -109,24 +165,15 @@ const AddTaskButton: React.FC<AddTaskButtonProps> = ({ onSave }) => {
                 >
                   <Text style={styles.submitButtonText}>Save</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
+                <TouchableOpacity
+                  style={styles.cancelButton}
+                  onPress={handleCancel}
+                >
                   <Text style={styles.cancelButtonText}>Cancel</Text>
                 </TouchableOpacity>
               </View>
             </KeyboardAvoidingView>
           </Animated.View>
-        </View>
-      </Modal>
-
-      <Modal visible={popupVisible} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.centeredPopup}>
-            <Text style={{ fontSize: 16, marginBottom: 16 }}>Imposta la data</Text>
-            {/* ...eventuali contenuti... */}
-            <TouchableOpacity style={{ marginTop: 16 }} onPress={() => setPopupVisible(false)}>
-              <Text style={{ color: '#007BFF', fontWeight: 'bold' }}>Conferma</Text>
-            </TouchableOpacity>
-          </View>
         </View>
       </Modal>
     </View>
@@ -135,31 +182,35 @@ const AddTaskButton: React.FC<AddTaskButtonProps> = ({ onSave }) => {
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   addButton: {
-    backgroundColor: '#007BFF',
+    backgroundColor: "#007BFF",
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 8,
   },
   addButtonText: {
-    color: '#FFF',
+    color: "#FFF",
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   formContainer: {
-    width: '80%',
-    backgroundColor: '#F9F9F9',
+    width: "80%",
+    backgroundColor: "#F9F9F9",
     borderRadius: 8,
-    overflow: 'hidden',
+    overflow: "hidden",
     padding: 16,
   },
   formContent: {
@@ -167,123 +218,67 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 14,
-    color: '#333333',
+    color: "#333333",
     marginBottom: 4,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#CCC',
+    borderColor: "#CCC",
     borderRadius: 8,
     padding: 8,
     marginBottom: 12,
     fontSize: 14,
   },
   priorityContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginVertical: 10,
   },
   priorityButton: {
     borderWidth: 1,
-    borderColor: '#777',
+    borderColor: "#777",
     borderRadius: 8,
     paddingVertical: 6,
     paddingHorizontal: 12,
     marginHorizontal: 4,
   },
   selectedPriority: {
-    backgroundColor: '#007BFF',
-    borderColor: '#007BFF',
+    backgroundColor: "#007BFF",
+    borderColor: "#007BFF",
   },
   priorityText: {
     fontSize: 16,
-    color: '#333',
+    color: "#333",
   },
   buttonRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginTop: 16,
   },
   submitButton: {
-    backgroundColor: '#28A745',
+    backgroundColor: "#28A745",
     paddingVertical: 12,
-    alignItems: 'center',
+    alignItems: "center",
     borderRadius: 8,
     flex: 1,
     marginRight: 8,
   },
   submitButtonText: {
-    color: '#FFF',
+    color: "#FFF",
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   cancelButton: {
-    backgroundColor: '#DC3545',
+    backgroundColor: "#DC3545",
     paddingVertical: 12,
-    alignItems: 'center',
+    alignItems: "center",
     borderRadius: 8,
     flex: 1,
   },
   cancelButtonText: {
-    color: '#FFF',
+    color: "#FFF",
     fontSize: 16,
-    fontWeight: 'bold',
-  },
-  dateTimeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 15,
-    borderWidth: 1,
-    borderColor: '#CCC',
-    borderRadius: 8,
-    padding: 8,
-  },
-  dateTimeButton: {
-    backgroundColor: '#007BFF',
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 4,
-    marginRight: 8,
-  },
-  dateTimeButtonText: {
-    color: '#FFF',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  dateTimeText: {
-    flex: 1,
-    fontSize: 14,
-    color: '#333',
-  },
-  calendarContainer: {
-    backgroundColor: '#FFF',
-    borderRadius: 8,
-    padding: 16,
-    alignItems: 'center',
-    width: '80%',
-    height: '50%',
-    justifyContent: 'center',
-  },
-  closeCalendarButton: {
-    marginTop: 16,
-    backgroundColor: '#007BFF',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 4,
-  },
-  closeCalendarButtonText: {
-    color: '#FFF',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  centeredPopup: {
-    width: 300,
-    height: 200,
-    backgroundColor: '#FFF',
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
+    fontWeight: "bold",
   },
 });
 
