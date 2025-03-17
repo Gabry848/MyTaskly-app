@@ -160,6 +160,8 @@ const AddTaskButton: React.FC<AddTaskButtonProps> = ({ onSave }) => {
                   style={styles.submitButton}
                   onPress={() => {
                     if (dueDate) {
+                      setFormVisible(false);
+                      animationValue.value = withSpring(0, { damping: 12 });
                       onSave?.(title, description, dueDate, priority);
                     }
                   }}

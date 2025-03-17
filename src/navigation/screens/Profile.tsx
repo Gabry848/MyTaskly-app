@@ -12,6 +12,8 @@ import { FontAwesome } from "@expo/vector-icons";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
 import * as authService from "../../services/authService";
 import { NotificationSnackbar } from "../../../components/NotificationSnackbar";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { STORAGE_KEYS } from "../../constants/authConstants";
 
 const { width } = Dimensions.get("window");
 
@@ -23,10 +25,29 @@ type RootStackParamList = {
 
 const ProfileScreen = () => {
   const [userData, setUserData] = useState({
-    username: "Username",
-    email: "email@example.com",
-    joinDate: "01/01/2023",
+    username: "",
+    email: "",
+    joinDate: "",
   });
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const username = await AsyncStorage.getItem(STORAGE_KEYS.USER_NAME);
+        const email = await AsyncStorage.getItem(STORAGE_KEYS.USER_EMAIL);
+        const joinDate = await AsyncStorage.getItem(STORAGE_KEYS.LOGIN_TIME);
+        setUserData({
+          username: username || "Username",
+          email: email || "email@example.com",
+          joinDate: joinDate ? new Date(parseInt(joinDate)).toLocaleDateString() : "01/01/2023",
+        });
+      } catch (error) {
+        console.error("Errore nel recupero dei dati utente", error);
+      }
+    };
+
+    fetchUserData();
+  }, []);
   const [notification, setNotification] = useState({
     isVisible: false,
     message: "",
@@ -107,13 +128,13 @@ const ProfileScreen = () => {
             <Text style={styles.buttonText}>Modifica Profilo</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
+            <TouchableOpacity
             style={[styles.actionButton, { width: width * 0.9, backgroundColor: "#4DB6AC" }]}
-            onPress={() => navigation.navigate("Home")}
-          >
+            onPress={() => navigation.goBack()}
+            >
             <FontAwesome name="tasks" size={18} color="white" style={styles.buttonIcon} />
             <Text style={styles.buttonText}>Le mie Attività</Text>
-          </TouchableOpacity>
+            </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.actionButton, { width: width * 0.9, backgroundColor: "#7986CB" }]}

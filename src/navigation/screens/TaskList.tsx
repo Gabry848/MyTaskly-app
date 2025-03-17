@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { View, Text, FlatList, StyleSheet, ActivityIndicator } from "react-native";
 import { Picker } from "@react-native-picker/picker";
-import Card from "../../../components/Card"; // Assicurati di avere un componente Card separato
+import Task from "../../../components/Task"; // Assicurati di avere un componente Card separato
 import { getTasks, addTask } from "../../services/taskService"; // Importa la funzione getTasks e addTask
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../types'; // Assicurati di avere un file types.ts con RootStackParamList
@@ -16,9 +16,9 @@ type Props = {
 interface Task {
   title: string;
   image: string;
-  descrizione: string;
-  importanza: number;
-  scadenza: string;
+  description: string;
+  priority: string;
+  end_time: string;
 }
 
 export function TaskList({ route }: Props) {
@@ -38,22 +38,35 @@ export function TaskList({ route }: Props) {
     fetchTasks();
   }, []);
 
+  // Funzione per calcolare la data futura
+  const calculateFutureDate = (days: number) => {
+    const date = new Date();
+    date.setDate(date.getDate() + days);
+    return date.toISOString().split('T')[0];
+  };
+
   // Funzione per applicare i filtri e ordinare
   const listaFiltrata = useMemo(() => {
     const filteredTasks = tasks.filter((task) => {
       const matchesImportanza =
-        filtroImportanza === "Tutte" || task.importanza.toString() === filtroImportanza;
+        filtroImportanza === "Tutte" ||
+        (filtroImportanza === "Alta" && task.priority === "Alta") ||
+        (filtroImportanza === "Media" && task.priority === "Media") ||
+        (filtroImportanza === "Bassa" && task.priority === "Bassa");
       const matchesScadenza =
-        filtroScadenza === "Tutte" || task.scadenza === filtroScadenza;
+        filtroScadenza === "Tutte" ||
+        (filtroScadenza === "Domani" && task.end_time === calculateFutureDate(1)) ||
+        (filtroScadenza === "Dopodomani" && task.end_time === calculateFutureDate(2)) ||
+        (filtroScadenza.startsWith("Fra") && task.end_time === calculateFutureDate(parseInt(filtroScadenza.split(' ')[1])));
 
       return matchesImportanza && matchesScadenza;
     });
 
     return filteredTasks.sort((a, b) => {
       if (ordineScadenza === "Recente") {
-        return new Date(b.scadenza).getTime() - new Date(a.scadenza).getTime();
+        return new Date(b.end_time).getTime() - new Date(a.end_time).getTime();
       } else {
-        return new Date(a.scadenza).getTime() - new Date(b.scadenza).getTime();
+        return new Date(a.end_time).getTime() - new Date(b.end_time).getTime();
       }
     });
   }, [tasks, filtroImportanza, filtroScadenza, ordineScadenza]);
@@ -70,15 +83,39 @@ export function TaskList({ route }: Props) {
       end_time: new Date(dueDate).toISOString(),
       category_name: route.params.category_name,
       priority: priority === 1 ? "Bassa" : priority === 2 ? "Media" : "Alta",
-      status: "In sospeso",
+      completed: false, // Aggiungi il campo completed
+      dueDate: dueDate,
     };
     try {
       const addedTask = await addTask(newTask);
-      setTasks((prevTasks) => [...prevTasks, addedTask]);
+
+
+      //setTasks((prevTasks) => [...prevTasks, addedTask]);
     } catch (error) {
       console.error("Errore nell'aggiunta del task:", error);
     }
   };
+
+  // Funzione per generare il testo del filtro applicato
+  const getFilterText = () => {
+    let text = [];
+    
+    // Testo per il filtro importanza
+    if (filtroImportanza !== "Tutte") {
+      text.push(`Importanza: ${filtroImportanza}`);
+    }
+    
+    // Testo per il filtro scadenza
+    if (filtroScadenza !== "Tutte") {
+      text.push(`Scadenza: ${filtroScadenza}`);
+    }
+    
+    // Testo per l'ordine
+    text.push(`Ordine: ${ordineScadenza}`);
+    
+    return text.length ? text.join(" • ") : "Nessun filtro attivo";
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>{route.params.category_name}</Text>
@@ -96,9 +133,9 @@ export function TaskList({ route }: Props) {
                 style={styles.picker}
               >
                 <Picker.Item label="Tutte" value="Tutte" />
-                <Picker.Item label="Alta" value="1" />
-                <Picker.Item label="Media" value="2" />
-                <Picker.Item label="Bassa" value="3" />
+                <Picker.Item label="Alta" value="Alta" />
+                <Picker.Item label="Media" value="Media" />
+                <Picker.Item label="Bassa" value="Bassa" />
               </Picker>
             </View>
 
@@ -110,9 +147,10 @@ export function TaskList({ route }: Props) {
                 style={styles.picker}
               >
                 <Picker.Item label="Tutte" value="Tutte" />
-                {tasks.map((task, index) => (
-                  <Picker.Item key={index} label={task.scadenza} value={task.scadenza} />
-                ))}
+                <Picker.Item label="Domani" value="Domani" />
+                <Picker.Item label="Dopodomani" value="Dopodomani" />
+                <Picker.Item label="Fra 3 giorni" value="Fra 3 giorni" />
+                <Picker.Item label="Fra 7 giorni" value="Fra 7 giorni" />
               </Picker>
             </View>
 
@@ -129,17 +167,24 @@ export function TaskList({ route }: Props) {
             </View>
           </View>
 
+          {/* Visualizzazione filtro attivo */}
+          <View style={styles.activeFilterContainer}>
+            <Text style={styles.activeFilterText}>{getFilterText()}</Text>
+          </View>
+
           <FlatList
             data={listaFiltrata}
             keyExtractor={(item, index) => index.toString()}
             renderItem={({ item, index }) => (
-              <Card
-                key={index}
-                title={item.title}
-                image={item.image}
-                descrizione={item.descrizione}
-                importanza={item.importanza}
-                scadenza={item.scadenza}
+              <Task
+                task={{
+                  id: index,
+                  title: item.title,
+                  description: item.description,
+                  priority: item.priority,
+                  end_time: item.end_time,
+                  completed: false
+                }}
               />
             )}
           />
@@ -163,27 +208,69 @@ const styles = StyleSheet.create({
   filtersContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    marginBottom: 20,
+    padding: 10,
+    backgroundColor: '#f8f8f8',
+    borderRadius: 15,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 3,
   },
   filterGroup: {
     flex: 1,
     marginHorizontal: 5,
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 8,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 2.22,
+    elevation: 2,
+    borderBlockColor: 'black',
+    borderWidth: 1,
   },
   filterTitle: {
     fontSize: 12,
     fontWeight: 'bold',
     marginBottom: 5,
     textAlign: 'center',
+    color: '#555',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   picker: {
-    height: 50,
+    height: 40,
     width: "100%",
-    backgroundColor: "#ffffff",
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    elevation: 2,
+    backgroundColor: '#ffffff',
+    borderWidth: 3,
+    borderColor: '#10e0e0',
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    elevation: 1,
+    color: 'black',
+  },
+  activeFilterContainer: {
+    backgroundColor: '#e6f7ff',
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    borderRadius: 10,
+    marginBottom: 15,
+    borderLeftWidth: 4,
+    borderLeftColor: '#10e0e0',
+  },
+  activeFilterText: {
+    color: '#333',
+    fontWeight: '500',
+    fontSize: 13,
   },
 });
 
