@@ -5,6 +5,7 @@ import Badge from "../../../components/Badge"; // nuovo import
 import { useNavigation } from "@react-navigation/native"; // nuovo import
 import AddCategoryButton from "../../../components/AddCategoryButton"; // nuovo import
 import CategoryList from "../../../components/CategoryList"; // nuovo import
+import { Button } from "react-native";
 
 export default function Home() {
   const navigation = useNavigation();
@@ -33,6 +34,10 @@ export default function Home() {
         <CategoryList ref={categoryListRef} />
       </ScrollView>
       <AddCategoryButton onCategoryAdded={handleCategoryAdded} />
+      <Button
+        title="Go to Home"
+        onPress={() => navigation.navigate("HomePage")}
+      />
     </View>
   );
 }

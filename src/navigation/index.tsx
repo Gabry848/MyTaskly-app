@@ -1,36 +1,40 @@
-import React from 'react';
-import { NavigationContainer, LinkingOptions } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import HomeTabs from './screens/Home';
-import Profile from './screens/Profile';
-import Settings from './screens/Settings';
-import { NotFound } from './screens/NotFound';
-import TaskList from './screens/TaskList';
-import Login from './screens/Login';
-import Register from './screens/Register';
-import { RootStackParamList } from '../types';
+import React from "react";
+import { NavigationContainer, LinkingOptions } from "@react-navigation/native";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import HomeTabs from "./screens/Home";
+import Profile from "./screens/Profile";
+import Settings from "./screens/Settings";
+import { NotFound } from "./screens/NotFound";
+import TaskList from "./screens/TaskList";
+import Login from "./screens/Login";
+import Register from "./screens/Register";
+import HomePage from "./screens/HomePage";
+import Categories from "./screens/Categories";
+import { RootStackParamList } from "../types";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const linking: LinkingOptions<RootStackParamList> = {
-  prefixes: ['https://taskly.com', 'taskly://'],
+  prefixes: ["https://taskly.com", "taskly://"],
   config: {
     screens: {
-      HomeTabs: 'home',
+      HomeTabs: "home",
       Profile: {
-        path: ':user(@[a-zA-Z0-9-_]+)',
+        path: ":user(@[a-zA-Z0-9-_]+)",
         parse: {
-          user: (value) => value.replace(/^@/, ''),
+          user: (value) => value.replace(/^@/, ""),
         },
         stringify: {
           user: (value) => `@${value}`,
         },
       },
-      Settings: 'settings',
-      NotFound: '*',
-      TaskList: 'tasks',
-      Login: 'login',
-      Register: 'register',
+      Settings: "settings",
+      NotFound: "*",
+      TaskList: "tasks",
+      Login: "login",
+      Register: "register",
+      HomePage: "home-page",
+      Categories: "categories",
     },
   },
 };
@@ -42,37 +46,47 @@ export default function RootStack() {
         <Stack.Screen
           name="HomeTabs"
           component={HomeTabs}
-          options={{ title: 'Taskly', headerShown: false }}
+          options={{ title: "Taskly", headerShown: true }}
         />
         <Stack.Screen
           name="Profile"
           component={Profile}
-          options={{ title: 'Profile' }}
+          options={{ title: "Profile" }}
         />
         <Stack.Screen
           name="Settings"
           component={Settings}
-          options={{ presentation: 'modal' }}
+          options={{ presentation: "modal" }}
         />
         <Stack.Screen
           name="NotFound"
           component={NotFound}
-          options={{ title: '404' }}
+          options={{ title: "404" }}
         />
         <Stack.Screen
           name="TaskList"
           component={TaskList}
-          options={{ title: 'ToDo' }}
+          options={{ title: "ToDo" }}
         />
         <Stack.Screen
           name="Login"
           component={Login}
-          options={{ title: 'Login' }}
+          options={{ title: "Login" }}
         />
         <Stack.Screen
           name="Register"
           component={Register}
-          options={{ title: 'Register' }}
+          options={{ title: "Register" }}
+        />
+        <Stack.Screen
+          name="HomePage"
+          component={HomePage}
+          options={{ title: "Taskly", headerShown: true }}
+        />
+        <Stack.Screen
+          name="Categories"
+          component={Categories}
+          options={{ title: "Categories" }}
         />
       </Stack.Navigator>
     </NavigationContainer>
