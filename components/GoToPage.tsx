@@ -1,8 +1,6 @@
-import React from "react";
-import { StyleSheet, View, Text, TouchableOpacity } from "react-native";
+import React, { useState, useEffect } from "react";
+import { StyleSheet, View, Text, TouchableOpacity, Dimensions } from "react-native";
 import Icon from "react-native-vector-icons/Entypo";
-import { useNavigation, NavigationProp } from "@react-navigation/native";
-import { RootStackParamList } from "../src/types";
 
 type Props = {
   text: string;
@@ -10,10 +8,21 @@ type Props = {
 };
 
 function GoToPage({ text, onPress }: Props) {
-  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const [windowWidth, setWindowWidth] = useState(Dimensions.get("window").width);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(Dimensions.get("window").width);
+    };
+
+    const subscription = Dimensions.addEventListener("change", handleResize);
+    return () => {
+      subscription?.remove();
+    };
+  }, []);
 
   return (
-    <TouchableOpacity style={styles.container} onPress={onPress}>
+    <TouchableOpacity style={[styles.container, { width: windowWidth * 0.9 }]} onPress={onPress}>
       <View style={styles.rect1}>
         <Text style={styles.leMieCategorie2}>{text}</Text>
         <Icon name="chevron-thin-right" style={styles.icon}></Icon>
@@ -33,7 +42,7 @@ const styles = StyleSheet.create({
   rect1: {
     width: "100%",
     height: "100%",
-    backgroundColor: "rgba(187,182,216,1)",
+    backgroundColor: "rgba(173,216,230,1)", // Cambiato in un azzurro chiaro
     borderWidth: 1,
     borderColor: "rgba(255,255,255,1)",
     borderRadius: 58,
@@ -50,7 +59,7 @@ const styles = StyleSheet.create({
   icon: {
     color: "rgba(13,12,12,1)",
     fontSize: 20,
-  },
+  }
 });
 
 export default GoToPage;

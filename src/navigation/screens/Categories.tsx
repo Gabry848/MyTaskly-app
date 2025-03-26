@@ -1,24 +1,33 @@
-import React, { Component } from "react";
-import { StyleSheet, View, Text } from "react-native";
+import React, { useRef } from "react";
+import { View, StyleSheet, ScrollView } from 'react-native';
+import CategoryList from '../../../components/CategoryList';
+import AddCategoryButton from "../../../components/AddCategoryButton"; // nuovo import
 
-function Index(props) {
+export default function Categories() {
+  const categoryListRef = useRef<{ reloadCategories: () => void } | null>(null);
+  const handleCategoryAdded = () => {
+    if (categoryListRef.current) {
+      categoryListRef.current.reloadCategories();
+    }
+  };
   return (
     <View style={styles.container}>
-      <Text style={styles.leMieCategorie}>Le mie categorie</Text>
+      <CategoryList />
+      <View style={styles.inner}>
+        <AddCategoryButton onCategoryAdded={handleCategoryAdded} />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    width: 225,
-    height: 37
+    flex: 1,
+    backgroundColor: '#f7f7f7',
   },
-  leMieCategorie: {
-    fontFamily: "roboto-700",
-    color: "#121212",
-    fontSize: 30
-  }
+  inner: {
+    position: 'absolute',
+    bottom: 10,
+    right: 80, // Cambia da 'right' a 'left'
+  },
 });
-
-export default Index;

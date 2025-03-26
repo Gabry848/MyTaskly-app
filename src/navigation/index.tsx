@@ -46,7 +46,7 @@ export default function RootStack() {
         <Stack.Screen
           name="HomeTabs"
           component={HomeTabs}
-          options={{ title: "Taskly", headerShown: true }}
+          options={{ title: "Taskly", headerShown: false }}
         />
         <Stack.Screen
           name="Profile"
@@ -81,12 +81,12 @@ export default function RootStack() {
         <Stack.Screen
           name="HomePage"
           component={HomePage}
-          options={{ title: "Taskly", headerShown: true }}
+          options={{ title: "Taskly"}}
         />
         <Stack.Screen
           name="Categories"
           component={Categories}
-          options={{ title: "Categories" }}
+          options={{ title: "Categories", headerShown: true }}
         />
       </Stack.Navigator>
     </NavigationContainer>

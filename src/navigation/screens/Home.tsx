@@ -1,67 +1,88 @@
-import React, { useRef } from "react";
-import { View, Text, StyleSheet, Image, ScrollView } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, StyleSheet, Text, Dimensions } from "react-native";
+import GoToPage from "../../../components/GoToPage";
+import { useNavigation, NavigationProp } from "@react-navigation/native";
+import { RootStackParamList } from "../../types";
+import { LineChart } from "react-native-chart-kit";
+import Badge from "../../../components/Badge";
 
-import Badge from "../../../components/Badge"; // nuovo import
-import { useNavigation } from "@react-navigation/native"; // nuovo import
-import AddCategoryButton from "../../../components/AddCategoryButton"; // nuovo import
-import CategoryList from "../../../components/CategoryList"; // nuovo import
-import { Button } from "react-native";
+function Home() {
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const [windowWidth, setWindowWidth] = useState(
+    Dimensions.get("window").width
+  );
 
-export default function Home() {
-  const navigation = useNavigation();
-  const categoryListRef = useRef<{ reloadCategories: () => void } | null>(null);
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(Dimensions.get("window").width);
+    };
 
-  React.useLayoutEffect(() => {
-    navigation.setOptions({
-      title: "Home",
-      headerRight: () => <Badge letter="U" />,
-    });
-  }, [navigation]);
-
-  const handleCategoryAdded = () => {
-    if (categoryListRef.current) {
-      categoryListRef.current.reloadCategories();
-    }
-  };
+    const subscription = Dimensions.addEventListener("change", handleResize);
+    return () => {
+      subscription?.remove();
+    };
+  }, []);
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerText}>Taskly</Text>
-        <Badge letter="A" /> 
+        <Badge letter="A" />
       </View>
-      <ScrollView style={styles.container}>
-        <CategoryList ref={categoryListRef} />
-      </ScrollView>
-      <AddCategoryButton onCategoryAdded={handleCategoryAdded} />
-      <Button
-        title="Go to Home"
-        onPress={() => navigation.navigate("HomePage")}
-      />
+      <View style={styles.statistics}>
+        <View style={styles.chartWrapper}>
+          <Text style={styles.chartTitle}>Statistiche Mensili</Text> {/* Titolo del grafico */}
+          <View style={styles.chartContainer}>
+            <LineChart
+              data={{
+                labels: ["J", "F", "M", "A", "M", "J"],
+                datasets: [
+                  {
+                    data: [20, 45, 28, 80, 99, 43],
+                  },
+                ],
+              }}
+              width={windowWidth * 0.87} // Adjusted width to take more space
+              height={200}
+              chartConfig={{
+                backgroundColor: "#ffffff",
+                backgroundGradientFrom: "#f7f7f7",
+                backgroundGradientTo: "#e1e1e1",
+                decimalPlaces: 2,
+                color: (opacity = 1) => `rgba(0, 123, 255, ${opacity})`,
+                labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                style: {
+                  borderRadius: 16,
+                },
+                propsForDots: {
+                  r: "6",
+                  strokeWidth: "2",
+                  stroke: "#007bff",
+                },
+              }}
+            />
+          </View>
+        </View>
+      </View>
+      <View style={styles.rect2}>
+        <GoToPage
+          text="Le mie categorie"
+          onPress={() => navigation.navigate("Categories")}
+        />
+        <GoToPage
+          text="La mia giornata"
+          onPress={() => navigation.navigate("Categories")}
+        />
+        <GoToPage
+          text="Appunti rapidi"
+          onPress={() => navigation.navigate("Categories")}
+        />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "rgba(245, 245, 245, 0.8)", // semi-transparent background
-    // backgroundImage:
-    //   "linear-gradient(45deg,rgb(255, 255, 255),rgb(49, 200, 238))", // light blue color added
-    width: "100%",
-    height: "100%",
-  },
-  title: {
-    fontSize: 30,
-    fontWeight: "bold",
-    marginBottom: 20,
-    marginStart: "10%",
-    marginTop: "10%",
-    flexWrap: "wrap",
-    width: "45%",
-    lineHeight: 40, // added line height for spacing between lines
-    color: "black",
-  },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -73,46 +94,54 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
-    marginBottom: 20,
+    marginBottom: 15, // Aggiunto margine inferiore
   },
   headerText: {
     fontSize: 24,
     fontWeight: "bold",
   },
-  imageContainer: {
-    flexDirection: "row",
-    alignItems: "center",
+  container: {
+    width: "100%",
+    height: "100%",
   },
-  image: {
-    width: 150,
-    height: 150,
-    borderRadius: 20, // rounded corners
-    borderWidth: 2,
-    borderColor: "white",
-    marginLeft: 20, // added margin to separate the image from the text
-    marginEnd: 20,
-    marginTop: 30,
+  rect2: {
+    marginTop: 20,
   },
-  headerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    marginTop: 15,
+  chartWrapper: {
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 10,
+    padding: 10,
+    backgroundColor: "#ffffff",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.8,
+    shadowRadius: 2,
+    elevation: 5,
+    marginHorizontal: 10,
+  },
+  chartContainer: {
+    borderColor: "rgba(0,0,0,0.1)",
+    borderRadius: 10,
+    backgroundColor: "#ffffff",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+  },
+  title: {
+    fontSize: 20,
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#ddd",
+  },
+  statistics: {
+    paddingBottom: 20,
+  },
+  chartTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    textAlign: "center",
     marginBottom: 10,
   },
-  feedTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "black",
-  },
-  badgeStyle: {
-    marginLeft: 10, // Spazio tra il testo e il badge
-  },
-  logoutButton: {
-    marginTop: 20,
-    padding: 10,
-    backgroundColor: "lightblue",
-    borderRadius: 5,
-  },
 });
+
+export default Home;

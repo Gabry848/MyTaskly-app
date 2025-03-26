@@ -103,8 +103,8 @@ const styles = StyleSheet.create({
   },
   addButton: {
     position: 'absolute',
-    bottom: 20,
-    right: 20,
+    bottom: 0, // Cambia da 'bottom: 20' a 'bottom: 0'
+    left: 20, // Cambia da 'right' a 'left'
     backgroundColor: '#007BFF',
     width: 50,
     height: 50,

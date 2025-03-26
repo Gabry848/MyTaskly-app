@@ -2,7 +2,7 @@ import React, { useEffect, useState, forwardRef, useImperativeHandle } from 'rea
 import { getCategories } from '../src/services/taskService';
 import Category from './Category'; // Importa il componente Category
 import AddCategoryButton from './AddCategoryButton'; // Importa il componente AddCategoryButton
-import { View, StyleSheet, Text, Dimensions, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, Text, Dimensions, TouchableOpacity, Image } from 'react-native';
 
 interface CategoryType {
   id: string | number;
@@ -48,7 +48,10 @@ const CategoryList = forwardRef((props, ref) => {
           <Text style={{ fontWeight: 'bold' }}>Le mie categorie</Text>
         </Text>
         <TouchableOpacity style={styles.reloadButton} onPress={fetchCategories}>
-          <Text style={styles.reloadButtonText}>🔄</Text>
+          <Image 
+            source={require('../assets/refresh.png')}
+            style={{ width: 20, height: 20 }}
+            />
         </TouchableOpacity>
       </View>
       {categories && categories.length > 0 ? (
