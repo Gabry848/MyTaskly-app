@@ -22,7 +22,7 @@ function GoToPage({ text, onPress }: Props) {
   }, []);
 
   return (
-    <TouchableOpacity style={[styles.container, { width: windowWidth * 0.9 }]} onPress={onPress}>
+    <TouchableOpacity style={[styles.container]} onPress={onPress}>
       <View style={styles.rect1}>
         <Text style={styles.leMieCategorie2}>{text}</Text>
         <Icon name="chevron-thin-right" style={styles.icon}></Icon>
@@ -38,6 +38,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginVertical: 10,
     marginLeft: 10,
+    marginRight: 10,
   },
   rect1: {
     width: "100%",
