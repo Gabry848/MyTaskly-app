@@ -47,6 +47,35 @@ export async function getTasks(category_name?: string) {
   }
 }
 
+// funzione che restistuise gli utimi impegni
+export async function getLastTask(last_n: number) {
+  try {
+    const token = await getValidToken();
+    if (!token) {
+      return [];
+    }
+    const response = await axios.get(`/tasks`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    // restituisce gli ultimi n impegni
+    let tasks = response.data.slice(-last_n);
+    // Ordina gli impegni per data di scadenza
+    response.data.sort((a: Task, b: Task) => {
+      return new Date(a.end_time).getTime() - new Date(b.end_time).getTime();
+    }
+    );
+    return tasks;
+
+  } catch (error) {
+    console.log(error);
+    return [];
+  }
+}
+
 // Funzione per aggiungere un nuovo impegno
 export async function addTask(task: Task) {
   try {

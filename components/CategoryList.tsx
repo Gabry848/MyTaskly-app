@@ -42,7 +42,7 @@ const CategoryList = forwardRef((props, ref) => {
       <AddCategoryButton onCategoryAdded={() => {
           setLoading(true);
           fetchCategories();
-      }} /> {/* Passa la funzione come prop */}
+      }} /> 
       <View style={styles.headerContainer}>
         <Text style={styles.headerTitle}>
           <Text style={{ fontWeight: 'bold' }}>Le mie categorie</Text>

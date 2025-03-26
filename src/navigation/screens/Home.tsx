@@ -1,13 +1,18 @@
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet, Text, Dimensions } from "react-native";
+import { View, StyleSheet, Text, Dimensions, ScrollView } from "react-native";
 import GoToPage from "../../../components/GoToPage";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { RootStackParamList } from "../../types";
 import { LineChart } from "react-native-chart-kit";
 import Badge from "../../../components/Badge";
+import Task from "../../../components/Task";
+import { getLastTask } from "../../services/taskService";
 
 function Home() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const [tasks, setTasks] = useState<
+    { title: string; description: string; end_time: string; priority: string }[]
+  >([]);
   const [windowWidth, setWindowWidth] = useState(
     Dimensions.get("window").width
   );
@@ -23,15 +28,25 @@ function Home() {
     };
   }, []);
 
+  useEffect(() => {
+    const fetchTasks = async () => {
+      const lastTasks = await getLastTask(5); // Assuming getLastTask takes a number as an argument
+      setTasks(lastTasks);
+    };
+
+    fetchTasks();
+  }, []);
+
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerText}>Taskly</Text>
         <Badge letter="A" />
       </View>
       <View style={styles.statistics}>
         <View style={styles.chartWrapper}>
-          <Text style={styles.chartTitle}>Statistiche Mensili</Text> {/* Titolo del grafico */}
+          <Text style={styles.chartTitle}>Statistiche Mensili</Text>{" "}
+          {/* Titolo del grafico */}
           <View style={styles.chartContainer}>
             <LineChart
               data={{
@@ -78,7 +93,35 @@ function Home() {
           onPress={() => navigation.navigate("Categories")}
         />
       </View>
-    </View>
+      <View style={[styles.chartWrapper, { marginBottom: 20 }]}>
+        <Text
+          style={[styles.chartTitle, { textAlign: "left", marginBottom: 10 }]}
+        >
+          Prossimi impegni
+        </Text>
+        {/* Lista degli ultimi 5 impegni utilizzando la funzione GetLastTasdk per ricevere gli impegni*/}
+        <View>
+          {tasks.length > 0 ? (
+            tasks.map((element, index) => (
+              <Task
+                task={{
+                  id: index,
+                  title: element.title,
+                  description: element.description,
+                  priority: element.priority,
+                  end_time: element.end_time,
+                  completed: false,
+                }}
+              />
+            ))
+          ) : (
+            <Text style={{ padding: 5, fontSize: 16 }}>
+              Nessun impegno trovato 😔
+            </Text>
+          )}
+        </View>
+      </View>
+    </ScrollView>
   );
 }
 
@@ -105,7 +148,8 @@ const styles = StyleSheet.create({
     height: "100%",
   },
   rect2: {
-    marginTop: 20,
+    marginTop: 0,
+    marginBottom: 20,
   },
   chartWrapper: {
     borderWidth: 1,
