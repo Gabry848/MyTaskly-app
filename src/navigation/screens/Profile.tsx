@@ -103,10 +103,10 @@ const ProfileScreen = () => {
 
   return (
     <>
-      <StatusBar barStyle="light-content" backgroundColor="#1A73E8" />
+      <StatusBar hidden={true} />
       <LinearGradient
         colors={['#1A73E8', '#0D47A1']}
-        style={styles.gradientBackground}
+        style={[styles.gradientBackground, { paddingTop: StatusBar.currentHeight }]}
       >
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
@@ -232,8 +232,8 @@ const styles = StyleSheet.create({
   },
   headerSection: {
     alignItems: "center",
-    marginBottom: 30,
-    marginTop: 20,
+    marginBottom: 40,
+    marginTop: 30,
   },
   avatar: {
     width: 130,
@@ -243,8 +243,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 4,
-    borderColor: "white",
+    borderWidth: 0,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
