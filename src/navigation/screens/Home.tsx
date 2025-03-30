@@ -8,6 +8,8 @@ import Badge from "../../../components/Badge";
 import Task from "../../../components/Task";
 import { getLastTask } from "../../services/taskService";
 import { ChevronDown, ChevronRight } from "lucide-react-native";
+import { useFocusEffect } from '@react-navigation/native';
+
 
 function Home() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
@@ -19,6 +21,27 @@ function Home() {
   );
   const [isTaskCardOpen, setIsTaskCardOpen] = useState(true);
   const [animationHeight] = useState(new Animated.Value(1)); // Inizializzato a 1 invece di 0
+
+
+  useFocusEffect(
+    React.useCallback(() => {
+        // riprendi i task piu` recenti, quando la schermata viene visualizzata
+        const fetchTasks = async () => {
+          const lastTasks = await getLastTask(5); // Assuming getLastTask takes a number as an argument
+          setTasks(lastTasks);
+        }
+        fetchTasks();
+    }, [])
+  );
+
+  useEffect(() => {
+    const fetchTasks = async () => {
+      const lastTasks = await getLastTask(5); // Assuming getLastTask takes a number as an argument
+      setTasks(lastTasks);
+    };
+
+    fetchTasks();
+  }, []);
 
   useEffect(() => {
     const handleResize = () => {
@@ -150,16 +173,8 @@ function Home() {
       </View>
       <View style={styles.rect2}>
         <GoToPage
-          text="Le mie categorie"
-          onPress={() => navigation.navigate("Categories")}
-        />
-        <GoToPage
           text="La mia giornata"
           onPress={() => navigation.navigate("Categories")}
-        />
-        <GoToPage
-          text="Appunti rapidi"
-          onPress={() => navigation.navigate("Notes")}
         />
       </View>
     </ScrollView>

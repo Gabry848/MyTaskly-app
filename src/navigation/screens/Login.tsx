@@ -10,14 +10,15 @@ import {
 } from "react-native";
 import { FontAwesome } from "@expo/vector-icons";
 import * as authService from "../../services/authService";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, NavigationProp } from "@react-navigation/native";
+import { RootStackParamList } from "../../types";
 
 import { NotificationSnackbar } from "../../../components/NotificationSnackbar";
 
 const { width } = Dimensions.get("window");
 
 const LoginScreen = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
 
   const [username, setUsername] = React.useState("");
   const [password, setPassword] = React.useState("");
@@ -32,22 +33,19 @@ const LoginScreen = () => {
   // login function use authServicec to login
   async function handleLogin() {
     try {
-      // faccio login con username e password presi dai campi di input
       const login_data = await authService.login(username, password);
 
-      // Modifica tutte le chiamate setNotification con:
       if (login_data.success) {
         setNotification({
           isVisible: true,
           message: "Login effettuato con successo",
           isSuccess: true,
           onFinish: () => {
-            navigation.navigate("Profile");
-            // Aggiornamento funzionale con reset di onFinish
+            console.log("Login effettuato con successo");
             setNotification((prev) => ({
               ...prev,
               isVisible: false,
-              onFinish: () => {}, // Reset a funzione vuota
+              onFinish: () => {},
             }));
           },
         });
@@ -57,7 +55,7 @@ const LoginScreen = () => {
           message: "Username o password errati",
           isSuccess: false,
           onFinish: () => {
-            // Aggiornamento funzionale con reset
+            console.log("Login fallito");
             setNotification((prev) => ({
               ...prev,
               isVisible: false,
@@ -81,7 +79,11 @@ const LoginScreen = () => {
         message: errorMessage,
         isSuccess: false,
         onFinish: () => {
-          setNotification({ ...notification, isVisible: false });
+          setNotification((prev) => ({
+            ...prev,
+            isVisible: false,
+            onFinish: () => {},
+          }));
         },
       });
     }

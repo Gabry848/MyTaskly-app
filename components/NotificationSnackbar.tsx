@@ -23,30 +23,27 @@ export function NotificationSnackbar({
 }: NotificationSnackbarProps) {
   const translateX = useSharedValue(-width);
 
-  // Modifica l'effetto per aggiungere un controllo sulla funzione
-useEffect(() => {
-  if (isVisible) {
-    translateX.value = withTiming(0, { duration: 300 });
+  useEffect(() => {
+    if (isVisible) {
+      translateX.value = withTiming(0, { duration: 300 });
 
-    const timer = setTimeout(() => {
-      translateX.value = withTiming(-width, { duration: 300 }, () => {
-        // Controlla se onFinish è una funzione prima di chiamarlo
-        if (typeof onFinish === 'function') {
+      const timer = setTimeout(() => {
+        translateX.value = withTiming(-width, { duration: 300 }, (finished) => {
+          if (finished && typeof onFinish === "function") {
+            onFinish();
+          }
+        });
+      }, 1500);
+
+      return () => clearTimeout(timer);
+    } else {
+      translateX.value = withTiming(-width, { duration: 300 }, (finished) => {
+        if (finished && typeof onFinish === "function") {
           onFinish();
         }
       });
-    }, 1500);
-
-    return () => clearTimeout(timer);
-    
-  } else {
-    translateX.value = withTiming(-width, { duration: 300 }, () => {
-      if (typeof onFinish === 'function') {
-        onFinish();
-      }
-    });
-  }
-}, [isVisible]);
+    }
+  }, [isVisible]);
 
   const animatedStyle = useAnimatedStyle(() => {
     return {

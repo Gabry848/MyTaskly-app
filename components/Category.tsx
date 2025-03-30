@@ -1,8 +1,10 @@
 import React from "react";
-import { View, Text, StyleSheet, Image, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, Image, TouchableOpacity, Animated } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../src/types';
+import { LinearGradient } from 'expo-linear-gradient';
+import { MaterialIcons } from '@expo/vector-icons';
 
 type CategoryScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -12,33 +14,73 @@ type CategoryScreenNavigationProp = StackNavigationProp<
 interface CategoryProps {
   title: string;
   imageUrl?: string;
+  taskCount?: number;
 }
 
-const Category: React.FC<CategoryProps> = ({ title, imageUrl }) => {
+const Category: React.FC<CategoryProps> = ({ title, imageUrl, taskCount = 10 }) => {
   const navigation = useNavigation<CategoryScreenNavigationProp>();
+  const scaleAnim = React.useRef(new Animated.Value(1)).current;
+  
+  const handlePressIn = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 0.95,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      friction: 4,
+      useNativeDriver: true,
+    }).start();
+  };
   
   return (
-    <TouchableOpacity
-      style={styles.view}
-      onPress={() => {
-        console.log("Navigating to TaskList");
-        navigation.navigate("TaskList", { category_name: title });
-      }}
-    >
-      <View style={styles.imageContainer}>
-        {imageUrl && <Image source={{ uri: imageUrl }} style={styles.image} />}
-      </View>
+    <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+      <TouchableOpacity
+        style={styles.view}
+        activeOpacity={0.8}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        onPress={() => {
+          navigation.navigate("TaskList", { category_name: title });
+        }}
+      >
+        <LinearGradient
+          colors={['rgba(11, 148, 153, 0.7)', 'rgba(11, 148, 153, 0.3)']}
+          style={styles.imageContainer}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        >
+          {imageUrl ? (
+            <Image source={{ uri: imageUrl }} style={styles.image} />
+          ) : (
+            <MaterialIcons name="category" size={24} color="#fff" style={{margin: 8}} />
+          )}
+        </LinearGradient>
 
-      <View style={styles.categoryContainer}>
-        <Text style={styles.add}>{title}</Text>
-        <Text style={styles.title}>✅ 10 cose da fare</Text>
-        {/*//TODO: add an automate counter*/}
-      </View>
+        <View style={styles.categoryContainer}>
+          <Text style={styles.add}>{title}</Text>
+          <View style={styles.counterRow}>
+            <MaterialIcons name="check-circle" size={16} color="#4CAF50" />
+            <Text style={styles.title}>{taskCount} cose da fare</Text>
+          </View>
+        </View>
 
-      <View style={styles.controlsContainer}>
-        <Text>add task</Text>
-      </View>
-    </TouchableOpacity>
+        <TouchableOpacity style={styles.controlsContainer}>
+          <LinearGradient
+            colors={['#4CAF50', '#2E7D32']}
+            style={styles.addButton}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          >
+            <MaterialIcons name="add-task" size={22} color="#fff" />
+            <Text style={styles.addButtonText}>Aggiungi</Text>
+          </LinearGradient>
+        </TouchableOpacity>
+      </TouchableOpacity>
+    </Animated.View>
   );
 };
 
@@ -47,85 +89,66 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    borderWidth: 1,
-    padding: 10,
+    padding: 12,
     margin: 10,
-    borderColor: "rgba(0, 0, 0, 0)",
-    borderRadius: 10,
-  },
-  imageContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    width: 40,
-    height: 50,
-    borderRadius: 10,
-    backgroundColor: "rgba(11, 148, 153, 0.41)",
+    backgroundColor: "#fff",
+    borderRadius: 16,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: 2,
     },
-    shadowOpacity: 0.5,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  imageContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   image: {
-    width: 30,
-    height: 40,
-    borderRadius: 25,
-    marginStart: 5,
-    marginBottom: 5,
-    marginTop: 5,
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+  },
+  counterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingStart: 5,
   },
   add: {
-    fontSize: 20,
-    fontWeight: "bold",
+    fontSize: 18,
+    fontWeight: "700",
     padding: 5,
+    color: "#333",
   },
   title: {
     fontSize: 14,
-    fontStyle: "italic",
-    color: "gray",
-    paddingStart: 5,
-    paddingBottom: 5,
+    color: "#666",
+    marginLeft: 4,
   },
   categoryContainer: {
-    width: "40%",
-    backgroundColor: "white",
-    borderColor: "rgba(0, 0, 0, 0)",
-    borderRadius: 10,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.5,
-    shadowRadius: 3.84,
-    elevation: 5,
+    flex: 1,
+    marginHorizontal: 12,
   },
   controlsContainer: {
-    width: "40%",
-    height: 60,
-    backgroundColor: "white",
-    borderColor: "rgba(0, 0, 0, 0)",
-    borderRadius: 10,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.5,
-    shadowRadius: 3.84,
-    elevation: 5,
-    alignItems: "center",
     justifyContent: "center",
+    alignItems: "center",
   },
-
-  addImage: {
-    width: 20,
-    height: 20,
-    margin: 5,
-    paddingStart: 10,
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+  },
+  addButtonText: {
+    color: 'white',
+    fontWeight: '600',
+    marginLeft: 4,
   },
 });
 

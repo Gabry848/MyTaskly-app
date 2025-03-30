@@ -1,19 +1,71 @@
 import React from "react";
 import { NavigationContainer, LinkingOptions } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import HomeTabs from "./screens/Home";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import Home from "./screens/Home";
 import Profile from "./screens/Profile";
 import Settings from "./screens/Settings";
 import { NotFound } from "./screens/NotFound";
 import TaskList from "./screens/TaskList";
 import Login from "./screens/Login";
 import Register from "./screens/Register";
-import HomePage from "./screens/HomePage";
 import Categories from "./screens/Categories";
 import Notes from "./screens/Notes";
 import { RootStackParamList } from "../types";
+import { Home as HomeIcon, BookType, FolderKanban } from "lucide-react-native";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
+const Tab = createBottomTabNavigator<RootStackParamList>();
+
+// Bottom tabs navigator
+function TabNavigator() {
+  return (
+    <Tab.Navigator
+      id={undefined}
+      screenOptions={{
+        tabBarActiveTintColor: "#007BFF",
+        tabBarInactiveTintColor: "#888",
+        tabBarStyle: {
+          height: 60,
+          paddingBottom: 10,
+        },
+        tabBarLabelStyle: {
+          fontSize: 12,
+        },
+      }}
+    >
+      <Tab.Screen
+        name="HomePage"
+        component={Home}
+        options={{
+          title: "Home",
+          headerShown: false, // Nascondo l'header solo per Home
+          tabBarIcon: ({ color, size }) => (
+            <HomeIcon size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Notes"
+        component={Notes}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <BookType size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Categories"
+        component={Categories}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <FolderKanban size={size} color={color} />
+          ),
+        }}
+      />
+    </Tab.Navigator>
+  );
+}
 
 const linking: LinkingOptions<RootStackParamList> = {
   prefixes: ["https://taskly.com", "taskly://"],
@@ -47,7 +99,7 @@ export default function RootStack() {
       <Stack.Navigator id={undefined}>
         <Stack.Screen
           name="HomeTabs"
-          component={HomeTabs}
+          component={TabNavigator}
           options={{ title: "Taskly", headerShown: false }}
         />
         <Stack.Screen
@@ -79,21 +131,6 @@ export default function RootStack() {
           name="Register"
           component={Register}
           options={{ title: "Register" }}
-        />
-        <Stack.Screen
-          name="HomePage"
-          component={HomePage}
-          options={{ title: "Taskly"}}
-        />
-        <Stack.Screen
-          name="Categories"
-          component={Categories}
-          options={{ title: "Categories", headerShown: true }}
-        />
-        <Stack.Screen
-          name="Notes"
-          component={Notes}
-          options={{ title: "Notes", headerShown: true }}
         />
       </Stack.Navigator>
     </NavigationContainer>
