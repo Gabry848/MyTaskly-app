@@ -61,7 +61,7 @@ function Home() {
     <ScrollView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerText}>Taskly</Text>
-        <Badge letter="A" />
+        <Badge/>
       </View>
       <View style={styles.statistics}>
         <View style={styles.chartWrapper}>
