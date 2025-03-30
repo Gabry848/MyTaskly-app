@@ -402,6 +402,10 @@ async function logout() {
     await AsyncStorage.removeItem(STORAGE_KEYS.BEARER_DURATION);
     await AsyncStorage.removeItem(STORAGE_KEYS.REFRESH_DURATION);
     await AsyncStorage.removeItem(STORAGE_KEYS.USER_DATA);
+    await AsyncStorage.removeItem(STORAGE_KEYS.USER_NAME);
+    await AsyncStorage.removeItem(STORAGE_KEYS.USER_EMAIL);
+    await AsyncStorage.removeItem(STORAGE_KEYS.USER_ID);
+    await AsyncStorage.removeItem(STORAGE_KEYS.USER_PASSWORD);
 
     return { success: true, message: "Logout effettuato con successo" };
   } catch (error) {
