@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet, Text, Dimensions, ScrollView, TouchableOpacity, Animated } from "react-native";
+import { View, StyleSheet, Text, Dimensions, ScrollView, TouchableOpacity, Animated, StatusBar } from "react-native";
 import GoToPage from "../../../components/GoToPage";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { RootStackParamList } from "../../types";
@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     width: "100%",
     padding: 30,
-    paddingTop: 35,
+    paddingTop: 50,
     backgroundColor: "#F9c9F9",
     paddingHorizontal: 20,
     paddingVertical: 10,

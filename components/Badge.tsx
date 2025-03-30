@@ -4,6 +4,7 @@ import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { RootStackParamList } from "../src/types";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { STORAGE_KEYS } from "../src/constants/authConstants";
+import { useFocusEffect } from '@react-navigation/native';
 
 import { check_login, refreshToken } from "../src/services/authService";
 
@@ -25,10 +26,22 @@ export default function Badge() {
     }
   };
 
+  useFocusEffect(
+      React.useCallback(() => {
+        const fetchLetter = async () => {
+          const userName = await AsyncStorage.getItem(STORAGE_KEYS.USER_NAME);
+          const firstLetter = userName ? userName[0] : "U"; // Valore predefinito
+          setLetter(firstLetter);
+        };
+
+        fetchLetter();
+      }, [])
+    );
+
   useEffect(() => {
     const fetchLetter = async () => {
       const userName = await AsyncStorage.getItem(STORAGE_KEYS.USER_NAME);
-      const firstLetter = userName ? userName[0] : "U"; // Valore predefinito
+      const firstLetter = userName ? userName[0] : " "; // Valore predefinito
       setLetter(firstLetter);
     };
 
@@ -47,7 +60,7 @@ export default function Badge() {
 const styles = StyleSheet.create({
   badge: {
     position: "absolute",
-    top: 30,
+    top: 45,
     right: 20,
     backgroundColor: "#007AFF",
     width: 40,

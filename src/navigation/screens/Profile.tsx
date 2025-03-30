@@ -103,7 +103,6 @@ const ProfileScreen = () => {
 
   return (
     <>
-      <StatusBar hidden={true} />
       <LinearGradient
         colors={['#1A73E8', '#0D47A1']}
         style={[styles.gradientBackground, { paddingTop: StatusBar.currentHeight }]}
