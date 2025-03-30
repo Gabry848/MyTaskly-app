@@ -58,7 +58,7 @@ const CategoryList = forwardRef((props, ref) => {
         categories.map((category, index) => (
           <Category
             key={category.id ?? index}
-            title={category.name}
+            title={category.name} 
             imageUrl={category.imageUrl}
           />
         ))

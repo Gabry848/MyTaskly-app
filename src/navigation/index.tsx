@@ -10,6 +10,7 @@ import Login from "./screens/Login";
 import Register from "./screens/Register";
 import HomePage from "./screens/HomePage";
 import Categories from "./screens/Categories";
+import Notes from "./screens/Notes";
 import { RootStackParamList } from "../types";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -35,6 +36,7 @@ const linking: LinkingOptions<RootStackParamList> = {
       Register: "register",
       HomePage: "home-page",
       Categories: "categories",
+      Notes: "notes",
     },
   },
 };
@@ -87,6 +89,11 @@ export default function RootStack() {
           name="Categories"
           component={Categories}
           options={{ title: "Categories", headerShown: true }}
+        />
+        <Stack.Screen
+          name="Notes"
+          component={Notes}
+          options={{ title: "Notes", headerShown: true }}
         />
       </Stack.Navigator>
     </NavigationContainer>

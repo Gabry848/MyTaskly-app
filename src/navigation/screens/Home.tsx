@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet, Text, Dimensions, ScrollView } from "react-native";
+import { View, StyleSheet, Text, Dimensions, ScrollView, TouchableOpacity, Animated } from "react-native";
 import GoToPage from "../../../components/GoToPage";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { RootStackParamList } from "../../types";
@@ -7,6 +7,7 @@ import { LineChart } from "react-native-chart-kit";
 import Badge from "../../../components/Badge";
 import Task from "../../../components/Task";
 import { getLastTask } from "../../services/taskService";
+import { ChevronDown, ChevronRight } from "lucide-react-native";
 
 function Home() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
@@ -16,6 +17,8 @@ function Home() {
   const [windowWidth, setWindowWidth] = useState(
     Dimensions.get("window").width
   );
+  const [isTaskCardOpen, setIsTaskCardOpen] = useState(true);
+  const [animationHeight] = useState(new Animated.Value(1)); // Inizializzato a 1 invece di 0
 
   useEffect(() => {
     const handleResize = () => {
@@ -36,6 +39,23 @@ function Home() {
 
     fetchTasks();
   }, []);
+
+  const toggleTaskCard = () => {
+    if (isTaskCardOpen) {
+      Animated.timing(animationHeight, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: false,
+      }).start(() => setIsTaskCardOpen(false));
+    } else {
+      setIsTaskCardOpen(true);
+      Animated.timing(animationHeight, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: false,
+      }).start();
+    }
+  };
 
   return (
     <ScrollView style={styles.container}>
@@ -79,6 +99,55 @@ function Home() {
           </View>
         </View>
       </View>
+      <View style={[styles.chartWrapper, { marginBottom: 20 }]}>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+          <Text
+            style={[styles.chartTitle, { textAlign: "left", marginBottom: 10 }]}
+          >
+            Prossimi impegni
+          </Text>
+          <TouchableOpacity onPress={toggleTaskCard} style={{ padding: 5 }}>
+            {isTaskCardOpen ? (
+              <ChevronDown size={20} color="#007bff" />
+            ) : (
+              <ChevronRight size={20} color="#007bff" />
+            )}
+          </TouchableOpacity>
+        </View>
+        <Animated.View
+          style={{
+            height: animationHeight.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0, tasks.length > 0 ? Math.max(tasks.length * 120, 200) : 80], // Aumentato il moltiplicatore e il valore minimo
+            }),
+            overflow: "hidden",
+          }}
+        >
+          {isTaskCardOpen && (
+            <View>
+              {tasks.length > 0 ? (
+                tasks.map((element, index) => (
+                  <Task
+                    key={index}  // Aggiungo key per evitare avvisi React
+                    task={{
+                      id: index,
+                      title: element.title,
+                      description: element.description,
+                      priority: element.priority,
+                      end_time: element.end_time,
+                      completed: false,
+                    }}
+                  />
+                ))
+              ) : (
+                <Text style={{ padding: 5, fontSize: 16 }}>
+                  Nessun impegno trovato 😔
+                </Text>
+              )}
+            </View>
+          )}
+        </Animated.View>
+      </View>
       <View style={styles.rect2}>
         <GoToPage
           text="Le mie categorie"
@@ -90,36 +159,8 @@ function Home() {
         />
         <GoToPage
           text="Appunti rapidi"
-          onPress={() => navigation.navigate("Categories")}
+          onPress={() => navigation.navigate("Notes")}
         />
-      </View>
-      <View style={[styles.chartWrapper, { marginBottom: 20 }]}>
-        <Text
-          style={[styles.chartTitle, { textAlign: "left", marginBottom: 10 }]}
-        >
-          Prossimi impegni
-        </Text>
-        {/* Lista degli ultimi 5 impegni utilizzando la funzione GetLastTasdk per ricevere gli impegni*/}
-        <View>
-          {tasks.length > 0 ? (
-            tasks.map((element, index) => (
-              <Task
-                task={{
-                  id: index,
-                  title: element.title,
-                  description: element.description,
-                  priority: element.priority,
-                  end_time: element.end_time,
-                  completed: false,
-                }}
-              />
-            ))
-          ) : (
-            <Text style={{ padding: 5, fontSize: 16 }}>
-              Nessun impegno trovato 😔
-            </Text>
-          )}
-        </View>
       </View>
     </ScrollView>
   );

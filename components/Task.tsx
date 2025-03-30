@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from "react-native";
 import { FontAwesome } from "@expo/vector-icons"; // Importa l'icona dell'orologio
 import { Entypo } from "@expo/vector-icons"; // Importa l'icona dei tre puntini
+import { Dropdown } from 'react-native-element-dropdown';
 
 const Task = ({
   task = {
@@ -14,24 +15,46 @@ const Task = ({
   },
 }) => {
   const [menuVisible, setMenuVisible] = useState(false);
+  const [selectedAction, setSelectedAction] = useState(null);
+  
+  // Opzioni per il dropdown menu
+  const dropdownData = [
+    { label: 'Modifica', value: 'edit', icon: 'edit' },
+    { label: 'Elimina', value: 'delete', icon: 'trash' },
+    { label: 'Condividi', value: 'share', icon: 'share' },
+  ];
 
   const toggleMenu = () => {
     setMenuVisible(!menuVisible);
   };
 
+  // Gestione delle azioni del dropdown
+  const handleActionSelect = (item) => {
+    switch (item.value) {
+      case 'edit':
+        handleEdit();
+        break;
+      case 'delete':
+        handleDelete();
+        break;
+      case 'share':
+        handleShare();
+        break;
+    }
+    setSelectedAction(null);
+    setMenuVisible(false);
+  };
+
   const handleEdit = () => {
     Alert.alert("Modifica", `Modifica il task con ID ${task.id}`);
-    setMenuVisible(false);
   };
 
   const handleDelete = () => {
     Alert.alert("Elimina", `Task con ID ${task.id} eliminato.`);
-    setMenuVisible(false);
   };
 
   const handleShare = () => {
     Alert.alert("Condividi", `Condividi il task con ID ${task.id}`);
-    setMenuVisible(false);
   };
 
   // Formatta la data per visualizzare solo giorno, mese e anno
@@ -40,6 +63,12 @@ const Task = ({
     month: "2-digit",
     year: "numeric",
   });
+
+  // Renderizzazione della icona per ogni voce del dropdown
+  const renderDropdownIcon = (icon) => {
+    const color = icon === 'trash' ? '#ff4444' : '#333';
+    return <FontAwesome name={icon} size={14} color={color} style={styles.dropdownIcon} />;
+  };
 
   return (
     <TouchableOpacity style={styles.card}>
@@ -61,25 +90,6 @@ const Task = ({
           <TouchableOpacity onPress={toggleMenu}>
             <Entypo name="dots-three-vertical" size={16} color="#888888" />
           </TouchableOpacity>
-          
-          {menuVisible && (
-            <View style={styles.dropdown}>
-              <TouchableOpacity style={styles.menuItem} onPress={handleEdit}>
-                <FontAwesome name="edit" size={14} color="#333" />
-                <Text style={styles.menuText}>Modifica</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity style={styles.menuItem} onPress={handleDelete}>
-                <FontAwesome name="trash" size={14} color="#ff4444" />
-                <Text style={styles.menuText}>Elimina</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity style={styles.menuItem} onPress={handleShare}>
-                <FontAwesome name="share" size={14} color="#333" />
-                <Text style={styles.menuText}>Condividi</Text>
-              </TouchableOpacity>
-            </View>
-          )}
         </View>
       </View>
 
@@ -191,10 +201,9 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 20,
     right: 0,
+    width: 120,
     backgroundColor: "#ffffff",
     borderRadius: 8,
-    padding: 8,
-    width: 120,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
@@ -202,19 +211,26 @@ const styles = StyleSheet.create({
     elevation: 5,
     zIndex: 10,
   },
-  menuItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+  dropdownContainer: {
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  dropdownItemContainer: {
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: '#f0f0f0',
+    paddingVertical: 8,
+  },
+  dropdownItemText: {
+    fontSize: 14,
+    color: '#333',
   },
   menuText: {
-    marginLeft: 8,
     fontSize: 14,
     color: "#333",
   },
+  dropdownIcon: {
+    marginRight: 8,
+  }
 });
 
 export default Task;

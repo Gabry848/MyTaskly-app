@@ -22,4 +22,5 @@ export type RootStackParamList = {
   Register: undefined;
   HomePage: undefined;
   Categories: undefined;
+  Notes: undefined;
 };

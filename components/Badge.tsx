@@ -1,18 +1,17 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Text, TouchableOpacity, StyleSheet, View } from "react-native";
-import { useNavigation, NavigationProp } from '@react-navigation/native';
-import { RootStackParamList } from '../src/types';
+import { useNavigation, NavigationProp } from "@react-navigation/native";
+import { RootStackParamList } from "../src/types";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { STORAGE_KEYS } from "../src/constants/authConstants";
 
 import { check_login, refreshToken } from "../src/services/authService";
 
-type BadgeProps = {
-  letter: string;
-};
-
-export default function Badge({ letter }: BadgeProps) {
+export default function Badge() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const [letter, setLetter] = useState<string>("U"); // Valore predefinito
 
-  async function handlePress() {
+  const handlePress = async () => {
     const login_data = check_login();
 
     if ((await login_data).isAuthenticated) {
@@ -24,16 +23,23 @@ export default function Badge({ letter }: BadgeProps) {
     } else {
       navigation.navigate("Login");
     }
-  }
+  };
+
+  useEffect(() => {
+    const fetchLetter = async () => {
+      const userName = await AsyncStorage.getItem(STORAGE_KEYS.USER_NAME);
+      const firstLetter = userName ? userName[0] : "U"; // Valore predefinito
+      setLetter(firstLetter);
+    };
+
+    fetchLetter();
+  }, []); // L'effetto viene eseguito solo una volta al montaggio del componente
 
   return (
-    <TouchableOpacity
-      style={styles.badge}
-      onPressIn={() => handlePress()}>
-        <View>
-          <Text style={styles.text}>{letter}</Text>
-        </View>
-      
+    <TouchableOpacity style={styles.badge} onPressIn={() => handlePress()}>
+      <View>
+        <Text style={styles.text}>{letter}</Text>
+      </View>
     </TouchableOpacity>
   );
 }
