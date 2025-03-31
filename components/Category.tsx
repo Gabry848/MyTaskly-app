@@ -1,12 +1,11 @@
-import React from "react";
-import { View, Text, StyleSheet, Image, TouchableOpacity, Animated } from "react-native";
+import React, { useState } from "react";
+import { View, Text, StyleSheet, Image, TouchableOpacity, Animated, Modal, Alert, TextInput } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../src/types';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
-
-
+import { deleteCategory, updateCategory } from '../src/services/taskService';
 
 type CategoryScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -15,13 +14,29 @@ type CategoryScreenNavigationProp = StackNavigationProp<
 
 interface CategoryProps {
   title: string;
+  description?: string;
   imageUrl?: string;
   taskCount?: number;
+  onDelete?: () => void; 
+  onEdit?: () => void; // Callback per informare il componente padre della modifica
 }
 
-const Category: React.FC<CategoryProps> = ({ title, imageUrl, taskCount = 10 }) => {
+const Category: React.FC<CategoryProps> = ({ 
+  title,
+  description = "",
+  imageUrl, 
+  taskCount = 10, 
+  onDelete,
+  onEdit 
+}) => {
   const navigation = useNavigation<CategoryScreenNavigationProp>();
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
+  const [showMenu, setShowMenu] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState(title);
+  const [editDescription, setEditDescription] = useState(description);
   
   const handlePressIn = () => {
     Animated.spring(scaleAnim, {
@@ -38,7 +53,104 @@ const Category: React.FC<CategoryProps> = ({ title, imageUrl, taskCount = 10 }) 
     }).start();
   };
 
+  const handleLongPress = () => {
+    setShowMenu(true);
+  };
   
+  const closeMenu = () => {
+    setShowMenu(false);
+  };
+
+  const handleDelete = async () => {
+    try {
+      setIsDeleting(true);
+      
+      Alert.alert(
+        "Elimina categoria",
+        `Sei sicuro di voler eliminare la categoria "${title}"?`,
+        [
+          {
+            text: "Annulla",
+            style: "cancel",
+            onPress: () => {
+              setIsDeleting(false);
+              closeMenu();
+            }
+          },
+          {
+            text: "Elimina",
+            style: "destructive",
+            onPress: async () => {
+              try {
+                await deleteCategory(title);
+                
+                closeMenu();
+                if (onDelete) {
+                  onDelete();
+                }
+                
+                Alert.alert("Successo", `La categoria "${title}" è stata eliminata.`);
+              } catch (error) {
+                console.error("Errore durante l'eliminazione della categoria:", error);
+                Alert.alert("Errore", "Impossibile eliminare la categoria. Riprova più tardi.");
+              } finally {
+                setIsDeleting(false);
+              }
+            }
+          }
+        ]
+      );
+    } catch (error) {
+      console.error("Errore durante l'eliminazione della categoria:", error);
+      Alert.alert("Errore", "Impossibile eliminare la categoria. Riprova più tardi.");
+      setIsDeleting(false);
+      closeMenu();
+    }
+  };
+
+  const handleEdit = () => {
+    closeMenu();
+    setEditName(title);
+    setEditDescription(description);
+    setShowEditModal(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editName.trim()) {
+      Alert.alert("Errore", "Il titolo della categoria non può essere vuoto");
+      return;
+    }
+
+    setIsEditing(true);
+    try {
+      await updateCategory(title, {
+        name: editName.trim(),
+        description: editDescription.trim()
+      });
+      
+      setShowEditModal(false);
+      if (onEdit) {
+        onEdit();
+      }
+      
+      Alert.alert("Successo", "La categoria è stata aggiornata con successo");
+    } catch (error) {
+      console.error("Errore durante l'aggiornamento della categoria:", error);
+      Alert.alert("Errore", "Impossibile aggiornare la categoria. Riprova più tardi.");
+    } finally {
+      setIsEditing(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setShowEditModal(false);
+    setEditName(title);
+    setEditDescription(description);
+  };
+
+  const handleShare = () => {
+    closeMenu();
+  };
   
   return (
     <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
@@ -47,6 +159,7 @@ const Category: React.FC<CategoryProps> = ({ title, imageUrl, taskCount = 10 }) 
         activeOpacity={0.8}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
+        onLongPress={handleLongPress}
         onPress={() => {
           navigation.navigate("TaskList", { category_name: title });
         }}
@@ -84,6 +197,104 @@ const Category: React.FC<CategoryProps> = ({ title, imageUrl, taskCount = 10 }) 
           </LinearGradient>
         </TouchableOpacity>
       </TouchableOpacity>
+
+      <Modal
+        transparent={true}
+        visible={showMenu}
+        animationType="fade"
+        onRequestClose={closeMenu}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlay} 
+          activeOpacity={1} 
+          onPress={closeMenu}
+        >
+          <View style={styles.menuContainer}>
+            <TouchableOpacity 
+              style={styles.menuItem} 
+              onPress={handleEdit}
+            >
+              <MaterialIcons name="edit" size={20} color="#333" />
+              <Text style={styles.menuText}>Modifica</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.menuItem} 
+              onPress={handleDelete}
+              disabled={isDeleting}
+            >
+              <MaterialIcons name="delete" size={20} color="#F44336" />
+              <Text style={[styles.menuText, { color: '#F44336' }]}>
+                {isDeleting ? "Eliminazione..." : "Elimina"}
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.menuItem} 
+              onPress={handleShare}
+            >
+              <MaterialIcons name="share" size={20} color="#333" />
+              <Text style={styles.menuText}>Condividi</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      <Modal
+        transparent={true}
+        visible={showEditModal}
+        animationType="slide"
+        onRequestClose={handleCancelEdit}
+      >
+        <View style={styles.editModalOverlay}>
+          <View style={styles.editModalContainer}>
+            <Text style={styles.editModalTitle}>Modifica Categoria</Text>
+            
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Titolo</Text>
+              <TextInput
+                style={styles.input}
+                value={editName}
+                onChangeText={setEditName}
+                placeholder="Inserisci il titolo della categoria"
+                autoCapitalize="none"
+              />
+            </View>
+            
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Descrizione</Text>
+              <TextInput
+                style={[styles.input, styles.textarea]}
+                value={editDescription}
+                onChangeText={setEditDescription}
+                placeholder="Inserisci una descrizione (opzionale)"
+                multiline
+                numberOfLines={3}
+                textAlignVertical="top"
+              />
+            </View>
+            
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity 
+                style={[styles.button, styles.cancelButton]} 
+                onPress={handleCancelEdit}
+              >
+                <Text style={styles.buttonText}>Annulla</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.button, styles.saveButton]} 
+                onPress={handleSaveEdit}
+                disabled={isEditing}
+              >
+                <Text style={styles.buttonText}>
+                  {isEditing ? "Salvataggio..." : "Salva"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </Animated.View>
   );
 };
@@ -153,6 +364,106 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: '600',
     marginLeft: 4,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  menuContainer: {
+    width: 200,
+    backgroundColor: 'white',
+    borderRadius: 12,
+    paddingVertical: 8,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  menuText: {
+    fontSize: 16,
+    marginLeft: 12,
+    color: '#333',
+  },
+  editModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  editModalContainer: {
+    width: '90%',
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  editModalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  formGroup: {
+    marginBottom: 16,
+  },
+  label: {
+    fontSize: 16,
+    color: '#555',
+    marginBottom: 8,
+  },
+  input: {
+    backgroundColor: '#f5f5f5',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    fontSize: 16,
+  },
+  textarea: {
+    height: 100,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 16,
+  },
+  button: {
+    flex: 1,
+    padding: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginHorizontal: 6,
+  },
+  cancelButton: {
+    backgroundColor: '#ccc',
+  },
+  saveButton: {
+    backgroundColor: '#4CAF50',
+  },
+  buttonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
 });
 

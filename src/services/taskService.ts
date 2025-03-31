@@ -194,7 +194,33 @@ export async function deleteCategory(categoryName: string) {
     if (!token) {
       return null;
     }
+    console.log(categoryName)
     const response = await axios.delete(`/categories/${categoryName}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+// Funzione per aggiornare una categoria esistente
+export async function updateCategory(
+  originalName: string, 
+  updatedCategory: { 
+    name: string; 
+    description?: string;
+  }
+) {
+  try {
+    const token = await getValidToken();
+    if (!token) {
+      return null;
+    }
+    const response = await axios.put(`/categories/${originalName}`, updatedCategory, {
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",

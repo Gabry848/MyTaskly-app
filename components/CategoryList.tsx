@@ -66,6 +66,18 @@ const CategoryList = forwardRef((props, ref) => {
     fetchCategories(); // Ricarica le categorie dopo l'aggiunta
   };
 
+  // Gestisce l'eliminazione di una categoria
+  const handleCategoryDeleted = () => {
+    console.log("Categoria eliminata, ricarico la lista"); // Log per debug
+    fetchCategories(); // Ricarica le categorie dopo l'eliminazione
+  };
+
+  // Gestisce la modifica di una categoria
+  const handleCategoryEdited = () => {
+    console.log("Categoria modificata, ricarico la lista"); // Log per debug
+    fetchCategories(); // Ricarica le categorie dopo la modifica
+  };
+
   return (
     <View>
       <ScrollView>
@@ -94,7 +106,10 @@ const CategoryList = forwardRef((props, ref) => {
               <Category
                 key={category.id ?? index}
                 title={category.name}
+                description={category.description}
                 imageUrl={category.imageUrl}
+                onDelete={handleCategoryDeleted}
+                onEdit={handleCategoryEdited}
               />
             ))
           : !loading && (
