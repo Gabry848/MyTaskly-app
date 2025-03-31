@@ -30,7 +30,7 @@ export default function Badge() {
       React.useCallback(() => {
         const fetchLetter = async () => {
           const userName = await AsyncStorage.getItem(STORAGE_KEYS.USER_NAME);
-          const firstLetter = userName ? userName[0] : "U"; // Valore predefinito
+          const firstLetter = userName ? userName[0] : " "; 
           setLetter(firstLetter);
         };
 
@@ -41,7 +41,7 @@ export default function Badge() {
   useEffect(() => {
     const fetchLetter = async () => {
       const userName = await AsyncStorage.getItem(STORAGE_KEYS.USER_NAME);
-      const firstLetter = userName ? userName[0] : " "; // Valore predefinito
+      const firstLetter = userName ? userName[0] : " "; 
       setLetter(firstLetter);
     };
 

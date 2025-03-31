@@ -17,7 +17,7 @@ import Animated, {
 import { addCategory } from '../src/services/taskService';
 
 interface AddCategoryButtonProps {
-  onCategoryAdded: () => void; // Aggiungi la prop onCategoryAdded
+  onCategoryAdded: (category: { id: number; name: string; description: string }) => void; 
 }
 
 const AddCategoryButton: React.FC<AddCategoryButtonProps> = ({ onCategoryAdded }) => {
@@ -32,6 +32,10 @@ const AddCategoryButton: React.FC<AddCategoryButtonProps> = ({ onCategoryAdded }
   };
 
   const handleCancel = () => {
+    // pulisci i campi di immissione
+    setName('');
+    setDescription('');
+    // chiudi il form
     animationValue.value = withSpring(0, { damping: 12 });
     setTimeout(() => setFormVisible(false), 300);
   };
@@ -42,9 +46,11 @@ const AddCategoryButton: React.FC<AddCategoryButtonProps> = ({ onCategoryAdded }
       return;
     }
     try {
-      await addCategory({ name, description });
-      handleCancel(); // Chiudi il form dopo il salvataggio
-      onCategoryAdded(); // Chiama la funzione onCategoryAdded
+      const newCategory = { id: Date.now(), name: name.trim(), description: description.trim() }; // Crea un oggetto categoria
+      await addCategory(newCategory); // Salva la categoria nel backend
+      console.log('onCategoryAdded prop:', onCategoryAdded);
+      onCategoryAdded(newCategory); 
+      handleCancel(); // Chiudi il form
     } catch (error) {
       console.error('Errore nell\'aggiunta della categoria:', error);
     }

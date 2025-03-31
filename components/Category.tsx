@@ -6,6 +6,8 @@ import { RootStackParamList } from '../src/types';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 
+
+
 type CategoryScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
   'TaskList'
@@ -35,6 +37,8 @@ const Category: React.FC<CategoryProps> = ({ title, imageUrl, taskCount = 10 }) 
       useNativeDriver: true,
     }).start();
   };
+
+  
   
   return (
     <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
