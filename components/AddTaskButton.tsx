@@ -9,6 +9,7 @@ import {
   Modal,
   SafeAreaView,
   Button,
+  Image,
 } from "react-native";
 import { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import Animated, {
@@ -79,9 +80,7 @@ const AddTaskButton: React.FC<AddTaskButtonProps> = ({ onSave }) => {
   return (
     <View style={styles.container}>
       <TouchableOpacity style={styles.addButton} onPress={toggleForm}>
-        <Text style={styles.addButtonText}>
-          {formVisible ? "Close" : "Add Task"}
-        </Text>
+        <Image source={require('../src/assets/plus.png')} style={styles.addButtonIcon} />
       </TouchableOpacity>
 
       <Modal visible={formVisible} transparent animationType="fade">
@@ -185,19 +184,26 @@ const AddTaskButton: React.FC<AddTaskButtonProps> = ({ onSave }) => {
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: "center",
-    justifyContent: "center",
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
   },
   addButton: {
     backgroundColor: "#007BFF",
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    alignItems: "center",
+    justifyContent: "center",
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
-  addButtonText: {
-    color: "#FFF",
-    fontSize: 16,
-    fontWeight: "bold",
+  addButtonIcon: {
+    width: 28,
+    height: 28,
   },
   modalOverlay: {
     position: "absolute",

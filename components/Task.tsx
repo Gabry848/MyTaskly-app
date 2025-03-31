@@ -1,9 +1,128 @@
-import React, { useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from "react-native";
-import { FontAwesome } from "@expo/vector-icons"; // Importa l'icona dell'orologio
-import { Entypo } from "@expo/vector-icons"; // Importa l'icona dei tre puntini
-import { Dropdown } from 'react-native-element-dropdown';
+import React, { useState, useRef, useEffect } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  Pressable,
+  Animated,
+  Dimensions,
+} from "react-native";
+import { MaterialIcons, Ionicons } from "@expo/vector-icons";
+import { Menu, MenuItem } from "react-native-material-menu";
 
+const { width } = Dimensions.get("window");
+
+// Componenti piccoli e riutilizzabili
+const Checkbox = ({ checked, onPress }) => (
+  <TouchableOpacity
+    style={[styles.checkbox, checked && styles.checkedBox]}
+    onPress={onPress}
+  >
+    {checked && <MaterialIcons name="check" size={16} color="#fff" />}
+  </TouchableOpacity>
+);
+
+const DateDisplay = ({ date }) => {
+  const formattedDate = new Date(date).toLocaleDateString("it-IT", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+  
+  return (
+    <View style={styles.dateContainer}>
+      <Ionicons name="calendar-outline" size={14} color="#666666" />
+      <Text style={styles.dateText}>{formattedDate}</Text>
+    </View>
+  );
+};
+
+const DaysRemaining = ({ endDate }) => {
+  const daysRemainingText = getDaysRemainingText(endDate);
+  const daysRemainingColor = getDaysRemainingColor(endDate);
+  
+  return (
+    <Text style={[styles.daysRemaining, { color: daysRemainingColor }]}>
+      {daysRemainingText}
+    </Text>
+  );
+};
+
+const TaskTitle = ({ title, completed, numberOfLines }) => (
+  <Text
+    style={[styles.title, completed && styles.completedText]}
+    numberOfLines={numberOfLines}
+  >
+    {title}
+  </Text>
+);
+
+const TaskMenu = ({ visible, onRequestClose, onEdit, onDelete }) => (
+  <Menu
+    visible={visible}
+    anchor={
+      <TouchableOpacity onPress={() => onRequestClose(true)} style={styles.menuButton}>
+        <MaterialIcons name="more-vert" size={20} color="#888" />
+      </TouchableOpacity>
+    }
+    onRequestClose={() => onRequestClose(false)}
+    style={styles.menu}
+  >
+    <MenuItem onPress={onEdit}>
+      <View style={styles.menuItem}>
+        <MaterialIcons name="edit" size={16} color="#555" style={styles.menuIcon} />
+        <Text>Modifica</Text>
+      </View>
+    </MenuItem>
+    <MenuItem onPress={onDelete}>
+      <View style={styles.menuItem}>
+        <MaterialIcons name="delete" size={16} color="#ff4444" style={styles.menuIcon} />
+        <Text style={styles.deleteText}>Elimina</Text>
+      </View>
+    </MenuItem>
+  </Menu>
+);
+
+// Funzioni di utility
+const getDaysRemainingText = (endDate) => {
+  const today = new Date();
+  const dueDate = new Date(endDate);
+  const diffTime = dueDate.getTime() - today.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 0) return "Scaduto";
+  if (diffDays === 0) return "Oggi";
+  if (diffDays === 1) return "Domani";
+  return `${diffDays} giorni`;
+};
+
+const getDaysRemainingColor = (endDate) => {
+  const today = new Date();
+  const dueDate = new Date(endDate);
+  const diffTime = dueDate.getTime() - today.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 0) return "#ff4444";
+  if (diffDays <= 2) return "#ff8800";
+  return "#007AFF";
+};
+
+// Colori di priorità per lo sfondo della card
+const getPriorityColors = (priority) => {
+  switch (priority) {
+    case "Alta":
+      return "#FFF1F0"; // Sfondo rosso chiaro
+    case "Media":
+      return "#FFF8E6"; // Sfondo giallo chiaro
+    case "Bassa":
+    default:
+      return "#F0FAFA"; // Sfondo verde chiaro
+  }
+};
+
+// Componente principale
 const Task = ({
   task = {
     id: 1,
@@ -13,224 +132,263 @@ const Task = ({
     end_time: "2025-03-25",
     completed: false,
   },
+  onTaskComplete,
+  onTaskDelete,
+  onTaskEdit,
 }) => {
+  // Stati
   const [menuVisible, setMenuVisible] = useState(false);
-  const [selectedAction, setSelectedAction] = useState(null);
-  
-  // Opzioni per il dropdown menu
-  const dropdownData = [
-    { label: 'Modifica', value: 'edit', icon: 'edit' },
-    { label: 'Elimina', value: 'delete', icon: 'trash' },
-    { label: 'Condividi', value: 'share', icon: 'share' },
-  ];
+  const [expanded, setExpanded] = useState(false);
+  const expandAnim = useRef(new Animated.Value(0)).current;
+  const animationInProgress = useRef(false);
 
-  const toggleMenu = () => {
-    setMenuVisible(!menuVisible);
+  // Gestore animazione migliorato
+  const toggleExpand = () => {
+    // Previeni click multipli durante l'animazione
+    if (animationInProgress.current) return;
+    
+    animationInProgress.current = true;
+    const toValue = expanded ? 0 : 1;
+
+    Animated.spring(expandAnim, {
+      toValue,
+      friction: 8,
+      tension: 40,
+      useNativeDriver: false,
+    }).start(() => {
+      // Aggiorna lo stato solo dopo il completamento dell'animazione
+      setExpanded(!expanded);
+      animationInProgress.current = false;
+    });
   };
 
-  // Gestione delle azioni del dropdown
-  const handleActionSelect = (item) => {
-    switch (item.value) {
-      case 'edit':
-        handleEdit();
-        break;
-      case 'delete':
-        handleDelete();
-        break;
-      case 'share':
-        handleShare();
-        break;
+  // Assicura che l'animazione corrisponda allo stato expanded
+  useEffect(() => {
+    expandAnim.setValue(expanded ? 1 : 0);
+  }, []);
+
+  // Gestori azioni
+  const handleComplete = () => {
+    if (onTaskComplete) {
+      onTaskComplete(task.id);
+    } else {
+      Alert.alert("Completato", `Task "${task.title}" completato`);
     }
-    setSelectedAction(null);
-    setMenuVisible(false);
   };
 
   const handleEdit = () => {
-    Alert.alert("Modifica", `Modifica il task con ID ${task.id}`);
+    setMenuVisible(false);
+    if (onTaskEdit) {
+      onTaskEdit(task.id);
+    } else {
+      Alert.alert("Modifica", `Modifica il task "${task.title}"`);
+    }
   };
 
   const handleDelete = () => {
-    Alert.alert("Elimina", `Task con ID ${task.id} eliminato.`);
+    setMenuVisible(false);
+    if (onTaskDelete) {
+      onTaskDelete(task.id);
+    } else {
+      Alert.alert(
+        "Elimina Task",
+        `Sei sicuro di voler eliminare "${task.title}"?`,
+        [
+          { text: "Annulla", style: "cancel" },
+          { text: "Elimina", style: "destructive", onPress: () => Alert.alert("Task eliminato") },
+        ]
+      );
+    }
   };
 
-  const handleShare = () => {
-    Alert.alert("Condividi", `Condividi il task con ID ${task.id}`);
-  };
-
-  // Formatta la data per visualizzare solo giorno, mese e anno
-  const formattedDate = new Date(task.end_time).toLocaleDateString("it-IT", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
+  // Stili animati
+  const descriptionHeight = expandAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 80], // Aumentato per più spazio della descrizione
   });
 
-  // Renderizzazione della icona per ogni voce del dropdown
-  const renderDropdownIcon = (icon) => {
-    const color = icon === 'trash' ? '#ff4444' : '#333';
-    return <FontAwesome name={icon} size={14} color={color} style={styles.dropdownIcon} />;
-  };
+  // Ottieni il colore di priorità per lo sfondo
+  const priorityBackgroundColor = getPriorityColors(task.priority);
+  
+  // Applica il colore di sfondo appropriato in base allo stato del task
+  const backgroundColor = task.completed ? "#F5F5F5" : priorityBackgroundColor;
 
   return (
-    <TouchableOpacity style={styles.card}>
-      <View style={styles.header}>
-        <Text style={styles.title}>{task.title}</Text>
-        <View
-          style={[
-            styles.priorityBadge,
-            task.priority === "Alta"
-              ? styles.highPriority
-              : task.priority === "Media"
-              ? styles.mediumPriority
-              : styles.lowPriority,
-          ]}
-        >
-          <Text style={styles.priorityText}>{task.priority}</Text>
+    <Animated.View
+      style={[
+        styles.card,
+        { backgroundColor: backgroundColor }
+      ]}
+    >
+      <View style={styles.topRow}>
+        {/* Checkbox */}
+        <Checkbox checked={task.completed} onPress={handleComplete} />
+
+        {/* Task Info */}
+        <Pressable style={styles.taskInfo} onPress={toggleExpand}>
+          <TaskTitle 
+            title={task.title} 
+            completed={task.completed} 
+            numberOfLines={expanded ? undefined : 1} 
+          />
+
+          <View style={styles.infoRow}>
+            <DateDisplay date={task.end_time} />
+          </View>
+        </Pressable>
+
+        {/* Giorni rimanenti (spostato a destra) */}
+        <View style={styles.daysRemainingContainer}>
+          <DaysRemaining endDate={task.end_time} />
         </View>
-        <View style={styles.controls}>
-          <TouchableOpacity onPress={toggleMenu}>
-            <Entypo name="dots-three-vertical" size={16} color="#888888" />
-          </TouchableOpacity>
-        </View>
+
+        {/* Menu */}
+        <TaskMenu 
+          visible={menuVisible}
+          onRequestClose={setMenuVisible}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
       </View>
 
-      <Text style={styles.description}>{task.description}</Text>
+      {/* Expandable description */}
+      <Animated.View style={{ height: descriptionHeight, overflow: "hidden" }}>
+        <Text style={styles.description} numberOfLines={expanded ? 4 : 0}>
+          {task.description}
+        </Text>
+      </Animated.View>
 
-      <View style={styles.footer}>
-        <View style={styles.dateContainer}>
-          <FontAwesome name="clock-o" size={14} color="#888888" />
-          <Text style={styles.end_time}>{formattedDate}</Text>
-        </View>
-        <View
-          style={[
-            styles.statusIndicator,
-            task.completed ? styles.completed : styles.pending,
-          ]}
-        >
-          <Text style={styles.statusText}>
-            {task.completed ? "Completed" : "Pending"}
-          </Text>
-        </View>
-      </View>
-    </TouchableOpacity>
+      {/* Expansion indicator */}
+      <TouchableOpacity 
+        style={styles.expandButton} 
+        onPress={toggleExpand}
+        disabled={animationInProgress.current}
+      >
+        <MaterialIcons
+          name={expanded ? "expand-less" : "expand-more"}
+          size={20}
+          color="#888"
+        />
+      </TouchableOpacity>
+    </Animated.View>
   );
 };
 
 const styles = StyleSheet.create({
+  // Stili della card
   card: {
     backgroundColor: "#ffffff",
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 16,
     marginVertical: 8,
     marginHorizontal: 16,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  header: {
+  completedCard: {
+    backgroundColor: "#F5F5F5",
+  },
+  
+  // Layout
+  topRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
+    alignItems: "flex-start",
   },
-  title: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#333333",
+  taskInfo: {
     flex: 1,
   },
-  priorityBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
+  infoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
   },
-  highPriority: {
-    backgroundColor: "rgb(255, 171, 145)",
+  
+  // Testo
+  title: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#333333",
+    marginBottom: 8, // Aumentato lo spazio
   },
-  mediumPriority: {
-    backgroundColor: "rgb(255, 204, 128)",
-  },
-  lowPriority: {
-    backgroundColor: "#e8f5e9",
-  },
-  priorityText: {
-    fontSize: 12,
-    fontWeight: "500",
+  completedText: {
+    textDecorationLine: "line-through",
+    color: "#888888",
   },
   description: {
-    fontSize: 14,
+    fontSize: 14, // Dimensione aumentata
     color: "#666666",
-    marginBottom: 16,
-    lineHeight: 20,
+    lineHeight: 20, // Aumentato per migliore spaziatura
+    marginTop: 10,
+    paddingLeft: 34, // Align with title text
   },
-  footer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+  
+  // Checkbox
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 22,
+    borderWidth: 2,
+    borderColor: "#007AFF",
+    marginRight: 12,
     alignItems: "center",
+    justifyContent: "center",
+    marginTop: 2,
   },
+  checkedBox: {
+    backgroundColor: "#2EC4B6",
+    borderColor: "#2EC4B6",
+  },
+  
+  // Data e giorni rimanenti
   dateContainer: {
     flexDirection: "row",
     alignItems: "center",
   },
-  end_time: {
-    fontSize: 12,
-    color: "#888888",
+  dateText: {
+    fontSize: 12, // Dimensione aumentata
+    color: "#666666", // Colore più scuro per miglior contrasto
     marginLeft: 4,
+    fontWeight: "500", // Aggiunto il grassetto per far risaltare la data
   },
-  statusIndicator: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-  },
-  completed: {
-    backgroundColor: "#e8f5e9",
-  },
-  pending: {
-    backgroundColor: "#e3f2fd",
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: "500",
-  },
-  controls: {
-    marginLeft: 8,
-    position: "relative",
-  },
-  dropdown: {
-    position: "absolute",
-    top: 20,
-    right: 0,
-    width: 120,
-    backgroundColor: "#ffffff",
-    borderRadius: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-    zIndex: 10,
-  },
-  dropdownContainer: {
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  dropdownItemContainer: {
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-    paddingVertical: 8,
-  },
-  dropdownItemText: {
-    fontSize: 14,
-    color: '#333',
-  },
-  menuText: {
-    fontSize: 14,
-    color: "#333",
-  },
-  dropdownIcon: {
+  daysRemainingContainer: {
+    marginLeft: 'auto',
     marginRight: 8,
-  }
+    justifyContent: 'center',
+  },
+  daysRemaining: {
+    fontSize: 13, // Dimensione aumentata
+    fontWeight: "600", // Aumentato il grassetto
+    textAlign: 'right',
+  },
+  
+  // Pulsanti e menu
+  expandButton: {
+    alignSelf: "center",
+    marginTop: 4,
+  },
+  menuButton: {
+    padding: 4,
+  },
+  menu: {
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  menuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  menuIcon: {
+    marginRight: 8,
+  },
+  deleteItem: {
+    color: "#ff4444",
+  },
+  deleteText: {
+    color: "#ff4444",
+  },
 });
 
 export default Task;

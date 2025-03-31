@@ -346,6 +346,18 @@ export function TaskList({ route }: Props) {
                   end_time: item.end_time,
                   completed: false
                 }}
+                onTaskComplete={(taskId) => {
+                  console.log(`Task ${taskId} completed`);
+                  // Add logic to handle task completion
+                }}
+                onTaskDelete={(taskId) => {
+                  console.log(`Task ${taskId} deleted`);
+                  // Add logic to handle task deletion
+                }}
+                onTaskEdit={(taskId) => {
+                  console.log(`Task ${taskId} edited`);
+                  // Add logic to handle task editing
+                }}
               />
             )}
             ListEmptyComponent={

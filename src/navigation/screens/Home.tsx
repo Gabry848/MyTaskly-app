@@ -160,6 +160,9 @@ function Home() {
                       end_time: element.end_time,
                       completed: false,
                     }}
+                    onTaskComplete={() => console.log(`Task ${index} completed`)}
+                    onTaskDelete={() => console.log(`Task ${index} deleted`)}
+                    onTaskEdit={() => console.log(`Task ${index} edited`)}
                   />
                 ))
               ) : (
