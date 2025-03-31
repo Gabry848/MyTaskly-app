@@ -7,8 +7,6 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Modal,
-  SafeAreaView,
-  Button,
   Image,
 } from "react-native";
 import { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
@@ -17,7 +15,6 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
 } from "react-native-reanimated";
-import Badge from './Badge'; // Importa il componente Badge
 
 type AddTaskButtonProps = {
   onSave?: (
@@ -35,9 +32,11 @@ const AddTaskButton: React.FC<AddTaskButtonProps> = ({ onSave }) => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState<string>("");
+  const [selectedDateTime, setSelectedDateTime] = useState<Date | null>(null);
+  const [titleError, setTitleError] = useState<string>("");
+  const [dateError, setDateError] = useState<string>("");
 
   const [date, setDate] = useState(new Date());
-  const [open, setOpen] = useState(false);
 
   const toggleForm = () => {
     setFormVisible(true);
@@ -49,27 +48,85 @@ const AddTaskButton: React.FC<AddTaskButtonProps> = ({ onSave }) => {
     setTimeout(() => setFormVisible(false), 300);
   };
 
+  const handleSave = () => {
+    let hasError = false;
+    
+    // Verifica che il titolo esista
+    if (!title.trim()) {
+      setTitleError("Il titolo è obbligatorio");
+      hasError = true;
+    }
+    
+    // Verifica che la data di scadenza sia stata impostata
+    if (!dueDate) {
+      setDateError("La data di scadenza è obbligatoria");
+      hasError = true;
+    }
+    
+    if (hasError) {
+      return;
+    }
+    
+    setFormVisible(false);
+    animationValue.value = withSpring(0, { damping: 12 });
+    onSave?.(title, description, dueDate, priority);
+    
+    // Reset form
+    setTitle("");
+    setDescription("");
+    setDueDate("");
+    setSelectedDateTime(null);
+    setPriority(1);
+    setTitleError("");
+    setDateError("");
+  };
+
   const onChange = (event: any, selectedDate?: Date) => {
     const currentDate = selectedDate || date;
     setDate(currentDate);
-    setDueDate(currentDate.toISOString().split('T')[0]);
+    
+    if (selectedDateTime) {
+      const newDateTime = new Date(currentDate);
+      newDateTime.setHours(selectedDateTime.getHours(), selectedDateTime.getMinutes());
+      setSelectedDateTime(newDateTime);
+      setDueDate(newDateTime.toISOString());
+    } else {
+      setSelectedDateTime(currentDate);
+      setDueDate(currentDate.toISOString());
+    }
+    setDateError("");
   };
 
-  const showMode = (currentMode: 'date' | 'time') => {
+  const onTimeChange = (event: any, selectedTime?: Date) => {
+    const currentTime = selectedTime || date;
+    
+    if (selectedDateTime) {
+      const newDateTime = new Date(selectedDateTime);
+      newDateTime.setHours(currentTime.getHours(), currentTime.getMinutes());
+      setSelectedDateTime(newDateTime);
+      setDueDate(newDateTime.toISOString());
+    } else {
+      setSelectedDateTime(currentTime);
+      setDueDate(currentTime.toISOString());
+    }
+    setDateError("");
+  };
+
+  const showMode = (currentMode: 'date' | 'time', changeHandler: (event: any, date?: Date) => void) => {
     DateTimePickerAndroid.open({
-      value: date,
-      onChange,
+      value: selectedDateTime || date,
+      onChange: changeHandler,
       mode: currentMode,
       is24Hour: true,
     });
   };
 
   const showDatepicker = () => {
-    showMode('date');
+    showMode('date', onChange);
   };
 
   const showTimepicker = () => {
-    showMode('time');
+    showMode('time', onTimeChange);
   };
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -89,11 +146,15 @@ const AddTaskButton: React.FC<AddTaskButtonProps> = ({ onSave }) => {
             <KeyboardAvoidingView behavior="padding" style={styles.formContent}>
               <Text style={styles.label}>Title</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, titleError ? styles.inputError : null]}
                 placeholder="Enter task title"
                 value={title}
-                onChangeText={setTitle}
+                onChangeText={(text) => {
+                  setTitle(text);
+                  if (text.trim()) setTitleError("");
+                }}
               />
+              {titleError ? <Text style={styles.errorText}>{titleError}</Text> : null}
 
               <Text style={styles.label}>Description</Text>
               <TextInput
@@ -103,25 +164,31 @@ const AddTaskButton: React.FC<AddTaskButtonProps> = ({ onSave }) => {
                 value={description}
                 onChangeText={setDescription}
               />
-              <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <TextInput
-                  style={[styles.input, { flex: 1 }]}
-                  placeholder="Es. 2023-12-31"
-                  value={dueDate}
-                  onChangeText={setDueDate}
-                />
+              
+              <Text style={styles.label}>Due Date & Time</Text>
+              <View style={styles.dateTimeContainer}>
                 <TouchableOpacity
-                  style={{
-                    marginLeft: 8,
-                    padding: 8,
-                    backgroundColor: "#007BFF",
-                    borderRadius: 4,
-                  }}
-                  onPress={showDatepicker} // Mostra il DatePicker
+                  style={styles.dateTimeButton}
+                  onPress={showDatepicker}
                 >
-                  <Text style={{ color: "#FFF" }}>Set Date</Text>
+                  <Text style={styles.dateTimeButtonText}>Set Date</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={styles.dateTimeButton}
+                  onPress={showTimepicker}
+                >
+                  <Text style={styles.dateTimeButtonText}>Set Time</Text>
                 </TouchableOpacity>
               </View>
+              
+              {selectedDateTime && (
+                <Text style={styles.selectedDateTime}>
+                  {selectedDateTime.toLocaleDateString()} {selectedDateTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                </Text>
+              )}
+              
+              {dateError ? <Text style={styles.errorText}>{dateError}</Text> : null}
 
               <Text style={styles.label}>Priority</Text>
               <View style={styles.priorityContainer}>
@@ -157,13 +224,7 @@ const AddTaskButton: React.FC<AddTaskButtonProps> = ({ onSave }) => {
               <View style={styles.buttonRow}>
                 <TouchableOpacity
                   style={styles.submitButton}
-                  onPress={() => {
-                    if (dueDate) {
-                      setFormVisible(false);
-                      animationValue.value = withSpring(0, { damping: 12 });
-                      onSave?.(title, description, dueDate, priority);
-                    }
-                  }}
+                  onPress={handleSave}
                 >
                   <Text style={styles.submitButtonText}>Save</Text>
                 </TouchableOpacity>
@@ -237,6 +298,43 @@ const styles = StyleSheet.create({
     padding: 8,
     marginBottom: 12,
     fontSize: 14,
+  },
+  inputError: {
+    borderColor: "#DC3545",
+    backgroundColor: "#FFF8F8",
+  },
+  errorText: {
+    color: "#DC3545",
+    fontSize: 12,
+    marginBottom: 8,
+    marginTop: -8,
+  },
+  dateTimeContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+  dateTimeButton: {
+    backgroundColor: "#007BFF",
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    flex: 1,
+    marginHorizontal: 4,
+    alignItems: "center",
+  },
+  dateTimeButtonText: {
+    color: "#FFF",
+    fontWeight: "600",
+  },
+  selectedDateTime: {
+    marginBottom: 12,
+    backgroundColor: "#E8F0FE",
+    padding: 8,
+    borderRadius: 4,
+    textAlign: "center",
+    color: "#333",
   },
   priorityContainer: {
     flexDirection: "row",

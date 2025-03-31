@@ -7,12 +7,12 @@ import {
   ActivityIndicator, 
   TouchableOpacity, 
   ScrollView,
-  Animated,
-  Modal
+  Modal,
+  Alert
 } from "react-native";
 import { Filter } from "lucide-react-native";
 import Task from "../../../components/Task";
-import { getTasks, addTask } from "../../services/taskService";
+import { getTasks, addTask, deleteTask } from "../../services/taskService";
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../types';
 import AddTaskButton from "../../../components/AddTaskButton";
@@ -103,6 +103,43 @@ export function TaskList({ route }: Props) {
     } catch (error) {
       console.error("Errore nell'aggiunta del task:", error);
     }
+  };
+
+  // Funzione per gestire l'eliminazione del task
+  const handleTaskDelete = async (taskId: number) => {
+    // Mostriamo un alert di conferma prima di eliminare il task
+    Alert.alert(
+      "Conferma eliminazione",
+      "Sei sicuro di voler eliminare questa attività?",
+      [
+        {
+          text: "Annulla",
+          style: "cancel"
+        },
+        {
+          text: "Elimina",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setIsLoading(true);
+              // Chiamiamo il servizio per eliminare il task
+              await deleteTask(taskId);
+              // Aggiorniamo la lista dei task rimuovendo quello eliminato
+              setTasks(tasks.filter((_, index) => index !== taskId));
+              setIsLoading(false);
+            } catch (error) {
+              console.error("Errore nell'eliminazione del task:", error);
+              Alert.alert(
+                "Errore",
+                "Si è verificato un errore durante l'eliminazione dell'attività."
+              );
+              setIsLoading(false);
+            }
+          }
+        }
+      ],
+      { cancelable: true }
+    );
   };
 
   // Funzione per generare il testo del filtro applicato
@@ -350,10 +387,7 @@ export function TaskList({ route }: Props) {
                   console.log(`Task ${taskId} completed`);
                   // Add logic to handle task completion
                 }}
-                onTaskDelete={(taskId) => {
-                  console.log(`Task ${taskId} deleted`);
-                  // Add logic to handle task deletion
-                }}
+                onTaskDelete={handleTaskDelete}
                 onTaskEdit={(taskId) => {
                   console.log(`Task ${taskId} edited`);
                   // Add logic to handle task editing
