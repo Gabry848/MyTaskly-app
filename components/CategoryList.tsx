@@ -3,10 +3,11 @@ import React, {
   useState,
   forwardRef,
   useImperativeHandle,
+  useRef,
 } from "react";
 import { getCategories } from "../src/services/taskService";
-import Category from "./Category"; // Importa il componente Category
-import AddCategoryButton from "./AddCategoryButton"; // Importa il componente AddCategoryButton
+import Category from "./Category";
+import AddCategoryButton from "./AddCategoryButton";
 import {
   View,
   StyleSheet,
@@ -20,23 +21,71 @@ import { useFocusEffect } from "@react-navigation/native";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { RootStackParamList } from "../src/types";
 
+// Definiamo l'interfaccia della categoria esattamente uguale a quella in AddCategoryButton
 interface CategoryType {
   id: string | number;
   name: string;
   description?: string;
-  imageUrl?: string; // Aggiungi l'URL dell'immagine
+  imageUrl?: string;
+  category_id?: number;
+  status_code?: number;
 }
+
+// Creiamo una variabile globale per condividere i dati tra componenti
+let globalCategoriesRef = {
+  addCategory: (category: CategoryType) => {},
+  categories: [] as CategoryType[],
+};
 
 const CategoryList = forwardRef((props, ref) => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
 
   const [categories, setCategories] = useState<CategoryType[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  
+  // Assegna la funzione di aggiornamento al riferimento globale
+  globalCategoriesRef.addCategory = (newCategory: CategoryType) => {
+    console.log("globalCategoriesRef.addCategory chiamata con:", newCategory);
+    
+    // Verifica che sia una categoria valida con nome
+    if (!newCategory || !newCategory.name) {
+      console.error("Categoria non valida:", newCategory);
+      return;
+    }
+    
+    // Assicurati che abbia un ID
+    const categoryWithId = {
+      ...newCategory,
+      id: newCategory.id || newCategory.category_id || Date.now()
+    };
+    
+    // Aggiorna lo stato diretto
+    setCategories(prevState => {
+      // Verifica che la categoria non esista già
+      const exists = prevState.some(
+        cat => cat.id === categoryWithId.id || cat.name === categoryWithId.name
+      );
+      
+      if (exists) {
+        console.log("La categoria esiste già, non viene aggiunta:", categoryWithId.name);
+        return prevState;
+      }
+      
+      console.log("Aggiunta categoria direttamente:", categoryWithId);
+      return [...prevState, categoryWithId];
+    });
+  };
 
   const fetchCategories = async () => {
     try {
-      const categories = await getCategories();
-      setCategories(categories);
+      const categoriesData = await getCategories();
+      if (Array.isArray(categoriesData)) {
+        setCategories(categoriesData);
+        // Aggiorna anche la referenza globale
+        globalCategoriesRef.categories = categoriesData;
+      } else {
+        console.error("getCategories non ha restituito un array:", categoriesData);
+      }
     } catch (error) {
       console.error("Errore nel recupero delle categorie:", error);
     } finally {
@@ -53,6 +102,11 @@ const CategoryList = forwardRef((props, ref) => {
   useEffect(() => {
     fetchCategories();
   }, []);
+  
+  // Aggiorna il riferimento globale quando cambia lo stato delle categorie
+  useEffect(() => {
+    globalCategoriesRef.categories = categories;
+  }, [categories]);
 
   useImperativeHandle(ref, () => ({
     reloadCategories: () => {
@@ -61,31 +115,29 @@ const CategoryList = forwardRef((props, ref) => {
     },
   }));
 
-  const onCategoryAddedEvent = (taskName) => {
-    console.log("Nuova categoria aggiunta:", taskName); // Log per debug
-    fetchCategories(); // Ricarica le categorie dopo l'aggiunta
+  // Il gestore originale dell'aggiunta della categoria (ora usa la funzione globale)
+  const handleCategoryAdded = (newCategory: CategoryType) => {
+    console.log("handleCategoryAdded chiamato con:", newCategory);
+    globalCategoriesRef.addCategory(newCategory);
   };
 
   // Gestisce l'eliminazione di una categoria
   const handleCategoryDeleted = () => {
-    console.log("Categoria eliminata, ricarico la lista"); // Log per debug
-    fetchCategories(); // Ricarica le categorie dopo l'eliminazione
+    console.log("Categoria eliminata, ricarico la lista");
+    fetchCategories();
   };
 
   // Gestisce la modifica di una categoria
   const handleCategoryEdited = () => {
-    console.log("Categoria modificata, ricarico la lista"); // Log per debug
-    fetchCategories(); // Ricarica le categorie dopo la modifica
+    console.log("Categoria modificata, ricarico la lista");
+    fetchCategories();
   };
 
   return (
     <View>
       <ScrollView>
         <AddCategoryButton
-          onCategoryAdded={(newCategory) => {
-            console.log("Nuova categoria aggiunta:", newCategory); // Log per debug
-            onCategoryAddedEvent(newCategory); // Passa la nuova categoria al gestore dell'evento
-          }}
+          onCategoryAdded={handleCategoryAdded}
         />
         <View style={styles.headerContainer}>
           <Text style={styles.headerTitle}>
@@ -104,7 +156,7 @@ const CategoryList = forwardRef((props, ref) => {
         {categories && categories.length > 0
           ? categories.map((category, index) => (
               <Category
-                key={category.id ?? index}
+                key={`${category.id || category.name}-${index}`}
                 title={category.name}
                 description={category.description}
                 imageUrl={category.imageUrl}
@@ -117,20 +169,21 @@ const CategoryList = forwardRef((props, ref) => {
                 <Text style={styles.noCategoriesMessage}>
                   Aggiungi la tua prima categoria per iniziare!{"\n"}
                 </Text>
-                <Text style={[styles.noCategoriesMessage, {padding: 5, fontSize: 16, color: "black"}]}>
-                oppure{"\n"}
+                <Text
+                  style={[
+                    styles.noCategoriesMessage,
+                    { padding: 5, fontSize: 16, color: "black" },
+                  ]}
+                >
+                  oppure{"\n"}
                 </Text>
                 <TouchableOpacity
                   style={[styles.reloadButton, styles.goToLoginButton]}
                   onPress={() => {
-                    navigation.navigate("Login"); // Naviga alla schermata di login
+                    navigation.navigate("Login");
                   }}
                 >
-                  <Text
-                    style={[styles.reloadButtonText]}
-                  >
-                    Vai al login
-                  </Text>
+                  <Text style={[styles.reloadButtonText]}>Vai al login</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -166,7 +219,7 @@ const styles = StyleSheet.create({
   },
   goToLoginButton: {
     width: 150,
-    alignSelf: "center"
+    alignSelf: "center",
   },
   reloadButtonText: {
     color: "#fff",
@@ -205,3 +258,9 @@ const styles = StyleSheet.create({
 });
 
 export default CategoryList;
+
+// Esponiamo la funzione globale di aggiunta categoria
+export const addCategoryToList = (category: CategoryType) => {
+  console.log("addCategoryToList chiamata direttamente con:", category);
+  globalCategoriesRef.addCategory(category);
+};

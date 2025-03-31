@@ -17,7 +17,7 @@ export type RootStackParamList = {
   Profile: { user?: string };
   Settings: undefined;
   NotFound: undefined;
-  TaskList: { category_name: string };
+  TaskList: { category_name: string};
   Login: undefined;
   Register: undefined;
   HomePage: undefined;

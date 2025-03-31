@@ -88,8 +88,6 @@ const Category: React.FC<CategoryProps> = ({
                 if (onDelete) {
                   onDelete();
                 }
-                
-                Alert.alert("Successo", `La categoria "${title}" è stata eliminata.`);
               } catch (error) {
                 console.error("Errore durante l'eliminazione della categoria:", error);
                 Alert.alert("Errore", "Impossibile eliminare la categoria. Riprova più tardi.");
@@ -132,8 +130,6 @@ const Category: React.FC<CategoryProps> = ({
       if (onEdit) {
         onEdit();
       }
-      
-      Alert.alert("Successo", "La categoria è stata aggiornata con successo");
     } catch (error) {
       console.error("Errore durante l'aggiornamento della categoria:", error);
       Alert.alert("Errore", "Impossibile aggiornare la categoria. Riprova più tardi.");
@@ -455,7 +451,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 6,
   },
   cancelButton: {
-    backgroundColor: '#ccc',
+    backgroundColor: '#DC3545',
   },
   saveButton: {
     backgroundColor: '#4CAF50',

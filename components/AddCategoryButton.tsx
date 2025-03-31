@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Modal,
   Image,
+  Alert,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -15,9 +16,19 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import { addCategory } from '../src/services/taskService';
+import { addCategoryToList } from './CategoryList'; // Importo la funzione globale
+
+// Definiamo un'interfaccia chiara per i dati della categoria
+interface CategoryData {
+  id: string | number;
+  name: string;
+  description?: string;
+  category_id?: number;
+  status_code?: number;
+}
 
 interface AddCategoryButtonProps {
-  onCategoryAdded: (category: { id: number; name: string; description: string }) => void; 
+  onCategoryAdded: (category: CategoryData) => void;
 }
 
 const AddCategoryButton: React.FC<AddCategoryButtonProps> = ({ onCategoryAdded }) => {
@@ -25,6 +36,7 @@ const AddCategoryButton: React.FC<AddCategoryButtonProps> = ({ onCategoryAdded }
   const animationValue = useSharedValue(0);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const toggleForm = () => {
     setFormVisible(true);
@@ -41,18 +53,71 @@ const AddCategoryButton: React.FC<AddCategoryButtonProps> = ({ onCategoryAdded }
   };
 
   const handleSave = async () => {
-    if (name.trim() === '' || description.trim() === '') {
-      console.error('Nome e descrizione non possono essere vuoti o contenere solo spazi.');
+    if (name.trim() === '') {
+      Alert.alert('Errore', 'Il nome della categoria non può essere vuoto');
       return;
     }
+
     try {
-      const newCategory = { id: Date.now(), name: name.trim(), description: description.trim() }; // Crea un oggetto categoria
-      await addCategory(newCategory); // Salva la categoria nel backend
-      console.log('onCategoryAdded prop:', onCategoryAdded);
-      onCategoryAdded(newCategory); 
-      handleCancel(); // Chiudi il form
+      setIsSubmitting(true);
+      
+      // Crea un oggetto categoria con un ID temporaneo
+      const newCategory: CategoryData = { 
+        id: Date.now(), 
+        name: name.trim(), 
+        description: description.trim() 
+      };
+      
+      console.log('Nuova categoria creata localmente:', newCategory);
+      
+      try {
+        // Salva la categoria nel backend
+        const savedCategory = await addCategory(newCategory);
+        console.log('Categoria salvata dal server:', savedCategory);
+        
+        // Usa la categoria restituita dal server se disponibile
+        if (savedCategory) {
+          // Prepara un oggetto completo combinando i dati locali con quelli del server
+          const completeCategory: CategoryData = {
+            // Mantieni i dati originali
+            name: newCategory.name,
+            description: newCategory.description,
+            // Usa l'ID del server se disponibile, altrimenti quello locale
+            id: savedCategory.category_id || savedCategory.id || newCategory.id,
+            // Aggiungi altri campi dal server
+            category_id: savedCategory.category_id,
+            status_code: savedCategory.status_code
+          };
+          
+          console.log('Chiamata a onCategoryAdded con categoria completa:', completeCategory);
+          
+          // Chiamata alla funzione di callback originale
+          onCategoryAdded(completeCategory);
+          
+          // AGGIUNGIAMO QUESTA CHIAMATA DIRETTA per maggior sicurezza
+          console.log('Chiamata diretta a addCategoryToList con:', completeCategory);
+          addCategoryToList(completeCategory);
+        } else {
+          // In caso di problemi, usiamo la versione locale
+          console.log('Chiamata a onCategoryAdded con newCategory (server non ha risposto):', newCategory);
+          onCategoryAdded(newCategory);
+          addCategoryToList(newCategory); // Aggiungiamo anche qui
+        }
+      } catch (error) {
+        console.error('Errore nel salvare la categoria sul server:', error);
+        // In caso di errore del server, aggiungiamo comunque la categoria localmente
+        console.log('Chiamata a onCategoryAdded con newCategory (errore server):', newCategory);
+        onCategoryAdded(newCategory);
+        addCategoryToList(newCategory); // Aggiungiamo anche qui
+      }
+      
+      // Chiudi il form
+      handleCancel();
     } catch (error) {
       console.error('Errore nell\'aggiunta della categoria:', error);
+      Alert.alert('Errore', 'Non è stato possibile aggiungere la categoria');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -87,10 +152,20 @@ const AddCategoryButton: React.FC<AddCategoryButtonProps> = ({ onCategoryAdded }
                 onChangeText={setDescription}
               />
               <View style={styles.buttonRow}>
-                <TouchableOpacity style={styles.submitButton} onPress={handleSave}>
-                  <Text style={styles.submitButtonText}>Salva</Text>
+                <TouchableOpacity 
+                  style={styles.submitButton} 
+                  onPress={handleSave}
+                  disabled={isSubmitting}
+                >
+                  <Text style={styles.submitButtonText}>
+                    {isSubmitting ? 'Salvataggio...' : 'Salva'}
+                  </Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
+                <TouchableOpacity 
+                  style={styles.cancelButton} 
+                  onPress={handleCancel}
+                  disabled={isSubmitting}
+                >
                   <Text style={styles.cancelButtonText}>Annulla</Text>
                 </TouchableOpacity>
               </View>

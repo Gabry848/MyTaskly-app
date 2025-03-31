@@ -148,6 +148,7 @@ export async function deleteTask(taskId: string | number) {
 
 // Funzione per aggiungere una nuova categoria
 export async function addCategory(category: {
+  id?: string | number;  // Reso opzionale per compatibilità con l'oggetto passato
   name: string;
   description?: string;
 }) {
@@ -156,14 +157,31 @@ export async function addCategory(category: {
     if (!token) {
       return null;
     }
-    const response = await axios.post("/categories", category, {
+    // Estrai solo le proprietà rilevanti per l'API
+    const categoryData = {
+      name: category.name,
+      description: category.description || ""
+    };
+    
+    console.log("Invio categoria al server:", categoryData);
+    
+    const response = await axios.post("/categories", categoryData, {
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
     });
-    return response.data;
+    
+    // Aggiungi l'id alla risposta se non è presente
+    const responseData = response.data;
+    if (!responseData.id && category.id) {
+      responseData.id = category.id;
+    }
+    
+    console.log("Risposta dal server:", responseData);
+    return responseData;
   } catch (error) {
+    console.error("Errore in addCategory:", error);
     throw error;
   }
 }
