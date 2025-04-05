@@ -30,9 +30,57 @@ const LoginScreen = () => {
     onFinish: () => {},
   });
 
+  // Funzione per validare l'input e verificare se contiene caratteri speciali
+  const containsSpecialChars = (text) => {
+    const specialCharsRegex = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+/;
+    return specialCharsRegex.test(text);
+  };
+
+  // Funzione per gestire il cambio di username con validazione
+  const handleUsernameChange = (text) => {
+    if (containsSpecialChars(text)) {
+      setNotification({
+        isVisible: true,
+        message: "Lo username non può contenere caratteri speciali",
+        isSuccess: false,
+        onFinish: () => {
+          setNotification((prev) => ({
+            ...prev,
+            isVisible: false,
+            onFinish: () => {},
+          }));
+        },
+      });
+      return;
+    }
+    setUsername(text);
+  };
+
+  // Funzione per gestire il cambio di password con validazione
+  const handlePasswordChange = (text) => {
+    setPassword(text);
+  };
+
   // login function use authServicec to login
   async function handleLogin() {
     try {
+      // Verifica se i campi contengono caratteri speciali prima di inviare la richiesta
+      if (containsSpecialChars(username)) {
+        setNotification({
+          isVisible: true,
+          message: "Lo username non può contenere caratteri speciali",
+          isSuccess: false,
+          onFinish: () => {
+            setNotification((prev) => ({
+              ...prev,
+              isVisible: false,
+              onFinish: () => {},
+            }));
+          },
+        });
+        return;
+      }
+
       const login_data = await authService.login(username, password);
 
       if (login_data.success) {
@@ -106,7 +154,7 @@ const LoginScreen = () => {
         <FontAwesome name="user" size={20} color="white" style={styles.icon} />
         <TextInput
           value={username}
-          onChangeText={setUsername}
+          onChangeText={handleUsernameChange}
           placeholder="Username"
           placeholderTextColor="white"
           style={[styles.input, { width: width * 0.75 }]}
@@ -120,7 +168,7 @@ const LoginScreen = () => {
           style={[styles.input, { width: width * 0.65 }]}
           secureTextEntry={!showPassword}
           value={password}
-          onChangeText={setPassword}
+          onChangeText={handlePasswordChange}
         />
         <TouchableOpacity
           onPress={togglePasswordVisibility}

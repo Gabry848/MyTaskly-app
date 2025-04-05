@@ -8,6 +8,8 @@ import {
   Pressable,
   Animated,
   Dimensions,
+  Modal,
+  ViewStyle,
 } from "react-native";
 import { MaterialIcons, Ionicons } from "@expo/vector-icons";
 import { Menu, MenuItem } from "react-native-material-menu";
@@ -57,32 +59,6 @@ const TaskTitle = ({ title, completed, numberOfLines }) => (
   >
     {title}
   </Text>
-);
-
-const TaskMenu = ({ visible, onRequestClose, onEdit, onDelete }) => (
-  <Menu
-    visible={visible}
-    anchor={
-      <TouchableOpacity onPress={() => onRequestClose(true)} style={styles.menuButton}>
-        <MaterialIcons name="more-vert" size={20} color="#888" />
-      </TouchableOpacity>
-    }
-    onRequestClose={() => onRequestClose(false)}
-    style={styles.menu}
-  >
-    <MenuItem onPress={onEdit}>
-      <View style={styles.menuItem}>
-        <MaterialIcons name="edit" size={16} color="#555" style={styles.menuIcon} />
-        <Text>Modifica</Text>
-      </View>
-    </MenuItem>
-    <MenuItem onPress={onDelete}>
-      <View style={styles.menuItem}>
-        <MaterialIcons name="delete" size={16} color="#ff4444" style={styles.menuIcon} />
-        <Text style={styles.deleteText}>Elimina</Text>
-      </View>
-    </MenuItem>
-  </Menu>
 );
 
 // Funzioni di utility
@@ -141,6 +117,16 @@ const Task = ({
   const [expanded, setExpanded] = useState(false);
   const expandAnim = useRef(new Animated.Value(0)).current;
   const animationInProgress = useRef(false);
+  const longPressTimeoutRef = useRef(null);
+  const [showModal, setShowModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
+  
+  // Animazioni
+  const deleteAnim = useRef(new Animated.Value(1)).current;
+  const translateXAnim = useRef(new Animated.Value(0)).current;
+  const heightAnim = useRef(new Animated.Value(100)).current;
+  const marginVerticalAnim = useRef(new Animated.Value(8)).current;
 
   // Gestore animazione migliorato
   const toggleExpand = () => {
@@ -162,9 +148,31 @@ const Task = ({
     });
   };
 
-  // Assicura che l'animazione corrisponda allo stato expanded
+  // Gestori pressione lunga
+  const handlePressIn = () => {
+    longPressTimeoutRef.current = setTimeout(() => {
+      setShowModal(true);
+    }, 500); // 500ms per considerare pressione lunga
+  };
+
+  const handlePressOut = () => {
+    if (longPressTimeoutRef.current) {
+      clearTimeout(longPressTimeoutRef.current);
+      longPressTimeoutRef.current = null;
+    }
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+  };
+
+  // Assicura che il timeout venga rimosso quando il componente viene smontato
   useEffect(() => {
-    expandAnim.setValue(expanded ? 1 : 0);
+    return () => {
+      if (longPressTimeoutRef.current) {
+        clearTimeout(longPressTimeoutRef.current);
+      }
+    };
   }, []);
 
   // Gestori azioni
@@ -177,7 +185,7 @@ const Task = ({
   };
 
   const handleEdit = () => {
-    setMenuVisible(false);
+    closeModal();
     if (onTaskEdit) {
       onTaskEdit(task.id);
     } else {
@@ -185,20 +193,104 @@ const Task = ({
     }
   };
 
+  // Animazione di eliminazione task
+  const animateTaskRemoval = () => {
+    setIsRemoving(true);
+    
+    // Prima esegui le animazioni native (transform e opacity)
+    Animated.sequence([
+      // Prima scuoti leggermente la card (opzionale)
+      Animated.sequence([
+        Animated.timing(translateXAnim, {
+          toValue: -10,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+        Animated.timing(translateXAnim, {
+          toValue: 10,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+        Animated.timing(translateXAnim, {
+          toValue: -10,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+        Animated.timing(translateXAnim, {
+          toValue: 0,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+      ]),
+      
+      // Poi fai scorrere la card fuori dallo schermo
+      Animated.timing(translateXAnim, {
+        toValue: width,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      
+      // Effetto di fade out
+      Animated.timing(deleteAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      // Dopo che le animazioni native sono completate
+      // esegui le animazioni JavaScript (height e margin)
+      Animated.parallel([
+        Animated.timing(heightAnim, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: false, // Must be false for height
+        }),
+        Animated.timing(marginVerticalAnim, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: false, // Must be false for margin
+        }),
+      ]).start(() => {
+        // Chiamare la funzione di eliminazione dopo l'animazione
+        if (onTaskDelete) {
+          console.log("Eliminazione dell'impegno con ID:", task.id);
+          onTaskDelete(task.id);
+        }
+      });
+    });
+  };
+
   const handleDelete = () => {
-    setMenuVisible(false);
-    if (onTaskDelete) {
-      onTaskDelete(task.id);
-    } else {
-      Alert.alert(
-        "Elimina Task",
-        `Sei sicuro di voler eliminare "${task.title}"?`,
-        [
-          { text: "Annulla", style: "cancel" },
-          { text: "Elimina", style: "destructive", onPress: () => Alert.alert("Task eliminato") },
-        ]
-      );
-    }
+    setIsDeleting(true);
+    Alert.alert(
+      "Elimina Task",
+      `Sei sicuro di voler eliminare "${task.title}"?`,
+      [
+        { 
+          text: "Annulla", 
+          style: "cancel",
+          onPress: () => {
+            setIsDeleting(false);
+            closeModal();
+          } 
+        },
+        { 
+          text: "Elimina", 
+          style: "destructive", 
+          onPress: () => {
+            closeModal();
+            // Inizia l'animazione di eliminazione
+            animateTaskRemoval();
+            setIsDeleting(false);
+          } 
+        },
+      ]
+    );
+  };
+
+  const handleShare = () => {
+    closeModal();
+    Alert.alert("Condivisione", "Funzionalità di condivisione non ancora implementata");
   };
 
   // Stili animati
@@ -214,62 +306,114 @@ const Task = ({
   const backgroundColor = task.completed ? "#F5F5F5" : priorityBackgroundColor;
 
   return (
-    <Animated.View
-      style={[
-        styles.card,
-        { backgroundColor: backgroundColor }
-      ]}
-    >
-      <View style={styles.topRow}>
-        {/* Checkbox */}
-        <Checkbox checked={task.completed} onPress={handleComplete} />
+    <Animated.View style={[
+      { height: heightAnim, marginVertical: marginVerticalAnim }
+    ]}>
+      <Animated.View
+        style={[
+          styles.card,
+          { backgroundColor },
+          {
+            opacity: deleteAnim,
+            transform: [
+              { translateX: translateXAnim },
+              { scale: deleteAnim }
+            ],
+          }
+        ]}
+      >
+        <View style={styles.topRow}>
+          {/* Checkbox */}
+          <Checkbox checked={task.completed} onPress={handleComplete} />
 
-        {/* Task Info */}
-        <Pressable style={styles.taskInfo} onPress={toggleExpand}>
-          <TaskTitle 
-            title={task.title} 
-            completed={task.completed} 
-            numberOfLines={expanded ? undefined : 1} 
-          />
+          {/* Task Info */}
+          <Pressable 
+            style={styles.taskInfo} 
+            onPress={toggleExpand}
+            onPressIn={handlePressIn}
+            onPressOut={handlePressOut}
+            delayLongPress={500}
+          >
+            <TaskTitle 
+              title={task.title} 
+              completed={task.completed} 
+              numberOfLines={expanded ? undefined : 1} 
+            />
 
-          <View style={styles.infoRow}>
-            <DateDisplay date={task.end_time} />
+            <View style={styles.infoRow}>
+              <DateDisplay date={task.end_time} />
+            </View>
+          </Pressable>
+
+          {/* Giorni rimanenti (spostato a destra) */}
+          <View style={styles.daysRemainingContainer}>
+            <DaysRemaining endDate={task.end_time} />
           </View>
-        </Pressable>
-
-        {/* Giorni rimanenti (spostato a destra) */}
-        <View style={styles.daysRemainingContainer}>
-          <DaysRemaining endDate={task.end_time} />
         </View>
 
-        {/* Menu */}
-        <TaskMenu 
-          visible={menuVisible}
-          onRequestClose={setMenuVisible}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-        />
-      </View>
+        {/* Expandable description */}
+        <Animated.View style={{ height: descriptionHeight, overflow: "hidden" }}>
+          <Text style={styles.description} numberOfLines={expanded ? 4 : 0}>
+            {task.description}
+          </Text>
+        </Animated.View>
 
-      {/* Expandable description */}
-      <Animated.View style={{ height: descriptionHeight, overflow: "hidden" }}>
-        <Text style={styles.description} numberOfLines={expanded ? 4 : 0}>
-          {task.description}
-        </Text>
+        {/* Expansion indicator */}
+        <TouchableOpacity 
+          style={styles.expandButton} 
+          onPress={toggleExpand}
+          disabled={animationInProgress.current}
+        >
+          <MaterialIcons
+            name={expanded ? "expand-less" : "expand-more"}
+            size={20}
+            color="#888"
+          />
+        </TouchableOpacity>
+
+        {/* Modal menu */}
+        <Modal
+          transparent={true}
+          visible={showModal}
+          animationType="fade"
+          onRequestClose={closeModal}
+        >
+          <TouchableOpacity 
+            style={styles.modalOverlay} 
+            activeOpacity={1} 
+            onPress={closeModal}
+          >
+            <View style={styles.menuContainer}>
+              <TouchableOpacity 
+                style={styles.menuItem} 
+                onPress={handleEdit}
+              >
+                <MaterialIcons name="edit" size={20} color="#333" />
+                <Text style={styles.menuText}>Modifica</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.menuItem} 
+                onPress={handleDelete}
+                disabled={isDeleting}
+              >
+                <MaterialIcons name="delete" size={20} color="#F44336" />
+                <Text style={[styles.menuText, { color: '#F44336' }]}>
+                  {isDeleting ? "Eliminazione..." : "Elimina"}
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.menuItem} 
+                onPress={handleShare}
+              >
+                <MaterialIcons name="share" size={20} color="#333" />
+                <Text style={styles.menuText}>Condividi</Text>
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </Modal>
       </Animated.View>
-
-      {/* Expansion indicator */}
-      <TouchableOpacity 
-        style={styles.expandButton} 
-        onPress={toggleExpand}
-        disabled={animationInProgress.current}
-      >
-        <MaterialIcons
-          name={expanded ? "expand-less" : "expand-more"}
-          size={20}
-          color="#888"
-        />
-      </TouchableOpacity>
     </Animated.View>
   );
 };
@@ -376,18 +520,45 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginTop: 8,
   },
+  
+  // Stili del modal - aggiornati per uniformità con Category
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  menuContainer: {
+    width: 200,
+    backgroundColor: 'white',
+    borderRadius: 12,
+    paddingVertical: 8,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
   menuItem: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
   },
-  menuIcon: {
-    marginRight: 8,
+  menuText: {
+    fontSize: 16,
+    marginLeft: 12,
+    color: '#333',
   },
+  // Voci specifiche per il menu
   deleteItem: {
-    color: "#ff4444",
+    color: "#F44336",
   },
   deleteText: {
-    color: "#ff4444",
+    color: "#F44336",
   },
 });
 

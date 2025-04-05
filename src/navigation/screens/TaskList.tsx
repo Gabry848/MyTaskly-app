@@ -24,12 +24,22 @@ type Props = {
 };
 
 interface Task {
+  id?: number | string;
   title: string;
-  image: string;
+  image?: string;
   description: string;
   priority: string;
   end_time: string;
+  completed?: boolean;
+  status_code?: number;
+  task_id?: number;
 }
+
+// Create a global reference for tasks to share data between components
+let globalTasksRef = {
+  addTask: (task: Task, categoryName: string) => {},
+  tasks: {} as Record<string, Task[]>, // Tasks grouped by category name
+};
 
 export function TaskList({ route }: Props) {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -38,16 +48,81 @@ export function TaskList({ route }: Props) {
   const [ordineScadenza, setOrdineScadenza] = useState("Recente");
   const [isLoading, setIsLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
+  const categoryName = route.params.category_name;
+
+  // Initialize the global task adder function
+  globalTasksRef.addTask = (newTask: Task, categoryName: string) => {
+    console.log("globalTasksRef.addTask called with:", newTask, "for category:", categoryName);
+    
+    // Verify that it's a valid task with title
+    if (!newTask || !newTask.title) {
+      console.error("Invalid task:", newTask);
+      return;
+    }
+    
+    // Ensure it has an ID - use task_id if available (from server response)
+    const taskWithId = {
+      ...newTask,
+      id: newTask.id || newTask.task_id || Date.now()
+    };
+    
+    // Update the local state directly if this is the current category
+    if (categoryName === route.params.category_name) {
+      setTasks(prevTasks => {
+        // Check if task already exists
+        const exists = prevTasks.some(
+          task => task.id === taskWithId.id || 
+                 (task.title === taskWithId.title && task.description === taskWithId.description)
+        );
+        
+        if (exists) {
+          console.log("Task already exists, not adding:", taskWithId.title);
+          return prevTasks;
+        }
+        
+        console.log("Adding task directly to state:", taskWithId);
+        return [...prevTasks, taskWithId];
+      });
+    }
+    
+    // Always update the global reference
+    if (!globalTasksRef.tasks[categoryName]) {
+      globalTasksRef.tasks[categoryName] = [];
+    }
+    
+    // Check if task already exists in global ref
+    const existsInGlobal = globalTasksRef.tasks[categoryName].some(
+      task => task.id === taskWithId.id || 
+             (task.title === taskWithId.title && task.description === taskWithId.description)
+    );
+    
+    if (!existsInGlobal) {
+      globalTasksRef.tasks[categoryName].push(taskWithId);
+    }
+  };
+
+  const fetchTasks = async () => {
+    try {
+      const data = await getTasks(categoryName);
+      setTasks(data);
+      
+      // Update global reference
+      globalTasksRef.tasks[categoryName] = data;
+      setIsLoading(false);
+    } catch (error) {
+      console.error("Error fetching tasks:", error);
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchTasks = async () => {
-      const data = await getTasks(route.params.category_name);
-      setTasks(data);
-      setIsLoading(false);
-    };
-
     fetchTasks();
-  }, []);
+  }, [categoryName]);
+
+  // Update global reference when tasks state changes
+  useEffect(() => {
+    globalTasksRef.tasks[categoryName] = tasks;
+  }, [tasks, categoryName]);
 
   // Funzione per calcolare la data futura
   const calculateFutureDate = (days: number) => {
@@ -88,78 +163,81 @@ export function TaskList({ route }: Props) {
     dueDate: string,
     priority: number
   ) => {
-    const newTask = {
+    const priorityString = priority === 1 ? "Bassa" : priority === 2 ? "Media" : "Alta";
+    
+    const newTask: Task = {
+      id: Date.now(),
       title,
       description,
       end_time: new Date(dueDate).toISOString(),
-      category_name: route.params.category_name,
-      priority: priority === 1 ? "Bassa" : priority === 2 ? "Media" : "Alta",
+      priority: priorityString,
       completed: false,
-      dueDate: dueDate,
     };
+    
+    console.log("handleAddTask called with:", newTask);
+    
     try {
-      const addedTask = await addTask(newTask);
-      //setTasks((prevTasks) => [...prevTasks, addedTask]);
+      // Attempt to save to backend
+      const response = await addTask({
+        ...newTask,
+        category_name: categoryName,
+        dueDate: dueDate,
+      });
+      
+      console.log("Server response:", response);
+      
+      // Check if the response contains status_code and task_id but not a complete task
+      if (response && response.status_code && response.task_id && !response.title) {
+        // Create a complete task object using the original data plus the ID from the server
+        const finalTask: Task = {
+          ...newTask,
+          id: response.task_id,
+          task_id: response.task_id,
+          status_code: response.status_code
+        };
+        
+        // Add to global reference and local state
+        globalTasksRef.addTask(finalTask, categoryName);
+        console.log("Task added successfully with server ID:", finalTask);
+      } else if (response && response.title) {
+        // If server returns a complete task object
+        globalTasksRef.addTask(response, categoryName);
+        console.log("Task added successfully with complete server response:", response);
+      } else {
+        // Use original task as fallback
+        globalTasksRef.addTask(newTask, categoryName);
+        console.log("Task added with local data only:", newTask);
+      }
     } catch (error) {
-      console.error("Errore nell'aggiunta del task:", error);
+      console.error("Error adding task:", error);
+      // Still add to local state even if backend fails
+      globalTasksRef.addTask(newTask, categoryName);
+      
+      Alert.alert(
+        "Warning",
+        "Task was added locally but there was an error saving to the server."
+      );
     }
   };
 
   // Funzione per gestire l'eliminazione del task
   const handleTaskDelete = async (taskId: number) => {
-    // Mostriamo un alert di conferma prima di eliminare il task
-    Alert.alert(
-      "Conferma eliminazione",
-      "Sei sicuro di voler eliminare questa attività?",
-      [
-        {
-          text: "Annulla",
-          style: "cancel"
-        },
-        {
-          text: "Elimina",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              setIsLoading(true);
-              // Chiamiamo il servizio per eliminare il task
-              await deleteTask(taskId);
-              // Aggiorniamo la lista dei task rimuovendo quello eliminato
-              setTasks(tasks.filter((_, index) => index !== taskId));
-              setIsLoading(false);
-            } catch (error) {
-              console.error("Errore nell'eliminazione del task:", error);
-              Alert.alert(
-                "Errore",
-                "Si è verificato un errore durante l'eliminazione dell'attività."
-              );
-              setIsLoading(false);
-            }
-          }
-        }
-      ],
-      { cancelable: true }
-    );
-  };
-
-  // Funzione per generare il testo del filtro applicato
-  const getFilterText = () => {
-    let text = [];
-    
-    // Testo per il filtro importanza
-    if (filtroImportanza !== "Tutte") {
-      text.push(`Importanza: ${filtroImportanza}`);
+    try {
+      // Aggiorniamo subito la lista locale per un feedback immediato
+      // L'animazione è già gestita nel componente Task
+      setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
+      
+      // Inviamo la richiesta di eliminazione al server in background
+      await deleteTask(taskId);
+      console.log(`Task ${taskId} successfully deleted from server`);
+    } catch (error) {
+      console.error("Errore nell'eliminazione del task:", error);
+      // Informiamo l'utente dell'errore ma non ripristiniamo il task (optional)
+      Alert.alert(
+        "Avviso",
+        "Il task è stato rimosso localmente, ma c'è stato un errore durante l'eliminazione dal server."
+      );
     }
-    
-    // Testo per il filtro scadenza
-    if (filtroScadenza !== "Tutte") {
-      text.push(`Scadenza: ${filtroScadenza}`);
-    }
-    
-    // Testo per l'ordine
-    text.push(`Ordine: ${ordineScadenza}`);
-    
-    return text.length ? text.join(" • ") : "Nessun filtro attivo";
   };
 
   // Funzione per ottenere il colore in base alla priorità
@@ -205,7 +283,7 @@ export function TaskList({ route }: Props) {
   return (
     <View style={styles.container}>
       <View style={styles.headerContainer}>
-        <Text style={styles.title}>{route.params.category_name}</Text>
+        <Text style={styles.title}>{categoryName}</Text>
         <TouchableOpacity
           style={styles.filterButton}
           onPress={() => setModalVisible(true)}
@@ -332,15 +410,6 @@ export function TaskList({ route }: Props) {
                     </View>
                   </View>
                 </ScrollView>
-                
-                {/* <View style={styles.modalFooter}>
-                  <TouchableOpacity 
-                    style={styles.applyButton}
-                    onPress={() => setModalVisible(false)}
-                  >
-                    <Text style={styles.applyButtonText}>Applica filtri</Text>
-                  </TouchableOpacity>
-                </View> */}
               </View>
             </View>
           </Modal>
@@ -372,16 +441,16 @@ export function TaskList({ route }: Props) {
 
           <FlatList
             data={listaFiltrata}
-            keyExtractor={(item, index) => index.toString()}
-            renderItem={({ item, index }) => (
+            keyExtractor={(item, index) => (item.id ? item.id.toString() : index.toString())}
+            renderItem={({ item }) => (
               <Task
                 task={{
-                  id: index,
+                  id: typeof item.task_id === "string" ? parseInt(item.task_id, 10) : item.task_id || item.task_id,
                   title: item.title,
                   description: item.description,
                   priority: item.priority,
                   end_time: item.end_time,
-                  completed: false
+                  completed: item.completed || false
                 }}
                 onTaskComplete={(taskId) => {
                   console.log(`Task ${taskId} completed`);
@@ -402,7 +471,7 @@ export function TaskList({ route }: Props) {
           />
         </>
       )}
-      <AddTaskButton onSave={handleAddTask} />
+      <AddTaskButton onSave={handleAddTask} categoryName={categoryName} />
     </View>
   );
 };
@@ -638,3 +707,9 @@ const styles = StyleSheet.create({
 });
 
 export default TaskList;
+
+// Export the global function for adding tasks
+export const addTaskToList = (task: Task, categoryName: string) => {
+  console.log("addTaskToList called directly with:", task, "for category:", categoryName);
+  globalTasksRef.addTask(task, categoryName);
+};

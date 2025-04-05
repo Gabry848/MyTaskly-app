@@ -9,6 +9,8 @@ import {
 } from "react-native";
 import { FontAwesome } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import type { StackNavigationProp } from "@react-navigation/stack";
+import type { RootStackParamList } from "../../types";
 import * as authService from "../../services/authService";
 import { NotificationSnackbar } from "../../../components/NotificationSnackbar";
 
@@ -19,24 +21,72 @@ const RegisterScreen = () => {
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [confirmPassword, setConfirmPassword] = React.useState("");
-  const [notification, setNotification] = React.useState({
+  const [notification, setNotification] = React.useState<{
+    isVisible: boolean;
+    message: string;
+    isSuccess: boolean;
+    onFinish?: () => void;
+  }>({
     isVisible: false,
     message: "",
     isSuccess: true,
-    onFinish: () => {},
   });
-  const navigation = useNavigation();
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+
+  // Funzione per validare l'input e verificare se contiene caratteri speciali
+  const containsSpecialChars = (text) => {
+    const specialCharsRegex = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+/;
+    return specialCharsRegex.test(text);
+  };
+
+  // Funzione per gestire il cambio di username con validazione
+  const handleUsernameChange = (text) => {
+    if (containsSpecialChars(text)) {
+      setNotification({
+        isVisible: true,
+        message: "Lo username non può contenere caratteri speciali",
+        isSuccess: false,
+        onFinish: () => {
+          setNotification((prev) => ({
+            ...prev,
+            isVisible: false,
+          }));
+        },
+      });
+      return;
+    }
+    setUsername(text);
+  };
+
+  // Validation for email is not needed as emails naturally contain special characters
 
   async function handleRegister() {
+    // Verifica se i campi contengono caratteri speciali prima di inviare la richiesta
+    if (containsSpecialChars(username)) {
+      setNotification({
+        isVisible: true,
+        message: "Lo username non può contenere caratteri speciali",
+        isSuccess: false,
+        onFinish: () => {
+          setNotification((prev) => ({
+            ...prev,
+            isVisible: false,
+          }));
+        },
+      });
+      return;
+    }
+
     if (password !== confirmPassword) {
       setNotification({
         isVisible: true,
         message: "Passwords do not match",
         isSuccess: false,
-        onFinish: () => setNotification({ ...notification, isVisible: false }),
+        onFinish: () => setNotification((prev) => ({ ...prev, isVisible: false })),
       });
       return;
     }
+    
     const result = await authService.register(username, email, password);
     if (result.success) {
       setNotification({
@@ -44,7 +94,7 @@ const RegisterScreen = () => {
         message: "Registrazione effettuata con successo",
         isSuccess: true,
         onFinish: () => {
-          setNotification({ ...notification, isVisible: false });
+          setNotification((prev) => ({ ...prev, isVisible: false }));
           navigation.navigate("Login");
         },
       });
@@ -53,7 +103,7 @@ const RegisterScreen = () => {
         isVisible: true,
         message: result.message || "Errore durante la registrazione",
         isSuccess: false,
-        onFinish: () => setNotification({ ...notification, isVisible: false }),
+        onFinish: () => setNotification((prev) => ({ ...prev, isVisible: false })),
       });
     }
   }
@@ -68,7 +118,7 @@ const RegisterScreen = () => {
           placeholderTextColor="white"
           style={[styles.input, { width: width * 0.75 }]}
           value={username}
-          onChangeText={setUsername}
+          onChangeText={handleUsernameChange}
         />
       </View>
       <View style={[styles.inputContainer, { width: width * 0.9 }]}>
@@ -116,7 +166,10 @@ const RegisterScreen = () => {
         <Text style={styles.registerText}>Register Now</Text>
       </TouchableOpacity>
       <Text style={styles.loginText}>Already have an account?</Text>
-      <TouchableOpacity style={styles.loginButton}>
+      <TouchableOpacity 
+        style={styles.loginButton}
+        onPress={() => navigation.navigate("Login")}
+      >
         <Text style={styles.loginButtonText}>Login</Text>
       </TouchableOpacity>
       <NotificationSnackbar

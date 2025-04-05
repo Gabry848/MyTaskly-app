@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Modal,
   Image,
+  Alert,
 } from "react-native";
 import { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import Animated, {
@@ -15,6 +16,7 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
 } from "react-native-reanimated";
+import { addTaskToList } from "../src/navigation/screens/TaskList";
 
 type AddTaskButtonProps = {
   onSave?: (
@@ -23,9 +25,10 @@ type AddTaskButtonProps = {
     dueDate: string,
     priority: number
   ) => void;
+  categoryName?: string; // Add category name prop
 };
 
-const AddTaskButton: React.FC<AddTaskButtonProps> = ({ onSave }) => {
+const AddTaskButton: React.FC<AddTaskButtonProps> = ({ onSave, categoryName }) => {
   const [formVisible, setFormVisible] = useState(false);
   const animationValue = useSharedValue(0);
   const [priority, setPriority] = useState<number>(1);
@@ -67,18 +70,49 @@ const AddTaskButton: React.FC<AddTaskButtonProps> = ({ onSave }) => {
       return;
     }
     
-    setFormVisible(false);
-    animationValue.value = withSpring(0, { damping: 12 });
-    onSave?.(title, description, dueDate, priority);
+    // Convert priority to string for direct use in the task list
+    const priorityString = priority === 1 ? "Bassa" : priority === 2 ? "Media" : "Alta";
     
-    // Reset form
-    setTitle("");
-    setDescription("");
-    setDueDate("");
-    setSelectedDateTime(null);
-    setPriority(1);
-    setTitleError("");
-    setDateError("");
+    // Create a task object that can be used directly in the UI
+    const taskObject = {
+      id: Date.now(),
+      title: title.trim(),
+      description: description.trim(),
+      end_time: dueDate,
+      priority: priorityString,
+      completed: false
+    };
+    
+    try {
+      // Call the original callback if provided
+      if (onSave) {
+        onSave(title, description, dueDate, priority);
+      }
+      
+      // Additionally call the global task adder if we have a category name
+      // This is needed if we're being used outside of TaskList component
+      // or if TaskList.handleAddTask doesn't call globalTasksRef.addTask
+      if (categoryName && (!onSave || (onSave && categoryName))) {
+        console.log("Direct call to addTaskToList from AddTaskButton with category:", categoryName);
+        addTaskToList(taskObject, categoryName);
+      }
+    } catch (error) {
+      console.error("Error saving task:", error);
+      Alert.alert("Error", "Failed to save task");
+    } finally {
+      // Close the form
+      setFormVisible(false);
+      animationValue.value = withSpring(0, { damping: 12 });
+      
+      // Reset form
+      setTitle("");
+      setDescription("");
+      setDueDate("");
+      setSelectedDateTime(null);
+      setPriority(1);
+      setTitleError("");
+      setDateError("");
+    }
   };
 
   const onChange = (event: any, selectedDate?: Date) => {

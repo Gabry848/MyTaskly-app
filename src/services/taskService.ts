@@ -32,6 +32,7 @@ export async function getTasks(category_name?: string) {
           "Content-Type": "application/json",
         },
       });
+      console.log(response.data);
       return response.data;
     }
 
@@ -131,6 +132,7 @@ export async function updateTask(
 // Funzione per eliminare un impegno
 export async function deleteTask(taskId: string | number) {
   try {
+    console.log("Eliminazione dell'impegno con ID:", taskId);
     const token = await getValidToken();
     if (!token) {
       return null;

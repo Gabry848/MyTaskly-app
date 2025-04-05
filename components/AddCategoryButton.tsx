@@ -88,9 +88,7 @@ const AddCategoryButton: React.FC<AddCategoryButtonProps> = ({ onCategoryAdded }
             category_id: savedCategory.category_id,
             status_code: savedCategory.status_code
           };
-          
-          console.log('Chiamata a onCategoryAdded con categoria completa:', completeCategory);
-          
+                    
           // Chiamata alla funzione di callback originale
           onCategoryAdded(completeCategory);
           
@@ -101,7 +99,7 @@ const AddCategoryButton: React.FC<AddCategoryButtonProps> = ({ onCategoryAdded }
           // In caso di problemi, usiamo la versione locale
           console.log('Chiamata a onCategoryAdded con newCategory (server non ha risposto):', newCategory);
           onCategoryAdded(newCategory);
-          addCategoryToList(newCategory); // Aggiungiamo anche qui
+          addCategoryToList(newCategory); 
         }
       } catch (error) {
         console.error('Errore nel salvare la categoria sul server:', error);
