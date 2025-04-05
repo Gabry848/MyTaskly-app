@@ -9,8 +9,10 @@ import {
   Modal,
   Image,
   Alert,
+  ScrollView,
 } from "react-native";
 import { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
+import { Ionicons } from "@expo/vector-icons";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -25,7 +27,7 @@ type AddTaskButtonProps = {
     dueDate: string,
     priority: number
   ) => void;
-  categoryName?: string; // Add category name prop
+  categoryName?: string;
 };
 
 const AddTaskButton: React.FC<AddTaskButtonProps> = ({ onSave, categoryName }) => {
@@ -53,27 +55,23 @@ const AddTaskButton: React.FC<AddTaskButtonProps> = ({ onSave, categoryName }) =
 
   const handleSave = () => {
     let hasError = false;
-    
-    // Verifica che il titolo esista
+
     if (!title.trim()) {
       setTitleError("Il titolo è obbligatorio");
       hasError = true;
     }
-    
-    // Verifica che la data di scadenza sia stata impostata
+
     if (!dueDate) {
       setDateError("La data di scadenza è obbligatoria");
       hasError = true;
     }
-    
+
     if (hasError) {
       return;
     }
-    
-    // Convert priority to string for direct use in the task list
+
     const priorityString = priority === 1 ? "Bassa" : priority === 2 ? "Media" : "Alta";
-    
-    // Create a task object that can be used directly in the UI
+
     const taskObject = {
       id: Date.now(),
       title: title.trim(),
@@ -82,16 +80,12 @@ const AddTaskButton: React.FC<AddTaskButtonProps> = ({ onSave, categoryName }) =
       priority: priorityString,
       completed: false
     };
-    
+
     try {
-      // Call the original callback if provided
       if (onSave) {
         onSave(title, description, dueDate, priority);
       }
-      
-      // Additionally call the global task adder if we have a category name
-      // This is needed if we're being used outside of TaskList component
-      // or if TaskList.handleAddTask doesn't call globalTasksRef.addTask
+
       if (categoryName && (!onSave || (onSave && categoryName))) {
         console.log("Direct call to addTaskToList from AddTaskButton with category:", categoryName);
         addTaskToList(taskObject, categoryName);
@@ -100,11 +94,9 @@ const AddTaskButton: React.FC<AddTaskButtonProps> = ({ onSave, categoryName }) =
       console.error("Error saving task:", error);
       Alert.alert("Error", "Failed to save task");
     } finally {
-      // Close the form
       setFormVisible(false);
       animationValue.value = withSpring(0, { damping: 12 });
-      
-      // Reset form
+
       setTitle("");
       setDescription("");
       setDueDate("");
@@ -118,7 +110,7 @@ const AddTaskButton: React.FC<AddTaskButtonProps> = ({ onSave, categoryName }) =
   const onChange = (event: any, selectedDate?: Date) => {
     const currentDate = selectedDate || date;
     setDate(currentDate);
-    
+
     if (selectedDateTime) {
       const newDateTime = new Date(currentDate);
       newDateTime.setHours(selectedDateTime.getHours(), selectedDateTime.getMinutes());
@@ -133,7 +125,7 @@ const AddTaskButton: React.FC<AddTaskButtonProps> = ({ onSave, categoryName }) =
 
   const onTimeChange = (event: any, selectedTime?: Date) => {
     const currentTime = selectedTime || date;
-    
+
     if (selectedDateTime) {
       const newDateTime = new Date(selectedDateTime);
       newDateTime.setHours(currentTime.getHours(), currentTime.getMinutes());
@@ -177,11 +169,18 @@ const AddTaskButton: React.FC<AddTaskButtonProps> = ({ onSave, categoryName }) =
       <Modal visible={formVisible} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <Animated.View style={[styles.formContainer, animatedStyle]}>
-            <KeyboardAvoidingView behavior="padding" style={styles.formContent}>
-              <Text style={styles.label}>Title</Text>
+            <View style={styles.formHeader}>
+              <Text style={styles.formTitle}>Aggiungi Task</Text>
+              <TouchableOpacity onPress={handleCancel}>
+                <Ionicons name="close" size={24} color="#fff" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.formContent}>
+              <Text style={styles.inputLabel}>Titolo *</Text>
               <TextInput
                 style={[styles.input, titleError ? styles.inputError : null]}
-                placeholder="Enter task title"
+                placeholder="Inserisci il titolo"
                 value={title}
                 onChangeText={(text) => {
                   setTitle(text);
@@ -190,86 +189,94 @@ const AddTaskButton: React.FC<AddTaskButtonProps> = ({ onSave, categoryName }) =
               />
               {titleError ? <Text style={styles.errorText}>{titleError}</Text> : null}
 
-              <Text style={styles.label}>Description</Text>
+              <Text style={styles.inputLabel}>Descrizione</Text>
               <TextInput
-                style={styles.input}
-                placeholder="Enter task description"
+                style={[styles.input, styles.textArea]}
+                placeholder="Inserisci la descrizione"
                 multiline
+                numberOfLines={4}
+                textAlignVertical="top"
                 value={description}
                 onChangeText={setDescription}
               />
               
-              <Text style={styles.label}>Due Date & Time</Text>
+              <Text style={styles.inputLabel}>Data e ora di scadenza</Text>
               <View style={styles.dateTimeContainer}>
                 <TouchableOpacity
-                  style={styles.dateTimeButton}
+                  style={[styles.datePickerButton, styles.dateButton]}
                   onPress={showDatepicker}
                 >
-                  <Text style={styles.dateTimeButtonText}>Set Date</Text>
+                  <Text style={styles.datePickerText}>
+                    {selectedDateTime ? selectedDateTime.toLocaleDateString('it-IT') : 'Seleziona data'}
+                  </Text>
+                  <Ionicons name="calendar-outline" size={20} color="#666" />
                 </TouchableOpacity>
                 
                 <TouchableOpacity
-                  style={styles.dateTimeButton}
+                  style={[styles.datePickerButton, styles.timeButton]}
                   onPress={showTimepicker}
                 >
-                  <Text style={styles.dateTimeButtonText}>Set Time</Text>
+                  <Text style={styles.datePickerText}>
+                    {selectedDateTime ? selectedDateTime.toLocaleTimeString('it-IT', {hour: '2-digit', minute:'2-digit'}) : 'Seleziona ora'}
+                  </Text>
+                  <Ionicons name="time-outline" size={20} color="#666" />
                 </TouchableOpacity>
               </View>
               
-              {selectedDateTime && (
-                <Text style={styles.selectedDateTime}>
-                  {selectedDateTime.toLocaleDateString()} {selectedDateTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                </Text>
-              )}
-              
               {dateError ? <Text style={styles.errorText}>{dateError}</Text> : null}
 
-              <Text style={styles.label}>Priority</Text>
+              <Text style={styles.inputLabel}>Priorità</Text>
               <View style={styles.priorityContainer}>
                 <TouchableOpacity
                   style={[
                     styles.priorityButton,
-                    priority === 1 && styles.selectedPriority,
+                    styles.priorityButtonLow,
+                    priority === 1 && styles.priorityButtonActive
                   ]}
                   onPress={() => setPriority(1)}
                 >
-                  <Text style={styles.priorityText}>Bassa</Text>
+                  <Text style={[
+                    styles.priorityButtonText,
+                    priority === 1 && styles.priorityButtonTextActive
+                  ]}>Bassa</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[
                     styles.priorityButton,
-                    priority === 2 && styles.selectedPriority,
+                    styles.priorityButtonMedium,
+                    priority === 2 && styles.priorityButtonActive
                   ]}
                   onPress={() => setPriority(2)}
                 >
-                  <Text style={styles.priorityText}>Media</Text>
+                  <Text style={[
+                    styles.priorityButtonText,
+                    priority === 2 && styles.priorityButtonTextActive
+                  ]}>Media</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[
                     styles.priorityButton,
-                    priority === 3 && styles.selectedPriority,
+                    styles.priorityButtonHigh,
+                    priority === 3 && styles.priorityButtonActive
                   ]}
                   onPress={() => setPriority(3)}
                 >
-                  <Text style={styles.priorityText}>Alta</Text>
+                  <Text style={[
+                    styles.priorityButtonText,
+                    priority === 3 && styles.priorityButtonTextActive
+                  ]}>Alta</Text>
                 </TouchableOpacity>
               </View>
+            </ScrollView>
 
-              <View style={styles.buttonRow}>
-                <TouchableOpacity
-                  style={styles.submitButton}
-                  onPress={handleSave}
-                >
-                  <Text style={styles.submitButtonText}>Save</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.cancelButton}
-                  onPress={handleCancel}
-                >
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
-                </TouchableOpacity>
-              </View>
-            </KeyboardAvoidingView>
+            <View style={styles.formFooter}>
+              <TouchableOpacity
+                style={styles.saveButton}
+                onPress={handleSave}
+              >
+                <Text style={styles.saveButtonText}>Salva</Text>
+              </TouchableOpacity>
+            </View>
           </Animated.View>
         </View>
       </Modal>
@@ -284,10 +291,10 @@ const styles = StyleSheet.create({
     right: 20,
   },
   addButton: {
-    backgroundColor: "#007BFF",
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    backgroundColor: "#10e0e0",
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     alignItems: "center",
     justifyContent: "center",
     elevation: 4,
@@ -311,115 +318,144 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   formContainer: {
-    width: "80%",
-    backgroundColor: "#F9F9F9",
-    borderRadius: 8,
+    width: "90%",
+    maxHeight: "80%",
+    backgroundColor: "#fff",
+    borderRadius: 16,
     overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 10,
+  },
+  formHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+    backgroundColor: '#10e0e0',
+  },
+  formTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#fff',
   },
   formContent: {
     padding: 16,
+    maxHeight: 400,
   },
-  label: {
+  formFooter: {
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+    alignItems: 'center',
+  },
+  inputLabel: {
     fontSize: 14,
-    color: "#333333",
-    marginBottom: 4,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    color: '#555',
   },
   input: {
     borderWidth: 1,
-    borderColor: "#CCC",
+    borderColor: '#ddd',
     borderRadius: 8,
-    padding: 8,
-    marginBottom: 12,
-    fontSize: 14,
+    padding: 12,
+    marginBottom: 16,
+    fontSize: 16,
+    backgroundColor: '#f9f9f9',
+  },
+  textArea: {
+    height: 100,
   },
   inputError: {
-    borderColor: "#DC3545",
+    borderColor: "#FF5252",
     backgroundColor: "#FFF8F8",
   },
   errorText: {
-    color: "#DC3545",
+    color: "#FF5252",
     fontSize: 12,
     marginBottom: 8,
     marginTop: -8,
   },
   dateTimeContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
   },
-  dateTimeButton: {
-    backgroundColor: "#007BFF",
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    flex: 1,
-    marginHorizontal: 4,
-    alignItems: "center",
-  },
-  dateTimeButtonText: {
-    color: "#FFF",
-    fontWeight: "600",
-  },
-  selectedDateTime: {
-    marginBottom: 12,
-    backgroundColor: "#E8F0FE",
-    padding: 8,
-    borderRadius: 4,
-    textAlign: "center",
-    color: "#333",
-  },
-  priorityContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginVertical: 10,
-  },
-  priorityButton: {
+  datePickerButton: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     borderWidth: 1,
-    borderColor: "#777",
+    borderColor: '#ddd',
     borderRadius: 8,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    marginHorizontal: 4,
+    padding: 12,
+    backgroundColor: '#f9f9f9',
   },
-  selectedPriority: {
-    backgroundColor: "#007BFF",
-    borderColor: "#007BFF",
-  },
-  priorityText: {
-    fontSize: 16,
-    color: "#333",
-  },
-  buttonRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 16,
-  },
-  submitButton: {
-    backgroundColor: "#28A745",
-    paddingVertical: 12,
-    alignItems: "center",
-    borderRadius: 8,
-    flex: 1,
+  dateButton: {
+    flex: 3,
     marginRight: 8,
   },
-  submitButtonText: {
-    color: "#FFF",
-    fontSize: 16,
-    fontWeight: "bold",
+  timeButton: {
+    flex: 2,
   },
-  cancelButton: {
-    backgroundColor: "#DC3545",
-    paddingVertical: 12,
-    alignItems: "center",
-    borderRadius: 8,
+  datePickerText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  priorityContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  priorityButton: {
     flex: 1,
+    padding: 12,
+    borderRadius: 8,
+    marginHorizontal: 4,
+    alignItems: 'center',
+    borderWidth: 1,
   },
-  cancelButtonText: {
-    color: "#FFF",
+  priorityButtonLow: {
+    borderColor: '#4CAF50',
+    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+  },
+  priorityButtonMedium: {
+    borderColor: '#FFC107',
+    backgroundColor: 'rgba(255, 193, 7, 0.1)',
+  },
+  priorityButtonHigh: {
+    borderColor: '#FF5252',
+    backgroundColor: 'rgba(255, 82, 82, 0.1)',
+  },
+  priorityButtonActive: {
+    borderWidth: 2,
+  },
+  priorityButtonText: {
+    fontWeight: '600',
+  },
+  priorityButtonTextActive: {
+    fontWeight: 'bold',
+  },
+  saveButton: {
+    backgroundColor: '#10e0e0',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    width: '100%',
+    alignItems: 'center',
+  },
+  saveButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
     fontSize: 16,
-    fontWeight: "bold",
   },
 });
 

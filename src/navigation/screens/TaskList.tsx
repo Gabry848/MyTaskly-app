@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { Filter } from "lucide-react-native";
 import Task from "../../../components/Task";
-import { getTasks, addTask, deleteTask } from "../../services/taskService";
+import { getTasks, addTask, deleteTask, updateTask } from "../../services/taskService";
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../types';
 import AddTaskButton from "../../../components/AddTaskButton";
@@ -240,6 +240,27 @@ export function TaskList({ route }: Props) {
     }
   };
 
+  // Funzione per gestire la modifica del task
+  const handleTaskEdit = async (taskId: number, updatedTaskData: Task) => {
+    try {
+      // Aggiorniamo subito la lista locale per un feedback immediato
+      setTasks(prevTasks => 
+        prevTasks.map(task => 
+          task.id === taskId ? { ...task, ...updatedTaskData } : task
+        )
+      );
+      
+      // Inviamo la richiesta di aggiornamento al server
+      await updateTask(taskId, updatedTaskData);
+      console.log(`Task ${taskId} successfully updated`);
+    } catch (error) {
+      console.error("Errore nell'aggiornamento del task:", error);
+      
+      // Ricarica i dati dal server per mantenere la coerenza
+      fetchTasks();
+    }
+  };
+
   // Funzione per ottenere il colore in base alla priorità
   const getPriorityColor = (priority: string) => {
     switch(priority) {
@@ -457,10 +478,7 @@ export function TaskList({ route }: Props) {
                   // Add logic to handle task completion
                 }}
                 onTaskDelete={handleTaskDelete}
-                onTaskEdit={(taskId) => {
-                  console.log(`Task ${taskId} edited`);
-                  // Add logic to handle task editing
-                }}
+                onTaskEdit={handleTaskEdit}
               />
             )}
             ListEmptyComponent={

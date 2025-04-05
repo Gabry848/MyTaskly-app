@@ -10,9 +10,12 @@ import {
   Dimensions,
   Modal,
   ViewStyle,
+  TextInput,
+  ScrollView,
 } from "react-native";
 import { MaterialIcons, Ionicons } from "@expo/vector-icons";
 import { Menu, MenuItem } from "react-native-material-menu";
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 const { width } = Dimensions.get("window");
 
@@ -122,6 +125,18 @@ const Task = ({
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
   
+  // Nuovo stato per il modal di modifica
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editedTask, setEditedTask] = useState({
+    title: "",
+    description: "",
+    end_time: "",
+    priority: "",
+  });
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [pickerMode, setPickerMode] = useState('date');
+  
   // Animazioni
   const deleteAnim = useRef(new Animated.Value(1)).current;
   const translateXAnim = useRef(new Animated.Value(0)).current;
@@ -184,13 +199,96 @@ const Task = ({
     }
   };
 
+  // Nuovo gestore per l'apertura del modal di modifica
+  const openEditModal = () => {
+    // Inizializza i campi del form con i valori attuali del task
+    setEditedTask({
+      title: task.title,
+      description: task.description || "",
+      end_time: task.end_time,
+      priority: task.priority,
+    });
+    setShowEditModal(true);
+  };
+
+  const closeEditModal = () => {
+    setShowEditModal(false);
+  };
+
+  const handleDateChange = (event, selectedDate) => {
+    setShowDatePicker(false);
+    setShowTimePicker(false);
+    
+    if (selectedDate) {
+      // Estrai la data attuale dall'end_time
+      const currentDate = editedTask.end_time 
+        ? new Date(editedTask.end_time) 
+        : new Date();
+      
+      if (pickerMode === 'date') {
+        // Mantieni l'orario esistente, aggiorna solo la data
+        currentDate.setFullYear(selectedDate.getFullYear());
+        currentDate.setMonth(selectedDate.getMonth());
+        currentDate.setDate(selectedDate.getDate());
+      } else {
+        // Mantieni la data esistente, aggiorna solo l'orario
+        currentDate.setHours(selectedDate.getHours());
+        currentDate.setMinutes(selectedDate.getMinutes());
+      }
+      
+      // Aggiorna lo stato con la nuova data e ora combinate
+      setEditedTask({
+        ...editedTask,
+        end_time: currentDate.toISOString()
+      });
+    }
+  };
+
+  const openDatePicker = () => {
+    setPickerMode('date');
+    setShowDatePicker(true);
+  };
+
+  const openTimePicker = () => {
+    setPickerMode('time');
+    setShowTimePicker(true);
+  };
+
+  const handlePrioritySelect = (priority) => {
+    setEditedTask({
+      ...editedTask,
+      priority
+    });
+  };
+
+  const handleSaveEdit = () => {
+    // Verifica che i campi obbligatori siano compilati
+    if (!editedTask.title.trim()) {
+      Alert.alert("Errore", "Il titolo è obbligatorio");
+      return;
+    }
+    
+    // Chiama la funzione di callback per salvare le modifiche
+    if (onTaskEdit) {
+      const updatedTask = {
+        ...task,
+        title: editedTask.title,
+        description: editedTask.description,
+        end_time: editedTask.end_time,
+        priority: editedTask.priority,
+      };
+      
+      onTaskEdit(task.id, updatedTask);
+      closeEditModal();
+    } else {
+      Alert.alert("Modifica", `Modifiche salvate per "${editedTask.title}"`);
+      closeEditModal();
+    }
+  };
+
   const handleEdit = () => {
     closeModal();
-    if (onTaskEdit) {
-      onTaskEdit(task.id);
-    } else {
-      Alert.alert("Modifica", `Modifica il task "${task.title}"`);
-    }
+    openEditModal();
   };
 
   // Animazione di eliminazione task
@@ -413,6 +511,151 @@ const Task = ({
             </View>
           </TouchableOpacity>
         </Modal>
+
+        {/* Modal di modifica */}
+        <Modal
+          transparent={true}
+          visible={showEditModal}
+          animationType="slide"
+          onRequestClose={closeEditModal}
+        >
+          <View style={styles.editModalOverlay}>
+            <View style={styles.editModalContainer}>
+              <View style={styles.editModalHeader}>
+                <Text style={styles.editModalTitle}>Modifica Task</Text>
+                <TouchableOpacity onPress={closeEditModal}>
+                  <MaterialIcons name="close" size={24} color="#333" />
+                </TouchableOpacity>
+              </View>
+              
+              <ScrollView style={styles.editModalContent}>
+                <Text style={styles.inputLabel}>Titolo *</Text>
+                <TextInput
+                  style={styles.input}
+                  value={editedTask.title}
+                  onChangeText={(text) => setEditedTask({...editedTask, title: text})}
+                  placeholder="Titolo del task"
+                />
+                
+                <Text style={styles.inputLabel}>Descrizione</Text>
+                <TextInput
+                  style={[styles.input, styles.textArea]}
+                  value={editedTask.description}
+                  onChangeText={(text) => setEditedTask({...editedTask, description: text})}
+                  placeholder="Descrizione del task"
+                  multiline
+                  numberOfLines={4}
+                  textAlignVertical="top"
+                />
+                
+                <Text style={styles.inputLabel}>Data e ora di scadenza</Text>
+                <View style={styles.dateTimeContainer}>
+                  <TouchableOpacity 
+                    style={[styles.datePickerButton, styles.dateButton]}
+                    onPress={openDatePicker}
+                  >
+                    <Text style={styles.datePickerText}>
+                      {editedTask.end_time 
+                        ? new Date(editedTask.end_time).toLocaleDateString('it-IT') 
+                        : 'Seleziona data'
+                      }
+                    </Text>
+                    <Ionicons name="calendar-outline" size={20} color="#666" />
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={[styles.datePickerButton, styles.timeButton]}
+                    onPress={openTimePicker}
+                  >
+                    <Text style={styles.datePickerText}>
+                      {editedTask.end_time 
+                        ? new Date(editedTask.end_time).toLocaleTimeString('it-IT', {
+                            hour: '2-digit', 
+                            minute: '2-digit'
+                          }) 
+                        : 'Seleziona ora'
+                      }
+                    </Text>
+                    <Ionicons name="time-outline" size={20} color="#666" />
+                  </TouchableOpacity>
+                </View>
+                
+                {showDatePicker && (
+                  <DateTimePicker
+                    value={editedTask.end_time ? new Date(editedTask.end_time) : new Date()}
+                    mode="date"
+                    display="default"
+                    onChange={handleDateChange}
+                  />
+                )}
+                
+                {showTimePicker && (
+                  <DateTimePicker
+                    value={editedTask.end_time ? new Date(editedTask.end_time) : new Date()}
+                    mode="time"
+                    display="default"
+                    onChange={handleDateChange}
+                    is24Hour={true}
+                  />
+                )}
+                
+                <Text style={styles.inputLabel}>Priorità</Text>
+                <View style={styles.priorityContainer}>
+                  <TouchableOpacity 
+                    style={[
+                      styles.priorityButton, 
+                      styles.priorityButtonLow,
+                      editedTask.priority === "Bassa" && styles.priorityButtonActive
+                    ]}
+                    onPress={() => handlePrioritySelect("Bassa")}
+                  >
+                    <Text style={[
+                      styles.priorityButtonText,
+                      editedTask.priority === "Bassa" && styles.priorityButtonTextActive
+                    ]}>Bassa</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={[
+                      styles.priorityButton, 
+                      styles.priorityButtonMedium,
+                      editedTask.priority === "Media" && styles.priorityButtonActive
+                    ]}
+                    onPress={() => handlePrioritySelect("Media")}
+                  >
+                    <Text style={[
+                      styles.priorityButtonText,
+                      editedTask.priority === "Media" && styles.priorityButtonTextActive
+                    ]}>Media</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={[
+                      styles.priorityButton, 
+                      styles.priorityButtonHigh,
+                      editedTask.priority === "Alta" && styles.priorityButtonActive
+                    ]}
+                    onPress={() => handlePrioritySelect("Alta")}
+                  >
+                    <Text style={[
+                      styles.priorityButtonText,
+                      editedTask.priority === "Alta" && styles.priorityButtonTextActive
+                    ]}>Alta</Text>
+                  </TouchableOpacity>
+                </View>
+              </ScrollView>
+              
+              <View style={styles.editModalFooter}>
+                <TouchableOpacity 
+                  style={styles.saveButton}
+                  onPress={handleSaveEdit}
+                >
+                  <Text style={styles.saveButtonText}>Salva Modifiche</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </Animated.View>
     </Animated.View>
   );
@@ -559,6 +802,144 @@ const styles = StyleSheet.create({
   },
   deleteText: {
     color: "#F44336",
+  },
+  
+  // Stili per il modal di modifica
+  editModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  editModalContainer: {
+    width: '90%',
+    maxHeight: '80%',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 10,
+  },
+  editModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+    backgroundColor: '#10e0e0',
+  },
+  editModalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  editModalContent: {
+    padding: 16,
+  },
+  editModalFooter: {
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+    alignItems: 'center',
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    color: '#555',
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+    fontSize: 16,
+    backgroundColor: '#f9f9f9',
+  },
+  textArea: {
+    height: 100,
+  },
+  datePickerButton: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+    backgroundColor: '#f9f9f9',
+  },
+  datePickerText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  priorityContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  priorityButton: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 8,
+    marginHorizontal: 4,
+    alignItems: 'center',
+    borderWidth: 1,
+  },
+  priorityButtonLow: {
+    borderColor: '#4CAF50',
+    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+  },
+  priorityButtonMedium: {
+    borderColor: '#FFC107',
+    backgroundColor: 'rgba(255, 193, 7, 0.1)',
+  },
+  priorityButtonHigh: {
+    borderColor: '#FF5252',
+    backgroundColor: 'rgba(255, 82, 82, 0.1)',
+  },
+  priorityButtonActive: {
+    borderWidth: 2,
+  },
+  priorityButtonText: {
+    fontWeight: '600',
+  },
+  priorityButtonTextActive: {
+    fontWeight: 'bold',
+  },
+  saveButton: {
+    backgroundColor: '#10e0e0',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    width: '100%',
+    alignItems: 'center',
+  },
+  saveButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  dateTimeContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  dateButton: {
+    flex: 3,
+    marginRight: 8,
+  },
+  timeButton: {
+    flex: 2,
   },
 });
 
