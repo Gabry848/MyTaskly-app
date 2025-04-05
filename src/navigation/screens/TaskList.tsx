@@ -24,6 +24,8 @@ type Props = {
 };
 
 interface Task {
+  status: string;
+  start_time: string;
   id?: number | string;
   title: string;
   image?: string;
@@ -172,6 +174,8 @@ export function TaskList({ route }: Props) {
       end_time: new Date(dueDate).toISOString(),
       priority: priorityString,
       completed: false,
+      status: "",
+      start_time: ""
     };
     
     console.log("handleAddTask called with:", newTask);
@@ -182,6 +186,7 @@ export function TaskList({ route }: Props) {
         ...newTask,
         category_name: categoryName,
         dueDate: dueDate,
+        status: ""
       });
       
       console.log("Server response:", response);
@@ -227,6 +232,13 @@ export function TaskList({ route }: Props) {
       // L'animazione è già gestita nel componente Task
       setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
       
+      // Aggiorniamo anche la referenza globale
+      if (globalTasksRef.tasks[categoryName]) {
+        globalTasksRef.tasks[categoryName] = globalTasksRef.tasks[categoryName].filter(
+          task => task.id !== taskId
+        );
+      }
+      
       // Inviamo la richiesta di eliminazione al server in background
       await deleteTask(taskId);
       console.log(`Task ${taskId} successfully deleted from server`);
@@ -250,11 +262,41 @@ export function TaskList({ route }: Props) {
         )
       );
       
+      // Aggiorniamo anche la referenza globale
+      if (globalTasksRef.tasks[categoryName]) {
+        globalTasksRef.tasks[categoryName] = globalTasksRef.tasks[categoryName].map(task => 
+          task.id === taskId ? { ...task, ...updatedTaskData } : task
+        );
+      }
+      
       // Inviamo la richiesta di aggiornamento al server
-      await updateTask(taskId, updatedTaskData);
-      console.log(`Task ${taskId} successfully updated`);
+      const response = await updateTask(taskId, updatedTaskData);
+      console.log(`Task ${taskId} successfully updated`, response);
+      
+      // Se la risposta contiene dati aggiornati dal server, aggiorniamo lo stato con quei dati
+      if (response && response.task_id) {
+        setTasks(prevTasks => 
+          prevTasks.map(task => 
+            task.id === taskId ? { ...task, ...response } : task
+          )
+        );
+        
+        // Aggiorniamo anche la referenza globale con i dati del server
+        if (globalTasksRef.tasks[categoryName]) {
+          globalTasksRef.tasks[categoryName] = globalTasksRef.tasks[categoryName].map(task => 
+            task.id === taskId ? { ...task, ...response } : task
+          );
+        }
+      }
     } catch (error) {
       console.error("Errore nell'aggiornamento del task:", error);
+      
+      // Mostra un avviso all'utente
+      Alert.alert(
+        "Errore di aggiornamento",
+        "Si è verificato un problema durante l'aggiornamento del task. I dati potrebbero non essere sincronizzati con il server.",
+        [{ text: "OK" }]
+      );
       
       // Ricarica i dati dal server per mantenere la coerenza
       fetchTasks();
@@ -471,7 +513,9 @@ export function TaskList({ route }: Props) {
                   description: item.description,
                   priority: item.priority,
                   end_time: item.end_time,
-                  completed: item.completed || false
+                  completed: item.completed || false,
+                  start_time: item.start_time || new Date().toISOString(), // Default to current time if missing
+                  status: item.status || "Pending" // Default to "Pending" if missing
                 }}
                 onTaskComplete={(taskId) => {
                   console.log(`Task ${taskId} completed`);

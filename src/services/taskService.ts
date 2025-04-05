@@ -7,11 +7,12 @@ import { STORAGE_KEYS } from "../constants/authConstants";
 export interface Task {
   title: string;
   description?: string;
-  status?: string;
+  status: string; // Reso obbligatorio
+  start_time?: string; // Aggiunto
   end_time?: string;
   priority?: string;
   category_name?: string;
-  user?: string; // aggiunto
+  user?: string;
   [key: string]: any; // per proprietà aggiuntive
 }
 
@@ -67,8 +68,7 @@ export async function getLastTask(last_n: number) {
     // Ordina gli impegni per data di scadenza
     response.data.sort((a: Task, b: Task) => {
       return new Date(a.end_time).getTime() - new Date(b.end_time).getTime();
-    }
-    );
+    });
     return tasks;
 
   } catch (error) {
@@ -88,6 +88,7 @@ export async function addTask(task: Task) {
     const data = {
       title: task.title,
       description: task.description || "",
+      start_time: task.start_time || new Date().toISOString(), // Aggiunto con valore predefinito
       end_time: task.end_time,
       priority: task.priority,
       status: task.status || "In sospeso",
@@ -117,7 +118,18 @@ export async function updateTask(
     if (!token) {
       return null;
     }
-    const response = await axios.put(`/tasks/${taskId}`, updatedTask, {
+
+    // Assicura che tutti i parametri richiesti siano inclusi
+    const taskData = {
+      title: updatedTask.title,
+      description: updatedTask.description || "",
+      start_time: updatedTask.start_time,
+      end_time: updatedTask.end_time,
+      priority: updatedTask.priority,
+      status: updatedTask.status,
+    };
+
+    const response = await axios.put(`/tasks/${taskId}`, taskData, {
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",

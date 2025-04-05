@@ -77,7 +77,9 @@ const AddTaskButton: React.FC<AddTaskButtonProps> = ({ onSave, categoryName }) =
       title: title.trim(),
       description: description.trim(),
       end_time: dueDate,
+      start_time: new Date().toISOString(), // Adding start_time
       priority: priorityString,
+      status: "pending", // Adding status
       completed: false
     };
 

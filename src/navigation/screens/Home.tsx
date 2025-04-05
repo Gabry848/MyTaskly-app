@@ -14,7 +14,10 @@ import { useFocusEffect } from '@react-navigation/native';
 function Home() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const [tasks, setTasks] = useState<
-    { title: string; description: string; end_time: string; priority: string }[]
+    {
+      status: string;
+      start_time: string; title: string; description: string; end_time: string; priority: string 
+}[]
   >([]);
   const [windowWidth, setWindowWidth] = useState(
     Dimensions.get("window").width
@@ -157,6 +160,8 @@ function Home() {
                       description: element.description,
                       priority: element.priority,
                       end_time: element.end_time,
+                      start_time: element.start_time || "", // Provide a default value if missing
+                      status: element.status || "pending", // Provide a default value if missing
                       completed: false,
                     }}
                     onTaskComplete={() => console.log(`Task ${index} completed`)}

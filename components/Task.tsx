@@ -12,12 +12,23 @@ import {
   ViewStyle,
   TextInput,
   ScrollView,
+  Easing,
+  LayoutAnimation,
+  Platform,
+  UIManager,
 } from "react-native";
 import { MaterialIcons, Ionicons } from "@expo/vector-icons";
 import { Menu, MenuItem } from "react-native-material-menu";
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 const { width } = Dimensions.get("window");
+
+// Abilita LayoutAnimation per Android (necessario per le animazioni di layout)
+if (Platform.OS === 'android') {
+  if (UIManager.setLayoutAnimationEnabledExperimental) {
+    UIManager.setLayoutAnimationEnabledExperimental(true);
+  }
+}
 
 // Componenti piccoli e riutilizzabili
 const Checkbox = ({ checked, onPress }) => (
@@ -92,12 +103,12 @@ const getDaysRemainingColor = (endDate) => {
 const getPriorityColors = (priority) => {
   switch (priority) {
     case "Alta":
-      return "#FFF1F0"; // Sfondo rosso chiaro
+      return "#FFCDD2"; // Sfondo rosso acceso
     case "Media":
       return "#FFF8E6"; // Sfondo giallo chiaro
     case "Bassa":
     default:
-      return "#F0FAFA"; // Sfondo verde chiaro
+      return "#C8E6C9"; // Sfondo verde più chiaro
   }
 };
 
@@ -110,6 +121,8 @@ const Task = ({
     priority: "Bassa",
     end_time: "2025-03-25",
     completed: false,
+    start_time: "2025-03-20",
+    status: "In sospeso",
   },
   onTaskComplete,
   onTaskDelete,
@@ -125,13 +138,19 @@ const Task = ({
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
   
+  // Riferimento per misurare l'altezza effettiva della descrizione
+  const [descriptionHeight, setDescriptionHeight] = useState(0);
+  const descriptionRef = useRef(null);
+  
   // Nuovo stato per il modal di modifica
   const [showEditModal, setShowEditModal] = useState(false);
   const [editedTask, setEditedTask] = useState({
     title: "",
     description: "",
+    start_time: "",
     end_time: "",
     priority: "",
+    status: "",
   });
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
@@ -140,27 +159,80 @@ const Task = ({
   // Animazioni
   const deleteAnim = useRef(new Animated.Value(1)).current;
   const translateXAnim = useRef(new Animated.Value(0)).current;
-  const heightAnim = useRef(new Animated.Value(100)).current;
+  const heightAnim = useRef(new Animated.Value(0)).current; // Cambiato valore iniziale
   const marginVerticalAnim = useRef(new Animated.Value(8)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(20)).current;
+  const containerHeightAnim = useRef(new Animated.Value(0)).current; // Nuova animazione per l'altezza del contenitore
+  
+  // Ref per l'altezza del componente
+  const [componentHeight, setComponentHeight] = useState(0); 
+  const componentRef = useRef(null);
 
-  // Gestore animazione migliorato
+  // Reimposta il gestore dell'animazione di espansione
   const toggleExpand = () => {
     // Previeni click multipli durante l'animazione
     if (animationInProgress.current) return;
     
     animationInProgress.current = true;
-    const toValue = expanded ? 0 : 1;
+    const isExpanding = !expanded;
 
-    Animated.spring(expandAnim, {
-      toValue,
-      friction: 8,
-      tension: 40,
-      useNativeDriver: false,
-    }).start(() => {
-      // Aggiorna lo stato solo dopo il completamento dell'animazione
-      setExpanded(!expanded);
-      animationInProgress.current = false;
+    // Configura l'animazione di layout per tutti gli elementi
+    LayoutAnimation.configureNext({
+      duration: 300,
+      update: {
+        type: LayoutAnimation.Types.easeInEaseOut,
+      },
     });
+    
+    // Imposta lo stato che causerà il ricalcolo del layout
+    setExpanded(isExpanding);
+    
+    // Se stiamo espandendo, avvia l'animazione di fade e slide
+    if (isExpanding) {
+      // Resetta i valori iniziali
+      fadeAnim.setValue(0);
+      slideAnim.setValue(20);
+      
+      // Avvia l'animazione in parallelo
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 400,
+          useNativeDriver: true,
+          easing: Easing.out(Easing.cubic),
+        }),
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 400,
+          useNativeDriver: true,
+          easing: Easing.out(Easing.cubic),
+        }),
+      ]).start();
+    }
+    
+    // Reimposta il flag dell'animazione dopo che LayoutAnimation ha finito
+    setTimeout(() => {
+      animationInProgress.current = false;
+    }, 350);
+  };
+
+  // Misura l'altezza effettiva della descrizione quando è disponibile
+  const onDescriptionLayout = (event) => {
+    if (!descriptionHeight) {
+      const height = event.nativeEvent.layout.height;
+      setDescriptionHeight(Math.max(height, 20)); // Altezza minima di 20
+    }
+  };
+
+  // Misura l'altezza dell'intero componente quando viene renderizzato
+  const onComponentLayout = (event) => {
+    if (componentHeight === 0) {
+      const height = event.nativeEvent.layout.height;
+      setComponentHeight(height);
+      heightAnim.setValue(height);
+      containerHeightAnim.setValue(height);
+    }
   };
 
   // Gestori pressione lunga
@@ -205,8 +277,10 @@ const Task = ({
     setEditedTask({
       title: task.title,
       description: task.description || "",
+      start_time: task.start_time || new Date().toISOString(),
       end_time: task.end_time,
       priority: task.priority,
+      status: task.status || "In sospeso",
     });
     setShowEditModal(true);
   };
@@ -244,6 +318,34 @@ const Task = ({
     }
   };
 
+  const handleStartDateChange = (event, selectedDate) => {
+    setShowDatePicker(false);
+    
+    if (selectedDate) {
+      // Estrai la data attuale dall'start_time
+      const currentDate = editedTask.start_time 
+        ? new Date(editedTask.start_time) 
+        : new Date();
+      
+      if (pickerMode === 'date') {
+        // Mantieni l'orario esistente, aggiorna solo la data
+        currentDate.setFullYear(selectedDate.getFullYear());
+        currentDate.setMonth(selectedDate.getMonth());
+        currentDate.setDate(selectedDate.getDate());
+      } else {
+        // Mantieni la data esistente, aggiorna solo l'orario
+        currentDate.setHours(selectedDate.getHours());
+        currentDate.setMinutes(selectedDate.getMinutes());
+      }
+      
+      // Aggiorna lo stato con la nuova data e ora combinate
+      setEditedTask({
+        ...editedTask,
+        start_time: currentDate.toISOString()
+      });
+    }
+  };
+
   const openDatePicker = () => {
     setPickerMode('date');
     setShowDatePicker(true);
@@ -261,6 +363,13 @@ const Task = ({
     });
   };
 
+  const handleStatusSelect = (status) => {
+    setEditedTask({
+      ...editedTask,
+      status
+    });
+  };
+
   const handleSaveEdit = () => {
     // Verifica che i campi obbligatori siano compilati
     if (!editedTask.title.trim()) {
@@ -271,14 +380,34 @@ const Task = ({
     // Chiama la funzione di callback per salvare le modifiche
     if (onTaskEdit) {
       const updatedTask = {
-        ...task,
+        ...task,                  // Mantieni tutte le proprietà originali
         title: editedTask.title,
         description: editedTask.description,
+        start_time: editedTask.start_time,
         end_time: editedTask.end_time,
         priority: editedTask.priority,
+        status: editedTask.status,
+        // Se il nuovo stato è "Completato", impostiamo anche completed a true
+        completed: editedTask.status === "Completato" ? true : task.completed
       };
       
-      onTaskEdit(task.id, updatedTask);
+      // Verifica se c'è stato un cambiamento effettivo
+      const hasChanged = 
+        task.title !== updatedTask.title ||
+        task.description !== updatedTask.description ||
+        task.start_time !== updatedTask.start_time ||
+        task.end_time !== updatedTask.end_time ||
+        task.priority !== updatedTask.priority ||
+        task.status !== updatedTask.status ||
+        task.completed !== updatedTask.completed;
+      
+      if (hasChanged) {
+        console.log("Salvataggio modifiche per task:", updatedTask);
+        onTaskEdit(task.id, updatedTask);
+      } else {
+        console.log("Nessuna modifica rilevata");
+      }
+      
       closeEditModal();
     } else {
       Alert.alert("Modifica", `Modifiche salvate per "${editedTask.title}"`);
@@ -291,13 +420,13 @@ const Task = ({
     openEditModal();
   };
 
-  // Animazione di eliminazione task
+  // Animazione di eliminazione task aggiornata
   const animateTaskRemoval = () => {
     setIsRemoving(true);
     
-    // Prima esegui le animazioni native (transform e opacity)
+    // Prima parte dell'animazione - scuotimento e spostamento laterale
     Animated.sequence([
-      // Prima scuoti leggermente la card (opzionale)
+      // Scuotimento
       Animated.sequence([
         Animated.timing(translateXAnim, {
           toValue: -10,
@@ -321,35 +450,36 @@ const Task = ({
         }),
       ]),
       
-      // Poi fai scorrere la card fuori dallo schermo
+      // Spostamento laterale
       Animated.timing(translateXAnim, {
         toValue: width,
         duration: 300,
         useNativeDriver: true,
       }),
       
-      // Effetto di fade out
+      // Dissolvenza
       Animated.timing(deleteAnim, {
         toValue: 0,
         duration: 200,
         useNativeDriver: true,
       }),
     ]).start(() => {
-      // Dopo che le animazioni native sono completate
-      // esegui le animazioni JavaScript (height e margin)
+      // Seconda parte - compressione dell'altezza e dei margini
       Animated.parallel([
-        Animated.timing(heightAnim, {
+        Animated.timing(containerHeightAnim, {
           toValue: 0,
-          duration: 200,
-          useNativeDriver: false, // Must be false for height
+          duration: 250,
+          useNativeDriver: false,
+          easing: Easing.out(Easing.cubic),
         }),
         Animated.timing(marginVerticalAnim, {
           toValue: 0,
-          duration: 200,
-          useNativeDriver: false, // Must be false for margin
+          duration: 250,
+          useNativeDriver: false,
+          easing: Easing.out(Easing.cubic),
         }),
       ]).start(() => {
-        // Chiamare la funzione di eliminazione dopo l'animazione
+        // Chiamare la funzione di eliminazione dopo che tutte le animazioni sono completate
         if (onTaskDelete) {
           console.log("Eliminazione dell'impegno con ID:", task.id);
           onTaskDelete(task.id);
@@ -391,12 +521,6 @@ const Task = ({
     Alert.alert("Condivisione", "Funzionalità di condivisione non ancora implementata");
   };
 
-  // Stili animati
-  const descriptionHeight = expandAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 80], // Aumentato per più spazio della descrizione
-  });
-
   // Ottieni il colore di priorità per lo sfondo
   const priorityBackgroundColor = getPriorityColors(task.priority);
   
@@ -404,9 +528,17 @@ const Task = ({
   const backgroundColor = task.completed ? "#F5F5F5" : priorityBackgroundColor;
 
   return (
-    <Animated.View style={[
-      { height: heightAnim, marginVertical: marginVerticalAnim }
-    ]}>
+    <Animated.View 
+      style={[
+        {
+          marginVertical: marginVerticalAnim,
+          height: isRemoving ? containerHeightAnim : undefined,
+          overflow: 'hidden'
+        }
+      ]}
+      ref={componentRef}
+      onLayout={onComponentLayout}
+    >
       <Animated.View
         style={[
           styles.card,
@@ -449,14 +581,26 @@ const Task = ({
           </View>
         </View>
 
-        {/* Expandable description */}
-        <Animated.View style={{ height: descriptionHeight, overflow: "hidden" }}>
-          <Text style={styles.description} numberOfLines={expanded ? 4 : 0}>
-            {task.description}
-          </Text>
-        </Animated.View>
+        {/* Area descrizione con animazione di fade e slide */}
+        {expanded && (
+          <Animated.View
+            ref={descriptionRef}
+            onLayout={onDescriptionLayout}
+            style={[
+              styles.descriptionContainer,
+              {
+                opacity: fadeAnim,
+                transform: [{ translateY: slideAnim }]
+              }
+            ]}
+          >
+            <Text style={styles.description}>
+              {task.description || "Nessuna descrizione disponibile."}
+            </Text>
+          </Animated.View>
+        )}
 
-        {/* Expansion indicator */}
+        {/* Pulsante di espansione */}
         <TouchableOpacity 
           style={styles.expandButton} 
           onPress={toggleExpand}
@@ -547,6 +691,23 @@ const Task = ({
                   numberOfLines={4}
                   textAlignVertical="top"
                 />
+                
+                <Text style={styles.inputLabel}>Data di inizio</Text>
+                <TouchableOpacity 
+                  style={styles.datePickerButton}
+                  onPress={() => {
+                    setPickerMode('date');
+                    setShowDatePicker(true);
+                  }}
+                >
+                  <Text style={styles.datePickerText}>
+                    {editedTask.start_time 
+                      ? new Date(editedTask.start_time).toLocaleDateString('it-IT') 
+                      : 'Seleziona data di inizio'
+                    }
+                  </Text>
+                  <Ionicons name="calendar-outline" size={20} color="#666" />
+                </TouchableOpacity>
                 
                 <Text style={styles.inputLabel}>Data e ora di scadenza</Text>
                 <View style={styles.dateTimeContainer}>
@@ -643,6 +804,51 @@ const Task = ({
                     ]}>Alta</Text>
                   </TouchableOpacity>
                 </View>
+
+                <Text style={styles.inputLabel}>Stato</Text>
+                <View style={styles.statusContainer}>
+                  <TouchableOpacity 
+                    style={[
+                      styles.priorityButton, 
+                      styles.statusButtonPending,
+                      editedTask.status === "In sospeso" && styles.priorityButtonActive
+                    ]}
+                    onPress={() => handleStatusSelect("In sospeso")}
+                  >
+                    <Text style={[
+                      styles.priorityButtonText,
+                      editedTask.status === "In sospeso" && styles.priorityButtonTextActive
+                    ]}>In sospeso</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={[
+                      styles.priorityButton, 
+                      styles.statusButtonInProgress,
+                      editedTask.status === "In corso" && styles.priorityButtonActive
+                    ]}
+                    onPress={() => handleStatusSelect("In corso")}
+                  >
+                    <Text style={[
+                      styles.priorityButtonText,
+                      editedTask.status === "In corso" && styles.priorityButtonTextActive
+                    ]}>In corso</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={[
+                      styles.priorityButton, 
+                      styles.statusButtonCompleted,
+                      editedTask.status === "Completato" && styles.priorityButtonActive
+                    ]}
+                    onPress={() => handleStatusSelect("Completato")}
+                  >
+                    <Text style={[
+                      styles.priorityButtonText,
+                      editedTask.status === "Completato" && styles.priorityButtonTextActive
+                    ]}>Completato</Text>
+                  </TouchableOpacity>
+                </View>
               </ScrollView>
               
               <View style={styles.editModalFooter}>
@@ -705,11 +911,16 @@ const styles = StyleSheet.create({
     color: "#888888",
   },
   description: {
-    fontSize: 14, // Dimensione aumentata
+    fontSize: 14,
     color: "#666666",
-    lineHeight: 20, // Aumentato per migliore spaziatura
-    marginTop: 10,
+    lineHeight: 20,
     paddingLeft: 34, // Align with title text
+  },
+  
+  descriptionContainer: {
+    marginTop: 10,
+    paddingBottom: 5,
+    overflow: 'hidden',
   },
   
   // Checkbox
@@ -940,6 +1151,23 @@ const styles = StyleSheet.create({
   },
   timeButton: {
     flex: 2,
+  },
+  statusContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  statusButtonPending: {
+    borderColor: '#FFC107',
+    backgroundColor: 'rgba(255, 193, 7, 0.1)',
+  },
+  statusButtonInProgress: {
+    borderColor: '#2196F3',
+    backgroundColor: 'rgba(33, 150, 243, 0.1)',
+  },
+  statusButtonCompleted: {
+    borderColor: '#4CAF50',
+    backgroundColor: 'rgba(76, 175, 80, 0.1)',
   },
 });
 
