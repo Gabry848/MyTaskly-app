@@ -88,8 +88,7 @@ function Home() {
       </View>
       <View style={styles.statistics}>
         <View style={styles.chartWrapper}>
-          <Text style={styles.chartTitle}>Statistiche Mensili</Text>{" "}
-          {/* Titolo del grafico */}
+          <Text style={styles.chartTitle}>Statistiche Mensili</Text>
           <View style={styles.chartContainer}>
             <LineChart
               data={{
@@ -174,12 +173,12 @@ function Home() {
           )}
         </Animated.View>
       </View>
-      <View style={styles.rect2}>
+      {/* <View style={styles.rect2}>
         <GoToPage
           text="La mia giornata"
           onPress={() => navigation.navigate("Categories")}
         />
-      </View>
+      </View> */}
     </ScrollView>
   );
 }
