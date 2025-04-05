@@ -348,7 +348,7 @@ const styles = StyleSheet.create({
   },
   formContent: {
     padding: 16,
-    maxHeight: 400,
+    // maxHeight: 400,
   },
   formFooter: {
     padding: 16,
