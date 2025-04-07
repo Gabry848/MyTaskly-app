@@ -58,7 +58,6 @@ export function TaskList({ route }: Props) {
     
     // Verify that it's a valid task with title
     if (!newTask || !newTask.title) {
-      console.error("Invalid task:", newTask);
       return;
     }
     
@@ -72,14 +71,18 @@ export function TaskList({ route }: Props) {
     if (categoryName === route.params.category_name) {
       setTasks(prevTasks => {
         // Check if task already exists
-        const exists = prevTasks.some(
+
+        const taskIndex = prevTasks.findIndex(
           task => task.id === taskWithId.id || 
+                 (task.task_id && task.task_id === taskWithId.id) ||
                  (task.title === taskWithId.title && task.description === taskWithId.description)
         );
         
-        if (exists) {
-          console.log("Task already exists, not adding:", taskWithId.title);
-          return prevTasks;
+        if (taskIndex >= 0) {
+          console.log("Task already exists, updating:", taskWithId.title);
+          const updatedTasks = [...prevTasks];
+          updatedTasks[taskIndex] = taskWithId;
+          return updatedTasks;
         }
         
         console.log("Adding task directly to state:", taskWithId);
@@ -93,12 +96,17 @@ export function TaskList({ route }: Props) {
     }
     
     // Check if task already exists in global ref
-    const existsInGlobal = globalTasksRef.tasks[categoryName].some(
+    const globalTaskIndex = globalTasksRef.tasks[categoryName].findIndex(
       task => task.id === taskWithId.id || 
+             (task.task_id && task.task_id === taskWithId.id) ||
              (task.title === taskWithId.title && task.description === taskWithId.description)
     );
     
-    if (!existsInGlobal) {
+    if (globalTaskIndex >= 0) {
+      // Update existing task
+      globalTasksRef.tasks[categoryName][globalTaskIndex] = taskWithId;
+    } else {
+      // Add new task
       globalTasksRef.tasks[categoryName].push(taskWithId);
     }
   };
@@ -255,19 +263,14 @@ export function TaskList({ route }: Props) {
   // Funzione per gestire la modifica del task
   const handleTaskEdit = async (taskId: number, updatedTaskData: Task) => {
     try {
-      // Aggiorniamo subito la lista locale per un feedback immediato
-      setTasks(prevTasks => 
-        prevTasks.map(task => 
-          task.id === taskId ? { ...task, ...updatedTaskData } : task
-        )
-      );
+      // Prepara il task aggiornato mantenendo l'ID originale
+      const taskToUpdate = {
+        ...updatedTaskData,
+        id: taskId
+      };
       
-      // Aggiorniamo anche la referenza globale
-      if (globalTasksRef.tasks[categoryName]) {
-        globalTasksRef.tasks[categoryName] = globalTasksRef.tasks[categoryName].map(task => 
-          task.id === taskId ? { ...task, ...updatedTaskData } : task
-        );
-      }
+      // Usa lo stesso meccanismo di addTask per aggiornare il task localmente
+      globalTasksRef.addTask(taskToUpdate, categoryName);
       
       // Inviamo la richiesta di aggiornamento al server
       const response = await updateTask(taskId, updatedTaskData);
@@ -275,18 +278,13 @@ export function TaskList({ route }: Props) {
       
       // Se la risposta contiene dati aggiornati dal server, aggiorniamo lo stato con quei dati
       if (response && response.task_id) {
-        setTasks(prevTasks => 
-          prevTasks.map(task => 
-            task.id === taskId ? { ...task, ...response } : task
-          )
-        );
+        const serverUpdatedTask = {
+          ...response,
+          id: taskId  // Mantieni l'ID originale per coerenza
+        };
         
-        // Aggiorniamo anche la referenza globale con i dati del server
-        if (globalTasksRef.tasks[categoryName]) {
-          globalTasksRef.tasks[categoryName] = globalTasksRef.tasks[categoryName].map(task => 
-            task.id === taskId ? { ...task, ...response } : task
-          );
-        }
+        // Aggiorna nuovamente con i dati del server
+        globalTasksRef.addTask(serverUpdatedTask, categoryName);
       }
     } catch (error) {
       console.error("Errore nell'aggiornamento del task:", error);
