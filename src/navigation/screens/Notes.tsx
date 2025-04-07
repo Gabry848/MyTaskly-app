@@ -10,8 +10,9 @@ import {
   Animated,
 } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
+import DraggableNote from '../../../components/DraggableNote';
 
-interface Note {oid
+interface Note {
   id: string;
   text: string;
   position: {
@@ -30,16 +31,14 @@ export default function Notes() {
   const [nextId, setNextId] = useState(0);
   const [nextZIndex, setNextZIndex] = useState(1);
   const { width, height } = Dimensions.get('window');
+  
+  const panRefs = useRef<{[key: string]: Animated.ValueXY}>({});
 
-  // Aggiungi una nuova nota
   const addNote = () => {
     if (newNoteText.trim() === '') return;
 
-    // Posizione casuale all'interno dei limiti della lavagna
     const randomX = Math.random() * (width - 200);
     const randomY = Math.random() * (height - 200);
-    
-    // Colore casuale dall'array dei colori
     const randomColor = COLORS[Math.floor(Math.random() * COLORS.length)];
 
     const newNote: Note = {
@@ -53,6 +52,11 @@ export default function Notes() {
       zIndex: nextZIndex,
     };
 
+    panRefs.current[newNote.id] = new Animated.ValueXY({ 
+      x: randomX, 
+      y: randomY 
+    });
+
     setNotes([...notes, newNote]);
     setNewNoteText('');
     setNextId(nextId + 1);
@@ -61,6 +65,21 @@ export default function Notes() {
 
   const deleteNote = (id: string) => {
     setNotes(notes.filter(note => note.id !== id));
+    delete panRefs.current[id];
+  };
+
+  const updateNote = (id: string, newText: string) => {
+    setNotes(prevNotes => {
+      return prevNotes.map(note => {
+        if (note.id === id) {
+          return {
+            ...note,
+            text: newText
+          };
+        }
+        return note;
+      });
+    });
   };
 
   const bringToFront = (id: string) => {
@@ -77,19 +96,66 @@ export default function Notes() {
     setNextZIndex(newZIndex);
   };
 
+  const createPanResponder = (noteId: string) => {
+    return PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onPanResponderGrant: () => {
+        bringToFront(noteId);
+        
+        panRefs.current[noteId].setOffset({
+          x: panRefs.current[noteId].x._value,
+          y: panRefs.current[noteId].y._value
+        });
+        panRefs.current[noteId].setValue({ x: 0, y: 0 });
+      },
+      onPanResponderMove: Animated.event(
+        [null, { dx: panRefs.current[noteId].x, dy: panRefs.current[noteId].y }],
+        { useNativeDriver: false }
+      ),
+      onPanResponderRelease: () => {
+        panRefs.current[noteId].flattenOffset();
+        
+        setNotes(prevNotes => {
+          return prevNotes.map(note => {
+            if (note.id === noteId) {
+              return {
+                ...note,
+                position: {
+                  x: panRefs.current[noteId].x._value,
+                  y: panRefs.current[noteId].y._value
+                }
+              };
+            }
+            return note;
+          });
+        });
+      }
+    });
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.board}>
-        {notes.map(note => (
-          <DraggableNote 
-            key={note.id} 
-            note={note} 
-            onBringToFront={bringToFront}
-            onDelete={deleteNote}
-          />
-        ))}
+        {notes.map(note => {
+          if (!panRefs.current[note.id]) {
+            panRefs.current[note.id] = new Animated.ValueXY({ 
+              x: note.position.x, 
+              y: note.position.y 
+            });
+          }
+          
+          return (
+            <DraggableNote 
+              key={note.id} 
+              note={note} 
+              panResponder={createPanResponder(note.id)}
+              pan={panRefs.current[note.id]}
+              onDelete={deleteNote}
+              onUpdate={updateNote}
+            />
+          );
+        })}
       </View>
-      
       <View style={styles.inputContainer}>
         <TextInput
           style={styles.input}
@@ -103,65 +169,6 @@ export default function Notes() {
         </TouchableOpacity>
       </View>
     </View>
-  );
-}
-
-interface DraggableNoteProps {
-  note: Note;
-  onBringToFront: (id: string) => void;
-  onDelete: (id: string) => void;
-}
-
-function DraggableNote({ note, onBringToFront, onDelete }: DraggableNoteProps) {
-  const pan = useRef(new Animated.ValueXY({ 
-    x: note.position.x, 
-    y: note.position.y 
-  })).current;
-
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onPanResponderGrant: () => {
-        // Porta la nota in primo piano quando viene toccata
-        onBringToFront(note.id);
-        
-        pan.setOffset({
-          x: pan.x._value,
-          y: pan.y._value,
-        });
-        pan.setValue({ x: 0, y: 0 });
-      },
-      onPanResponderMove: Animated.event(
-        [null, { dx: pan.x, dy: pan.y }],
-        { useNativeDriver: false }
-      ),
-      onPanResponderRelease: () => {
-        pan.flattenOffset();
-      },
-    })
-  ).current;
-
-  return (
-    <Animated.View
-      {...panResponder.panHandlers}
-      style={[
-        styles.note,
-        {
-          backgroundColor: note.color,
-          transform: [{ translateX: pan.x }, { translateY: pan.y }],
-          zIndex: note.zIndex,
-          elevation: note.zIndex, // Aggiungi elevation per Android
-        },
-      ]}
-    >
-      <TouchableOpacity 
-        style={styles.deleteButton} 
-        onPress={() => onDelete(note.id)}
-      >
-        <FontAwesome name="times" size={16} color="#555" />
-      </TouchableOpacity>
-      <Text style={styles.noteText}>{note.text}</Text>
-    </Animated.View>
   );
 }
 
