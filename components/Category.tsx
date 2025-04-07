@@ -1,11 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, Image, TouchableOpacity, Animated, Modal, Alert, TextInput } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../src/types';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
-import { deleteCategory, updateCategory } from '../src/services/taskService';
+import { deleteCategory, updateCategory, getTasks, Task } from '../src/services/taskService';
 
 type CategoryScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -18,14 +18,14 @@ interface CategoryProps {
   imageUrl?: string;
   taskCount?: number;
   onDelete?: () => void; 
-  onEdit?: () => void; // Callback per informare il componente padre della modifica
+  onEdit?: () => void;
 }
 
 const Category: React.FC<CategoryProps> = ({ 
   title,
   description = "",
   imageUrl, 
-  taskCount = 10, 
+  taskCount = 0, 
   onDelete,
   onEdit 
 }) => {
@@ -37,7 +37,33 @@ const Category: React.FC<CategoryProps> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(title);
   const [editDescription, setEditDescription] = useState(description);
+  const [actualTaskCount, setActualTaskCount] = useState(taskCount);
+  const [isLoading, setIsLoading] = useState(true);
   
+  // Funzione per recuperare il conteggio dei task
+  const fetchTaskCount = async () => {
+    try {
+      setIsLoading(true);
+      const tasksData = await getTasks(title);
+      
+      // Filtrare i task per quelli non completati
+      const incompleteTasks = tasksData.filter((task: Task) => 
+        task.status !== "Completato" && task.status !== "Completed"
+      );
+      
+      setActualTaskCount(incompleteTasks.length);
+    } catch (error) {
+      console.error("Errore durante il recupero dei task:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Carica il conteggio dei task all'inizializzazione del componente
+  useEffect(() => {
+    fetchTaskCount();
+  }, [title]);
+
   const handlePressIn = () => {
     Animated.spring(scaleAnim, {
       toValue: 0.95,
@@ -177,7 +203,9 @@ const Category: React.FC<CategoryProps> = ({
           <Text style={styles.add}>{title}</Text>
           <View style={styles.counterRow}>
             <MaterialIcons name="check-circle" size={16} color="#4CAF50" />
-            <Text style={styles.title}>{taskCount} cose da fare</Text>
+            <Text style={styles.title}>
+              {isLoading ? "Caricamento..." : `${actualTaskCount} cose da fare`}
+            </Text>
           </View>
         </View>
 
