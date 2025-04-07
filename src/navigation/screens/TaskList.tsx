@@ -134,30 +134,86 @@ export function TaskList({ route }: Props) {
     globalTasksRef.tasks[categoryName] = tasks;
   }, [tasks, categoryName]);
 
-  // Funzione per calcolare la data futura
-  const calculateFutureDate = (days: number) => {
-    const date = new Date();
-    date.setDate(date.getDate() + days);
-    return date.toISOString().split('T')[0];
+  // Nuova funzione che ritorna solo "YYYY-MM-DD"
+  const getDayString = (value: string | Date) => {
+    return new Date(value).toISOString().split('T')[0];
   };
+
+  function filterTasksByDay(tasks: Task[], dayFilter: string): Task[] {
+    console.log(`[DEBUG] filterTasksByDay chiamata con filtro: "${dayFilter}" e ${tasks.length} tasks`);
+    
+    if (dayFilter === "Tutte") {
+      console.log("[DEBUG] Filtro 'Tutte' - ritorno tutti i task");
+      return tasks;
+    }
+    
+    const today = new Date();
+    let targetDate = new Date();
+    let daysToAdd = 0;
+
+    if (dayFilter === "Oggi") {
+      targetDate = today;
+      console.log(`[DEBUG] Filtro 'Oggi' - data target: ${targetDate.toISOString().split('T')[0]}`);
+    } else if (dayFilter === "Domani") {
+      daysToAdd = 1;
+    } else if (dayFilter === "Dopodomani") {
+      daysToAdd = 2;
+    } else if (dayFilter.startsWith("Fra")) {
+      // Estrai il numero di giorni dal filtro (es. "Fra 3 giorni" -> 3)
+      const daysMatch = dayFilter.match(/Fra (\d+) giorni/);
+      if (daysMatch && daysMatch[1]) {
+        daysToAdd = parseInt(daysMatch[1], 10);
+        console.log(`[DEBUG] Filtro numerico: ${dayFilter} - giorni da aggiungere: ${daysToAdd}`);
+      }
+    }
+
+    // Aggiunge il numero di giorni richiesto alla data di oggi
+    if (daysToAdd > 0) {
+      targetDate = new Date(today);
+      targetDate.setDate(today.getDate() + daysToAdd);
+      console.log(`[DEBUG] Aggiunta di ${daysToAdd} giorni - data target: ${targetDate.toISOString().split('T')[0]}`);
+    }
+
+    // Imposta l'inizio del giorno (00:00:00)
+    const startOfDay = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), 0, 0, 0);
+    // Imposta la fine del giorno (23:59:59)
+    const endOfDay = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), 23, 59, 59);
+
+    console.log(`[DEBUG] Intervallo filtro: da ${startOfDay.toISOString()} a ${endOfDay.toISOString()}`);
+
+    const filtered = tasks.filter((task) => {
+      const dueDate = new Date(task.end_time);
+      const isInRange = dueDate >= startOfDay && dueDate <= endOfDay;
+      console.log(`[DEBUG] Task "${task.title}" con scadenza ${dueDate.toISOString()} - incluso: ${isInRange}`);
+      return isInRange;
+    });
+    
+    console.log(`[DEBUG] Risultato filtro: ${filtered.length} tasks su ${tasks.length} totali`);
+    return filtered;
+  }
 
   // Funzione per applicare i filtri e ordinare
   const listaFiltrata = useMemo(() => {
-    const filteredTasks = tasks.filter((task) => {
+    console.log(`[DEBUG] listaFiltrata - Ricreazione con filtroImportanza: "${filtroImportanza}", filtroScadenza: "${filtroScadenza}"`);
+    
+    // Prima filtra per importanza
+    let filteredTasks = tasks.filter((task) => {
       const matchesImportanza =
         filtroImportanza === "Tutte" ||
         (filtroImportanza === "Alta" && task.priority === "Alta") ||
         (filtroImportanza === "Media" && task.priority === "Media") ||
         (filtroImportanza === "Bassa" && task.priority === "Bassa");
-      const matchesScadenza =
-        filtroScadenza === "Tutte" ||
-        (filtroScadenza === "Domani" && task.end_time === calculateFutureDate(1)) ||
-        (filtroScadenza === "Dopodomani" && task.end_time === calculateFutureDate(2)) ||
-        (filtroScadenza.startsWith("Fra") && task.end_time === calculateFutureDate(parseInt(filtroScadenza.split(' ')[1])));
-
-      return matchesImportanza && matchesScadenza;
+      
+      return matchesImportanza;
     });
-
+    
+    // Poi applica il filtro per data
+    if (filtroScadenza !== "Tutte") {
+      console.log(`[DEBUG] Applicazione filtro per data: "${filtroScadenza}"`);
+      filteredTasks = filterTasksByDay(filteredTasks, filtroScadenza);
+    }
+    
+    // Infine ordina
     return filteredTasks.sort((a, b) => {
       if (ordineScadenza === "Recente") {
         return new Date(b.end_time).getTime() - new Date(a.end_time).getTime();
