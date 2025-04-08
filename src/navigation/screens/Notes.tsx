@@ -1,48 +1,72 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   TextInput,
   TouchableOpacity,
   Dimensions,
   PanResponder,
   Animated,
+  Alert,
 } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import DraggableNote from '../../../components/DraggableNote';
-
-interface Note {
-  id: string;
-  text: string;
-  position: {
-    x: number;
-    y: number;
-  };
-  color: string;
-  zIndex: number;
-}
+import { Note as NoteInterface, addNote, deleteNote, getNotes, updateNote, updateNotePosition } from '../../services/noteService';
 
 const COLORS = ['#FFCDD2', '#F8BBD0', '#E1BEE7', '#D1C4E9', '#C5CAE9', '#BBDEFB', '#B3E5FC', '#B2EBF2', '#B2DFDB', '#C8E6C9'];
 
 export default function Notes() {
-  const [notes, setNotes] = useState<Note[]>([]);
+  const [notes, setNotes] = useState<NoteInterface[]>([]);
   const [newNoteText, setNewNoteText] = useState('');
-  const [nextId, setNextId] = useState(0);
   const [nextZIndex, setNextZIndex] = useState(1);
   const { width, height } = Dimensions.get('window');
+  const [isLoading, setIsLoading] = useState(false);
   
   const panRefs = useRef<{[key: string]: Animated.ValueXY}>({});
 
-  const addNote = () => {
+  // Carica le note dal server all'avvio
+  useEffect(() => {
+    fetchNotes();
+  }, []);
+
+  const fetchNotes = async () => {
+    setIsLoading(true);
+    try {
+      const fetchedNotes = await getNotes();
+      setNotes(fetchedNotes);
+      
+      // Trova lo zIndex più alto tra le note esistenti
+      if (fetchedNotes.length > 0) {
+        const highestZIndex = Math.max(...fetchedNotes.map(note => note.zIndex));
+        setNextZIndex(highestZIndex + 1);
+      }
+      
+      // Inizializza i riferimenti animati per ogni nota
+      fetchedNotes.forEach(note => {
+        if (!panRefs.current[note.id]) {
+          panRefs.current[note.id] = new Animated.ValueXY({ 
+            x: note.position.x, 
+            y: note.position.y 
+          });
+        }
+      });
+    } catch (error) {
+      console.error("Errore nel caricamento delle note:", error);
+      Alert.alert("Errore", "Impossibile caricare le note dal server");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAddNote = async () => {
     if (newNoteText.trim() === '') return;
 
     const randomX = Math.random() * (width - 200);
     const randomY = Math.random() * (height - 200);
     const randomColor = COLORS[Math.floor(Math.random() * COLORS.length)];
 
-    const newNote: Note = {
-      id: `note-${nextId}`,
+    const newNote: NoteInterface = {
+      id: `temp-${Date.now()}`, // ID temporaneo
       text: newNoteText,
       position: {
         x: randomX,
@@ -52,23 +76,61 @@ export default function Notes() {
       zIndex: nextZIndex,
     };
 
+    // Aggiunge localmente la nota prima di salvarla sul server
+    setNotes(prevNotes => [...prevNotes, newNote]);
     panRefs.current[newNote.id] = new Animated.ValueXY({ 
       x: randomX, 
       y: randomY 
     });
-
-    setNotes([...notes, newNote]);
+    
     setNewNoteText('');
-    setNextId(nextId + 1);
     setNextZIndex(nextZIndex + 1);
+
+    try {
+      // Invia la nota al server
+      const savedNote = await addNote(newNote);
+      
+      // Aggiorna l'ID temporaneo con l'ID restituito dal server
+      setNotes(prevNotes => 
+        prevNotes.map(note => 
+          note.id === newNote.id ? { ...note, id: savedNote.id } : note
+        )
+      );
+      
+      // Aggiorna il riferimento animato con il nuovo ID
+      if (savedNote && savedNote.id) {
+        panRefs.current[savedNote.id] = panRefs.current[newNote.id];
+        delete panRefs.current[newNote.id];
+      }
+    } catch (error) {
+      console.error("Errore nel salvataggio della nota:", error);
+      Alert.alert("Errore", "Impossibile salvare la nota sul server");
+      
+      // Rimuove la nota se il salvataggio fallisce
+      setNotes(prevNotes => prevNotes.filter(note => note.id !== newNote.id));
+      delete panRefs.current[newNote.id];
+    }
   };
 
-  const deleteNote = (id: string) => {
-    setNotes(notes.filter(note => note.id !== id));
+  const handleDeleteNote = async (id: string) => {
+    // Rimuove localmente la nota prima di eliminarla sul server
+    setNotes(prevNotes => prevNotes.filter(note => note.id !== id));
     delete panRefs.current[id];
+
+    try {
+      // Elimina la nota sul server
+      await deleteNote(id);
+    } catch (error) {
+      console.error("Errore nell'eliminazione della nota:", error);
+      Alert.alert("Errore", "Impossibile eliminare la nota dal server");
+      
+      // Se l'eliminazione fallisce, recarica tutte le note dal server
+      fetchNotes();
+    }
   };
 
-  const updateNote = (id: string, newText: string) => {
+  const handleUpdateNote = async (id: string, newText: string) => {
+    // Aggiorna localmente la nota prima di aggiornarla sul server
     setNotes(prevNotes => {
       return prevNotes.map(note => {
         if (note.id === id) {
@@ -80,6 +142,17 @@ export default function Notes() {
         return note;
       });
     });
+
+    try {
+      // Aggiorna la nota sul server
+      await updateNote(id, { text: newText });
+    } catch (error) {
+      console.error("Errore nell'aggiornamento della nota:", error);
+      Alert.alert("Errore", "Impossibile aggiornare la nota sul server");
+      
+      // Se l'aggiornamento fallisce, recarica tutte le note dal server
+      fetchNotes();
+    }
   };
 
   const bringToFront = (id: string) => {
@@ -91,6 +164,13 @@ export default function Notes() {
       const [selectedNote] = updatedNotes.splice(index, 1);
       selectedNote.zIndex = newZIndex;
       updatedNotes.push(selectedNote);
+      
+      // Aggiorna lo zIndex sul server
+      updateNote(id, { zIndex: newZIndex })
+        .catch(error => {
+          console.error("Errore nell'aggiornamento dello zIndex:", error);
+        });
+      
       return updatedNotes;
     });
     setNextZIndex(newZIndex);
@@ -112,23 +192,34 @@ export default function Notes() {
         [null, { dx: panRefs.current[noteId].x, dy: panRefs.current[noteId].y }],
         { useNativeDriver: false }
       ),
-      onPanResponderRelease: () => {
+      onPanResponderRelease: async () => {
         panRefs.current[noteId].flattenOffset();
         
+        const newPosition = {
+          x: panRefs.current[noteId].x._value,
+          y: panRefs.current[noteId].y._value
+        };
+        
+        // Aggiorna localmente la posizione della nota
         setNotes(prevNotes => {
           return prevNotes.map(note => {
             if (note.id === noteId) {
               return {
                 ...note,
-                position: {
-                  x: panRefs.current[noteId].x._value,
-                  y: panRefs.current[noteId].y._value
-                }
+                position: newPosition
               };
             }
             return note;
           });
         });
+        
+        // Aggiorna la posizione sul server
+        try {
+          await updateNotePosition(noteId, newPosition);
+        } catch (error) {
+          console.error("Errore nell'aggiornamento della posizione:", error);
+          // Non mostriamo un alert qui per non interrompere l'esperienza utente
+        }
       }
     });
   };
@@ -150,8 +241,8 @@ export default function Notes() {
               note={note} 
               panResponder={createPanResponder(note.id)}
               pan={panRefs.current[note.id]}
-              onDelete={deleteNote}
-              onUpdate={updateNote}
+              onDelete={handleDeleteNote}
+              onUpdate={handleUpdateNote}
             />
           );
         })}
@@ -164,7 +255,7 @@ export default function Notes() {
           placeholder="Scrivi una nuova nota..."
           multiline
         />
-        <TouchableOpacity style={styles.addButton} onPress={addNote}>
+        <TouchableOpacity style={styles.addButton} onPress={handleAddNote}>
           <FontAwesome name="plus" size={20} color="#fff" />
         </TouchableOpacity>
       </View>
