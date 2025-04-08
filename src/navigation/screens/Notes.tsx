@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View,
   StyleSheet,
@@ -10,6 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import DraggableNote from '../../../components/DraggableNote';
 import { Note as NoteInterface, addNote, deleteNote, getNotes, updateNote, updateNotePosition } from '../../services/noteService';
 
@@ -24,6 +25,19 @@ export default function Notes() {
   
   const panRefs = useRef<{[key: string]: Animated.ValueXY}>({});
 
+  // Hook che viene eseguito ogni volta che la pagina riceve il focus
+  useFocusEffect(
+    useCallback(() => {
+      console.log('Notes screen focused - refreshing notes');
+      fetchNotes();
+      
+      // Pulizia quando la pagina perde il focus
+      return () => {
+        console.log('Notes screen unfocused');
+      };
+    }, [])
+  );
+
   // Carica le note dal server all'avvio
   useEffect(() => {
     fetchNotes();
@@ -32,7 +46,10 @@ export default function Notes() {
   const fetchNotes = async () => {
     setIsLoading(true);
     try {
+      console.log('Fetching notes from server...');
       const fetchedNotes = await getNotes();
+      console.log(`Fetched ${fetchedNotes.length} notes from server`);
+      
       setNotes(fetchedNotes);
       
       // Trova lo zIndex più alto tra le note esistenti
@@ -48,6 +65,13 @@ export default function Notes() {
             x: note.position.x, 
             y: note.position.y 
           });
+        }
+      });
+
+      // Pulisce i riferimenti animati per le note che non esistono più
+      Object.keys(panRefs.current).forEach(noteId => {
+        if (!fetchedNotes.some(note => note.id === noteId)) {
+          delete panRefs.current[noteId];
         }
       });
     } catch (error) {
