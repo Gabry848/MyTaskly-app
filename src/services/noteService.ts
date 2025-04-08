@@ -3,7 +3,19 @@ import { getValidToken } from "./authService";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { STORAGE_KEYS } from "../constants/authConstants";
 
-// Definizione dell'interfaccia Note
+// Interfaccia per i dati restituiti dal server
+interface ServerNote {
+  note_id: string;
+  title: string;
+  position_x: number;
+  position_y: number;
+  color?: string;
+  zIndex?: number;
+  user?: string;
+  [key: string]: any;
+}
+
+// Definizione dell'interfaccia Note utilizzata nell'app
 export interface Note {
   id: string;
   text: string;
@@ -17,8 +29,34 @@ export interface Note {
   [key: string]: any; // per proprietà aggiuntive
 }
 
+// Funzione per convertire dal formato del server al formato interno dell'app
+const mapServerNoteToClientNote = (serverNote: ServerNote): Note => {
+  return {
+    id: serverNote.note_id,
+    text: serverNote.title,
+    position: {
+      x: serverNote.position_x,
+      y: serverNote.position_y
+    },
+    color: serverNote.color || '#FFCDD2', // Colore predefinito se non fornito
+    zIndex: serverNote.zIndex || 1 // ZIndex predefinito se non fornito
+  };
+};
+
+// Funzione per convertire dal formato interno dell'app al formato del server
+const mapClientNoteToServerNote = (clientNote: Note): Partial<ServerNote> => {
+  return {
+    note_id: clientNote.id,
+    title: clientNote.text,
+    position_x: clientNote.position.x,
+    position_y: clientNote.position.y,
+    color: clientNote.color,
+    zIndex: clientNote.zIndex
+  };
+};
+
 // Funzione per ottenere tutte le note dell'utente
-export async function getNotes() {
+export async function getNotes(): Promise<Note[]> {
   try {
     const token = await getValidToken();
     if (!token) {
@@ -31,7 +69,10 @@ export async function getNotes() {
         "Content-Type": "application/json",
       },
     });
-    return response.data;
+    
+    // Mappiamo le note dal formato del server al formato dell'app
+    const serverNotes = response.data as ServerNote[];
+    return serverNotes.map(mapServerNoteToClientNote);
   } catch (error) {
     console.error("Errore nel recupero delle note:", error);
     return [];
@@ -39,31 +80,33 @@ export async function getNotes() {
 }
 
 // Funzione per aggiungere una nuova nota
-export async function addNote(note: Note) {
+export async function addNote(note: Note): Promise<Note | null> {
   try {
     const token = await getValidToken();
     if (!token) {
       return null;
     }
     const username = await AsyncStorage.getItem(STORAGE_KEYS.USER_NAME);
-    const data = {
-      text: note.text,
-      position: {
-        x: note.position.x,
-        y: note.position.y,
-      },
+    
+    // Convertiamo la nota nel formato atteso dal server
+    const serverNote = {
+      title: note.text,
+      position_x: note.position.x,
+      position_y: note.position.y,
       color: note.color,
       zIndex: note.zIndex,
       user: note.user || username,
     };
     
-    const response = await axios.post("/notes", data, {
+    const response = await axios.post("/notes", serverNote, {
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
     });
-    return response.data;
+    
+    // Convertiamo la risposta dal server al formato dell'app
+    return mapServerNoteToClientNote(response.data);
   } catch (error) {
     console.error("Errore nella creazione della nota:", error);
     throw error;
@@ -71,20 +114,32 @@ export async function addNote(note: Note) {
 }
 
 // Funzione per aggiornare una nota esistente
-export async function updateNote(noteId: string, updatedNote: Partial<Note>) {
+export async function updateNote(noteId: string, updatedNote: Partial<Note>): Promise<Note | null> {
   try {
     const token = await getValidToken();
     if (!token) {
       return null;
     }
 
-    // Prepara i dati per l'aggiornamento
-    const noteData = {
-      text: updatedNote.text,
-      position: updatedNote.position,
-      color: updatedNote.color,
-      zIndex: updatedNote.zIndex,
-    };
+    // Prepara i dati per l'aggiornamento nel formato atteso dal server
+    const noteData: Partial<ServerNote> = {};
+    
+    if (updatedNote.text !== undefined) {
+      noteData.title = updatedNote.text;
+    }
+    
+    if (updatedNote.position !== undefined) {
+      noteData.position_x = updatedNote.position.x;
+      noteData.position_y = updatedNote.position.y;
+    }
+    
+    if (updatedNote.color !== undefined) {
+      noteData.color = updatedNote.color;
+    }
+    
+    if (updatedNote.zIndex !== undefined) {
+      noteData.zIndex = updatedNote.zIndex;
+    }
 
     const response = await axios.put(`/notes/${noteId}`, noteData, {
       headers: {
@@ -92,7 +147,9 @@ export async function updateNote(noteId: string, updatedNote: Partial<Note>) {
         "Content-Type": "application/json",
       },
     });
-    return response.data;
+    
+    // Convertiamo la risposta nel formato dell'app
+    return mapServerNoteToClientNote(response.data);
   } catch (error) {
     console.error("Errore nell'aggiornamento della nota:", error);
     throw error;
@@ -127,7 +184,11 @@ export async function updateNotePosition(noteId: string, position: { x: number, 
       return null;
     }
     
-    const data = { position };
+    // Adattiamo al formato atteso dal server
+    const data = { 
+      position_x: position.x,
+      position_y: position.y
+    };
     
     const response = await axios.patch(`/notes/${noteId}/position`, data, {
       headers: {
@@ -135,7 +196,9 @@ export async function updateNotePosition(noteId: string, position: { x: number, 
         "Content-Type": "application/json",
       },
     });
-    return response.data;
+    
+    // Convertiamo la risposta nel formato dell'app
+    return mapServerNoteToClientNote(response.data);
   } catch (error) {
     console.error("Errore nell'aggiornamento della posizione della nota:", error);
     throw error;

@@ -74,6 +74,7 @@ export default function Notes() {
       },
       color: randomColor,
       zIndex: nextZIndex,
+      key: `temp-${Date.now()}`,
     };
 
     // Aggiunge localmente la nota prima di salvarla sul server
