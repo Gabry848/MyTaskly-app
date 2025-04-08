@@ -10,7 +10,6 @@ interface ServerNote {
   position_x: number;
   position_y: number;
   color?: string;
-  zIndex?: number;
   user?: string;
   [key: string]: any;
 }
@@ -24,9 +23,9 @@ export interface Note {
     y: number;
   };
   color: string;
-  zIndex: number;
+  zIndex: number; // manteniamo zIndex nell'app ma non lo inviamo al server
   user?: string;
-  [key: string]: any; // per proprietà aggiuntive
+  [key: string]: any;
 }
 
 // Funzione per convertire dal formato del server al formato interno dell'app
@@ -39,7 +38,7 @@ const mapServerNoteToClientNote = (serverNote: ServerNote): Note => {
       y: serverNote.position_y
     },
     color: serverNote.color || '#FFCDD2', // Colore predefinito se non fornito
-    zIndex: serverNote.zIndex || 1 // ZIndex predefinito se non fornito
+    zIndex: 1 // Valore predefinito
   };
 };
 
@@ -50,8 +49,8 @@ const mapClientNoteToServerNote = (clientNote: Note): Partial<ServerNote> => {
     title: clientNote.text,
     position_x: clientNote.position.x,
     position_y: clientNote.position.y,
-    color: clientNote.color,
-    zIndex: clientNote.zIndex
+    color: clientNote.color
+    // zIndex non viene inviato al server
   };
 };
 
@@ -91,13 +90,11 @@ export async function addNote(note: Note): Promise<Note | null> {
     // Convertiamo la nota nel formato atteso dal server
     const serverNote = {
       title: note.text,
-      position_x: note.position.x,
-      position_y: note.position.y,
-      color: note.color,
-      zIndex: note.zIndex,
-      user: note.user || username,
+      position_x: Math.round(note.position.x).toString(),
+      position_y: Math.round(note.position.y).toString(),
     };
-    
+    console.log("serverNote", serverNote);
+
     const response = await axios.post("/notes", serverNote, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -137,9 +134,7 @@ export async function updateNote(noteId: string, updatedNote: Partial<Note>): Pr
       noteData.color = updatedNote.color;
     }
     
-    if (updatedNote.zIndex !== undefined) {
-      noteData.zIndex = updatedNote.zIndex;
-    }
+    // Non inviamo zIndex al server
 
     const response = await axios.put(`/notes/${noteId}`, noteData, {
       headers: {
@@ -151,7 +146,7 @@ export async function updateNote(noteId: string, updatedNote: Partial<Note>): Pr
     // Convertiamo la risposta nel formato dell'app
     return mapServerNoteToClientNote(response.data);
   } catch (error) {
-    console.error("Errore nell'aggiornamento della nota:", error);
+    console.error("Errore nell'aggiornamento della notafdsfsfs:", error);
     throw error;
   }
 }
@@ -186,19 +181,17 @@ export async function updateNotePosition(noteId: string, position: { x: number, 
     
     // Adattiamo al formato atteso dal server
     const data = { 
-      position_x: position.x,
-      position_y: position.y
+      position_x: Math.round(position.x).toString(),
+      position_y: Math.round(position.y).toString()
     };
     
-    const response = await axios.patch(`/notes/${noteId}/position`, data, {
+    const response = await axios.put(`/notes/${noteId}/position`, data, {
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
     });
-    
-    // Convertiamo la risposta nel formato dell'app
-    return mapServerNoteToClientNote(response.data);
+    return response.data;
   } catch (error) {
     console.error("Errore nell'aggiornamento della posizione della nota:", error);
     throw error;

@@ -78,9 +78,9 @@ const DraggableNote: React.FC<DraggableNoteProps> = ({
         </View>
       ) : (
         <TouchableOpacity 
-          onLongPress={handleLongPress} 
-          delayLongPress={500}
-          activeOpacity={0.7}
+          onPress={handleLongPress} 
+          // delayLongPress={500}
+          // activeOpacity={0.7}
         >
           <Text style={styles.noteText}>{note.text}</Text>
         </TouchableOpacity>

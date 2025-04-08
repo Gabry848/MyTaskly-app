@@ -166,11 +166,7 @@ export default function Notes() {
       selectedNote.zIndex = newZIndex;
       updatedNotes.push(selectedNote);
       
-      // Aggiorna lo zIndex sul server
-      updateNote(id, { zIndex: newZIndex })
-        .catch(error => {
-          console.error("Errore nell'aggiornamento dello zIndex:", error);
-        });
+      
       
       return updatedNotes;
     });
@@ -181,6 +177,7 @@ export default function Notes() {
     return PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onPanResponderGrant: () => {
+        console.log("Inizio trascinamento nota", noteId);
         bringToFront(noteId);
         
         panRefs.current[noteId].setOffset({
@@ -201,6 +198,8 @@ export default function Notes() {
           y: panRefs.current[noteId].y._value
         };
         
+        console.log("Nota rilasciata", noteId, "Nuova posizione:", newPosition);
+        
         // Aggiorna localmente la posizione della nota
         setNotes(prevNotes => {
           return prevNotes.map(note => {
@@ -216,7 +215,9 @@ export default function Notes() {
         
         // Aggiorna la posizione sul server
         try {
+          console.log("Invio posizione al server per la nota", noteId);
           await updateNotePosition(noteId, newPosition);
+          console.log("Posizione aggiornata con successo sul server");
         } catch (error) {
           console.error("Errore nell'aggiornamento della posizione:", error);
           // Non mostriamo un alert qui per non interrompere l'esperienza utente
