@@ -13,7 +13,6 @@ import { FontAwesome } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import DraggableNote from '../../../components/DraggableNote';
 import { Note as NoteInterface, addNote, deleteNote, getNotes, updateNote, updateNotePosition } from '../../services/noteService';
-import NotesCanvas from '../../components/NotesCanvas';
 
 const COLORS = ['#FFCDD2', '#F8BBD0', '#E1BEE7', '#D1C4E9', '#C5CAE9', '#BBDEFB', '#B3E5FC', '#B2EBF2', '#B2DFDB', '#C8E6C9'];
 
@@ -253,29 +252,27 @@ export default function Notes() {
 
   return (
     <View style={styles.container}>
-      <NotesCanvas initialScale={1} minScale={0.5} maxScale={2}>
-        <View style={styles.board}>
-          {notes.map(note => {
-            if (!panRefs.current[note.id]) {
-              panRefs.current[note.id] = new Animated.ValueXY({ 
-                x: note.position.x, 
-                y: note.position.y 
-              });
-            }
-            
-            return (
-              <DraggableNote 
-                key={note.id} 
-                note={note} 
-                panResponder={createPanResponder(note.id)}
-                pan={panRefs.current[note.id]}
-                onDelete={handleDeleteNote}
-                onUpdate={handleUpdateNote}
-              />
-            );
-          })}
-        </View>
-      </NotesCanvas>
+      <View style={styles.board}>
+        {notes.map(note => {
+          if (!panRefs.current[note.id]) {
+            panRefs.current[note.id] = new Animated.ValueXY({ 
+              x: note.position.x, 
+              y: note.position.y 
+            });
+          }
+          
+          return (
+            <DraggableNote 
+              key={note.id} 
+              note={note} 
+              panResponder={createPanResponder(note.id)}
+              pan={panRefs.current[note.id]}
+              onDelete={handleDeleteNote}
+              onUpdate={handleUpdateNote}
+            />
+          );
+        })}
+      </View>
       <View style={styles.inputContainer}>
         <TextInput
           style={styles.input}
