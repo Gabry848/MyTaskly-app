@@ -5,7 +5,8 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../src/types';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
-import { deleteCategory, updateCategory, getTasks, Task } from '../src/services/taskService';
+import { deleteCategory, updateCategory, getTasks, Task, addTask } from '../src/services/taskService';
+import AddTask from "./AddTask";
 
 type CategoryScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -39,6 +40,7 @@ const Category: React.FC<CategoryProps> = ({
   const [editDescription, setEditDescription] = useState(description);
   const [actualTaskCount, setActualTaskCount] = useState(taskCount);
   const [isLoading, setIsLoading] = useState(true);
+  const [showAddTask, setShowAddTask] = useState(false);
   
   // Funzione per recuperare il conteggio dei task
   const fetchTaskCount = async () => {
@@ -173,6 +175,28 @@ const Category: React.FC<CategoryProps> = ({
   const handleShare = () => {
     closeMenu();
   };
+
+  const handleAddTask = () => {
+    setShowAddTask(true);
+  };
+
+  const handleTaskAdded = (t, description, dueDate, priority) => {
+    const d = {
+      title: t,
+      description: description,
+      end_time: dueDate,
+      priority: priority,
+      category_name: title,
+      status: "In sospeso"
+    };
+    console.log("Nuovo task:", d);
+    addTask(d).then(() => {
+      fetchTaskCount();
+      setShowAddTask(false);  
+    }).catch(error => {
+      console.error("Errore durante l'aggiunta del task:", error);
+    });
+  };
   
   return (
     <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
@@ -209,7 +233,10 @@ const Category: React.FC<CategoryProps> = ({
           </View>
         </View>
 
-        <TouchableOpacity style={styles.controlsContainer}>
+        <TouchableOpacity 
+          style={styles.controlsContainer}
+          onPress={handleAddTask}
+        >
           <LinearGradient
             colors={['#4CAF50', '#2E7D32']}
             style={styles.addButton}
@@ -319,6 +346,13 @@ const Category: React.FC<CategoryProps> = ({
           </View>
         </View>
       </Modal>
+
+      <AddTask
+        visible={showAddTask}
+        onClose={() => setShowAddTask(false)}
+        onSave={(t, d, dueDate, p) => handleTaskAdded(t, d, dueDate, p)}
+        categoryName={title}
+      />
     </Animated.View>
   );
 };

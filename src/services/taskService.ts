@@ -95,7 +95,7 @@ export async function addTask(task: Task) {
       category_name: task.category_name,
       user: task.user || username,
     };
-    console.log(data);
+    console.log("data: ", data);
     const response = await axios.post("/tasks", data, {
       headers: {
         Authorization: `Bearer ${token}`,
