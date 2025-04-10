@@ -1,13 +1,15 @@
-import React from "react";
-import { View, TouchableOpacity, Text, StyleSheet } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import React from 'react';
+import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+
+export type ViewModeType = 'categories' | 'calendar';
 
 interface ViewSelectorProps {
-  viewMode: 'categories' | 'calendar';
-  onViewChange: (mode: 'categories' | 'calendar') => void;
+  viewMode: ViewModeType;
+  onViewModeChange: (mode: ViewModeType) => void;
 }
 
-const ViewSelector: React.FC<ViewSelectorProps> = ({ viewMode, onViewChange }) => {
+const ViewSelector: React.FC<ViewSelectorProps> = ({ viewMode, onViewModeChange }) => {
   return (
     <View style={styles.viewSelectorContainer}>
       <TouchableOpacity
@@ -15,7 +17,7 @@ const ViewSelector: React.FC<ViewSelectorProps> = ({ viewMode, onViewChange }) =
           styles.viewSelectorButton,
           viewMode === 'categories' && styles.viewSelectorButtonActive
         ]}
-        onPress={() => onViewChange('categories')}
+        onPress={() => onViewModeChange('categories')}
       >
         <Ionicons 
           name="list" 
@@ -33,7 +35,7 @@ const ViewSelector: React.FC<ViewSelectorProps> = ({ viewMode, onViewChange }) =
           styles.viewSelectorButton,
           viewMode === 'calendar' && styles.viewSelectorButtonActive
         ]}
-        onPress={() => onViewChange('calendar')}
+        onPress={() => onViewModeChange('calendar')}
       >
         <Ionicons 
           name="calendar" 
