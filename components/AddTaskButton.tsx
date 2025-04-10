@@ -1,71 +1,47 @@
-import React, { useState } from "react";
-import {
-  View,
-  TouchableOpacity,
-  StyleSheet,
-  Image,
-} from "react-native";
-import AddTask from "./AddTask";
+import React from "react";
+import { TouchableOpacity, Text, StyleSheet } from "react-native";
+import { LinearGradient } from 'expo-linear-gradient';
+import { MaterialIcons } from '@expo/vector-icons';
 
-type AddTaskButtonProps = {
-  onSave?: (
-    title: string,
-    description: string,
-    dueDate: string,
-    priority: number
-  ) => void;
-  categoryName?: string;
-};
+interface AddTaskButtonProps {
+  onPress: () => void;
+}
 
-const AddTaskButton: React.FC<AddTaskButtonProps> = ({ onSave, categoryName }) => {
-  const [formVisible, setFormVisible] = useState(false);
-
-  const toggleForm = () => {
-    setFormVisible(true);
-  };
-
-  const handleClose = () => {
-    setFormVisible(false);
-  };
-
+const AddTaskButton: React.FC<AddTaskButtonProps> = ({ onPress }) => {
   return (
-    <View style={styles.container}>
-      <TouchableOpacity style={styles.addButton} onPress={toggleForm}>
-        <Image source={require('../src/assets/plus.png')} style={styles.addButtonIcon} />
-      </TouchableOpacity>
-
-      <AddTask 
-        visible={formVisible} 
-        onClose={handleClose} 
-        onSave={onSave}
-        categoryName={categoryName}
-      />
-    </View>
+    <TouchableOpacity 
+      style={styles.controlsContainer}
+      onPress={onPress}
+    >
+      <LinearGradient
+        colors={['#4CAF50', '#2E7D32']}
+        style={styles.addButton}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      >
+        <MaterialIcons name="add-task" size={22} color="#fff" />
+        <Text style={styles.addButtonText}>Aggiungi</Text>
+      </LinearGradient>
+    </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    position: 'absolute',
-    bottom: 20,
-    right: 20,
+  controlsContainer: {
+    justifyContent: "center",
+    alignItems: "center",
   },
   addButton: {
-    backgroundColor: "#10e0e0",
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: "center",
-    justifyContent: "center",
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
   },
-  addButtonIcon: {
-    width: 28,
-    height: 28,
+  addButtonText: {
+    color: 'white',
+    fontWeight: '600',
+    marginLeft: 4,
   },
 });
 

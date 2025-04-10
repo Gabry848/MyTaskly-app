@@ -178,10 +178,8 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: '#F0F8FF', // Aggiungo uno sfondo azzurro chiaro alla canvas
-    borderWidth: 2,
-    borderColor: '#DDDDDD',
-    borderStyle: 'dashed',
+    backgroundColor: '#F0F8FF', // Sfondo azzurro chiaro alla canvas
+    // Rimuovo le proprietà del bordo per eliminare il contorno della canvas
   },
   resetButton: {
     position: 'absolute',
