@@ -7,9 +7,10 @@ import { Task } from '../src/services/taskService';
 interface TaskCardProps {
   task: Task;
   onPress?: (task: Task) => void;
+  showId?: boolean; // Opzione per mostrare o nascondere l'ID
 }
 
-const TaskCard: React.FC<TaskCardProps> = ({ task, onPress }) => {
+const TaskCard: React.FC<TaskCardProps> = ({ task, onPress, showId = false }) => {
   // Determina il colore in base alla priorità
   const priorityColors: Record<string, string> = {
     'Alta': '#ff6b6b',
@@ -22,15 +23,30 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onPress }) => {
     priorityColors[task.priority] || priorityColors.default : 
     priorityColors.default;
     
+  // Otteniamo l'ID del task
+  const taskId = task.id || '';
+
+  // Crea una versione abbreviata dell'ID se necessario
+  const shortId = taskId.toString().substring(0, 8);
+    
   return (
     <TouchableOpacity
       style={[styles.taskCard, { borderLeftColor: cardColor, borderLeftWidth: 5 }]}
       onPress={() => onPress && onPress(task)}
+      // Aggiungiamo l'attributo data-id
+      accessibilityLabel={`task-${taskId}`}
+      testID={`task-${taskId}`}
     >
       <View style={styles.taskCardContent}>
-        <Text style={styles.taskTitle} numberOfLines={1} ellipsizeMode="tail">
-          {task.title}
-        </Text>
+        <View style={styles.taskHeader}>
+          <Text style={styles.taskTitle} numberOfLines={1} ellipsizeMode="tail">
+            {task.title}
+          </Text>
+          
+          {showId && taskId && (
+            <Text style={styles.taskId}>#{shortId}</Text>
+          )}
+        </View>
         
         {task.description ? (
           <Text style={styles.taskDescription} numberOfLines={2} ellipsizeMode="tail">
@@ -86,10 +102,21 @@ const styles = StyleSheet.create({
   taskCardContent: {
     flexDirection: "column",
   },
+  taskHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 5,
+  },
   taskTitle: {
     fontSize: 16,
     fontWeight: "bold",
-    marginBottom: 5,
+    flex: 1,
+  },
+  taskId: {
+    fontSize: 12,
+    color: "#999",
+    marginLeft: 5,
   },
   taskDescription: {
     fontSize: 14,

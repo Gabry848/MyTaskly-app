@@ -154,6 +154,45 @@ export async function deleteTask(taskId: string | number) {
   }
 }
 
+// Funzione per aggiungere un nuovo impegno
+export async function addTask(task: Task) {
+  try {
+    const token = await getValidToken();
+    if (!token) {
+      return null;
+    }
+    const username = await AsyncStorage.getItem(STORAGE_KEYS.USER_NAME);
+
+    // converti la priorita` da numero a stringa (1: bassa, 2: media, 3: alta)
+    if (task.priority) {
+      if (typeof task.priority === 'number') {
+        task.priority = task.priority === 1 ? 'Bassa' : task.priority === 2 ? 'Media' : 'Alta';
+      }
+    }
+    
+    const data = {
+      title: task.title,
+      description: task.description || "",
+      start_time: task.start_time || new Date().toISOString(), // Aggiunto con valore predefinito
+      end_time: task.end_time,
+      priority: task.priority,
+      status: task.status || "In sospeso",
+      category_name: task.category_name,
+      user: task.user || username,
+    };
+    console.log("data: ", data);
+    const response = await axios.post("/tasks", data, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+}
+
 // Funzione per aggiungere una nuova categoria
 export async function addCategory(category: {
   id?: string | number;  // Reso opzionale per compatibilità con l'oggetto passato

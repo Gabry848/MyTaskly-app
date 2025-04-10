@@ -6,7 +6,7 @@ import React, {
   useRef,
   useCallback,
 } from "react";
-import { getCategories, getTasks, Task } from "../src/services/taskService";
+import { getCategories, getAllTasks, Task } from "../src/services/taskService";
 import Category from "./Category";
 import AddCategoryButton from "./AddCategoryButton";
 import {
@@ -149,7 +149,7 @@ const CategoryList = forwardRef((props, ref) => {
   // Funzione per caricare gli impegni
   const fetchTasks = useCallback(async () => {
     try {
-      const tasksData = await getTasks();
+      const tasksData = await getAllTasks();
       if (Array.isArray(tasksData)) {
         setTasks(tasksData);
       }
@@ -243,6 +243,54 @@ const CategoryList = forwardRef((props, ref) => {
     if (date) {
       setSelectedDate(date);
     }
+  };
+
+  // Funzione per determinare la priorità più alta tra i task di un giorno
+  const getHighestPriorityColor = (date: string) => {
+    const tasksForDay = groupTasksByDate()[date] || [];
+    
+    // Se non ci sono task, ritorna un colore neutro
+    if (tasksForDay.length === 0) {
+      return 'transparent';
+    }
+    
+    // Pesi delle priorità (più alto = più importante)
+    const priorityWeights: Record<string, number> = {
+      'Alta': 3,
+      'Media': 2,
+      'Bassa': 1,
+      'default': 0
+    };
+    
+    // Colori delle priorità (più intensi per priorità più alte)
+    const priorityColors: Record<string, string> = {
+      'Alta': 'rgba(255, 107, 107, 0.3)',    // Rosso leggero
+      'Media': 'rgba(254, 202, 87, 0.3)',    // Giallo leggero
+      'Bassa': 'rgba(29, 209, 161, 0.3)',    // Verde leggero
+      'default': 'transparent'
+    };
+    
+    // Trova la priorità più alta tra i task del giorno
+    let highestPriority = 'default';
+    let highestWeight = -1;
+    
+    tasksForDay.forEach(task => {
+      const priority = task.priority || 'default';
+      const weight = priorityWeights[priority] || 0;
+      
+      if (weight > highestWeight) {
+        highestWeight = weight;
+        highestPriority = priority;
+      }
+    });
+    
+    return priorityColors[highestPriority];
+  };
+  
+  // Ottieni il numero di task per un giorno specifico
+  const getTaskCountForDay = (date: string) => {
+    const tasksForDay = groupTasksByDate()[date] || [];
+    return tasksForDay.length;
   };
 
   // Renderizza una task card modterna
@@ -448,8 +496,8 @@ const CategoryList = forwardRef((props, ref) => {
                 style={[
                   styles.calendarDay,
                   day.date === selectedDate && styles.selectedDay,
-                  day.hasTask && styles.dayWithTask,
-                  !day.date && styles.emptyDay
+                  !day.date && styles.emptyDay,
+                  day.date && { backgroundColor: getHighestPriorityColor(day.date) }
                 ]}
                 onPress={() => selectDate(day.date)}
                 disabled={!day.date}
@@ -463,6 +511,14 @@ const CategoryList = forwardRef((props, ref) => {
                 >
                   {day.day}
                 </Text>
+                
+                {day.date && getTaskCountForDay(day.date) > 0 && (
+                  <View style={styles.taskCountBadge}>
+                    <Text style={styles.taskCountText}>
+                      {getTaskCountForDay(day.date)}
+                    </Text>
+                  </View>
+                )}
               </TouchableOpacity>
             ))}
           </View>
@@ -476,7 +532,11 @@ const CategoryList = forwardRef((props, ref) => {
           
           <ScrollView style={styles.taskList}>
             {getTasksForSelectedDate().length > 0 ? (
-              getTasksForSelectedDate().map((task) => renderTaskCard(task))
+              getTasksForSelectedDate().map((task) => (
+                <React.Fragment key={task.id || `task-${task.title}-${task.start_time}`}>
+                  {renderTaskCard(task)}
+                </React.Fragment>
+              ))
             ) : (
               <View style={styles.noTasksContainer}>
                 <Ionicons name="calendar-outline" size={50} color="#ccc" />
@@ -614,13 +674,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 5,
+    borderRadius: 10, // Bordi arrotondati
   },
   calendarDayText: {
     fontSize: 16,
   },
   selectedDay: {
     backgroundColor: "#007bff",
-    borderRadius: 20,
+    borderRadius: 10, // Bordi arrotondati
   },
   selectedDayText: {
     color: "#fff",
@@ -628,13 +689,14 @@ const styles = StyleSheet.create({
   dayWithTask: {
     borderColor: "#007bff",
     borderWidth: 1,
-    borderRadius: 20,
+    borderRadius: 10, // Bordi arrotondati
   },
   dayWithTaskText: {
     color: "#007bff",
   },
   emptyDay: {
     backgroundColor: "transparent",
+    borderRadius: 10, // Bordi arrotondati
   },
   selectedDateHeader: {
     marginTop: 10,
@@ -714,6 +776,23 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#666",
     marginLeft: 5,
+  },
+  taskCountBadge: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    backgroundColor: '#ff6b6b',
+    borderRadius: 10, // Bordi arrotondati
+    minWidth: 18,
+    height: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 3,
+  },
+  taskCountText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
 });
 
