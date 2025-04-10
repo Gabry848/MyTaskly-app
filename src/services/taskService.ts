@@ -64,55 +64,41 @@ export async function getLastTask(last_n: number) {
     });
 
     // restituisce gli ultimi n impegni
-    let tasks = response.data.slice(-last_n);
-    // Ordina gli impegni per data di scadenza
-    response.data.sort((a: Task, b: Task) => {
+    let data = response.data.slice(-last_n);
+    // ordina gli impegni in base alla data di fine
+    data.sort((a: Task, b: Task) => {
       return new Date(a.end_time).getTime() - new Date(b.end_time).getTime();
     });
-    return tasks;
+    return data;
 
   } catch (error) {
     console.log(error);
     return [];
   }
 }
-
-// Funzione per aggiungere un nuovo impegno
-export async function addTask(task: Task) {
+// funzione per ottenere tutti gli impegni
+export async function getAllTasks() {
   try {
     const token = await getValidToken();
     if (!token) {
-      return null;
+      return [];
     }
-    const username = await AsyncStorage.getItem(STORAGE_KEYS.USER_NAME);
-
-    // converti la priorita` da numero a stringa (1: bassa, 2: media, 3: alta)
-    if (task.priority) {
-      if (typeof task.priority === 'number') {
-        task.priority = task.priority === 1 ? 'Bassa' : task.priority === 2 ? 'Media' : 'Alta';
-      }
-    }
-    
-    const data = {
-      title: task.title,
-      description: task.description || "",
-      start_time: task.start_time || new Date().toISOString(), // Aggiunto con valore predefinito
-      end_time: task.end_time,
-      priority: task.priority,
-      status: task.status || "In sospeso",
-      category_name: task.category_name,
-      user: task.user || username,
-    };
-    console.log("data: ", data);
-    const response = await axios.post("/tasks", data, {
+    const response = await axios.get(`/tasks`, {
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
     });
-    return response.data;
+
+    let data = response.data;
+    data.sort((a: Task, b: Task) => {
+      return new Date(a.end_time).getTime() - new Date(b.end_time).getTime();
+    });
+    return data;
+
   } catch (error) {
-    throw error;
+    console.log(error);
+    return [];
   }
 }
 
