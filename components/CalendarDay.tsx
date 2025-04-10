@@ -24,9 +24,11 @@ const CalendarDay: React.FC<CalendarDayProps> = ({
     <TouchableOpacity
       style={[
         styles.calendarDay,
-        isSelected && styles.selectedDay,
         !date && styles.emptyDay,
-        date && { backgroundColor: priorityColor }
+        // Applica il colore di priorità solo se il giorno non è selezionato
+        date && !isSelected && { backgroundColor: priorityColor },
+        // Applica lo stile selectedDay solo se il giorno è selezionato
+        isSelected && styles.selectedDay
       ]}
       onPress={() => onSelectDate(date)}
       disabled={!date}
@@ -35,7 +37,7 @@ const CalendarDay: React.FC<CalendarDayProps> = ({
         style={[
           styles.calendarDayText,
           isSelected && styles.selectedDayText,
-          hasTask && styles.dayWithTaskText
+          hasTask && !isSelected && styles.dayWithTaskText
         ]}
       >
         {day}

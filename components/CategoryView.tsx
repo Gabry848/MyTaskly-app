@@ -60,6 +60,7 @@ const CategoryView: React.FC<CategoryViewProps> = ({
 
   return (
     <ScrollView>
+      {/* AddCategoryButton mostrato solo nella vista categorie */}
       <AddCategoryButton
         onCategoryAdded={onCategoryAdded}
       />
