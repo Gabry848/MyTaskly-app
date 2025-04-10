@@ -183,11 +183,13 @@ const Category: React.FC<CategoryProps> = ({
   const handleTaskAdded = (t, description, dueDate, priority) => {
     const d = {
       title: t,
-      description: description,
+      description: description || "", // Assicurarsi che description non sia mai null
       end_time: dueDate,
+      start_time: new Date().toISOString(),
       priority: priority,
       category_name: title,
-      status: "In sospeso"
+      status: "In sospeso",
+      user: ""  // Campo richiesto dal server
     };
     console.log("Nuovo task:", d);
     addTask(d).then(() => {
@@ -195,6 +197,7 @@ const Category: React.FC<CategoryProps> = ({
       setShowAddTask(false);  
     }).catch(error => {
       console.error("Errore durante l'aggiunta del task:", error);
+      Alert.alert("Errore", "Impossibile aggiungere il task. Riprova più tardi.");
     });
   };
   

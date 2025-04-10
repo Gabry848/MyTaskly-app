@@ -5,13 +5,11 @@ import {
   TextInput,
   TouchableOpacity,
   Dimensions,
-  PanResponder,
-  Animated,
   Alert,
 } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import DraggableNote from '../../../components/DraggableNote';
+import NotesCanvas from '../../../components/NotesCanvas';
 import { Note as NoteInterface, addNote, deleteNote, getNotes, updateNote, updateNotePosition } from '../../services/noteService';
 
 const COLORS = ['#FFCDD2', '#F8BBD0', '#E1BEE7', '#D1C4E9', '#C5CAE9', '#BBDEFB', '#B3E5FC', '#B2EBF2', '#B2DFDB', '#C8E6C9'];
@@ -22,33 +20,41 @@ export default function Notes() {
   const [nextZIndex, setNextZIndex] = useState(1);
   const { width, height } = Dimensions.get('window');
   const [isLoading, setIsLoading] = useState(false);
-  
-  const panRefs = useRef<{[key: string]: Animated.ValueXY}>({});
 
   // Hook che viene eseguito ogni volta che la pagina riceve il focus
   useFocusEffect(
     useCallback(() => {
-      console.log('Notes screen focused - refreshing notes');
+      console.log('✅ Notes screen focused - refreshing notes');
       fetchNotes();
       
       // Pulizia quando la pagina perde il focus
       return () => {
-        console.log('Notes screen unfocused');
+        console.log('⏹️ Notes screen unfocused');
       };
     }, [])
   );
 
   // Carica le note dal server all'avvio
   useEffect(() => {
+    console.log('🚀 Notes component mounted');
     fetchNotes();
+    
+    return () => {
+      console.log('💤 Notes component unmounted');
+    };
   }, []);
 
   const fetchNotes = async () => {
     setIsLoading(true);
     try {
-      console.log('Fetching notes from server...');
+      console.log('📥 Fetching notes from server...');
       const fetchedNotes = await getNotes();
-      console.log(`Fetched ${fetchedNotes.length} notes from server`);
+      console.log(`📋 Fetched ${fetchedNotes.length} notes from server`);
+      
+      // Log dettagliato delle note
+      fetchedNotes.forEach(note => {
+        console.log(`📌 Note ID: ${note.id}, Position: (${note.position.x.toFixed(2)}, ${note.position.y.toFixed(2)}), zIndex: ${note.zIndex}`);
+      });
       
       setNotes(fetchedNotes);
       
@@ -56,26 +62,10 @@ export default function Notes() {
       if (fetchedNotes.length > 0) {
         const highestZIndex = Math.max(...fetchedNotes.map(note => note.zIndex));
         setNextZIndex(highestZIndex + 1);
+        console.log(`🔢 Next zIndex set to ${highestZIndex + 1}`);
       }
-      
-      // Inizializza i riferimenti animati per ogni nota
-      fetchedNotes.forEach(note => {
-        if (!panRefs.current[note.id]) {
-          panRefs.current[note.id] = new Animated.ValueXY({ 
-            x: note.position.x, 
-            y: note.position.y 
-          });
-        }
-      });
-
-      // Pulisce i riferimenti animati per le note che non esistono più
-      Object.keys(panRefs.current).forEach(noteId => {
-        if (!fetchedNotes.some(note => note.id === noteId)) {
-          delete panRefs.current[noteId];
-        }
-      });
     } catch (error) {
-      console.error("Errore nel caricamento delle note:", error);
+      console.error("❌ Errore nel caricamento delle note:", error);
       Alert.alert("Errore", "Impossibile caricare le note dal server");
     } finally {
       setIsLoading(false);
@@ -88,6 +78,8 @@ export default function Notes() {
     const randomX = Math.random() * (width - 200);
     const randomY = Math.random() * (height - 200);
     const randomColor = COLORS[Math.floor(Math.random() * COLORS.length)];
+
+    console.log(`➕ Creazione nuova nota a posizione (${randomX.toFixed(2)}, ${randomY.toFixed(2)})`);
 
     const newNote: NoteInterface = {
       id: `temp-${Date.now()}`, // ID temporaneo
@@ -103,17 +95,14 @@ export default function Notes() {
 
     // Aggiunge localmente la nota prima di salvarla sul server
     setNotes(prevNotes => [...prevNotes, newNote]);
-    panRefs.current[newNote.id] = new Animated.ValueXY({ 
-      x: randomX, 
-      y: randomY 
-    });
-    
     setNewNoteText('');
     setNextZIndex(nextZIndex + 1);
 
     try {
       // Invia la nota al server
+      console.log(`💾 Salvataggio nota sul server: ID temporaneo ${newNote.id}`);
       const savedNote = await addNote(newNote);
+      console.log(`✅ Nota salvata sul server con ID: ${savedNote.id}`);
       
       // Aggiorna l'ID temporaneo con l'ID restituito dal server
       setNotes(prevNotes => 
@@ -121,32 +110,27 @@ export default function Notes() {
           note.id === newNote.id ? { ...note, id: savedNote.id } : note
         )
       );
-      
-      // Aggiorna il riferimento animato con il nuovo ID
-      if (savedNote && savedNote.id) {
-        panRefs.current[savedNote.id] = panRefs.current[newNote.id];
-        delete panRefs.current[newNote.id];
-      }
     } catch (error) {
-      console.error("Errore nel salvataggio della nota:", error);
+      console.error("❌ Errore nel salvataggio della nota:", error);
       Alert.alert("Errore", "Impossibile salvare la nota sul server");
       
       // Rimuove la nota se il salvataggio fallisce
       setNotes(prevNotes => prevNotes.filter(note => note.id !== newNote.id));
-      delete panRefs.current[newNote.id];
     }
   };
 
   const handleDeleteNote = async (id: string) => {
+    console.log(`🗑️ Eliminazione nota: ${id}`);
+    
     // Rimuove localmente la nota prima di eliminarla sul server
     setNotes(prevNotes => prevNotes.filter(note => note.id !== id));
-    delete panRefs.current[id];
 
     try {
       // Elimina la nota sul server
       await deleteNote(id);
+      console.log(`✅ Nota ${id} eliminata dal server`);
     } catch (error) {
-      console.error("Errore nell'eliminazione della nota:", error);
+      console.error(`❌ Errore nell'eliminazione della nota ${id}:`, error);
       Alert.alert("Errore", "Impossibile eliminare la nota dal server");
       
       // Se l'eliminazione fallisce, recarica tutte le note dal server
@@ -155,6 +139,8 @@ export default function Notes() {
   };
 
   const handleUpdateNote = async (id: string, newText: string) => {
+    console.log(`✏️ Aggiornamento testo nota ${id}: "${newText.substring(0, 20)}${newText.length > 20 ? '...' : ''}"`);
+    
     // Aggiorna localmente la nota prima di aggiornarla sul server
     setNotes(prevNotes => {
       return prevNotes.map(note => {
@@ -171,8 +157,9 @@ export default function Notes() {
     try {
       // Aggiorna la nota sul server
       await updateNote(id, { text: newText });
+      console.log(`✅ Testo della nota ${id} aggiornato sul server`);
     } catch (error) {
-      console.error("Errore nell'aggiornamento della nota:", error);
+      console.error(`❌ Errore nell'aggiornamento della nota ${id}:`, error);
       Alert.alert("Errore", "Impossibile aggiornare la nota sul server");
       
       // Se l'aggiornamento fallisce, recarica tutte le note dal server
@@ -180,8 +167,36 @@ export default function Notes() {
     }
   };
 
+  const handleUpdatePosition = async (id: string, newPosition: { x: number, y: number }) => {
+    console.log(`🔄 Aggiornamento posizione nota ${id}: (${newPosition.x.toFixed(2)}, ${newPosition.y.toFixed(2)})`);
+    
+    // Aggiorna localmente la posizione della nota
+    setNotes(prevNotes => {
+      return prevNotes.map(note => {
+        if (note.id === id) {
+          return {
+            ...note,
+            position: newPosition
+          };
+        }
+        return note;
+      });
+    });
+    
+    // Aggiorna la posizione sul server
+    try {
+      await updateNotePosition(id, newPosition);
+      console.log(`✅ Posizione della nota ${id} aggiornata sul server`);
+    } catch (error) {
+      console.error(`❌ Errore nell'aggiornamento della posizione della nota ${id}:`, error);
+      // Non mostriamo un alert qui per non interrompere l'esperienza utente
+    }
+  };
+
   const bringToFront = (id: string) => {
     const newZIndex = nextZIndex + 1;
+    console.log(`⬆️ Portando la nota ${id} in primo piano con zIndex ${newZIndex}`);
+    
     setNotes(prevNotes => {
       const index = prevNotes.findIndex(n => n.id === id);
       if (index === -1) return prevNotes;
@@ -189,89 +204,21 @@ export default function Notes() {
       const [selectedNote] = updatedNotes.splice(index, 1);
       selectedNote.zIndex = newZIndex;
       updatedNotes.push(selectedNote);
-      
-      
-      
       return updatedNotes;
     });
     setNextZIndex(newZIndex);
   };
 
-  const createPanResponder = (noteId: string) => {
-    return PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onPanResponderGrant: () => {
-        console.log("Inizio trascinamento nota", noteId);
-        bringToFront(noteId);
-        
-        panRefs.current[noteId].setOffset({
-          x: panRefs.current[noteId].x._value,
-          y: panRefs.current[noteId].y._value
-        });
-        panRefs.current[noteId].setValue({ x: 0, y: 0 });
-      },
-      onPanResponderMove: Animated.event(
-        [null, { dx: panRefs.current[noteId].x, dy: panRefs.current[noteId].y }],
-        { useNativeDriver: false }
-      ),
-      onPanResponderRelease: async () => {
-        panRefs.current[noteId].flattenOffset();
-        
-        const newPosition = {
-          x: panRefs.current[noteId].x._value,
-          y: panRefs.current[noteId].y._value
-        };
-        
-        console.log("Nota rilasciata", noteId, "Nuova posizione:", newPosition);
-        
-        // Aggiorna localmente la posizione della nota
-        setNotes(prevNotes => {
-          return prevNotes.map(note => {
-            if (note.id === noteId) {
-              return {
-                ...note,
-                position: newPosition
-              };
-            }
-            return note;
-          });
-        });
-        
-        // Aggiorna la posizione sul server
-        try {
-          console.log("Invio posizione al server per la nota", noteId);
-          await updateNotePosition(noteId, newPosition);
-          console.log("Posizione aggiornata con successo sul server");
-        } catch (error) {
-          console.error("Errore nell'aggiornamento della posizione:", error);
-          // Non mostriamo un alert qui per non interrompere l'esperienza utente
-        }
-      }
-    });
-  };
-
   return (
     <View style={styles.container}>
       <View style={styles.board}>
-        {notes.map(note => {
-          if (!panRefs.current[note.id]) {
-            panRefs.current[note.id] = new Animated.ValueXY({ 
-              x: note.position.x, 
-              y: note.position.y 
-            });
-          }
-          
-          return (
-            <DraggableNote 
-              key={note.id} 
-              note={note} 
-              panResponder={createPanResponder(note.id)}
-              pan={panRefs.current[note.id]}
-              onDelete={handleDeleteNote}
-              onUpdate={handleUpdateNote}
-            />
-          );
-        })}
+        <NotesCanvas
+          notes={notes}
+          onUpdatePosition={handleUpdatePosition}
+          onDeleteNote={handleDeleteNote}
+          onUpdateNote={handleUpdateNote}
+          onBringToFront={bringToFront}
+        />
       </View>
       <View style={styles.inputContainer}>
         <TextInput
@@ -325,36 +272,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginLeft: 10,
     elevation: 3,
-  },
-  note: {
-    position: 'absolute',
-    width: 200,
-    minHeight: 120,
-    padding: 15,
-    borderRadius: 10,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  noteText: {
-    fontSize: 16,
-    color: '#333',
-  },
-  deleteButton: {
-    position: 'absolute',
-    top: 5,
-    right: 5,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 10,
   },
 });

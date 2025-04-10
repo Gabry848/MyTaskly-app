@@ -8,14 +8,16 @@ import {
   TouchableOpacity, 
   ScrollView,
   Modal,
-  Alert
+  Alert,
+  Image
 } from "react-native";
 import { Filter } from "lucide-react-native";
 import Task from "../../../components/Task";
 import { getTasks, addTask, deleteTask, updateTask } from "../../services/taskService";
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../types';
-import AddTaskButton from "../../../components/AddTaskButton";
+import AddTask from "../../../components/AddTask";
+
 
 type TaskListRouteProp = RouteProp<RootStackParamList, 'TaskList'>;
 
@@ -50,6 +52,7 @@ export function TaskList({ route }: Props) {
   const [ordineScadenza, setOrdineScadenza] = useState("Recente");
   const [isLoading, setIsLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
+  const [formVisible, setFormVisible] = useState(false);
   const categoryName = route.params.category_name;
 
   // Initialize the global task adder function
@@ -234,12 +237,12 @@ export function TaskList({ route }: Props) {
     const newTask: Task = {
       id: Date.now(),
       title,
-      description,
+      description: description || "", // Assicurarsi che description non sia null
       end_time: new Date(dueDate).toISOString(),
       priority: priorityString,
       completed: false,
-      status: "",
-      start_time: ""
+      status: "In sospeso", // Impostare un valore predefinito per status
+      start_time: new Date().toISOString() // Impostare start_time al momento attuale
     };
     
     console.log("handleAddTask called with:", newTask);
@@ -249,8 +252,7 @@ export function TaskList({ route }: Props) {
       const response = await addTask({
         ...newTask,
         category_name: categoryName,
-        dueDate: dueDate,
-        status: ""
+        // Non inviare dueDate perché già presente come end_time
       });
       
       console.log("Server response:", response);
@@ -283,8 +285,8 @@ export function TaskList({ route }: Props) {
       globalTasksRef.addTask(newTask, categoryName);
       
       Alert.alert(
-        "Warning",
-        "Task was added locally but there was an error saving to the server."
+        "Attenzione",
+        "Il task è stato aggiunto localmente ma c'è stato un errore nel salvataggio sul server."
       );
     }
   };
@@ -355,6 +357,16 @@ export function TaskList({ route }: Props) {
       // Ricarica i dati dal server per mantenere la coerenza
       fetchTasks();
     }
+  };
+
+  // Funzione per aprire/chiudere il form di aggiunta task
+  const toggleForm = () => {
+    setFormVisible(true);
+  };
+
+  // Funzione per chiudere il form di aggiunta task
+  const handleCloseForm = () => {
+    setFormVisible(false);
   };
 
   // Funzione per ottenere il colore in base alla priorità
@@ -587,7 +599,17 @@ export function TaskList({ route }: Props) {
           />
         </>
       )}
-      <AddTaskButton onSave={handleAddTask} categoryName={categoryName} />
+      <TouchableOpacity style={styles.addButton} onPress={toggleForm}>
+        <Image source={require('../../../src/assets/plus.png')} style={styles.addButtonIcon} />
+      </TouchableOpacity>
+      
+      {/* Componente AddTask */}
+      <AddTask 
+        visible={formVisible} 
+        onClose={handleCloseForm} 
+        onSave={handleAddTask}
+        categoryName={categoryName}
+      />
     </View>
   );
 };
@@ -819,7 +841,27 @@ const styles = StyleSheet.create({
     color: '#888',
     fontSize: 16,
     textAlign: 'center',
-  }
+  },
+  addButton: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    backgroundColor: "#10e0e0",
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: "center",
+    justifyContent: "center",
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  addButtonIcon: {
+    width: 28,
+    height: 28,
+  },
 });
 
 export default TaskList;

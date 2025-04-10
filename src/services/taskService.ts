@@ -85,6 +85,14 @@ export async function addTask(task: Task) {
       return null;
     }
     const username = await AsyncStorage.getItem(STORAGE_KEYS.USER_NAME);
+
+    // converti la priorita` da numero a stringa (1: bassa, 2: media, 3: alta)
+    if (task.priority) {
+      if (typeof task.priority === 'number') {
+        task.priority = task.priority === 1 ? 'Bassa' : task.priority === 2 ? 'Media' : 'Alta';
+      }
+    }
+    
     const data = {
       title: task.title,
       description: task.description || "",

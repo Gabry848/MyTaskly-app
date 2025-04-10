@@ -89,11 +89,13 @@ const AddTask: React.FC<AddTaskProps> = ({ visible, onClose, onSave, categoryNam
     const taskObject = {
       id: Date.now(),
       title: title.trim(),
-      description: description.trim(),
+      description: description.trim() || "", // Assicurarsi che description non sia mai null
       end_time: dueDate,
       start_time: new Date().toISOString(),
       priority: priorityString,
-      status: "pending",
+      status: "In sospeso", // Aggiornato per coerenza con altri componenti
+      category_name: categoryName || "", // Aggiungere il nome della categoria
+      user: "", // Campo richiesto dal server
       completed: false
     };
 
