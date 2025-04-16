@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, TextInput } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, TextInput, PanResponder } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 
 interface Note {
@@ -15,10 +15,12 @@ interface Note {
 
 interface DraggableNoteProps {
   note: Note;
-  panResponder: any;
-  pan: Animated.ValueXY;
   onDelete: (id: string) => void;
-  onUpdate: (id: string, text: string) => void;
+  onUpdateText: (id: string, text: string) => void;
+  onUpdatePosition?: (id: string, position: { x: number; y: number }) => void;
+  onBringToFront?: (id: string) => void;
+  panResponder?: any; // Reso opzionale
+  pan?: Animated.ValueXY; // Reso opzionale
 }
 
 const DraggableNote: React.FC<DraggableNoteProps> = ({ 
@@ -26,10 +28,57 @@ const DraggableNote: React.FC<DraggableNoteProps> = ({
   panResponder, 
   pan, 
   onDelete,
-  onUpdate 
+  onUpdateText,
+  onUpdatePosition,
+  onBringToFront
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(note.text);
+  
+  // Creiamo un panResponder locale se non ne viene fornito uno
+  const position = useRef(new Animated.ValueXY({
+    x: note.position.x,
+    y: note.position.y
+  })).current;
+  
+  // Se non viene fornito un panResponder, creiamone uno localmente
+  const localPanResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => !isEditing,
+      onPanResponderGrant: () => {
+        position.setOffset({
+          x: position.x._value,
+          y: position.y._value
+        });
+        position.setValue({ x: 0, y: 0 });
+        
+        // Porta la nota in primo piano se la funzione è disponibile
+        if (onBringToFront) {
+          onBringToFront(note.id);
+        }
+      },
+      onPanResponderMove: Animated.event(
+        [null, { dx: position.x, dy: position.y }],
+        { useNativeDriver: false }
+      ),
+      onPanResponderRelease: () => {
+        position.flattenOffset();
+        
+        // Aggiorna la posizione se la funzione è disponibile
+        if (onUpdatePosition) {
+          onUpdatePosition(note.id, {
+            x: position.x._value,
+            y: position.y._value
+          });
+        }
+      },
+    })
+  ).current;
+
+  // Usiamo il panResponder fornito oppure quello locale
+  const activePanResponder = panResponder || localPanResponder;
+  const activePan = pan || position;
 
   const handleLongPress = () => {
     setIsEditing(true);
@@ -38,19 +87,23 @@ const DraggableNote: React.FC<DraggableNoteProps> = ({
 
   const handleSave = () => {
     if (editText.trim() !== '') {
-      onUpdate(note.id, editText);
+      onUpdateText(note.id, editText);
     }
     setIsEditing(false);
   };
 
   return (
     <Animated.View
-      {...(isEditing ? {} : panResponder.panHandlers)}
+      {...(isEditing ? {} : activePanResponder.panHandlers)}
       style={[
         styles.note,
         {
           backgroundColor: note.color,
-          transform: [{ translateX: pan.x }, { translateY: pan.y }],
+          left: note.position.x,
+          top: note.position.y,
+          transform: panResponder ? 
+            [{ translateX: activePan.x }, { translateY: activePan.y }] : 
+            [],
           zIndex: note.zIndex,
           elevation: note.zIndex,
         },
@@ -80,7 +133,7 @@ const DraggableNote: React.FC<DraggableNoteProps> = ({
         <TouchableOpacity 
           onPress={handleLongPress} 
           // delayLongPress={500}
-          // activeOpacity={0.7}
+          activeOpacity={0.7}
         >
           <Text style={styles.noteText}>{note.text}</Text>
         </TouchableOpacity>

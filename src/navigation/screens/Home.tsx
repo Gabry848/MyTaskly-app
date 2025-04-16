@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
     width: "100%",
     padding: 30,
     paddingTop: 50,
-    backgroundColor: "#F9c9F9",
+    backgroundColor: "#FFFFFF", // Cambiato da "#F9c9F9" a bianco
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,

@@ -1,17 +1,15 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   StyleSheet,
   TextInput,
   TouchableOpacity,
   Dimensions,
-  PanResponder,
-  Animated,
   Alert,
 } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import DraggableNote from '../../../components/DraggableNote';
+import NotesCanvas from '../../../components/NotesCanvas';
 import { Note as NoteInterface, addNote, deleteNote, getNotes, updateNote, updateNotePosition } from '../../services/noteService';
 
 const COLORS = ['#FFCDD2', '#F8BBD0', '#E1BEE7', '#D1C4E9', '#C5CAE9', '#BBDEFB', '#B3E5FC', '#B2EBF2', '#B2DFDB', '#C8E6C9'];
@@ -22,8 +20,6 @@ export default function Notes() {
   const [nextZIndex, setNextZIndex] = useState(1);
   const { width, height } = Dimensions.get('window');
   const [isLoading, setIsLoading] = useState(false);
-  
-  const panRefs = useRef<{[key: string]: Animated.ValueXY}>({});
 
   // Hook che viene eseguito ogni volta che la pagina riceve il focus
   useFocusEffect(
@@ -57,23 +53,6 @@ export default function Notes() {
         const highestZIndex = Math.max(...fetchedNotes.map(note => note.zIndex));
         setNextZIndex(highestZIndex + 1);
       }
-      
-      // Inizializza i riferimenti animati per ogni nota
-      fetchedNotes.forEach(note => {
-        if (!panRefs.current[note.id]) {
-          panRefs.current[note.id] = new Animated.ValueXY({ 
-            x: note.position.x, 
-            y: note.position.y 
-          });
-        }
-      });
-
-      // Pulisce i riferimenti animati per le note che non esistono più
-      Object.keys(panRefs.current).forEach(noteId => {
-        if (!fetchedNotes.some(note => note.id === noteId)) {
-          delete panRefs.current[noteId];
-        }
-      });
     } catch (error) {
       console.error("Errore nel caricamento delle note:", error);
       Alert.alert("Errore", "Impossibile caricare le note dal server");
@@ -103,10 +82,6 @@ export default function Notes() {
 
     // Aggiunge localmente la nota prima di salvarla sul server
     setNotes(prevNotes => [...prevNotes, newNote]);
-    panRefs.current[newNote.id] = new Animated.ValueXY({ 
-      x: randomX, 
-      y: randomY 
-    });
     
     setNewNoteText('');
     setNextZIndex(nextZIndex + 1);
@@ -121,26 +96,18 @@ export default function Notes() {
           note.id === newNote.id ? { ...note, id: savedNote.id } : note
         )
       );
-      
-      // Aggiorna il riferimento animato con il nuovo ID
-      if (savedNote && savedNote.id) {
-        panRefs.current[savedNote.id] = panRefs.current[newNote.id];
-        delete panRefs.current[newNote.id];
-      }
     } catch (error) {
       console.error("Errore nel salvataggio della nota:", error);
       Alert.alert("Errore", "Impossibile salvare la nota sul server");
       
       // Rimuove la nota se il salvataggio fallisce
       setNotes(prevNotes => prevNotes.filter(note => note.id !== newNote.id));
-      delete panRefs.current[newNote.id];
     }
   };
 
   const handleDeleteNote = async (id: string) => {
     // Rimuove localmente la nota prima di eliminarla sul server
     setNotes(prevNotes => prevNotes.filter(note => note.id !== id));
-    delete panRefs.current[id];
 
     try {
       // Elimina la nota sul server
@@ -180,7 +147,32 @@ export default function Notes() {
     }
   };
 
-  const bringToFront = (id: string) => {
+  const handleUpdatePosition = async (id: string, newPosition: { x: number; y: number }) => {
+    // Aggiorna localmente la posizione della nota
+    setNotes(prevNotes => {
+      return prevNotes.map(note => {
+        if (note.id === id) {
+          return {
+            ...note,
+            position: newPosition
+          };
+        }
+        return note;
+      });
+    });
+    
+    // Aggiorna la posizione sul server
+    try {
+      console.log("Invio posizione al server per la nota", id);
+      await updateNotePosition(id, newPosition);
+      console.log("Posizione aggiornata con successo sul server");
+    } catch (error) {
+      console.error("Errore nell'aggiornamento della posizione:", error);
+      // Non mostriamo un alert qui per non interrompere l'esperienza utente
+    }
+  };
+
+  const handleBringToFront = (id: string) => {
     const newZIndex = nextZIndex + 1;
     setNotes(prevNotes => {
       const index = prevNotes.findIndex(n => n.id === id);
@@ -189,90 +181,25 @@ export default function Notes() {
       const [selectedNote] = updatedNotes.splice(index, 1);
       selectedNote.zIndex = newZIndex;
       updatedNotes.push(selectedNote);
-      
-      
-      
       return updatedNotes;
     });
     setNextZIndex(newZIndex);
   };
 
-  const createPanResponder = (noteId: string) => {
-    return PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onPanResponderGrant: () => {
-        console.log("Inizio trascinamento nota", noteId);
-        bringToFront(noteId);
-        
-        panRefs.current[noteId].setOffset({
-          x: panRefs.current[noteId].x._value,
-          y: panRefs.current[noteId].y._value
-        });
-        panRefs.current[noteId].setValue({ x: 0, y: 0 });
-      },
-      onPanResponderMove: Animated.event(
-        [null, { dx: panRefs.current[noteId].x, dy: panRefs.current[noteId].y }],
-        { useNativeDriver: false }
-      ),
-      onPanResponderRelease: async () => {
-        panRefs.current[noteId].flattenOffset();
-        
-        const newPosition = {
-          x: panRefs.current[noteId].x._value,
-          y: panRefs.current[noteId].y._value
-        };
-        
-        console.log("Nota rilasciata", noteId, "Nuova posizione:", newPosition);
-        
-        // Aggiorna localmente la posizione della nota
-        setNotes(prevNotes => {
-          return prevNotes.map(note => {
-            if (note.id === noteId) {
-              return {
-                ...note,
-                position: newPosition
-              };
-            }
-            return note;
-          });
-        });
-        
-        // Aggiorna la posizione sul server
-        try {
-          console.log("Invio posizione al server per la nota", noteId);
-          await updateNotePosition(noteId, newPosition);
-          console.log("Posizione aggiornata con successo sul server");
-        } catch (error) {
-          console.error("Errore nell'aggiornamento della posizione:", error);
-          // Non mostriamo un alert qui per non interrompere l'esperienza utente
-        }
-      }
-    });
-  };
-
   return (
     <View style={styles.container}>
-      <View style={styles.board}>
-        {notes.map(note => {
-          if (!panRefs.current[note.id]) {
-            panRefs.current[note.id] = new Animated.ValueXY({ 
-              x: note.position.x, 
-              y: note.position.y 
-            });
-          }
-          
-          return (
-            <DraggableNote 
-              key={note.id} 
-              note={note} 
-              panResponder={createPanResponder(note.id)}
-              pan={panRefs.current[note.id]}
-              onDelete={handleDeleteNote}
-              onUpdate={handleUpdateNote}
-            />
-          );
-        })}
+      {/* Area delle note con NotesCanvas per gestire pan e zoom */}
+      <View style={styles.notesArea}>
+        <NotesCanvas
+          notes={notes}
+          onUpdatePosition={handleUpdatePosition}
+          onDeleteNote={handleDeleteNote}
+          onUpdateNote={handleUpdateNote}
+          onBringToFront={handleBringToFront}
+        />
       </View>
+      
+      {/* Area di input non soggetta a pan e zoom */}
       <View style={styles.inputContainer}>
         <TextInput
           style={styles.input}
@@ -292,12 +219,11 @@ export default function Notes() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    flexDirection: 'column',
   },
-  board: {
+  notesArea: {
     flex: 1,
     width: '100%',
-    height: '100%',
   },
   inputContainer: {
     flexDirection: 'row',
@@ -306,6 +232,12 @@ const styles = StyleSheet.create({
     padding: 10,
     borderTopWidth: 1,
     borderTopColor: '#e0e0e0',
+    // Questo assicura che l'input rimanga in posizione fissa e non sia soggetto a pan e zoom
+    position: 'relative',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
   },
   input: {
     flex: 1,
@@ -325,36 +257,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginLeft: 10,
     elevation: 3,
-  },
-  note: {
-    position: 'absolute',
-    width: 200,
-    minHeight: 120,
-    padding: 15,
-    borderRadius: 10,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  noteText: {
-    fontSize: 16,
-    color: '#333',
-  },
-  deleteButton: {
-    position: 'absolute',
-    top: 5,
-    right: 5,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 10,
   },
 });

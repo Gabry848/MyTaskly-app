@@ -67,12 +67,18 @@ export const GestureNoteCard: React.FC<GestureNoteCardProps> = ({
       return true;
     })
     .onUpdate((event) => {
-      translateX.value = savedTranslateX.value + event.translationX / canvasScale.value;
-      translateY.value = savedTranslateY.value + event.translationY / canvasScale.value;
+      // Calcola lo spostamento tenendo conto del livello di zoom
+      // Utilizzo di una funzione di easing per rendere il movimento più naturale a diversi livelli di zoom
+      const zoomFactor = Math.max(0.5, 1 / canvasScale.value);
+      
+      // Applica uno spostamento inversamente proporzionale al livello di zoom
+      // Con un fattore di smoothing per evitare movimenti troppo bruschi a zoom elevati
+      translateX.value = savedTranslateX.value + (event.translationX * zoomFactor);
+      translateY.value = savedTranslateY.value + (event.translationY * zoomFactor);
       
       // Log meno frequente per non sovraccaricare la console
       if (Math.abs(event.translationX) % 20 < 1 || Math.abs(event.translationY) % 20 < 1) {
-        console.log(`Note ${note.id} moving: X=${translateX.value.toFixed(2)}, Y=${translateY.value.toFixed(2)}, scale=${canvasScale.value.toFixed(2)}`);
+        console.log(`Note ${note.id} moving: X=${translateX.value.toFixed(2)}, Y=${translateY.value.toFixed(2)}, scale=${canvasScale.value.toFixed(2)}, zoomFactor=${zoomFactor.toFixed(2)}`);
       }
     })
     .onEnd(() => {
