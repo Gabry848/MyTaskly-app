@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -17,6 +17,7 @@ import Animated, {
   withSpring,
 } from "react-native-reanimated";
 import { addTaskToList } from "../src/navigation/screens/TaskList";
+import dayjs from "dayjs";
 
 type AddTaskProps = {
   visible: boolean;
@@ -28,9 +29,16 @@ type AddTaskProps = {
     priority: number
   ) => void;
   categoryName?: string;
+  initialDate?: string; // Nuova prop per la data iniziale
 };
 
-const AddTask: React.FC<AddTaskProps> = ({ visible, onClose, onSave, categoryName }) => {
+const AddTask: React.FC<AddTaskProps> = ({ 
+  visible, 
+  onClose, 
+  onSave, 
+  categoryName,
+  initialDate 
+}) => {
   const animationValue = useSharedValue(0);
   const [priority, setPriority] = useState<number>(1);
   const [title, setTitle] = useState("");
@@ -42,13 +50,26 @@ const AddTask: React.FC<AddTaskProps> = ({ visible, onClose, onSave, categoryNam
   const [date, setDate] = useState(new Date());
 
   // Gestisce l'animazione all'apertura del modale
-  React.useEffect(() => {
+  useEffect(() => {
     if (visible) {
       animationValue.value = withSpring(1, { damping: 12 });
+      
+      // Se initialDate è fornito, imposta la data iniziale
+      if (initialDate) {
+        initializeWithDate(initialDate);
+      }
     } else {
       animationValue.value = withSpring(0, { damping: 12 });
     }
-  }, [visible]);
+  }, [visible, initialDate]);
+
+  // Inizializza la data del task con quella fornita
+  const initializeWithDate = (dateStr: string) => {
+    const initialDateTime = dayjs(dateStr).hour(12).minute(0).second(0).toDate();
+    setSelectedDateTime(initialDateTime);
+    setDueDate(initialDateTime.toISOString());
+    setDate(initialDateTime);
+  };
 
   const handleCancel = () => {
     // Prima animiamo la chiusura, poi chiamiamo onClose
