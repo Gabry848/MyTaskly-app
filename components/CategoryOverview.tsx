@@ -1,6 +1,9 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
+import { useNavigation, NavigationProp } from "@react-navigation/native";
+import { RootStackParamList } from "../src/types";
+import { getTasks, Task } from "../src/services/taskService";
 
 interface CategoryProps {
   id: number | string;
@@ -18,16 +21,73 @@ const CategoryOverview: React.FC<CategoryOverviewProps> = ({
   categories, 
   onCategoryPress 
 }) => {
+  // Aggiunto il navigation hook per navigare alla schermata Categories
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  
+  // Aggiungiamo uno stato per tenere traccia dei conteggi effettivi
+  const [categoriesWithActualCounts, setCategoriesWithActualCounts] = useState<CategoryProps[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  
   // Colori predefiniti per le categorie
   const defaultColors = ["#FF9500", "#5AC8FA", "#FF2D55", "#5856D6", "#007AFF"];
+  
+  // Funzione per gestire la pressione del pulsante "Visualizza tutte"
+  const handleViewAllPress = () => {
+    navigation.navigate("Categories");
+  };
+  
+  // Funzione per recuperare il conteggio effettivo dei task per ogni categoria
+  useEffect(() => {
+    const fetchTaskCounts = async () => {
+      if (!categories || categories.length === 0) {
+        setCategoriesWithActualCounts([]);
+        setIsLoading(false);
+        return;
+      }
+      
+      try {
+        setIsLoading(true);
+        
+        // Crea un array di promesse per chiamate parallele
+        const categoryPromises = categories.map(async (category) => {
+          try {
+            const tasksData = await getTasks(category.name);
+            
+            // Filtrare i task per quelli non completati (come in Category.tsx)
+            const incompleteTasks = tasksData.filter((task: Task) => 
+              task.status !== "Completato" && task.status !== "Completed"
+            );
+            
+            return {
+              ...category,
+              taskCount: incompleteTasks.length
+            };
+          } catch (error) {
+            console.error(`Errore durante il recupero dei task per ${category.name}:`, error);
+            return category; // Mantiene il conteggio originale in caso di errore
+          }
+        });
+        
+        // Attendi che tutte le promesse siano risolte
+        const updatedCategories = await Promise.all(categoryPromises);
+        setCategoriesWithActualCounts(updatedCategories);
+      } catch (error) {
+        console.error("Errore durante il recupero dei conteggi dei task:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchTaskCounts();
+  }, [categories]);
   
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Le tue categorie</Text>
       
       <View style={styles.categoriesContainer}>
-        {categories.length > 0 ? (
-          categories.map((category, index) => (
+        {categoriesWithActualCounts.length > 0 ? (
+          categoriesWithActualCounts.map((category, index) => (
             <TouchableOpacity
               key={category.id}
               style={[
@@ -50,12 +110,15 @@ const CategoryOverview: React.FC<CategoryOverviewProps> = ({
           ))
         ) : (
           <Text style={styles.emptyText}>
-            Nessuna categoria disponibile
+            {isLoading ? 'Caricamento categorie...' : 'Nessuna categoria disponibile'}
           </Text>
         )}
       </View>
       
-      <TouchableOpacity style={styles.viewAllButton}>
+      <TouchableOpacity 
+        style={styles.viewAllButton}
+        onPress={handleViewAllPress}
+      >
         <Text style={styles.viewAllText}>Visualizza tutte</Text>
         <MaterialIcons name="chevron-right" size={18} color="#007AFF" />
       </TouchableOpacity>
