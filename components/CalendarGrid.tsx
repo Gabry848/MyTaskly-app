@@ -190,6 +190,10 @@ const styles = StyleSheet.create({
   calendarGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
+    width: "100%",
+    // Rimuovo l'altezza fissa che causava problemi su dispositivi diversi
+    // Uso aspectRatio per mantenere la griglia proporzionata
+    aspectRatio: 2.3, // Un po' più larga che alta per adattarsi ai giorni
   },
 });
 

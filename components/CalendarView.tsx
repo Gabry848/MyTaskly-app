@@ -182,7 +182,6 @@ const styles = StyleSheet.create({
   },
   selectedDateHeader: {
     marginTop: 10,
-    marginBottom: 5,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center'
@@ -203,7 +202,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#ccc",
     marginTop: 10,
-    marginBottom: 15,
+
   },
   addButton: {
     backgroundColor: "#10e0e0",

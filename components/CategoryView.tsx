@@ -60,10 +60,7 @@ const CategoryView: React.FC<CategoryViewProps> = ({
 
   return (
     <ScrollView>
-      {/* AddCategoryButton mostrato solo nella vista categorie */}
-      <AddCategoryButton
-        onCategoryAdded={onCategoryAdded}
-      />
+      {/* RIMOSSO AddCategoryButton che era visualizzato all'inizio */}
       <View style={styles.headerContainer}>
         <Text style={styles.headerTitle}>
           <Text style={{ fontWeight: "bold" }}>Le mie categorie</Text>
