@@ -11,6 +11,7 @@ import Login from "./screens/Login";
 import Register from "./screens/Register";
 import Categories from "./screens/Categories";
 import Notes from "./screens/Notes";
+import Statistics from "./screens/Statistics"; 
 import { RootStackParamList } from "../types";
 import { Home as HomeIcon, BookType, FolderKanban } from "lucide-react-native";
 
@@ -35,7 +36,7 @@ function TabNavigator() {
       }}
     >
       <Tab.Screen
-        name="HomePage"
+        name="Home" // Corretto da "HomePage" a "Home"
         component={Home}
         options={{
           title: "Home",
@@ -71,7 +72,7 @@ const linking: LinkingOptions<RootStackParamList> = {
   prefixes: ["https://taskly.com", "taskly://"],
   config: {
     screens: {
-      HomeTabs: "home",
+      HomeTabs: "home", // Ora valido perché HomeTabs è in RootStackParamList
       Profile: {
         path: ":user(@[a-zA-Z0-9-_]+)",
         parse: {
@@ -86,9 +87,9 @@ const linking: LinkingOptions<RootStackParamList> = {
       TaskList: "tasks",
       Login: "login",
       Register: "register",
-      HomePage: "home-page",
       Categories: "categories",
       Notes: "notes",
+      Statistics: "statistics", // Aggiunto percorso per Statistics
     },
   },
 };
@@ -98,7 +99,7 @@ export default function RootStack() {
     <NavigationContainer linking={linking}>
       <Stack.Navigator id={undefined}>
         <Stack.Screen
-          name="HomeTabs"
+          name="HomeTabs" // Ora valido
           component={TabNavigator}
           options={{ title: "Taskly", headerShown: false }}
         />
@@ -131,6 +132,12 @@ export default function RootStack() {
           name="Register"
           component={Register}
           options={{ title: "Register" }}
+        />
+        {/* Schermata per le statistiche dettagliate */}
+        <Stack.Screen
+          name="Statistics"
+          component={Statistics}
+          options={{ title: "Statistiche Dettagliate" }}
         />
       </Stack.Navigator>
     </NavigationContainer>

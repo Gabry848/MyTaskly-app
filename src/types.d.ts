@@ -13,14 +13,16 @@ export interface TaskListRouteParams {
 }
 
 export type RootStackParamList = {
-  HomeTabs: undefined;
-  Profile: { user?: string };
-  Settings: undefined;
-  NotFound: undefined;
-  TaskList: { category_name: string};
+  HomeTabs: undefined; // Aggiunto per il TabNavigator
+  Home: undefined;
   Login: undefined;
   Register: undefined;
-  HomePage: undefined;
   Categories: undefined;
+  TaskList: { categoryId: number | string };
   Notes: undefined;
+  Profile: undefined;
+  Settings: undefined;
+  Updates: undefined;
+  Statistics: undefined; // Aggiunta nuova schermata
+  NotFound: undefined;
 };

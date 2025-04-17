@@ -22,6 +22,32 @@ import AddTask from "../../../components/AddTask";
 import { getLastTask, getCategories, getAllTasks } from "../../services/taskService";
 import { RootStackParamList } from "../../types";
 
+// Configurazione grafico
+const chartConfig = {
+  backgroundGradientFrom: "#ffffff",
+  backgroundGradientFromOpacity: 0.8,
+  backgroundGradientTo: "#ffffff",
+  backgroundGradientToOpacity: 1,
+  color: (opacity = 1) => `rgba(0, 123, 255, ${opacity})`,
+  strokeWidth: 2, // optional, default 3
+  barPercentage: 0.5,
+  useShadowColorFromDataset: false, // optional
+  propsForDots: {
+    r: "5",
+    strokeWidth: "2",
+    stroke: "#007bff",
+  },
+  propsForBackgroundLines: {
+    strokeDasharray: "", // solid lines
+    stroke: '#e3e3e3'
+  },
+  propsForLabels: {
+    fontSize: 11,
+    fontWeight: '500',
+    fill: '#333'
+  }
+};
+
 function Home() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const [windowWidth, setWindowWidth] = useState(Dimensions.get("window").width);
@@ -258,6 +284,11 @@ function Home() {
     fetchAllData();
   };
 
+  // Gestisce il click sul grafico
+  const handleChartPress = () => {
+    navigation.navigate("Statistics");
+  };
+
   return (
     <View style={styles.pageContainer}>
       <ScrollView style={styles.container}>
@@ -320,40 +351,31 @@ function Home() {
               onCategoryPress={handleCategoryPress} 
             />
             
-            {/* Grafico statistiche */}
-            <View style={styles.chartWrapper}>
-              <Text style={styles.chartTitle}>Statistiche Mensili</Text>
-              <View style={styles.chartContainer}>
-                <LineChart
-                  data={{
-                    labels: ["G", "F", "M", "A", "M", "G"],
-                    datasets: [
-                      {
-                        data: [20, 45, 28, 80, 99, 43],
-                      },
-                    ],
-                  }}
-                  width={windowWidth * 0.87}
-                  height={200}
-                  chartConfig={{
-                    backgroundColor: "#ffffff",
-                    backgroundGradientFrom: "#f7f7f7",
-                    backgroundGradientTo: "#e1e1e1",
-                    decimalPlaces: 2,
-                    color: (opacity = 1) => `rgba(0, 123, 255, ${opacity})`,
-                    labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                    style: {
-                      borderRadius: 16,
-                    },
-                    propsForDots: {
-                      r: "6",
-                      strokeWidth: "2",
-                      stroke: "#007bff",
-                    },
-                  }}
-                />
+            {/* Grafico statistiche - Reso cliccabile */}
+            <TouchableOpacity onPress={handleChartPress} activeOpacity={0.8}>
+              <View style={styles.chartWrapper}>
+                <Text style={styles.chartTitle}>Statistiche Mensili</Text>
+                <View style={styles.chartContainer}>
+                  <LineChart
+                    data={{
+                      labels: ["G", "F", "M", "A", "M", "G"], // Etichette più significative?
+                      datasets: [
+                        {
+                          data: [20, 45, 28, 80, 99, 43], // Dati demo, sostituire con dati reali
+                          color: (opacity = 1) => `rgba(0, 123, 255, ${opacity})`, // Blu primario
+                          strokeWidth: 3
+                        },
+                      ],
+                    }}
+                    width={windowWidth - 64} // Larghezza dinamica con padding
+                    height={220}
+                    chartConfig={chartConfig} // Usa la configurazione definita sopra
+                    bezier // Linee curve
+                    style={styles.chartStyle} // Stile per il contenitore del grafico
+                  />
+                </View>
               </View>
-            </View>
+            </TouchableOpacity>
             
             {/* Task completati di recente */}
             <CompletedTasksList 
@@ -379,7 +401,7 @@ function Home() {
                 style={{
                   height: animationHeight.interpolate({
                     inputRange: [0, 1],
-                    outputRange: [0, recentTasks.length > 0 ? Math.max(recentTasks.length * 120, 200) : 80],
+                    outputRange: [0, recentTasks.length > 0 ? Math.max(recentTasks.length * 130 + 20, 200) : 80],
                   }),
                   overflow: "hidden",
                 }}
@@ -461,43 +483,50 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   chartWrapper: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 16,
-    padding: 16,
     backgroundColor: "#ffffff",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 16, // Padding orizzontale ridotto per dare spazio al grafico
     marginHorizontal: 16,
-    marginBottom: 16,
+    marginBottom: 20, // Spazio sotto il grafico
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 4,
   },
   chartContainer: {
-    borderColor: "rgba(0,0,0,0.1)",
-    borderRadius: 10,
-    backgroundColor: "#ffffff",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
+    alignItems: 'center', // Centra il grafico all'interno del contenitore
   },
   chartTitle: {
     fontSize: 18,
     fontWeight: "600",
-    textAlign: "center",
-    marginBottom: 10,
+    textAlign: "left", // Allineato a sinistra
+    marginBottom: 15,
     color: "#333",
+    paddingLeft: 5, // Piccolo padding a sinistra
+  },
+  chartStyle: {
+    borderRadius: 10, // Bordi arrotondati per il grafico stesso
   },
   searchResultsContainer: {
     marginHorizontal: 16,
     marginBottom: 16,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
   searchResultsTitle: {
     fontSize: 16,
     fontWeight: "500",
     color: "#666",
-    marginBottom: 8,
-    padding: 4,
+    marginBottom: 10,
+    paddingLeft: 5,
   },
 });
 
