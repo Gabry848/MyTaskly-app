@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { View, StyleSheet, Text, Dimensions, ScrollView, TouchableOpacity, Animated, StatusBar } from "react-native";
 import { useNavigation, NavigationProp, useFocusEffect } from "@react-navigation/native";
 import { LineChart } from "react-native-chart-kit";
 import { ChevronDown, ChevronRight } from "lucide-react-native";
+import Fuse from 'fuse.js';
 
 // Componenti esistenti
 import GoToPage from "../../../components/GoToPage";
@@ -47,6 +48,22 @@ function Home() {
   const [showAddTaskModal, setShowAddTaskModal] = useState(false);
   const [allTasks, setAllTasks] = useState<any[]>([]);
 
+  // Stati per la ricerca con Fuse.js
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  
+  // Configurazione di Fuse.js con useMemo per migliorare le prestazioni
+  const fuse = useMemo(() => {
+    const options = {
+      keys: ['title', 'description', 'status', 'priority', 'category_name'],
+      includeScore: true,
+      threshold: 0.4, // Più basso = corrispondenza più precisa
+      minMatchCharLength: 2
+    };
+    
+    return new Fuse(allTasks, options);
+  }, [allTasks]);
+
   // Carica i dati quando la schermata viene visualizzata
   useFocusEffect(
     React.useCallback(() => {
@@ -76,6 +93,13 @@ function Home() {
       
       // Prepara i task completati
       prepareCompletedTasks(allTasksData);
+
+      // Resetta la ricerca quando aggiorniamo i dati
+      if (searchQuery) {
+        performSearch(searchQuery);
+      } else {
+        setIsSearching(false);
+      }
     } catch (error) {
       console.error("Errore durante il recupero dei dati:", error);
     }
@@ -189,10 +213,32 @@ function Home() {
     }
   };
 
+  // Gestisce la ricerca con Fuse.js
+  const performSearch = (query: string) => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
+    
+    setIsSearching(true);
+    const results = fuse.search(query);
+    
+    // Estraiamo gli item dai risultati della ricerca
+    const searchItems = results.map(result => result.item);
+    
+    // Ordiniamo i risultati in base alla scadenza
+    searchItems.sort((a, b) => {
+      return new Date(a.end_time).getTime() - new Date(b.end_time).getTime();
+    });
+    
+    setSearchResults(searchItems);
+  };
+
   // Gestisce la ricerca
   const handleSearch = (query: string) => {
     setSearchQuery(query);
-    // Qui puoi implementare la logica di ricerca, per ora settiamo solo lo stato
+    performSearch(query);
   };
 
   // Gestisce il click su una categoria
@@ -224,113 +270,152 @@ function Home() {
         {/* Barra di ricerca */}
         <SearchBar onSearch={handleSearch} placeholder="Cerca impegni..." />
         
-        {/* Riepilogo giornaliero/settimanale */}
-        <TaskSummary 
-          todayTasks={todayTasks} 
-          overdueTasks={overdueTasks} 
-          completedThisWeek={completedThisWeek} 
-        />
-        
-        {/* Panoramica delle categorie */}
-        <CategoryOverview 
-          categories={categories} 
-          onCategoryPress={handleCategoryPress} 
-        />
-        
-        {/* Grafico statistiche */}
-        <View style={styles.chartWrapper}>
-          <Text style={styles.chartTitle}>Statistiche Mensili</Text>
-          <View style={styles.chartContainer}>
-            <LineChart
-              data={{
-                labels: ["G", "F", "M", "A", "M", "G"],
-                datasets: [
-                  {
-                    data: [20, 45, 28, 80, 99, 43],
-                  },
-                ],
-              }}
-              width={windowWidth * 0.87}
-              height={200}
-              chartConfig={{
-                backgroundColor: "#ffffff",
-                backgroundGradientFrom: "#f7f7f7",
-                backgroundGradientTo: "#e1e1e1",
-                decimalPlaces: 2,
-                color: (opacity = 1) => `rgba(0, 123, 255, ${opacity})`,
-                labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                style: {
-                  borderRadius: 16,
-                },
-                propsForDots: {
-                  r: "6",
-                  strokeWidth: "2",
-                  stroke: "#007bff",
-                },
-              }}
-            />
-          </View>
-        </View>
-        
-        {/* Task completati di recente */}
-        <CompletedTasksList 
-          tasks={completedTasks} 
-          onTaskPress={handleCompletedTaskPress} 
-        />
-        
-        {/* Prossimi impegni */}
-        <View style={[styles.chartWrapper, { marginBottom: 20 }]}>
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-            <Text style={[styles.chartTitle, { textAlign: "left", marginBottom: 10 }]}>
-              Prossimi impegni
+        {/* Risultati della ricerca */}
+        {isSearching && (
+          <View style={styles.searchResultsContainer}>
+            <Text style={styles.searchResultsTitle}>
+              {searchResults.length > 0 
+                ? `Trovati ${searchResults.length} risultati` 
+                : "Nessun risultato trovato"}
             </Text>
-            <TouchableOpacity onPress={toggleTaskCard} style={{ padding: 5 }}>
-              {isTaskCardOpen ? (
-                <ChevronDown size={20} color="#007bff" />
-              ) : (
-                <ChevronRight size={20} color="#007bff" />
-              )}
-            </TouchableOpacity>
-          </View>
-          <Animated.View
-            style={{
-              height: animationHeight.interpolate({
-                inputRange: [0, 1],
-                outputRange: [0, recentTasks.length > 0 ? Math.max(recentTasks.length * 120, 200) : 80],
-              }),
-              overflow: "hidden",
-            }}
-          >
-            {isTaskCardOpen && (
+            
+            {searchResults.length > 0 && (
               <View>
-                {recentTasks.length > 0 ? (
-                  recentTasks.map((element, index) => (
-                    <Task
-                      key={index}
-                      task={{
-                        id: index,
-                        title: element.title,
-                        description: element.description,
-                        priority: element.priority,
-                        end_time: element.end_time,
-                        start_time: element.start_time || "",
-                        status: element.status || "pending",
-                        completed: false,
-                      }}
-                      onTaskComplete={() => console.log(`Task ${index} completed`)}
-                      onTaskDelete={() => console.log(`Task ${index} deleted`)}
-                      onTaskEdit={() => console.log(`Task ${index} edited`)}
-                    />
-                  ))
-                ) : (
-                  <Text style={{ padding: 5, fontSize: 16 }}>
-                    Nessun impegno trovato 😔
-                  </Text>
-                )}
+                {searchResults.map((task, index) => (
+                  <Task
+                    key={`search-${task.id || index}`}
+                    task={{
+                      id: task.id || index,
+                      title: task.title,
+                      description: task.description,
+                      priority: task.priority,
+                      end_time: task.end_time,
+                      start_time: task.start_time || "",
+                      status: task.status,
+                      completed: task.status === "Completato",
+                    }}
+                    onTaskComplete={() => fetchAllData()}
+                    onTaskDelete={() => fetchAllData()}
+                    onTaskEdit={() => fetchAllData()}
+                  />
+                ))}
               </View>
             )}
-          </Animated.View>
-        </View>
+          </View>
+        )}
+        
+        {/* Mostra il resto dell'interfaccia solo se non stiamo cercando */}
+        {!isSearching && (
+          <>
+            {/* Riepilogo giornaliero/settimanale */}
+            <TaskSummary 
+              todayTasks={todayTasks} 
+              overdueTasks={overdueTasks} 
+              completedThisWeek={completedThisWeek} 
+            />
+            
+            {/* Panoramica delle categorie */}
+            <CategoryOverview 
+              categories={categories} 
+              onCategoryPress={handleCategoryPress} 
+            />
+            
+            {/* Grafico statistiche */}
+            <View style={styles.chartWrapper}>
+              <Text style={styles.chartTitle}>Statistiche Mensili</Text>
+              <View style={styles.chartContainer}>
+                <LineChart
+                  data={{
+                    labels: ["G", "F", "M", "A", "M", "G"],
+                    datasets: [
+                      {
+                        data: [20, 45, 28, 80, 99, 43],
+                      },
+                    ],
+                  }}
+                  width={windowWidth * 0.87}
+                  height={200}
+                  chartConfig={{
+                    backgroundColor: "#ffffff",
+                    backgroundGradientFrom: "#f7f7f7",
+                    backgroundGradientTo: "#e1e1e1",
+                    decimalPlaces: 2,
+                    color: (opacity = 1) => `rgba(0, 123, 255, ${opacity})`,
+                    labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                    style: {
+                      borderRadius: 16,
+                    },
+                    propsForDots: {
+                      r: "6",
+                      strokeWidth: "2",
+                      stroke: "#007bff",
+                    },
+                  }}
+                />
+              </View>
+            </View>
+            
+            {/* Task completati di recente */}
+            <CompletedTasksList 
+              tasks={completedTasks} 
+              onTaskPress={handleCompletedTaskPress} 
+            />
+            
+            {/* Prossimi impegni */}
+            <View style={[styles.chartWrapper, { marginBottom: 20 }]}>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                <Text style={[styles.chartTitle, { textAlign: "left", marginBottom: 10 }]}>
+                  Prossimi impegni
+                </Text>
+                <TouchableOpacity onPress={toggleTaskCard} style={{ padding: 5 }}>
+                  {isTaskCardOpen ? (
+                    <ChevronDown size={20} color="#007bff" />
+                  ) : (
+                    <ChevronRight size={20} color="#007bff" />
+                  )}
+                </TouchableOpacity>
+              </View>
+              <Animated.View
+                style={{
+                  height: animationHeight.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, recentTasks.length > 0 ? Math.max(recentTasks.length * 120, 200) : 80],
+                  }),
+                  overflow: "hidden",
+                }}
+              >
+                {isTaskCardOpen && (
+                  <View>
+                    {recentTasks.length > 0 ? (
+                      recentTasks.map((element, index) => (
+                        <Task
+                          key={index}
+                          task={{
+                            id: index,
+                            title: element.title,
+                            description: element.description,
+                            priority: element.priority,
+                            end_time: element.end_time,
+                            start_time: element.start_time || "",
+                            status: element.status || "pending",
+                            completed: false,
+                          }}
+                          onTaskComplete={() => console.log(`Task ${index} completed`)}
+                          onTaskDelete={() => console.log(`Task ${index} deleted`)}
+                          onTaskEdit={() => console.log(`Task ${index} edited`)}
+                        />
+                      ))
+                    ) : (
+                      <Text style={{ padding: 5, fontSize: 16 }}>
+                        Nessun impegno trovato 😔
+                      </Text>
+                    )}
+                  </View>
+                )}
+              </Animated.View>
+            </View>
+          </>
+        )}
         
         {/* Spazio per il pulsante flottante */}
         <View style={{ height: 80 }} />
@@ -402,6 +487,17 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 10,
     color: "#333",
+  },
+  searchResultsContainer: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+  },
+  searchResultsTitle: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: "#666",
+    marginBottom: 8,
+    padding: 4,
   },
 });
 
