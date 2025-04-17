@@ -16,7 +16,7 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import { addCategory } from '../src/services/taskService';
-import { addCategoryToList } from './CategoryList'; // Importo la funzione globale
+import { emitCategoryAdded } from '../src/utils/eventEmitter';
 
 // Definiamo un'interfaccia chiara per i dati della categoria
 interface CategoryData {
@@ -88,25 +88,24 @@ const AddCategoryButton: React.FC<AddCategoryButtonProps> = ({ onCategoryAdded }
             category_id: savedCategory.category_id,
             status_code: savedCategory.status_code
           };
-                    
+          
+          // Emetti l'evento per notificare che è stata aggiunta una categoria
+          emitCategoryAdded(completeCategory);
+          
           // Chiamata alla funzione di callback originale
           onCategoryAdded(completeCategory);
-          
-          // AGGIUNGIAMO QUESTA CHIAMATA DIRETTA per maggior sicurezza
-          console.log('Chiamata diretta a addCategoryToList con:', completeCategory);
-          addCategoryToList(completeCategory);
         } else {
           // In caso di problemi, usiamo la versione locale
           console.log('Chiamata a onCategoryAdded con newCategory (server non ha risposto):', newCategory);
+          emitCategoryAdded(newCategory);
           onCategoryAdded(newCategory);
-          addCategoryToList(newCategory); 
         }
       } catch (error) {
         console.error('Errore nel salvare la categoria sul server:', error);
         // In caso di errore del server, aggiungiamo comunque la categoria localmente
         console.log('Chiamata a onCategoryAdded con newCategory (errore server):', newCategory);
+        emitCategoryAdded(newCategory);
         onCategoryAdded(newCategory);
-        addCategoryToList(newCategory); // Aggiungiamo anche qui
       }
       
       // Chiudi il form

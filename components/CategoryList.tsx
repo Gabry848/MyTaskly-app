@@ -2,6 +2,7 @@ import React, {
   forwardRef,
   useImperativeHandle,
   useState,
+  useEffect,
 } from "react";
 import { View, StyleSheet, SafeAreaView, Platform } from "react-native";
 import dayjs from "dayjs";
@@ -10,6 +11,7 @@ import { ViewModeType } from "./ViewSelector";
 import ViewSelector from "./ViewSelector";
 import CategoryView from "./CategoryView";
 import CalendarView from "./CalendarView";
+import globalEventEmitter, { EVENTS } from "../src/utils/eventEmitter";
 
 // Inizializza dayjs con la locale italiana
 dayjs.locale("it");
@@ -24,47 +26,53 @@ export interface CategoryType {
   status_code?: number;
 }
 
-// Creiamo una variabile globale per condividere i dati tra componenti
-let globalCategoriesRef = {
-  addCategory: (category: CategoryType) => {},
-  categories: [] as CategoryType[],
-};
-
 const CategoryList = forwardRef((props, ref) => {
   const [viewMode, setViewMode] = useState<ViewModeType>('categories');
+  const [refreshKey, setRefreshKey] = useState(0);
   
-  // Assegna la funzione di aggiornamento al riferimento globale
-  globalCategoriesRef.addCategory = (newCategory: CategoryType) => {
-    console.log("globalCategoriesRef.addCategory chiamata con:", newCategory);
-    
-    // Verifica che sia una categoria valida con nome
-    if (!newCategory || !newCategory.name) {
-      console.error("Categoria non valida:", newCategory);
-      return;
-    }
-    
-    // Assicurati che abbia un ID
-    const categoryWithId = {
-      ...newCategory,
-      id: newCategory.id || newCategory.category_id || Date.now()
+  // Forza l'aggiornamento del componente
+  const refreshComponent = () => {
+    setRefreshKey(prevKey => prevKey + 1);
+  };
+  
+  // Configura i listener per gli eventi globali
+  useEffect(() => {
+    // Aggiungi listener per gli eventi delle categorie
+    const categoryAddedListener = () => {
+      console.log("Evento CATEGORY_ADDED ricevuto, aggiornamento vista");
+      refreshComponent();
     };
     
-    // Aggiorna le categorie globali e forza un aggiornamento
-    if (!globalCategoriesRef.categories.some(
-      cat => cat.id === categoryWithId.id || cat.name === categoryWithId.name
-    )) {
-      globalCategoriesRef.categories.push(categoryWithId);
-      // Forza l'aggiornamento ricaricando le categorie
-      reloadCategories();
-    }
-  };
+    const categoryUpdatedListener = () => {
+      console.log("Evento CATEGORY_UPDATED ricevuto, aggiornamento vista");
+      refreshComponent();
+    };
+    
+    const categoryDeletedListener = () => {
+      console.log("Evento CATEGORY_DELETED ricevuto, aggiornamento vista");
+      refreshComponent();
+    };
 
-  // Funzione per ricaricare le categorie
+    // Aggiungi i listener all'EventEmitter
+    globalEventEmitter.addListener(EVENTS.CATEGORY_ADDED, categoryAddedListener);
+    globalEventEmitter.addListener(EVENTS.CATEGORY_UPDATED, categoryUpdatedListener);
+    globalEventEmitter.addListener(EVENTS.CATEGORY_DELETED, categoryDeletedListener);
+    
+    // Rimuovi i listener quando il componente viene smontato
+    return () => {
+      globalEventEmitter.removeListener(EVENTS.CATEGORY_ADDED, categoryAddedListener);
+      globalEventEmitter.removeListener(EVENTS.CATEGORY_UPDATED, categoryUpdatedListener);
+      globalEventEmitter.removeListener(EVENTS.CATEGORY_DELETED, categoryDeletedListener);
+    };
+  }, []);
+
+  // Funzione per ricaricare le categorie (esposta tramite ref)
   const reloadCategories = () => {
-    // Usa useImperativeHandle per esporre questa funzione
     console.log("Ricarico le categorie");
+    refreshComponent();
   };
 
+  // Esponi la funzione reloadCategories tramite ref
   useImperativeHandle(ref, () => ({
     reloadCategories
   }));
@@ -72,19 +80,8 @@ const CategoryList = forwardRef((props, ref) => {
   // Il gestore dell'aggiunta della categoria
   const handleCategoryAdded = (newCategory: CategoryType) => {
     console.log("handleCategoryAdded chiamato con:", newCategory);
-    globalCategoriesRef.addCategory(newCategory);
-  };
-
-  // Gestisce l'eliminazione di una categoria
-  const handleCategoryDeleted = () => {
-    console.log("Categoria eliminata, ricarico la lista");
-    reloadCategories();
-  };
-
-  // Gestisce la modifica di una categoria
-  const handleCategoryEdited = () => {
-    console.log("Categoria modificata, ricarico la lista");
-    reloadCategories();
+    // Non abbiamo più bisogno di gestire manualmente l'aggiunta,
+    // poiché ora utilizziamo l'EventEmitter
   };
 
   // Gestisce il cambio di modalità di visualizzazione
@@ -93,14 +90,12 @@ const CategoryList = forwardRef((props, ref) => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} key={refreshKey}>
       {/* Visualizzazione condizionale in base alla modalità selezionata */}
       <View style={styles.contentContainer}>
         {viewMode === 'categories' ? (
           <CategoryView 
             onCategoryAdded={handleCategoryAdded}
-            onCategoryDeleted={handleCategoryDeleted}
-            onCategoryEdited={handleCategoryEdited}
             reloadCategories={reloadCategories}
           />
         ) : (
@@ -152,9 +147,3 @@ const styles = StyleSheet.create({
 });
 
 export default CategoryList;
-
-// Esponiamo la funzione globale di aggiunta categoria
-export const addCategoryToList = (category: CategoryType) => {
-  console.log("addCategoryToList chiamata direttamente con:", category);
-  globalCategoriesRef.addCategory(category);
-};

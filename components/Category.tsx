@@ -5,6 +5,7 @@ import CategoryCard from './CategoryCard';
 import CategoryMenu from './CategoryMenu';
 import EditCategoryModal from './EditCategoryModal';
 import AddTask from "./AddTask";
+import { emitCategoryDeleted, emitCategoryUpdated, emitTaskAdded } from '../src/utils/eventEmitter';
 
 interface CategoryProps {
   title: string;
@@ -89,6 +90,10 @@ const Category: React.FC<CategoryProps> = ({
                 await deleteCategory(title);
                 
                 closeMenu();
+                
+                // Emetti un evento per notificare l'eliminazione della categoria
+                emitCategoryDeleted(title);
+                
                 if (onDelete) {
                   onDelete();
                 }
@@ -125,9 +130,16 @@ const Category: React.FC<CategoryProps> = ({
 
     setIsEditing(true);
     try {
-      await updateCategory(title, {
+      const updatedCategory = await updateCategory(title, {
         name: editName.trim(),
         description: editDescription.trim()
+      });
+      
+      // Emetti un evento per notificare la modifica della categoria
+      emitCategoryUpdated({
+        name: editName.trim(),
+        description: editDescription.trim(),
+        oldName: title
       });
       
       setShowEditModal(false);
@@ -169,7 +181,10 @@ const Category: React.FC<CategoryProps> = ({
       user: ""  // Campo richiesto dal server
     };
     console.log("Nuovo task:", d);
-    addTask(d).then(() => {
+    addTask(d).then((addedTask) => {
+      // Emetti un evento per notificare l'aggiunta di un nuovo task
+      emitTaskAdded(addedTask || d);
+      
       fetchTaskCount();
       setShowAddTask(false);  
     }).catch(error => {
