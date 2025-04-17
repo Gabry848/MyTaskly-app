@@ -7,6 +7,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import CalendarGrid from './CalendarGrid';
 import TaskCard from './TaskCard';
 import AddTask from './AddTask';
+import AddTaskButton from './AddTaskButton';
 
 const CalendarView: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<string>(dayjs().format('YYYY-MM-DD'));
@@ -82,35 +83,45 @@ const CalendarView: React.FC = () => {
   };
 
   // Gestisce il salvataggio di un nuovo task
-  const handleSaveTask = async (title: string, description: string, dueDate: string, priority: number) => {
+  const handleSaveTask = async (
+    title: string,
+    description: string,
+    dueDate: string,
+    priority: number,
+    categoryNameParam?: string
+  ) => {
     const priorityString = priority === 1 ? "Bassa" : priority === 2 ? "Media" : "Alta";
-    
+    // Costruisci nuovo task con data di inizio dal calendario
+    const category = categoryNameParam || "Calendario";
+    const newTask = {
+      id: Date.now(),
+      title: title.trim(),
+      description: description || "",
+      start_time: dayjs(selectedDate).toISOString(),
+      end_time: new Date(dueDate).toISOString(),
+      priority: priorityString,
+      status: "In sospeso",
+      category_name: category,
+    };
     try {
-      // Crea l'oggetto task usando la data selezionata dal calendario come data di inizio
-      const newTask: Task = {
-        id: Date.now(),
-        title,
-        description: description || "",
-        end_time: new Date(dueDate).toISOString(),
-        priority: priorityString,
-        completed: false,
-        status: "In sospeso",
-        start_time: dayjs(selectedDate).toISOString()  // Usa la data selezionata come data di inizio
-      };
-      
-      // Salva il task
-      await addTask({
-        ...newTask,
-        category_name: "Calendario", // Categoria default
-      });
-      
-      // Aggiorna la lista dei task
-      fetchTasks();
-      
-      // Chiudi il form
+      const response = await addTask({ ...newTask, category_name: category });
+      if (response && response.status_code && response.task_id && !response.title) {
+        const finalTask = { ...newTask, id: response.task_id, task_id: response.task_id, status_code: response.status_code };
+        addTaskToList(finalTask, category);
+      } else if (response && response.title) {
+        addTaskToList(response, category);
+      } else {
+        addTaskToList(newTask, category);
+      }
       setShowAddTask(false);
     } catch (error) {
-      console.error("Errore durante il salvataggio del task:", error);
+      console.error("Errore aggiunta task nel calendario:", error);
+      addTaskToList(newTask, category);
+      Alert.alert(
+        "Attenzione",
+        "Task aggiunto localmente ma errore nel salvataggio sul server."
+      );
+      setShowAddTask(false);
     }
   };
 
@@ -130,12 +141,7 @@ const CalendarView: React.FC = () => {
         <Text style={styles.selectedDateTitle}>
           Impegni del {dayjs(selectedDate).format('DD MMMM YYYY')}
         </Text>
-        <TouchableOpacity 
-          style={styles.addButton}
-          onPress={handleAddTask}
-        >
-          <Ionicons name="add" size={24} color="#fff" />
-        </TouchableOpacity>
+        <AddTaskButton onPress={handleAddTask} />
       </View>
       
       <ScrollView style={styles.taskList}>
@@ -153,23 +159,19 @@ const CalendarView: React.FC = () => {
             <Text style={styles.noTasksText}>
               Nessun impegno per questa data
             </Text>
-            <TouchableOpacity 
-              style={styles.addTaskButton}
-              onPress={handleAddTask}
-            >
-              <Text style={styles.addTaskButtonText}>Aggiungi un impegno</Text>
-            </TouchableOpacity>
+            <AddTaskButton onPress={handleAddTask} />
           </View>
         )}
       </ScrollView>
 
-      {/* Componente AddTask con la data preimpostata */}
+      {/* Componente AddTask con selezione categorie abilitata */}
       <AddTask 
         visible={showAddTask} 
         onClose={handleCloseAddTask}
         onSave={handleSaveTask}
+        allowCategorySelection={true}
         categoryName="Calendario"
-        initialDate={selectedDate} // Passiamo la data selezionata
+        initialDate={selectedDate}
       />
     </View>
   );
