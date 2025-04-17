@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { View, StyleSheet, Text, Dimensions, ScrollView, TouchableOpacity, Animated, StatusBar } from "react-native";
+import { View, StyleSheet, Text, Dimensions, ScrollView, TouchableOpacity, Animated, StatusBar, Alert } from "react-native";
 import { useNavigation, NavigationProp, useFocusEffect } from "@react-navigation/native";
 import { LineChart } from "react-native-chart-kit";
 import { ChevronDown, ChevronRight } from "lucide-react-native";
 import Fuse from 'fuse.js';
 
 // Componenti esistenti
-import GoToPage from "../../../components/GoToPage";
 import Badge from "../../../components/Badge";
 import Task from "../../../components/Task";
 
@@ -19,8 +18,9 @@ import CompletedTasksList from "../../../components/CompletedTasksList";
 import AddTask from "../../../components/AddTask";
 
 // Servizi
-import { getLastTask, getCategories, getAllTasks } from "../../services/taskService";
+import { getLastTask, getCategories, getAllTasks, addTask } from "../../services/taskService";
 import { RootStackParamList } from "../../types";
+import { addTaskToList } from "./TaskList";
 
 // Configurazione grafico
 const chartConfig = {
@@ -279,9 +279,46 @@ function Home() {
   };
 
   // Gestisce il salvataggio di un nuovo task
-  const handleSaveTask = (title: string, description: string, dueDate: string, priority: number) => {
-    // Dopo aver salvato il task, aggiorniamo i dati
-    fetchAllData();
+  const handleSaveTask = async (
+    title: string,
+    description: string,
+    dueDate: string,
+    priority: number,
+    categoryNameParam?: string
+  ) => {
+    const priorityString = priority === 1 ? "Bassa" : priority === 2 ? "Media" : "Alta";
+    // Costruisci nuovo task
+    const newTask = {
+      id: Date.now(),
+      title: title.trim(),
+      description: description || "",
+      start_time: new Date().toISOString(),
+      end_time: new Date(dueDate).toISOString(),
+      priority: priorityString,
+      status: "In sospeso",
+      category_name: categoryNameParam,
+    };
+    try {
+      const response = await addTask({ ...newTask, category_name: categoryNameParam });
+      // Se server restituisce solo status_code e task_id
+      if (response && response.status_code && response.task_id && !response.title) {
+        const finalTask = { ...newTask, id: response.task_id, task_id: response.task_id, status_code: response.status_code };
+        addTaskToList(finalTask, categoryNameParam || "");
+      } else if (response && response.title) {
+        addTaskToList(response, categoryNameParam || "");
+      } else {
+        addTaskToList(newTask, categoryNameParam || "");
+      }
+      setShowAddTaskModal(false);
+    } catch (error) {
+      console.error("Errore aggiunta task:", error);
+      addTaskToList(newTask, categoryNameParam || "");
+      Alert.alert(
+        "Attenzione",
+        "Task aggiunto localmente ma errore nel salvataggio sul server."
+      );
+      setShowAddTaskModal(false);
+    }
   };
 
   // Gestisce il click sul grafico
@@ -451,6 +488,7 @@ function Home() {
         visible={showAddTaskModal} 
         onClose={() => setShowAddTaskModal(false)}
         onSave={handleSaveTask}
+        allowCategorySelection={true}
       />
     </View>
   );

@@ -9,7 +9,8 @@ import {
   Alert,
   ScrollView,
 } from "react-native";
-import { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
+import { Dropdown } from 'react-native-element-dropdown';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { Ionicons } from "@expo/vector-icons";
 import Animated, {
   useSharedValue,
@@ -17,6 +18,7 @@ import Animated, {
   withSpring,
 } from "react-native-reanimated";
 import { addTaskToList } from "../src/navigation/screens/TaskList";
+import { getCategories } from '../src/services/taskService';
 import dayjs from "dayjs";
 
 type AddTaskProps = {
@@ -26,10 +28,12 @@ type AddTaskProps = {
     title: string,
     description: string,
     dueDate: string,
-    priority: number
+    priority: number,
+    categoryName?: string
   ) => void;
   categoryName?: string;
   initialDate?: string; // Nuova prop per la data iniziale
+  allowCategorySelection?: boolean; // Abilita campo categoria
 };
 
 const AddTask: React.FC<AddTaskProps> = ({ 
@@ -37,8 +41,12 @@ const AddTask: React.FC<AddTaskProps> = ({
   onClose, 
   onSave, 
   categoryName,
-  initialDate 
+  initialDate,
+  allowCategorySelection = false,
 }) => {
+  const [categoriesOptions, setCategoriesOptions] = useState<{label:string,value:string}[]>([]);
+  const [localCategory, setLocalCategory] = useState<string>(categoryName || "");
+  const [categoryError, setCategoryError] = useState<string>("");
   const animationValue = useSharedValue(0);
   const [priority, setPriority] = useState<number>(1);
   const [title, setTitle] = useState("");
@@ -48,6 +56,8 @@ const AddTask: React.FC<AddTaskProps> = ({
   const [titleError, setTitleError] = useState<string>("");
   const [dateError, setDateError] = useState<string>("");
   const [date, setDate] = useState(new Date());
+  const [isPickerVisible, setPickerVisible] = useState(false);
+  const [pickerMode, setPickerMode] = useState<'date'|'time'>('date');
 
   // Gestisce l'animazione all'apertura del modale
   useEffect(() => {
@@ -62,6 +72,18 @@ const AddTask: React.FC<AddTaskProps> = ({
       animationValue.value = withSpring(0, { damping: 12 });
     }
   }, [visible, initialDate]);
+
+  // Carica le categorie se necessario
+  useEffect(() => {
+    if (allowCategorySelection && visible) {
+      getCategories()
+        .then(data => {
+          // assume data è array di oggetti con proprietà name
+          setCategoriesOptions(data.map(cat => ({ label: cat.name, value: cat.name })));
+        })
+        .catch(err => console.error('Errore caricamento categorie:', err));
+    }
+  }, [allowCategorySelection, visible]);
 
   // Inizializza la data del task con quella fornita
   const initializeWithDate = (dateStr: string) => {
@@ -86,6 +108,8 @@ const AddTask: React.FC<AddTaskProps> = ({
     setPriority(1);
     setTitleError("");
     setDateError("");
+    setLocalCategory(categoryName || "");
+    setCategoryError("");
   };
 
   const handleSave = () => {
@@ -93,6 +117,11 @@ const AddTask: React.FC<AddTaskProps> = ({
 
     if (!title.trim()) {
       setTitleError("Il titolo è obbligatorio");
+      hasError = true;
+    }
+
+    if (allowCategorySelection && !localCategory.trim()) {
+      setCategoryError("La categoria è obbligatoria");
       hasError = true;
     }
 
@@ -115,14 +144,14 @@ const AddTask: React.FC<AddTaskProps> = ({
       start_time: new Date().toISOString(),
       priority: priorityString,
       status: "In sospeso", // Aggiornato per coerenza con altri componenti
-      category_name: categoryName || "", // Aggiungere il nome della categoria
+      category_name: allowCategorySelection ? localCategory : (categoryName || ""), // Aggiungere il nome della categoria
       user: "", // Campo richiesto dal server
       completed: false
     };
 
     try {
       if (onSave) {
-        onSave(title, description, dueDate, priority);
+        onSave(title, description, dueDate, priority, allowCategorySelection ? localCategory : categoryName);
       }
 
       if (categoryName && (!onSave || (onSave && categoryName))) {
@@ -169,22 +198,9 @@ const AddTask: React.FC<AddTaskProps> = ({
     setDateError("");
   };
 
-  const showMode = (currentMode: 'date' | 'time', changeHandler: (event: any, date?: Date) => void) => {
-    DateTimePickerAndroid.open({
-      value: selectedDateTime || date,
-      onChange: changeHandler,
-      mode: currentMode,
-      is24Hour: true,
-    });
-  };
-
-  const showDatepicker = () => {
-    showMode('date', onChange);
-  };
-
-  const showTimepicker = () => {
-    showMode('time', onTimeChange);
-  };
+  const hidePicker = () => setPickerVisible(false);
+  const showDatepicker = () => { setPickerMode('date'); setPickerVisible(true); };
+  const showTimepicker = () => { setPickerMode('time'); setPickerVisible(true); };
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: animationValue.value }],
@@ -203,6 +219,26 @@ const AddTask: React.FC<AddTaskProps> = ({
           </View>
 
           <ScrollView style={styles.formContent}>
+            {allowCategorySelection && (
+              <>
+                <Text style={styles.inputLabel}>Categoria *</Text>
+                <Dropdown
+                  style={[styles.dropdown, categoryError ? styles.inputError : null]}
+                  data={categoriesOptions}
+                  labelField="label"
+                  valueField="value"
+                  placeholder="Seleziona categoria"
+                  value={localCategory}
+                  onChange={item => {
+                    setLocalCategory(item.value);
+                    if (item.value) setCategoryError("");
+                  }}
+                  selectedTextStyle={styles.dropdownText}
+                  placeholderStyle={styles.dropdownPlaceholder}
+                />
+                {categoryError ? <Text style={styles.errorText}>{categoryError}</Text> : null}
+              </>
+            )}
             <Text style={styles.inputLabel}>Titolo *</Text>
             <TextInput
               style={[styles.input, titleError ? styles.inputError : null]}
@@ -303,6 +339,18 @@ const AddTask: React.FC<AddTaskProps> = ({
               <Text style={styles.saveButtonText}>Salva</Text>
             </TouchableOpacity>
           </View>
+          <DateTimePickerModal
+            isVisible={isPickerVisible}
+            mode={pickerMode}
+            date={selectedDateTime || date}
+            onConfirm={(picked) => {
+              if (pickerMode === 'date') onChange(null, picked);
+              else onTimeChange(null, picked);
+              hidePicker();
+            }}
+            onCancel={hidePicker}
+            is24Hour={true}
+          />
         </Animated.View>
       </View>
     </Modal>
@@ -458,6 +506,22 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  dropdown: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+    backgroundColor: '#f9f9f9',
+  },
+  dropdownText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  dropdownPlaceholder: {
+    fontSize: 16,
+    color: '#999',
   },
 });
 
