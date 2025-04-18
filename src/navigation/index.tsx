@@ -12,8 +12,9 @@ import Register from "./screens/Register";
 import Categories from "./screens/Categories";
 import Notes from "./screens/Notes";
 import Statistics from "./screens/Statistics"; 
+// import BotChat from "./screens/BotChat"; // rimosso BotChat
 import { RootStackParamList } from "../types";
-import { Home as HomeIcon, BookType, FolderKanban } from "lucide-react-native";
+import { Home as HomeIcon, BookType, FolderKanban, MessageSquare } from "lucide-react-native";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<RootStackParamList>();
@@ -64,6 +65,16 @@ function TabNavigator() {
           ),
         }}
       />
+      {/* <Tab.Screen
+        name="BotChat"
+        component={BotChat}
+        options={{
+          title: "Assistente",
+          tabBarIcon: ({ color, size }) => (
+            <MessageSquare size={size} color={color} />
+          ),
+        }}
+      /> */}
     </Tab.Navigator>
   );
 }
@@ -90,6 +101,7 @@ const linking: LinkingOptions<RootStackParamList> = {
       Categories: "categories",
       Notes: "notes",
       Statistics: "statistics", // Aggiunto percorso per Statistics
+      // BotChat: "botchat", // Aggiungo percorso per BotChat
     },
   },
 };
@@ -139,6 +151,12 @@ export default function RootStack() {
           component={Statistics}
           options={{ title: "Statistiche Dettagliate" }}
         />
+        {/* Schermata per la chat con il bot */}
+        {/* <Stack.Screen
+          name="BotChat"
+          component={BotChat}
+          options={{ title: "Assistente Virtuale" }}
+        /> */}
       </Stack.Navigator>
     </NavigationContainer>
   );

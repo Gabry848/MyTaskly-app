@@ -24,5 +24,6 @@ export type RootStackParamList = {
   Settings: undefined;
   Updates: undefined;
   Statistics: undefined; // Aggiunta nuova schermata
+  // BotChat: undefined; // rimosso BotChat
   NotFound: undefined;
 };
