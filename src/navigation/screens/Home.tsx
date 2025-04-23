@@ -14,11 +14,11 @@ import QuickAddButton from "../../../components/QuickAddButton";
 import TaskSummary from "../../../components/TaskSummary";
 import CategoryOverview from "../../../components/CategoryOverview";
 import SearchBar from "../../../components/SearchBar";
-import CompletedTasksList from "../../../components/CompletedTasksList";
+// Rimuovo l'import di CompletedTasksList
 import AddTask from "../../../components/AddTask";
 
 // Servizi
-import { getLastTask, getCategories, getAllTasks, addTask } from "../../services/taskService";
+import { getLastTask, getCategories, getAllTasks, addTask, completeTask, disCompleteTask } from "../../services/taskService";
 import { RootStackParamList } from "../../types";
 import { addTaskToList } from "./TaskList";
 
@@ -203,9 +203,8 @@ function Home() {
         title: task.title,
         completedDate: task.end_time
       }))
-      .sort((a, b) => new Date(b.completedDate).getTime() - new Date(a.completedDate).getTime())
-      .slice(0, 3); // Limitiamo a 3 task completati
-    
+      .sort((a, b) => new Date(b.completedDate).getTime() - new Date(a.completedDate).getTime());
+    // Rimuovo la limitazione a 3 task completati per mostrare tutti i task completati
     setCompletedTasks(completed);
   };
 
@@ -272,10 +271,31 @@ function Home() {
     navigation.navigate("Categories");
   };
 
+  // Gestisce il ripristino di un task completato
+  const handleTaskUncomplete = async (taskId: number | string) => {
+    try {
+      await disCompleteTask(taskId);
+      console.log(`Task ${taskId} reopened`);
+      
+      // Aggiorna lo stato localmente e ricarica i dati
+      fetchAllData();
+    } catch (error) {
+      console.error("Errore durante la riapertura del task:", error);
+      Alert.alert("Errore", "Impossibile riaprire il task. Riprova.");
+    }
+  };
+
   // Gestisce il click su un task completato
   const handleCompletedTaskPress = (taskId: number | string) => {
-    // Qui puoi implementare la logica per visualizzare i dettagli del task
-    console.log(`Visualizzazione dettagli task completato: ${taskId}`);
+    // Apre una dialog per chiedere se si vuole riaprire il task
+    Alert.alert(
+      "Riapri task",
+      "Vuoi riaprire questo task?",
+      [
+        { text: "Annulla", style: "cancel" },
+        { text: "Riapri", onPress: () => handleTaskUncomplete(taskId) }
+      ]
+    );
   };
 
   // Gestisce il salvataggio di un nuovo task
@@ -325,6 +345,7 @@ function Home() {
   const handleChartPress = () => {
     navigation.navigate("Statistics");
   };
+  
 
   return (
     <View style={styles.pageContainer}>
@@ -364,8 +385,7 @@ function Home() {
                     }}
                     onTaskComplete={() => fetchAllData()}
                     onTaskDelete={() => fetchAllData()}
-                    onTaskEdit={() => fetchAllData()}
-                  />
+                    onTaskEdit={() => fetchAllData()} onTaskUncomplete={undefined}                  />
                 ))}
               </View>
             )}
@@ -414,12 +434,6 @@ function Home() {
               </View>
             </TouchableOpacity>
             
-            {/* Task completati di recente */}
-            <CompletedTasksList 
-              tasks={completedTasks} 
-              onTaskPress={handleCompletedTaskPress} 
-            />
-            
             {/* Prossimi impegni */}
             <View style={[styles.chartWrapper, { marginBottom: 20 }]}>
               <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
@@ -461,8 +475,7 @@ function Home() {
                           }}
                           onTaskComplete={() => console.log(`Task ${index} completed`)}
                           onTaskDelete={() => console.log(`Task ${index} deleted`)}
-                          onTaskEdit={() => console.log(`Task ${index} edited`)}
-                        />
+                          onTaskEdit={() => console.log(`Task ${index} edited`)} onTaskUncomplete={undefined}                        />
                       ))
                     ) : (
                       <Text style={{ padding: 5, fontSize: 16 }}>

@@ -13,7 +13,8 @@ import {
 } from "react-native";
 import { Filter } from "lucide-react-native";
 import Task from "../../../components/Task";
-import { getTasks, addTask, deleteTask, updateTask } from "../../services/taskService";
+import CompletedTasksList from "../../../components/CompletedTasksList";
+import { getTasks, addTask, deleteTask, updateTask, completeTask, disCompleteTask } from "../../services/taskService";
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../types';
 import AddTask from "../../../components/AddTask";
@@ -195,12 +196,21 @@ export function TaskList({ route }: Props) {
     return filtered;
   }
 
-  // Funzione per applicare i filtri e ordinare
+  // Separiamo i task in completati e non completati
+  const completedTasks = useMemo(() => {
+    return tasks.filter(task => task.status === "Completato");
+  }, [tasks]);
+  
+  const incompleteTasks = useMemo(() => {
+    return tasks.filter(task => task.status !== "Completato");
+  }, [tasks]);
+
+  // Funzione per applicare i filtri e ordinare solo sui task non completati
   const listaFiltrata = useMemo(() => {
     console.log(`[DEBUG] listaFiltrata - Ricreazione con filtroImportanza: "${filtroImportanza}", filtroScadenza: "${filtroScadenza}"`);
     
     // Prima filtra per importanza
-    let filteredTasks = tasks.filter((task) => {
+    let filteredTasks = incompleteTasks.filter((task) => {
       const matchesImportanza =
         filtroImportanza === "Tutte" ||
         (filtroImportanza === "Alta" && task.priority === "Alta") ||
@@ -224,7 +234,16 @@ export function TaskList({ route }: Props) {
         return new Date(a.end_time).getTime() - new Date(b.end_time).getTime();
       }
     });
-  }, [tasks, filtroImportanza, filtroScadenza, ordineScadenza]);
+  }, [incompleteTasks, filtroImportanza, filtroScadenza, ordineScadenza]);
+
+  // Prepariamo i task completati per il componente CompletedTasksList
+  const formattedCompletedTasks = useMemo(() => {
+    return completedTasks.map(task => ({
+      id: task.id || 0,
+      title: task.title,
+      completedDate: task.end_time
+    }));
+  }, [completedTasks]);
 
   const handleAddTask = async (
     title: string,
@@ -409,6 +428,61 @@ export function TaskList({ route }: Props) {
     );
   };
 
+  // Gestisce il toggle del completamento dei task
+  const handleTaskComplete = async (taskId: number | string) => {
+    try {
+      await completeTask(taskId);
+      console.log(`Task ${taskId} marked as completed`);
+      
+      // Aggiorna lo stato localmente
+      setTasks(prevTasks => {
+        return prevTasks.map(task => {
+          if (task.id === taskId) {
+            return { ...task, status: "Completato", completed: true };
+          }
+          return task;
+        });
+      });
+    } catch (error) {
+      console.error("Errore durante il completamento del task:", error);
+      Alert.alert("Errore", "Impossibile completare il task. Riprova.");
+    }
+  };
+
+  // Gestisce il ripristino di un task completato
+  const handleTaskUncomplete = async (taskId: number | string) => {
+    try {
+      await disCompleteTask(taskId);
+      console.log(`Task ${taskId} reopened`);
+      
+      // Aggiorna lo stato localmente
+      setTasks(prevTasks => {
+        return prevTasks.map(task => {
+          if (task.id === taskId) {
+            return { ...task, status: "In sospeso", completed: false };
+          }
+          return task;
+        });
+      });
+    } catch (error) {
+      console.error("Errore durante la riapertura del task:", error);
+      Alert.alert("Errore", "Impossibile riaprire il task. Riprova.");
+    }
+  };
+
+  // Gestisce il click su un task completato
+  const handleCompletedTaskPress = (taskId: number | string) => {
+    // Apre una dialog per chiedere se si vuole riaprire il task
+    Alert.alert(
+      "Riapri task",
+      "Vuoi riaprire questo task?",
+      [
+        { text: "Annulla", style: "cancel" },
+        { text: "Riapri", onPress: () => handleTaskUncomplete(taskId) }
+      ]
+    );
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.headerContainer}>
@@ -424,7 +498,15 @@ export function TaskList({ route }: Props) {
       {isLoading ? (
         <ActivityIndicator size="large" color="#10e0e0" />
       ) : (
-        <>
+        <ScrollView style={styles.scrollContainer}>
+          {/* Task completati in cima */}
+          {formattedCompletedTasks.length > 0 && (
+            <CompletedTasksList 
+              tasks={formattedCompletedTasks} 
+              onTaskPress={handleCompletedTaskPress} 
+            />
+          )}
+
           {/* Modal dei filtri */}
           <Modal
             animationType="slide"
@@ -568,37 +650,42 @@ export function TaskList({ route }: Props) {
             </View>
           )}
 
-          <FlatList
-            data={listaFiltrata}
-            keyExtractor={(item, index) => (item.id ? item.id.toString() : index.toString())}
-            renderItem={({ item }) => (
+          {/* Lista task non completati */}
+          {listaFiltrata.length > 0 ? (
+            listaFiltrata.map((item, index) => (
               <Task
+                key={`task-${item.id || index}`}
                 task={{
-                  id: typeof item.task_id === "string" ? parseInt(item.task_id, 10) : item.task_id || item.task_id,
+                  id: item.id || item.task_id || index,
                   title: item.title,
                   description: item.description,
                   priority: item.priority,
                   end_time: item.end_time,
                   completed: item.completed || false,
-                  start_time: item.start_time || new Date().toISOString(), // Default to current time if missing
-                  status: item.status || "Pending" // Default to "Pending" if missing
+                  start_time: item.start_time || new Date().toISOString(),
+                  status: item.status || "In sospeso"
                 }}
-                onTaskComplete={(taskId) => {
-                  console.log(`Task ${taskId} completed`);
-                  // Add logic to handle task completion
-                }}
+                onTaskComplete={handleTaskComplete}
                 onTaskDelete={handleTaskDelete}
                 onTaskEdit={handleTaskEdit}
+                onTaskUncomplete={handleTaskUncomplete}
               />
-            )}
-            ListEmptyComponent={
-              <View style={styles.emptyListContainer}>
-                <Text style={styles.emptyListText}>Nessuna attività corrisponde ai filtri selezionati</Text>
-              </View>
-            }
-          />
-        </>
+            ))
+          ) : (
+            <View style={styles.emptyListContainer}>
+              <Text style={styles.emptyListText}>
+                {tasks.length > 0 
+                  ? 'Nessun task corrisponde ai filtri selezionati' 
+                  : 'Non ci sono task in questa categoria'}
+              </Text>
+            </View>
+          )}
+
+          {/* Spazio per il pulsante flottante */}
+          <View style={{ height: 80 }} />
+        </ScrollView>
       )}
+      
       <TouchableOpacity style={styles.addButton} onPress={toggleForm}>
         <Image source={require('../../../src/assets/plus.png')} style={styles.addButtonIcon} />
       </TouchableOpacity>
@@ -861,6 +948,10 @@ const styles = StyleSheet.create({
   addButtonIcon: {
     width: 28,
     height: 28,
+  },
+  scrollContainer: {
+    flex: 1,
+    width: '100%',
   },
 });
 

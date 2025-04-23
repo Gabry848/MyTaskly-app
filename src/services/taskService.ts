@@ -112,16 +112,21 @@ export async function updateTask(
     if (!token) {
       return null;
     }
-
+    const status = updatedTask.status;
+    console.log(status)
     // Assicura che tutti i parametri richiesti siano inclusi
+    // e che i valori nulli/undefined siano gestiti
     const taskData = {
       title: updatedTask.title,
-      description: updatedTask.description || "",
-      start_time: updatedTask.start_time,
-      end_time: updatedTask.end_time,
-      priority: updatedTask.priority,
-      status: updatedTask.status,
+      description: updatedTask.description || null, // Invia null se non definito
+      start_time: updatedTask.start_time || null, // Invia null se non definito
+      end_time: updatedTask.end_time || null,     // Invia null se non definito
+      priority: updatedTask.priority || null,   // Invia null se non definito
+      status: status,
+      category_name: updatedTask.category_name || null // Invia null se non definito
     };
+
+    console.log("Updating task with data:", taskData); // Log per debug
 
     const response = await axios.put(`/tasks/${taskId}`, taskData, {
       headers: {
@@ -131,6 +136,51 @@ export async function updateTask(
     });
     return response.data;
   } catch (error) {
+    console.error("Error updating task:", error.response?.data || error.message); // Log dettagliato dell'errore
+    throw error;
+  }
+}
+
+// Funzione per segnare un task come completato
+export async function completeTask(taskId: string | number) {
+  try {
+    // Recupera il task esistente per ottenere i dati attuali
+    // Nota: questo richiede un endpoint GET /tasks/{taskId} che potrebbe non esistere.
+    // Se non esiste, potresti dover passare tutti i dati necessari o modificare l'API.
+    // Alternativamente, si può passare solo lo stato.
+    // Qui assumiamo che l'API permetta di aggiornare solo lo stato.
+    const updatedTaskData = {
+      status: "Completato",
+    };
+
+    // Utilizza la funzione updateTask esistente
+    const updatedTask = await updateTask(taskId, updatedTaskData);
+    console.log("Task completato:", updatedTask);
+    return updatedTask;
+  } catch (error) {
+    console.error("Errore nel completare il task:", error);
+    throw error;
+  }
+}
+
+//funzione per discompletare un task
+export async function disCompleteTask(taskId: string | number) {
+  try {
+    // Recupera il task esistente per ottenere i dati attuali
+    // Nota: questo richiede un endpoint GET /tasks/{taskId} che potrebbe non esistere.
+    // Se non esiste, potresti dover passare tutti i dati necessari o modificare l'API.
+    // Alternativamente, si può passare solo lo stato.
+    // Qui assumiamo che l'API permetta di aggiornare solo lo stato.
+    const updatedTaskData = {
+      status: "In sospeso",
+    };
+
+    // Utilizza la funzione updateTask esistente
+    const updatedTask = await updateTask(taskId, updatedTaskData);
+    console.log("Task discompletato:", updatedTask);
+    return updatedTask;
+  } catch (error) {
+    console.error("Errore nel discompletare il task:", error);
     throw error;
   }
 }

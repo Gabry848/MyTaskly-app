@@ -1,5 +1,5 @@
-import React from "react";
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from "react-native";
+import React, { useState } from "react";
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Animated } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 
 interface CompletedTaskProps {
@@ -17,6 +17,12 @@ const CompletedTasksList: React.FC<CompletedTasksListProps> = ({
   tasks, 
   onTaskPress 
 }) => {
+  // Stato per gestire l'espansione della lista
+  const [isExpanded, setIsExpanded] = useState(true);
+  
+  // Stato per il conteggio dei task da mostrare
+  const [visibleTasksCount, setVisibleTasksCount] = useState(3);
+  
   // Formatta la data nel formato italiano
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -27,6 +33,22 @@ const CompletedTasksList: React.FC<CompletedTasksListProps> = ({
       minute: "2-digit",
     });
   };
+  
+  // Gestisce il toggle dell'espansione
+  const toggleExpand = () => {
+    setIsExpanded(!isExpanded);
+  };
+  
+  // Mostra tutti i task completati
+  const handleViewAll = () => {
+    setVisibleTasksCount(tasks.length);
+  };
+  
+  // Filtro i task per essere sicuro che tutti abbiano un ID valido
+  const safeVisibleTasks = isExpanded ? 
+    (visibleTasksCount < tasks.length ? tasks.slice(0, visibleTasksCount) : tasks)
+      .filter(task => task && task.id != null) // Filtro per task validi con ID definiti
+    : [];
   
   const renderTaskItem = ({ item }: { item: CompletedTaskProps }) => (
     <TouchableOpacity 
@@ -47,27 +69,62 @@ const CompletedTasksList: React.FC<CompletedTasksListProps> = ({
     </TouchableOpacity>
   );
   
+  // Se non ci sono task completati, non mostriamo la sezione
+  if (!tasks || tasks.length === 0) {
+    return null;
+  }
+  
   return (
     <View style={styles.container}>
       <View style={styles.headerContainer}>
-        <Text style={styles.title}>Completati di recente</Text>
-        <TouchableOpacity style={styles.viewAllButton}>
-          <Text style={styles.viewAllText}>Tutti</Text>
+        <View style={styles.titleContainer}>
+          <Text style={styles.title}>Completati di recente</Text>
+          <Text style={styles.counterText}>{tasks.length}</Text>
+        </View>
+        
+        <TouchableOpacity 
+          style={styles.toggleButton}
+          onPress={toggleExpand}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.toggleButtonText}>
+            {isExpanded ? "Chiudi" : "Mostra"}
+          </Text>
+          <MaterialIcons 
+            name={isExpanded ? "keyboard-arrow-up" : "keyboard-arrow-down"} 
+            size={20} 
+            color="#007AFF" 
+            style={{marginLeft: 4}}
+          />
         </TouchableOpacity>
       </View>
       
-      {tasks.length > 0 ? (
-        <FlatList
-          data={tasks}
-          renderItem={renderTaskItem}
-          keyExtractor={(item) => item.id.toString()}
-          scrollEnabled={false}
-        />
-      ) : (
-        <View style={styles.emptyContainer}>
-          <MaterialIcons name="check-circle-outline" size={40} color="#C7C7CC" />
-          <Text style={styles.emptyText}>Nessun task completato recentemente</Text>
-        </View>
+      {isExpanded && (
+        <>
+          <FlatList
+            data={safeVisibleTasks}
+            renderItem={renderTaskItem}
+            keyExtractor={(item) => (item.id !== undefined ? item.id.toString() : `task-${Math.random()}`)}
+            scrollEnabled={false}
+          />
+          
+          {tasks.length > visibleTasksCount && (
+            <TouchableOpacity 
+              style={styles.viewAllButton}
+              onPress={handleViewAll}
+            >
+              <Text style={styles.viewAllText}>
+                Mostra tutti ({tasks.length})
+              </Text>
+            </TouchableOpacity>
+          )}
+          
+          {tasks.length > 0 && tasks.length <= visibleTasksCount && (
+            <Text style={styles.taskCountText}>
+              {tasks.length} {tasks.length === 1 ? 'task completato' : 'task completati'}
+            </Text>
+          )}
+        </>
       )}
     </View>
   );
@@ -95,18 +152,40 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 16,
   },
+  titleContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
   title: {
     fontSize: 18,
     fontWeight: "600",
     color: "#333",
   },
+  counterText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#FFFFFF",
+    backgroundColor: "#34C759",
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    marginLeft: 8,
+  },
   viewAllButton: {
-    padding: 4,
+    alignSelf: "center",
+    paddingVertical: 8,
+    marginTop: 8,
   },
   viewAllText: {
     color: "#007AFF",
     fontWeight: "500",
     fontSize: 14,
+  },
+  taskCountText: {
+    textAlign: "center",
+    color: "#8E8E93",
+    fontSize: 13,
+    marginTop: 8,
   },
   taskItem: {
     flexDirection: "row",
@@ -140,6 +219,21 @@ const styles = StyleSheet.create({
     marginTop: 10,
     color: "#8E8E93",
     fontSize: 14,
+  },
+  toggleButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F0F8FF",  // Azzurro chiaro
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#DDEDFF",
+  },
+  toggleButtonText: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#007AFF",
   },
 });
 

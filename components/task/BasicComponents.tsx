@@ -1,0 +1,53 @@
+import React from "react";
+import { View, Text, TouchableOpacity } from "react-native";
+import { MaterialIcons, Ionicons } from "@expo/vector-icons";
+import { styles } from "./TaskStyles";
+import { getDaysRemainingText, getDaysRemainingColor } from "./TaskUtils";
+
+// Componente Checkbox riutilizzabile
+export const Checkbox = ({ checked, onPress }) => (
+  <TouchableOpacity
+    style={[styles.checkbox, checked && styles.checkedBox]}
+    onPress={onPress}
+  >
+    {checked && <MaterialIcons name="check" size={16} color="#fff" />}
+  </TouchableOpacity>
+);
+
+// Componente per visualizzare la data
+export const DateDisplay = ({ date }) => {
+  const formattedDate = new Date(date).toLocaleDateString("it-IT", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+  
+  return (
+    <View style={styles.dateContainer}>
+      <Ionicons name="calendar-outline" size={14} color="#666666" />
+      <Text style={styles.dateText}>{formattedDate}</Text>
+    </View>
+  );
+};
+
+// Componente per visualizzare i giorni rimanenti
+export const DaysRemaining = ({ endDate }) => {
+  const daysRemainingText = getDaysRemainingText(endDate);
+  const daysRemainingColor = getDaysRemainingColor(endDate);
+  
+  return (
+    <Text style={[styles.daysRemaining, { color: daysRemainingColor }]}>
+      {daysRemainingText}
+    </Text>
+  );
+};
+
+// Componente per il titolo del task
+export const TaskTitle = ({ title, completed, numberOfLines }) => (
+  <Text
+    style={[styles.title, completed && styles.completedText]}
+    numberOfLines={numberOfLines}
+  >
+    {title}
+  </Text>
+);
