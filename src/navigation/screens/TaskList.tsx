@@ -82,7 +82,7 @@ export function TaskList({ route }: Props) {
     };
     
     // Update the local state directly if this is the current category
-    if (categoryName === route.params.category_name) {
+    if (categoryName === route.params.categoryId) {
       setTasks(prevTasks => {
         // Check if task already exists
 
