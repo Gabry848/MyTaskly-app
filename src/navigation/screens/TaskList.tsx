@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { 
   View, 
   Text, 
@@ -9,11 +9,13 @@ import {
   ScrollView,
   Modal,
   Alert,
-  Image
+  Image,
+  Animated,
+  Easing
 } from "react-native";
 import { Filter } from "lucide-react-native";
+import { MaterialIcons } from "@expo/vector-icons";
 import Task from "../../../components/Task";
-import CompletedTasksList from "../../../components/CompletedTasksList";
 import { getTasks, addTask, deleteTask, updateTask, completeTask, disCompleteTask } from "../../services/taskService";
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../types';
@@ -55,6 +57,14 @@ export function TaskList({ route }: Props) {
   const [modalVisible, setModalVisible] = useState(false);
   const [formVisible, setFormVisible] = useState(false);
   const categoryName = route.params.category_name;
+  
+  // Stati per le sezioni collassabili
+  const [todoSectionExpanded, setTodoSectionExpanded] = useState(true);
+  const [completedSectionExpanded, setCompletedSectionExpanded] = useState(true);
+  
+  // Animated values per le animazioni di altezza
+  const todoSectionHeight = useRef(new Animated.Value(1)).current;
+  const completedSectionHeight = useRef(new Animated.Value(1)).current;
 
   // Initialize the global task adder function
   globalTasksRef.addTask = (newTask: Task, categoryName: string) => {
@@ -235,15 +245,6 @@ export function TaskList({ route }: Props) {
       }
     });
   }, [incompleteTasks, filtroImportanza, filtroScadenza, ordineScadenza]);
-
-  // Prepariamo i task completati per il componente CompletedTasksList
-  const formattedCompletedTasks = useMemo(() => {
-    return completedTasks.map(task => ({
-      id: task.id || 0,
-      title: task.title,
-      completedDate: task.end_time
-    }));
-  }, [completedTasks]);
 
   const handleAddTask = async (
     title: string,
@@ -443,6 +444,9 @@ export function TaskList({ route }: Props) {
           return task;
         });
       });
+      
+      // Ricarica tutti i task per avere l'aggiornamento in tempo reale
+      await fetchTasks();
     } catch (error) {
       console.error("Errore durante il completamento del task:", error);
       Alert.alert("Errore", "Impossibile completare il task. Riprova.");
@@ -464,6 +468,9 @@ export function TaskList({ route }: Props) {
           return task;
         });
       });
+      
+      // Ricarica tutti i task per avere l'aggiornamento in tempo reale
+      await fetchTasks();
     } catch (error) {
       console.error("Errore durante la riapertura del task:", error);
       Alert.alert("Errore", "Impossibile riaprire il task. Riprova.");
@@ -499,14 +506,6 @@ export function TaskList({ route }: Props) {
         <ActivityIndicator size="large" color="#10e0e0" />
       ) : (
         <ScrollView style={styles.scrollContainer}>
-          {/* Task completati in cima */}
-          {formattedCompletedTasks.length > 0 && (
-            <CompletedTasksList 
-              tasks={formattedCompletedTasks} 
-              onTaskPress={handleCompletedTaskPress} 
-            />
-          )}
-
           {/* Modal dei filtri */}
           <Modal
             animationType="slide"
@@ -650,35 +649,121 @@ export function TaskList({ route }: Props) {
             </View>
           )}
 
-          {/* Lista task non completati */}
-          {listaFiltrata.length > 0 ? (
-            listaFiltrata.map((item, index) => (
-              <Task
-                key={`task-${item.id || index}`}
-                task={{
-                  id: item.id || item.task_id || index,
-                  title: item.title,
-                  description: item.description,
-                  priority: item.priority,
-                  end_time: item.end_time,
-                  completed: item.completed || false,
-                  start_time: item.start_time || new Date().toISOString(),
-                  status: item.status || "In sospeso"
+          {/* Sezione task non completati */}
+          <TouchableOpacity 
+            style={styles.sectionHeader}
+            onPress={() => {
+              setTodoSectionExpanded(!todoSectionExpanded);
+              Animated.timing(todoSectionHeight, {
+                toValue: todoSectionExpanded ? 0 : 1,
+                duration: 300,
+                easing: Easing.inOut(Easing.ease),
+                useNativeDriver: false
+              }).start();
+            }}
+          >
+            <Text style={styles.sectionTitle}>Da fare</Text>
+            <MaterialIcons
+              name={todoSectionExpanded ? "keyboard-arrow-up" : "keyboard-arrow-down"}
+              size={24}
+              color="#10e0e0"
+            />
+          </TouchableOpacity>
+          
+          <Animated.View 
+            style={{ 
+              height: todoSectionHeight.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0, 'auto']
+              }),
+              overflow: 'hidden',
+              opacity: todoSectionHeight // Animazione dell'opacità in base all'altezza
+            }}
+          >
+            {todoSectionExpanded && listaFiltrata.length > 0 ? (
+              listaFiltrata.map((item, index) => (
+                <Task
+                  key={`task-${item.id || index}`}
+                  task={{
+                    id: item.id || item.task_id || index,
+                    title: item.title,
+                    description: item.description,
+                    priority: item.priority,
+                    end_time: item.end_time,
+                    completed: item.completed || false,
+                    start_time: item.start_time || new Date().toISOString(),
+                    status: item.status || "In sospeso"
+                  }}
+                  onTaskComplete={handleTaskComplete}
+                  onTaskDelete={handleTaskDelete}
+                  onTaskEdit={handleTaskEdit}
+                  onTaskUncomplete={handleTaskUncomplete}
+                />
+              ))
+            ) : todoSectionExpanded ? (
+              <View style={styles.emptyListContainer}>
+                <Text style={styles.emptyListText}>
+                  {tasks.length > 0 
+                    ? 'Nessun task corrisponde ai filtri selezionati' 
+                    : 'Non ci sono task in questa categoria'}
+                </Text>
+              </View>
+            ) : null}
+          </Animated.View>
+          
+          {/* Sezione task completati */}
+          {completedTasks.length > 0 && (
+            <>
+              <TouchableOpacity 
+                style={styles.sectionHeader}
+                onPress={() => {
+                  setCompletedSectionExpanded(!completedSectionExpanded);
+                  Animated.timing(completedSectionHeight, {
+                    toValue: completedSectionExpanded ? 0 : 1,
+                    duration: 300,
+                    easing: Easing.inOut(Easing.ease),
+                    useNativeDriver: false
+                  }).start();
                 }}
-                onTaskComplete={handleTaskComplete}
-                onTaskDelete={handleTaskDelete}
-                onTaskEdit={handleTaskEdit}
-                onTaskUncomplete={handleTaskUncomplete}
-              />
-            ))
-          ) : (
-            <View style={styles.emptyListContainer}>
-              <Text style={styles.emptyListText}>
-                {tasks.length > 0 
-                  ? 'Nessun task corrisponde ai filtri selezionati' 
-                  : 'Non ci sono task in questa categoria'}
-              </Text>
-            </View>
+              >
+                <Text style={styles.sectionTitle}>Completati</Text>
+                <MaterialIcons
+                  name={completedSectionExpanded ? "keyboard-arrow-up" : "keyboard-arrow-down"}
+                  size={24}
+                  color="#10e0e0"
+                />
+              </TouchableOpacity>
+              
+              <Animated.View 
+                style={{ 
+                  height: completedSectionHeight.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, 'auto']
+                  }),
+                  overflow: 'hidden',
+                  opacity: completedSectionHeight // Animazione dell'opacità in base all'altezza
+                }}
+              >
+                {completedSectionExpanded && completedTasks.map((item, index) => (
+                  <Task
+                    key={`completed-task-${item.id || index}`}
+                    task={{
+                      id: item.id || item.task_id || index,
+                      title: item.title,
+                      description: item.description,
+                      priority: item.priority,
+                      end_time: item.end_time,
+                      completed: true,
+                      start_time: item.start_time || new Date().toISOString(),
+                      status: "Completato"
+                    }}
+                    onTaskDelete={handleTaskDelete}
+                    onTaskEdit={handleTaskEdit}
+                    onTaskUncomplete={handleTaskUncomplete}
+                  />
+                ))}
+              </Animated.View>
+            </>
           )}
 
           {/* Spazio per il pulsante flottante */}
@@ -952,6 +1037,31 @@ const styles = StyleSheet.create({
   scrollContainer: {
     flex: 1,
     width: '100%',
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginTop: 15,
+    marginBottom: 10,
+    paddingLeft: 5,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 15,
+    backgroundColor: 'rgba(16, 224, 224, 0.08)',
+    borderRadius: 10,
+    marginVertical: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: '#10e0e0',
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 1,
+    elevation: 1,
   },
 });
 

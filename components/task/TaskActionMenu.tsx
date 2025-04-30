@@ -10,7 +10,9 @@ const TaskActionMenu = ({
   onEdit, 
   onDelete, 
   onShare,
-  isDeleting 
+  isDeleting,
+  isCompleted, // Nuova prop per identificare se il task è completato
+  onReopen     // Nuova prop per gestire la riapertura del task
 }) => {
   return (
     <Modal
@@ -25,32 +27,49 @@ const TaskActionMenu = ({
         onPress={onClose}
       >
         <View style={styles.menuContainer}>
-          <TouchableOpacity 
-            style={styles.menuItem} 
-            onPress={onEdit}
-          >
-            <MaterialIcons name="edit" size={20} color="#333" />
-            <Text style={styles.menuText}>Modifica</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.menuItem} 
-            onPress={onDelete}
-            disabled={isDeleting}
-          >
-            <MaterialIcons name="delete" size={20} color="#F44336" />
-            <Text style={[styles.menuText, { color: '#F44336' }]}>
-              {isDeleting ? "Eliminazione..." : "Elimina"}
-            </Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.menuItem} 
-            onPress={onShare}
-          >
-            <MaterialIcons name="share" size={20} color="#333" />
-            <Text style={styles.menuText}>Condividi</Text>
-          </TouchableOpacity>
+          {isCompleted ? (
+            // Menu semplificato per i task completati
+            <TouchableOpacity 
+              style={styles.menuItem} 
+              onPress={() => {
+                onReopen && onReopen();
+                onClose();
+              }}
+            >
+              <MaterialIcons name="refresh" size={20} color="#10e0e0" />
+              <Text style={[styles.menuText, { color: '#10e0e0' }]}>Riapri impegno</Text>
+            </TouchableOpacity>
+          ) : (
+            // Menu completo per i task non completati
+            <>
+              <TouchableOpacity 
+                style={styles.menuItem} 
+                onPress={onEdit}
+              >
+                <MaterialIcons name="edit" size={20} color="#333" />
+                <Text style={styles.menuText}>Modifica</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.menuItem} 
+                onPress={onDelete}
+                disabled={isDeleting}
+              >
+                <MaterialIcons name="delete" size={20} color="#F44336" />
+                <Text style={[styles.menuText, { color: '#F44336' }]}>
+                  {isDeleting ? "Eliminazione..." : "Elimina"}
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.menuItem} 
+                onPress={onShare}
+              >
+                <MaterialIcons name="share" size={20} color="#333" />
+                <Text style={styles.menuText}>Condividi</Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
       </TouchableOpacity>
     </Modal>

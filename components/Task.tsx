@@ -311,6 +311,22 @@ const Task = ({
     Alert.alert("Condivisione", "Funzionalità di condivisione non ancora implementata");
   };
 
+  const handleReopen = async () => {
+    try {
+      // Riapri il task completato
+      await disCompleteTask(task.id);
+      
+      if (onTaskUncomplete) {
+        onTaskUncomplete(task.id);
+      } else {
+        Alert.alert("Riaperto", `Task "${task.title}" riaperto.`);
+      }
+    } catch (error) {
+      console.error("Errore durante la riapertura del task:", error);
+      Alert.alert("Errore", "Impossibile riaprire il task. Riprova.");
+    }
+  };
+
   return (
     <Animated.View 
       style={[
@@ -378,6 +394,8 @@ const Task = ({
           onDelete={handleDelete}
           onShare={handleShare}
           isDeleting={isDeleting}
+          isCompleted={isCompleted}
+          onReopen={handleReopen}
         />
 
         {/* Modal modifica task */}
