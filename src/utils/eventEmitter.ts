@@ -1,7 +1,51 @@
-import { EventEmitter } from 'events';
+// Custom EventEmitter per React Native (senza dipendenza dal modulo Node.js 'events')
+class CustomEventEmitter {
+  listeners: Record<string, Function[]>;
+
+  constructor() {
+    this.listeners = {};
+  }
+
+  on(event: string, callback: Function): void {
+    if (!this.listeners[event]) {
+      this.listeners[event] = [];
+    }
+    this.listeners[event].push(callback);
+  }
+
+  off(event: string, callback?: Function): void {
+    if (!this.listeners[event]) return;
+    
+    if (callback) {
+      this.listeners[event] = this.listeners[event].filter(
+        listener => listener !== callback
+      );
+    } else {
+      delete this.listeners[event];
+    }
+  }
+
+  emit(event: string, ...args: any[]): void {
+    if (!this.listeners[event]) return;
+    
+    this.listeners[event].forEach(callback => {
+      callback(...args);
+    });
+  }
+
+  // Alias per 'on' per compatibilità con EventEmitter
+  addListener(event: string, callback: Function): void {
+    this.on(event, callback);
+  }
+
+  // Alias per 'off' per compatibilità con EventEmitter
+  removeListener(event: string, callback: Function): void {
+    this.off(event, callback);
+  }
+}
 
 // Creo un EventEmitter globale per l'intera applicazione
-const globalEventEmitter = new EventEmitter();
+const globalEventEmitter = new CustomEventEmitter();
 
 // Definisco i tipi di eventi disponibili
 export const EVENTS = {
