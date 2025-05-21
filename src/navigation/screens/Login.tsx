@@ -23,12 +23,24 @@ const LoginScreen = () => {
   const [username, setUsername] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [showPassword, setShowPassword] = React.useState(false); // Stato per mostrare/nascondere password
+  const [loginSuccess, setLoginSuccess] = React.useState(false); // Stato per tenere traccia del login riuscito
   const [notification, setNotification] = React.useState({
     isVisible: false,
     message: "",
     isSuccess: true,
     onFinish: () => {},
   });
+  // Effetto per navigare alla Home dopo un login riuscito
+  React.useEffect(() => {
+    if (loginSuccess) {
+      const timer = setTimeout(() => {
+        navigation.navigate("HomeTabs");
+        setLoginSuccess(false); // Reset dello stato
+      }, 2000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [loginSuccess, navigation]);
 
   // Funzione per validare l'input e verificare se contiene caratteri speciali
   const containsSpecialChars = (text) => {
@@ -79,11 +91,10 @@ const LoginScreen = () => {
           },
         });
         return;
-      }
-
-      const login_data = await authService.login(username, password);
+      }      const login_data = await authService.login(username, password);
 
       if (login_data.success) {
+        setLoginSuccess(true); // Imposta il login come riuscito
         setNotification({
           isVisible: true,
           message: "Login effettuato con successo",

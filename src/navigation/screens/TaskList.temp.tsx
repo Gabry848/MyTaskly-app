@@ -1,4 +1,4 @@
-﻿// filepath: e:\Projects\Taskly\src\navigation\screens\TaskList.tsx
+// filepath: e:\Projects\Taskly\src\navigation\screens\TaskList.tsx
 import React from "react";
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../types';

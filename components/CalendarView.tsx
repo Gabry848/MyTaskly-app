@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import dayjs from 'dayjs';
 import { Task, getAllTasks, addTask } from '../src/services/taskService';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,6 +8,7 @@ import CalendarGrid from './CalendarGrid';
 import TaskCard from './TaskCard';
 import AddTask from './AddTask';
 import AddTaskButton from './AddTaskButton';
+import { addTaskToList } from '../src/navigation/screens/TaskList';
 
 const CalendarView: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<string>(dayjs().format('YYYY-MM-DD'));
