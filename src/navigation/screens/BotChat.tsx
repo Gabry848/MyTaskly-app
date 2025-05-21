@@ -1,112 +1,70 @@
-import React, { useState, useCallback, useEffect, useRef, memo } from 'react';
-import { StyleSheet, View, KeyboardAvoidingView, Platform, FlatList, TextInput, TouchableOpacity, SafeAreaView, Text, StatusBar } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
-import { sendMessageToBot } from '../../services/botservice';
-
-// Definizione dell'interfaccia per i messaggi
-interface Message {
-  id: string;
-  text: string;
-  sender: 'user' | 'bot';
-  createdAt: Date;
-}
-
-// Componente memorizzato per l'input della chat
-const MemoizedChatInput = memo(({ 
-  onSendMessage 
-}: { 
-  onSendMessage: (text: string) => void 
-}) => {
-  const [localInputText, setLocalInputText] = useState('');
-  const inputRef = useRef<TextInput>(null);
-
-  const handleSend = useCallback(() => {
-    if (localInputText.trim() === '') return;
-    onSendMessage(localInputText);
-    setLocalInputText('');
-    // Necessario per mantenere il focus dopo l'invio
-    setTimeout(() => {
-      inputRef.current?.focus();
-    }, 50);
-  }, [localInputText, onSendMessage]);
-
-  return (
-    <View style={styles.inputContainer}>
-      <TextInput
-        ref={inputRef}
-        style={styles.input}
-        value={localInputText}
-        onChangeText={setLocalInputText}
-        placeholder="Scrivi un messaggio..."
-        placeholderTextColor="#999"
-        onSubmitEditing={handleSend}
-        returnKeyType="send"
-        autoFocus={Platform.OS === 'ios'}
-        keyboardType="default"
-        spellCheck={false}
-        autoCorrect={false}
-        autoCapitalize="none"
-      />
-      <TouchableOpacity 
-        style={styles.sendButton} 
-        onPress={handleSend}
-        disabled={localInputText.trim() === ''}
-      >
-        <MaterialIcons 
-          name="send" 
-          size={24} 
-          color={localInputText.trim() === '' ? '#CCC' : '#007bff'} 
-        />
-      </TouchableOpacity>
-    </View>
-  );
-});
+import React, { useState, useCallback, useEffect } from 'react';
+import { StyleSheet, View, KeyboardAvoidingView, Platform, SafeAreaView, Alert } from 'react-native';
+import { sendMessageToBot, createNewChat } from '../../services/botservice';
+import { 
+  ChatHeader, 
+  ChatInput, 
+  ChatList, 
+  Message,
+  chatStyles 
+} from '../../../components/BotChat';
 
 const BotChat: React.FC = () => {
+  // Stati
   const [messages, setMessages] = useState<Message[]>([]);
-  const flatListRef = useRef<FlatList>(null);
+  const [modelType, setModelType] = useState<'base' | 'advanced'>('base');
   
-  // ID utente e bot
+  // Costanti
   const USER = 'user';
   const BOT = 'bot';
 
+  // Inizializzazione della chat al primo render
   useEffect(() => {
-    // Inizializzazione con messaggi di esempio dal bot
-    setMessages([
+    initializeChat();
+  }, []);
+  // Funzione per inizializzare la chat con messaggi di benvenuto
+  const initializeChat = async () => {
+    const welcomeMessages = await createNewChat();
+    setMessages(welcomeMessages as Message[]);
+  };
+
+  // Handler per creare una nuova chat
+  const handleNewChat = () => {
+    Alert.alert(
+      "Nuova Chat",
+      "Vuoi creare una nuova chat? Tutti i messaggi attuali verranno eliminati.",
+      [
+        {
+          text: "Annulla",
+          style: "cancel"
+        },
+        {
+          text: "Conferma",
+          onPress: () => initializeChat()
+        }
+      ]
+    );
+  };
+
+  // Handler per cambiare il tipo di modello
+  const handleModelChange = (newModelType: 'base' | 'advanced') => {
+    setModelType(newModelType);
+    // Notifica all'utente del cambio
+    const modelName = newModelType === 'advanced' ? 'avanzato' : 'base';
+    
+    setMessages(prevMessages => [
+      ...prevMessages,
       {
         id: Math.random().toString(),
-        text: 'Benvenuto in Taskly!',
+        text: `Modello cambiato a: ${modelName}`,
         sender: BOT,
-        createdAt: new Date(Date.now() - 5 * 60 * 1000),
-      },
-      {
-        id: Math.random().toString(),
-        text: 'Sono il tuo assistente personale per la gestione delle attività.',
-        sender: BOT,
-        createdAt: new Date(Date.now() - 4 * 60 * 1000),
-      },
-      {
-        id: Math.random().toString(),
-        text: 'Come posso aiutarti oggi?',
-        sender: BOT,
-        createdAt: new Date(Date.now() - 2 * 60 * 1000),
-      },
+        createdAt: new Date(),
+        modelType: newModelType
+      }
     ]);
-  }, []);
+  };
 
-  // Funzione per generare una risposta del bot
-  const getBotResponse = useCallback(async (userMessage: string): Promise<string> => {
-    try {
-      // Utilizzo direttamente la funzione del servizio che restituisce già la stringa della risposta
-      let response = await sendMessageToBot(userMessage);
-      return response;
-    } catch (error) {
-      console.error('Errore nella comunicazione con il bot:', error);
-      return 'Mi dispiace, si è verificato un errore. Riprova più tardi.';
-    }
-  }, []);
-
-  // Gestione dell'invio dei messaggi - ora separata dall'input
+  // Handler per inviare messaggi
   const handleSendMessage = useCallback(async (text: string) => {
     // Creiamo il messaggio dell'utente
     const userMessage: Message = {
@@ -118,11 +76,6 @@ const BotChat: React.FC = () => {
     
     // Aggiungiamo il messaggio dell'utente
     setMessages(prevMessages => [...prevMessages, userMessage]);
-    
-    // Scroll automatico dopo l'invio del messaggio dell'utente
-    setTimeout(() => {
-      flatListRef.current?.scrollToEnd({ animated: true });
-    }, 100);
     
     try {
       // Aggiungiamo un messaggio temporaneo "Bot sta scrivendo..."
@@ -137,8 +90,9 @@ const BotChat: React.FC = () => {
         }
       ]);
       
-      // Otteniamo la risposta dal server
-      const botResponseText = await getBotResponse(text);
+      // Otteniamo la risposta dal server usando il modello selezionato
+      const botResponseText = await sendMessageToBot(text, modelType);
+      
       // Rimuoviamo il messaggio temporaneo e aggiungiamo la risposta reale
       setMessages(prevMessages => {
         const filtered = prevMessages.filter(msg => msg.id !== tempId);
@@ -149,6 +103,7 @@ const BotChat: React.FC = () => {
             text: botResponseText,
             sender: BOT,
             createdAt: new Date(),
+            modelType: modelType  // Aggiungiamo l'informazione sul modello utilizzato
           }
         ];
       });
@@ -166,190 +121,26 @@ const BotChat: React.FC = () => {
         }
       ]);
     }
-    
-    // Scroll automatico alla fine della lista dopo la risposta
-    setTimeout(() => {
-      flatListRef.current?.scrollToEnd({ animated: true });
-    }, 100);
-    
-  }, [getBotResponse]);
-
-  // Formatta la data per la visualizzazione
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
-
-  // Renderizza un singolo messaggio
-  const renderMessage = ({ item }: { item: Message }) => {
-    const isBot = item.sender === BOT;
-    
-    return (
-      <View style={[
-        styles.messageContainer,
-        isBot ? styles.botMessageContainer : styles.userMessageContainer
-      ]}>
-        <View style={[
-          styles.messageBubble,
-          isBot ? styles.botBubble : styles.userBubble
-        ]}>
-          <Text style={[
-            styles.messageText,
-            isBot ? styles.botText : styles.userText
-          ]}>
-            {item.text}
-          </Text>
-        </View>
-        <Text style={[
-          styles.messageTime,
-          isBot ? styles.botTime : styles.userTime
-        ]}>
-          {formatTime(item.createdAt)}
-        </Text>
-      </View>
-    );
-  };
+  }, [modelType]);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={chatStyles.container}>
       <KeyboardAvoidingView
-        style={styles.chatContainer}
+        style={chatStyles.chatContainer}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          renderItem={renderMessage}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.messagesList}
-          showsVerticalScrollIndicator={false}
-          onLayout={() => flatListRef.current?.scrollToEnd({ animated: false })}
-          keyboardShouldPersistTaps="always"
+        <ChatHeader
+          title="Assistente Taskly"
+          modelType={modelType}
+          onModelChange={handleModelChange}
+          onNewChat={handleNewChat}
         />
-        <MemoizedChatInput onSendMessage={handleSendMessage} />
+        <ChatList messages={messages} />
+        <ChatInput onSendMessage={handleSendMessage} />
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F8F9FA',
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    width: "100%",
-    padding: 15,
-    paddingTop: StatusBar.currentHeight ? StatusBar.currentHeight + 10 : 50,
-    backgroundColor: "#FFFFFF",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
-  },
-  headerText: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#333",
-  },
-  chatContainer: {
-    flex: 1,
-    backgroundColor: '#F8F9FA',
-  },
-  messagesList: {
-    paddingHorizontal: 15,
-    paddingVertical: 15,
-  },
-  messageContainer: {
-    marginVertical: 6,
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-  },
-  userMessageContainer: {
-    justifyContent: 'flex-end',
-    alignSelf: 'flex-end',
-  },
-  botMessageContainer: {
-    justifyContent: 'flex-start',
-    alignSelf: 'flex-start',
-  },
-  messageBubble: {
-    maxWidth: '80%',
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    borderRadius: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  userBubble: {
-    backgroundColor: '#5B37B7', // Viola primario dell'app
-    borderBottomRightRadius: 4,
-  },
-  botBubble: {
-    backgroundColor: '#FFFFFF',
-    borderBottomLeftRadius: 4,
-    borderWidth: 1,
-    borderColor: '#E8E8E8',
-  },
-  messageText: {
-    fontSize: 16,
-    lineHeight: 22,
-  },
-  userText: {
-    color: '#FFFFFF',
-  },
-  botText: {
-    color: '#333333',
-  },
-  messageTime: {
-    fontSize: 11,
-    marginHorizontal: 8,
-    marginBottom: 2,
-  },
-  userTime: {
-    color: '#FFFFFF80',
-  },
-  botTime: {
-    color: '#33333380',
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    padding: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#E8E8E8',
-    backgroundColor: '#FFFFFF',
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -3 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  input: {
-    flex: 1,
-    backgroundColor: '#F8F8F8',
-    borderWidth: 1,
-    borderColor: '#E8E8E8',
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    fontSize: 16,
-  },
-  sendButton: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 10,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#F8F8F8',
-  },
-});
 
 export default BotChat;

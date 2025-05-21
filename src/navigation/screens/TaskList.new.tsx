@@ -1,7 +1,8 @@
 import React from "react";
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../types';
-import { TaskListContainer, addTaskToList } from "../../../components/TaskList";
+import { addTaskToList } from "../../../components/TaskList";
+import { TaskListContainer } from "../../../components/TaskList";
 import Task from "../../../components/Task";
 import AddTask from "../../../components/AddTask";
 import { getTasks, addTask, deleteTask, updateTask, completeTask, disCompleteTask } from "../../services/taskService";
@@ -13,13 +14,12 @@ type Props = {
 };
 
 export function TaskList({ route }: Props) {
-  const categoryName = route.params.category_name;
   const categoryId = route.params.categoryId;
   
   return (
     <TaskListContainer 
-      categoryName={categoryName}
-      categoryId={categoryId || categoryName} // Usa categoryName come fallback se categoryId non è disponibile
+      categoryName={String(categoryId)}
+      categoryId={categoryId}
       Task={Task}
       AddTask={AddTask}
       taskService={{
