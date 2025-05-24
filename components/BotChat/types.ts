@@ -34,7 +34,6 @@ export interface ChatInputProps {
 
 // Props per il componente ChatHeader
 export interface ChatHeaderProps {
-  title: string;
   modelType: 'base' | 'advanced';
   onModelChange: (modelType: 'base' | 'advanced') => void;
   onNewChat: () => void;

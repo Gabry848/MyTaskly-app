@@ -4,7 +4,6 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { ChatHeaderProps } from './types';
 
 const ChatHeader: React.FC<ChatHeaderProps> = ({ 
-  title, 
   modelType, 
   onModelChange, 
   onNewChat,
@@ -12,14 +11,12 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
 }) => {
   return (
     <View style={[styles.header, style]}>
-      <Text style={styles.headerText}>{title}</Text>
-      
       <View style={styles.actions}>
         <TouchableOpacity
           style={styles.modelSelector}
           onPress={() => onModelChange(modelType === 'base' ? 'advanced' : 'base')}
         >
-          <MaterialIcons name="insights" size={20} color="#5B37B7" />
+          <MaterialIcons name="insights" size={18} color="#5B37B7" />
           <Text style={styles.modelText}>
             {modelType === 'advanced' ? 'Avanzato' : 'Base'}
           </Text>
@@ -29,7 +26,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
           style={styles.newChatButton}
           onPress={onNewChat}
         >
-          <MaterialIcons name="add" size={24} color="#5B37B7" />
+          <MaterialIcons name="add" size={20} color="#5B37B7" />
         </TouchableOpacity>
       </View>
     </View>
@@ -40,21 +37,17 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    justifyContent: "flex-end",
     width: "100%",
-    padding: 15,
-    paddingTop: StatusBar.currentHeight ? StatusBar.currentHeight + 10 : 50,
+    padding: 8,
+    paddingTop: StatusBar.currentHeight ? StatusBar.currentHeight + 5 : 15,
+    paddingBottom: 8,
     backgroundColor: "#FFFFFF",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
-  },
-  headerText: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#333",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 2,
   },
   actions: {
     flexDirection: 'row',
@@ -64,21 +57,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F0EAFA',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    marginRight: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 14,
+    marginRight: 8,
   },
   modelText: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#5B37B7',
     marginLeft: 4,
     fontWeight: '500',
   },
   newChatButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#F0EAFA',

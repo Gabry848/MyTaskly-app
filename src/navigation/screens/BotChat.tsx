@@ -78,6 +78,10 @@ const BotChat: React.FC = () => {
     setMessages(prevMessages => [...prevMessages, userMessage]);
     
     try {
+      // Otteniamo gli ultimi messaggi per inviarli al server
+      const currentMessages = [...messages, userMessage];
+      const lastMessages = currentMessages.slice(-5);
+      
       // Aggiungiamo un messaggio temporaneo "Bot sta scrivendo..."
       const tempId = Math.random().toString();
       setMessages(prevMessages => [
@@ -90,8 +94,8 @@ const BotChat: React.FC = () => {
         }
       ]);
       
-      // Otteniamo la risposta dal server usando il modello selezionato
-      const botResponseText = await sendMessageToBot(text, modelType);
+      // Otteniamo la risposta dal server usando il modello selezionato e i messaggi precedenti
+      const botResponseText = await sendMessageToBot(text, modelType, lastMessages);
       
       // Rimuoviamo il messaggio temporaneo e aggiungiamo la risposta reale
       setMessages(prevMessages => {
@@ -121,7 +125,7 @@ const BotChat: React.FC = () => {
         }
       ]);
     }
-  }, [modelType]);
+  }, [modelType, messages]);
 
   return (
     <SafeAreaView style={chatStyles.container}>
@@ -131,7 +135,6 @@ const BotChat: React.FC = () => {
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
         <ChatHeader
-          title="Assistente Taskly"
           modelType={modelType}
           onModelChange={handleModelChange}
           onNewChat={handleNewChat}
