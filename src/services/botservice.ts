@@ -15,6 +15,8 @@ function preparePreviousMessages(
 ): Array<{ content: string; role: string }> {
   if (!messages || messages.length === 0) return [];
 
+  // togli l`ultimo messaggio perche` ed` quello dell`utente che sta scrivendo
+  messages = messages.slice(0, -1);
   // Prendiamo solo gli ultimi N messaggi
   const recentMessages = messages.slice(-maxMessages);
 
@@ -61,7 +63,9 @@ export async function sendMessageToBot(
     const quest = {
       quest: userMessage,
       model: modelType,
-      previous_messages: formattedPreviousMessages,
+      ...(modelType === "base"
+      ? {}
+      : { previous_messages: formattedPreviousMessages }),
     };
     console.log("Invio al server:", quest);
     const response = await axios.post("/chat_bot", quest, {
