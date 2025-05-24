@@ -63,9 +63,7 @@ export async function sendMessageToBot(
     const quest = {
       quest: userMessage,
       model: modelType,
-      ...(modelType === "base"
-      ? {}
-      : { previous_messages: formattedPreviousMessages }),
+      previous_messages: formattedPreviousMessages ,
     };
     console.log("Invio al server:", quest);
     const response = await axios.post("/chat_bot", quest, {
