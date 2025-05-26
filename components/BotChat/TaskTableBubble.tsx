@@ -55,16 +55,33 @@ const TaskTableBubble: React.FC<TaskTableBubbleProps> = ({ message, style }) => 
       return [];
     }
   };
-
   const tasks = extractTasksFromMessage(message);
 
-  if (!tasks || tasks.length === 0) {
+  // Controlla se il messaggio indica "Nessun task trovato"
+  const isEmptyTaskMessage = message.includes('📅 Nessun task trovato') || 
+                            message.includes('Nessun task trovato') ||
+                            message.includes('TASK PER LA DATA');
+
+  // Se non ci sono task e il messaggio non è di tipo task, non mostrare nulla
+  if ((!tasks || tasks.length === 0) && !isEmptyTaskMessage) {
     return null;
   }
 
+  // Estrae il titolo dal messaggio se disponibile
+  const extractTitle = (text: string): string => {
+    const lines = text.split('\n');
+    const firstLine = lines[0]?.trim();
+    if (firstLine && firstLine.startsWith('Ecco')) {
+      return firstLine;
+    }
+    return 'Elenco Impegni';
+  };
+
+  const title = extractTitle(message);
+
   return (
     <View style={[styles.container, style]}>
-      <Text style={styles.title}>Elenco Impegni</Text>
+      <Text style={styles.title}>{title}</Text>
       <ScrollView horizontal>
         <View>
           {/* Intestazione Tabella */}
@@ -75,16 +92,29 @@ const TaskTableBubble: React.FC<TaskTableBubbleProps> = ({ message, style }) => 
             <Text style={[styles.tableHeader, styles.endTime]}>Fine</Text>
             <Text style={[styles.tableHeader, styles.taskTitle]}>Titolo</Text>
           </View>
-          {/* Righe Tabella */}
-          {tasks.map((task) => (
-            <View key={task.task_id} style={styles.tableRow}>
-              <Text style={[styles.tableCell, styles.status]}>{task.status}</Text>
-              <Text style={[styles.tableCell, styles.priority]}>{task.priority}</Text>
-              <Text style={[styles.tableCell, styles.category]}>{task.category}</Text>
-              <Text style={[styles.tableCell, styles.endTime]}>{new Date(task.end_time).toLocaleDateString()}</Text>
-              <Text style={[styles.tableCell, styles.taskTitle]}>{task.title}</Text>
+          
+          {/* Se non ci sono task, mostra messaggio */}
+          {tasks.length === 0 ? (
+            <View style={styles.emptyMessageContainer}>
+              <Text style={styles.emptyMessage}>
+                {message.includes('📅 Nessun task trovato') 
+                  ? message.split('📅')[1]?.trim() || 'Nessun task trovato per questa data'
+                  : 'Nessun task trovato per questa data'
+                }
+              </Text>
             </View>
-          ))}
+          ) : (
+            /* Righe Tabella */
+            tasks.map((task) => (
+              <View key={task.task_id} style={styles.tableRow}>
+                <Text style={[styles.tableCell, styles.status]}>{task.status}</Text>
+                <Text style={[styles.tableCell, styles.priority]}>{task.priority}</Text>
+                <Text style={[styles.tableCell, styles.category]}>{task.category}</Text>
+                <Text style={[styles.tableCell, styles.endTime]}>{new Date(task.end_time).toLocaleDateString()}</Text>
+                <Text style={[styles.tableCell, styles.taskTitle]}>{task.title}</Text>
+              </View>
+            ))
+          )}
         </View>
       </ScrollView>
     </View>
@@ -141,10 +171,23 @@ const styles = StyleSheet.create({
   },
   endTime: {
     width: 100,
-  },
-  taskTitle: {
+  },  taskTitle: {
     flex: 1,
     minWidth: 150,
+  },
+  emptyMessageContainer: {
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#EFEFEF',
+  },
+  emptyMessage: {
+    fontSize: 16,
+    color: '#666666',
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
 });
 

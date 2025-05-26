@@ -10,11 +10,13 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style }) => {
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
-    // Controlla se il messaggio del bot contiene la struttura dei task specificata
+  // Controlla se il messaggio del bot contiene la struttura dei task specificata
   if (isBot && typeof message.text === 'string') {
-    // Controlla se il messaggio contiene un JSON array di task
-    if (message.text.includes('[') && message.text.includes(']') && 
-        (message.text.includes('📅 TASK PER LA DATA') || message.text.includes('task_id'))) {
+    // Controlla se il messaggio contiene un JSON array di task o il messaggio "Nessun task trovato"
+    if ((message.text.includes('[') && message.text.includes(']') && 
+        (message.text.includes('📅 TASK PER LA DATA') || message.text.includes('task_id'))) ||
+        message.text.includes('📅 Nessun task trovato') ||
+        (message.text.includes('📅') && message.text.includes('TASK PER LA DATA'))) {
       return <TaskTableBubble message={message.text} style={style} />;
     }
       // Controlla il formato JSON legacy
