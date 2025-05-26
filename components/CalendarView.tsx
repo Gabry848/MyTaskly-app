@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import dayjs from 'dayjs';
 import { Task, getAllTasks, addTask } from '../src/services/taskService';
@@ -10,7 +10,7 @@ import AddTask from './AddTask';
 import AddTaskButton from './AddTaskButton';
 import { addTaskToList } from '../src/navigation/screens/TaskList';
 
-const CalendarView: React.FC = () => {
+const CalendarView = forwardRef<{ refresh: () => void }, {}>((props, ref) => {
   const [selectedDate, setSelectedDate] = useState<string>(dayjs().format('YYYY-MM-DD'));
   const [tasks, setTasks] = useState<Task[]>([]);
   const [showAddTask, setShowAddTask] = useState(false);
@@ -31,13 +31,17 @@ const CalendarView: React.FC = () => {
   useEffect(() => {
     fetchTasks();
   }, [fetchTasks]);
-
   // Aggiorna gli impegni quando la schermata riceve il focus
   useFocusEffect(
     useCallback(() => {
       fetchTasks();
     }, [fetchTasks])
   );
+
+  // Espone la funzione refresh per permettere l'aggiornamento dall'esterno
+  useImperativeHandle(ref, () => ({
+    refresh: fetchTasks
+  }));
 
   // Naviga al mese precedente
   const goToPreviousMonth = () => {
@@ -57,12 +61,12 @@ const CalendarView: React.FC = () => {
       setSelectedDate(date);
     }
   };
-
   // Ottieni gli impegni per la data selezionata
   const getTasksForSelectedDate = () => {
     return tasks.filter(task => {
-      const taskDate = task.start_time ? 
-        dayjs(task.start_time).format('YYYY-MM-DD') : null;
+      // Usa end_time (data di scadenza) invece di start_time per filtrare i task nel giorno corretto
+      const taskDate = task.end_time ? 
+        dayjs(task.end_time).format('YYYY-MM-DD') : null;
       return taskDate === selectedDate;
     });
   };
@@ -90,16 +94,15 @@ const CalendarView: React.FC = () => {
     dueDate: string,
     priority: number,
     categoryNameParam?: string
-  ) => {
-    const priorityString = priority === 1 ? "Bassa" : priority === 2 ? "Media" : "Alta";
-    // Costruisci nuovo task con data di inizio dal calendario
+  ) => {    const priorityString = priority === 1 ? "Bassa" : priority === 2 ? "Media" : "Alta";
+    // Costruisci nuovo task con data di scadenza dal calendario
     const category = categoryNameParam || "Calendario";
     const newTask = {
       id: Date.now(),
       title: title.trim(),
       description: description || "",
-      start_time: dayjs(selectedDate).toISOString(),
-      end_time: new Date(dueDate).toISOString(),
+      start_time: new Date().toISOString(), // Momento di creazione
+      end_time: new Date(dueDate).toISOString(), // Data di scadenza selezionata
       priority: priorityString,
       status: "In sospeso",
       category_name: category,
@@ -173,10 +176,9 @@ const CalendarView: React.FC = () => {
         allowCategorySelection={true}
         categoryName="Calendario"
         initialDate={selectedDate}
-      />
-    </View>
+      />    </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   calendarContainer: {

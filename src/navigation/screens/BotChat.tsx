@@ -9,10 +9,10 @@ import {
   chatStyles 
 } from '../../../components/BotChat';
 
-const BotChat: React.FC = () => {
-  // Stati
+const BotChat: React.FC = () => {  // Stati
   const [messages, setMessages] = useState<Message[]>([]);
   const [modelType, setModelType] = useState<'base' | 'advanced'>('base');
+  const [includePreviousMessages, setIncludePreviousMessages] = useState<boolean>(true);
   
   // Costanti
   const USER = 'user';
@@ -45,7 +45,6 @@ const BotChat: React.FC = () => {
       ]
     );
   };
-
   // Handler per cambiare il tipo di modello
   const handleModelChange = (newModelType: 'base' | 'advanced') => {
     setModelType(newModelType);
@@ -62,6 +61,26 @@ const BotChat: React.FC = () => {
         modelType: newModelType
       }
     ]);
+  };
+
+  // Handler per attivare/disattivare i messaggi precedenti
+  const handleTogglePreviousMessages = () => {
+    setIncludePreviousMessages(prev => {
+      const newValue = !prev;
+      const statusText = newValue ? 'attivato' : 'disattivato';
+      
+      setMessages(prevMessages => [
+        ...prevMessages,
+        {
+          id: Math.random().toString(),
+          text: `Contesto messaggi precedenti ${statusText}`,
+          sender: BOT,
+          createdAt: new Date(),
+        }
+      ]);
+      
+      return newValue;
+    });
   };
 
   // Handler per inviare messaggi
@@ -93,9 +112,9 @@ const BotChat: React.FC = () => {
           createdAt: new Date(),
         }
       ]);
-      
-      // Otteniamo la risposta dal server usando il modello selezionato e i messaggi precedenti
-      const botResponseText = await sendMessageToBot(text, modelType, lastMessages);
+        // Otteniamo la risposta dal server usando il modello selezionato e i messaggi precedenti
+      const messagesToSend = includePreviousMessages ? lastMessages : [];
+      const botResponseText = await sendMessageToBot(text, modelType, messagesToSend);
       
       // Rimuoviamo il messaggio temporaneo e aggiungiamo la risposta reale
       setMessages(prevMessages => {
@@ -125,7 +144,7 @@ const BotChat: React.FC = () => {
         }
       ]);
     }
-  }, [modelType, messages]);
+  }, [modelType, messages, includePreviousMessages]);
 
   return (
     <SafeAreaView style={chatStyles.container}>
@@ -133,11 +152,12 @@ const BotChat: React.FC = () => {
         style={chatStyles.chatContainer}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-      >
-        <ChatHeader
+      >        <ChatHeader
           modelType={modelType}
           onModelChange={handleModelChange}
           onNewChat={handleNewChat}
+          includePreviousMessages={includePreviousMessages}
+          onTogglePreviousMessages={handleTogglePreviousMessages}
         />
         <ChatList messages={messages} />
         <ChatInput onSendMessage={handleSendMessage} />

@@ -37,6 +37,8 @@ export interface ChatHeaderProps {
   modelType: 'base' | 'advanced';
   onModelChange: (modelType: 'base' | 'advanced') => void;
   onNewChat: () => void;
+  includePreviousMessages: boolean;
+  onTogglePreviousMessages: () => void;
   style?: StyleProp<ViewStyle>;
 }
 

@@ -3,6 +3,7 @@ import React, {
   useImperativeHandle,
   useState,
   useEffect,
+  useRef,
 } from "react";
 import { View, StyleSheet, SafeAreaView, Platform } from "react-native";
 import dayjs from "dayjs";
@@ -29,6 +30,7 @@ export interface CategoryType {
 const CategoryList = forwardRef((props, ref) => {
   const [viewMode, setViewMode] = useState<ViewModeType>('categories');
   const [refreshKey, setRefreshKey] = useState(0);
+  const calendarViewRef = useRef<any>(null);
   
   // Forza l'aggiornamento del componente
   const refreshComponent = () => {
@@ -65,23 +67,38 @@ const CategoryList = forwardRef((props, ref) => {
       globalEventEmitter.removeListener(EVENTS.CATEGORY_DELETED, categoryDeletedListener);
     };
   }, []);
-
   // Funzione per ricaricare le categorie (esposta tramite ref)
   const reloadCategories = () => {
-    console.log("Ricarico le categorie");
+    console.log("Ricarico le categorie e il calendario");
     refreshComponent();
+    
+    // Se il calendario è attualmente visibile o comunque disponibile, 
+    // forza anche il suo aggiornamento
+    if (calendarViewRef.current && calendarViewRef.current.refresh) {
+      calendarViewRef.current.refresh();
+    }
   };
 
   // Esponi la funzione reloadCategories tramite ref
   useImperativeHandle(ref, () => ({
     reloadCategories
   }));
-
   // Il gestore dell'aggiunta della categoria
   const handleCategoryAdded = (newCategory: CategoryType) => {
     console.log("handleCategoryAdded chiamato con:", newCategory);
     // Non abbiamo più bisogno di gestire manualmente l'aggiunta,
     // poiché ora utilizziamo l'EventEmitter
+  };
+
+  // Gestori per l'eliminazione e la modifica delle categorie
+  const handleCategoryDeleted = () => {
+    console.log("handleCategoryDeleted chiamato");
+    refreshComponent();
+  };
+
+  const handleCategoryEdited = () => {
+    console.log("handleCategoryEdited chiamato");
+    refreshComponent();
   };
 
   // Gestisce il cambio di modalità di visualizzazione
@@ -92,14 +109,15 @@ const CategoryList = forwardRef((props, ref) => {
   return (
     <View style={styles.container} key={refreshKey}>
       {/* Visualizzazione condizionale in base alla modalità selezionata */}
-      <View style={styles.contentContainer}>
-        {viewMode === 'categories' ? (
+      <View style={styles.contentContainer}>        {viewMode === 'categories' ? (
           <CategoryView 
             onCategoryAdded={handleCategoryAdded}
+            onCategoryDeleted={handleCategoryDeleted}
+            onCategoryEdited={handleCategoryEdited}
             reloadCategories={reloadCategories}
           />
         ) : (
-          <CalendarView />
+          <CalendarView ref={calendarViewRef} />
         )}
       </View>
 

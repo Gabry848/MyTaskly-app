@@ -18,7 +18,10 @@ export type RootStackParamList = {
   Login: undefined;
   Register: undefined;
   Categories: undefined;
-  TaskList: { categoryId: number | string };
+  TaskList: { 
+    categoryId: number | string;
+    category_name: string;
+  };
   Notes: undefined;
   Profile: undefined;
   Settings: undefined;

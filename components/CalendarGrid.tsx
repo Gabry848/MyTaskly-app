@@ -25,14 +25,14 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
   onSelectDate,
   onPreviousMonth,
   onNextMonth
-}) => {
-  // Gruppo gli impegni per data
+}) => {  // Gruppo gli impegni per data
   const groupTasksByDate = () => {
     const groupedTasks: Record<string, Task[]> = {};
     
     tasks.forEach(task => {
-      const taskDate = task.start_time ? 
-        dayjs(task.start_time).format('YYYY-MM-DD') : 
+      // Usa end_time (data di scadenza) invece di start_time per mostrare gli impegni nel giorno corretto
+      const taskDate = task.end_time ? 
+        dayjs(task.end_time).format('YYYY-MM-DD') : 
         dayjs().format('YYYY-MM-DD');
         
       if (!groupedTasks[taskDate]) {

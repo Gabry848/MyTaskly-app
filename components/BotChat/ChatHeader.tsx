@@ -7,6 +7,8 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
   modelType, 
   onModelChange, 
   onNewChat,
+  includePreviousMessages,
+  onTogglePreviousMessages,
   style 
 }) => {
   return (
@@ -20,6 +22,17 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
           <Text style={styles.modelText}>
             {modelType === 'advanced' ? 'Avanzato' : 'Base'}
           </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.toggleButton, includePreviousMessages && styles.toggleButtonActive]}
+          onPress={onTogglePreviousMessages}
+        >
+          <MaterialIcons 
+            name="history" 
+            size={18} 
+            color={includePreviousMessages ? "#FFFFFF" : "#5B37B7"} 
+          />
         </TouchableOpacity>
         
         <TouchableOpacity 
@@ -67,14 +80,25 @@ const styles = StyleSheet.create({
     color: '#5B37B7',
     marginLeft: 4,
     fontWeight: '500',
-  },
-  newChatButton: {
+  },  newChatButton: {
     width: 30,
     height: 30,
     borderRadius: 15,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#F0EAFA',
+  },
+  toggleButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F0EAFA',
+    marginRight: 8,
+  },
+  toggleButtonActive: {
+    backgroundColor: '#5B37B7',
   }
 });
 
