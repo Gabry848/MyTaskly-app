@@ -14,12 +14,13 @@ const ChatList: React.FC<ChatListProps> = ({ messages, style }) => {
       }, 100);
     }
   }, [messages.length]);
-
   return (
     <FlatList
       ref={flatListRef}
       data={messages}
-      renderItem={({ item }) => <MessageBubble message={item} />}
+      renderItem={({ item }) => {
+        return <MessageBubble message={item} />;
+      }}
       keyExtractor={(item) => item.id}
       contentContainerStyle={[styles.messagesList, style]}
       showsVerticalScrollIndicator={false}

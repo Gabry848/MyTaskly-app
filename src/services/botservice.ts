@@ -71,13 +71,22 @@ export async function sendMessageToBot(
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
-    });
-
-    // Stampa la risposta del server per debug
+    });    // Stampa la risposta del server per debug
     console.log("Risposta ricevuta dal server:", response.data);
 
     // Controlla il formato della risposta e estrai il valore corretto
     if (response.data && typeof response.data === "object") {
+      // Se la risposta contiene message e mode
+      if (response.data.message && response.data.mode) {
+        if (response.data.mode === "normal") {
+          // Per modalità normal, restituisce solo il messaggio
+          return response.data.message;
+        } else if (response.data.mode === "view") {
+          // Per modalità view, restituisce l'intero oggetto come stringa JSON 
+          // che verrà poi gestito nel componente Message per visualizzare TaskTableBubble
+          return JSON.stringify(response.data);
+        }
+      }
       // Se la risposta è un oggetto con chiave 'response'
       if (response.data.response) {
         return response.data.response;

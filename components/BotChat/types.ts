@@ -8,6 +8,25 @@ export interface Message {
   sender: 'user' | 'bot';
   createdAt: Date;
   modelType?: 'base' | 'advanced'; // Tipo di modello utilizzato per questo messaggio
+  tasks?: TaskItem[]; // Array opzionale di attività
+}
+
+// Interfaccia per gli elementi delle attività
+export interface TaskItem {
+  task_id: number;
+  title: string;
+  description: string;
+  start_time: string;
+  end_time: string;
+  category: string;
+  priority: string;
+  status: string;
+}
+
+// Props per il componente TaskTableBubble
+export interface TaskTableBubbleProps {
+  message: string; // Il messaggio completo contenente il JSON
+  style?: StyleProp<ViewStyle>;
 }
 
 // Interfaccia per la sessione di chat

@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, View, Text } from 'react-native';
 import { MessageBubbleProps } from './types';
+import TaskTableBubble from './TaskTableBubble'; // Importa il nuovo componente
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style }) => {
   const isBot = message.sender === 'bot';
@@ -9,7 +10,39 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style }) => {
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
-  
+    // Controlla se il messaggio del bot contiene la struttura dei task specificata
+  if (isBot && typeof message.text === 'string') {
+    // Controlla se il messaggio contiene un JSON array di task
+    if (message.text.includes('[') && message.text.includes(']') && 
+        (message.text.includes('📅 TASK PER LA DATA') || message.text.includes('task_id'))) {
+      return <TaskTableBubble message={message.text} style={style} />;
+    }
+      // Controlla il formato JSON legacy
+    try {
+      const parsedData = JSON.parse(message.text);
+      if (parsedData.mode === "view") {
+        // Se ha una proprietà message, usa quella per il TaskTableBubble
+        if (parsedData.message) {
+          return <TaskTableBubble message={parsedData.message} style={style} />;
+        }
+        // Altrimenti, se ha tasks, converte al nuovo formato
+        if (parsedData.tasks) {
+          const legacyMessage = `Ecco i tuoi impegni:\n📅 TASK:\n${JSON.stringify(parsedData.tasks)}\n📊 Totale task trovati: ${parsedData.tasks.length}`;
+          return <TaskTableBubble message={legacyMessage} style={style} />;
+        }
+      }
+    } catch (e) {
+      // Se non è un JSON valido, continua con il rendering normale
+    }
+  }
+
+  // Se il messaggio del bot contiene attività (formato legacy), visualizza TaskTableBubble
+  if (isBot && message.tasks && message.tasks.length > 0) {
+    const legacyMessage = `Ecco i tuoi impegni:\n📅 TASK:\n${JSON.stringify(message.tasks)}\n📊 Totale task trovati: ${message.tasks.length}`;
+    return <TaskTableBubble message={legacyMessage} style={style} />;
+  }
+
+  // Altrimenti, visualizza il messaggio di testo normale
   return (
     <View style={[
       styles.messageContainer,
