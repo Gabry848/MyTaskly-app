@@ -61,8 +61,8 @@ const CalendarView: React.FC = () => {
   // Ottieni gli impegni per la data selezionata
   const getTasksForSelectedDate = () => {
     return tasks.filter(task => {
-      const taskDate = task.start_time ? 
-        dayjs(task.start_time).format('YYYY-MM-DD') : null;
+      const taskDate = task.end_time ? 
+        dayjs(task.end_time).format('YYYY-MM-DD') : null;
       return taskDate === selectedDate;
     });
   };

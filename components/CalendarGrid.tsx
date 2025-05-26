@@ -31,8 +31,8 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
     const groupedTasks: Record<string, Task[]> = {};
     
     tasks.forEach(task => {
-      const taskDate = task.start_time ? 
-        dayjs(task.start_time).format('YYYY-MM-DD') : 
+      const taskDate = task.end_time ? 
+        dayjs(task.end_time).format('YYYY-MM-DD') : 
         dayjs().format('YYYY-MM-DD');
         
       if (!groupedTasks[taskDate]) {
