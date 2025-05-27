@@ -1,3 +1,4 @@
+import React from 'react';
 import { Text, Button } from '@react-navigation/elements';
 import { StyleSheet, View } from 'react-native';
 

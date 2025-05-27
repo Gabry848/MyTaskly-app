@@ -8,19 +8,12 @@ import { FilterModal } from './FilterModal';
 import { TaskSection } from './TaskSection';
 import { AddTaskButton } from './AddTaskButton';
 import { filterTasksByDay } from './TaskUtils';
-
-// Assicurati di importare i componenti Task e AddTask dal percorso corretto
-// import { Task } from '../../components/Task';
-// import { AddTask } from '../../components/AddTask';
-
-// Assicurati di importare le funzioni del servizio dal percorso corretto
-// import { getTasks, addTask, deleteTask, updateTask, completeTask, disCompleteTask } from '../../services/taskService';
+import AddTask from '../AddTask';
 
 interface TaskListContainerProps {
   categoryName: string;
   categoryId: string;
   Task: React.ComponentType<any>; // Componente Task
-  AddTask: React.ComponentType<any>; // Componente AddTask
   taskService: {
     getTasks: (categoryId: string) => Promise<TaskType[]>;
     addTask: (task: any) => Promise<any>;
@@ -35,7 +28,6 @@ export const TaskListContainer = ({
   categoryName,
   categoryId,
   Task,
-  AddTask,
   taskService
 }: TaskListContainerProps) => {
   const [tasks, setTasks] = useState<TaskType[]>([]);

@@ -12,6 +12,7 @@ import { FontAwesome } from "@expo/vector-icons";
 import * as authService from "../../services/authService";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { RootStackParamList } from "../../types";
+import eventEmitter from "../../utils/eventEmitter";
 
 import { NotificationSnackbar } from "../../../components/NotificationSnackbar";
 
@@ -29,8 +30,7 @@ const LoginScreen = () => {
     message: "",
     isSuccess: true,
     onFinish: () => {},
-  });
-  // Effetto per navigare alla Home dopo un login riuscito
+  });  // Effetto per navigare alla Home dopo un login riuscito
   React.useEffect(() => {
     if (loginSuccess) {
       const timer = setTimeout(() => {
@@ -95,6 +95,7 @@ const LoginScreen = () => {
 
       if (login_data.success) {
         setLoginSuccess(true); // Imposta il login come riuscito
+        eventEmitter.emit("loginSuccess"); // Emetti evento per aggiornare lo stato di autenticazione
         setNotification({
           isVisible: true,
           message: "Login effettuato con successo",

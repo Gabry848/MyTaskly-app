@@ -17,7 +17,7 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
 } from "react-native-reanimated";
-import { addTaskToList } from "../src/navigation/screens/TaskList";
+import { addTaskToList } from "./TaskList/types";
 import { getCategories } from '../src/services/taskService';
 import dayjs from "dayjs";
 

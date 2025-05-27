@@ -13,17 +13,20 @@ export interface TaskListRouteParams {
 }
 
 export type RootStackParamList = {
-  HomeTabs: undefined; // Aggiunto per il TabNavigator
-  Home: undefined;
   Login: undefined;
   Register: undefined;
-  Categories: undefined;
-  TaskList: { categoryId: number | string };
-  Notes: undefined;
+  HomeTabs: undefined;
+  TaskList: { categoryId: number | string; category_name: string };
   Profile: undefined;
   Settings: undefined;
+  Statistics: undefined;
   Updates: undefined;
-  Statistics: undefined; // Aggiunta nuova schermata
-  BotChat: undefined; // rimosso BotChat
   NotFound: undefined;
+};
+
+export type TabParamList = {
+  Home: undefined;
+  Categories: undefined;
+  Notes: undefined;
+  BotChat: undefined;
 };

@@ -17,6 +17,7 @@ import { NotificationSnackbar } from "../../../components/NotificationSnackbar";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { STORAGE_KEYS } from "../../constants/authConstants";
 import { LinearGradient } from "expo-linear-gradient";
+import eventEmitter from "../../utils/eventEmitter";
 
 const { width } = Dimensions.get("window");
 
@@ -32,7 +33,7 @@ const ProfileScreen = () => {
     email: "",
     joinDate: "",
   });
-  
+  const [logoutTrigger, setLogoutTrigger] = useState(false); // Stato per triggerare l'effetto di logout
   const fadeAnim = useState(new Animated.Value(0))[0];
 
   useEffect(() => {
@@ -60,6 +61,18 @@ const ProfileScreen = () => {
 
     fetchUserData();
   }, []);
+
+  useEffect(() => {
+    if (logoutTrigger) {
+      const timer = setTimeout(() => {
+        eventEmitter.emit("logoutSuccess");
+        setLogoutTrigger(false); // Resetta il trigger
+      }, 2000); // Ritardo di 2 secondi come nel login
+
+      return () => clearTimeout(timer);
+    }
+  }, [logoutTrigger]);
+
   const [notification, setNotification] = useState({
     isVisible: false,
     message: "",
@@ -78,9 +91,9 @@ const ProfileScreen = () => {
         isSuccess: true,
         onFinish: () => {
           setNotification((prev) => ({ ...prev, isVisible: false }));
-          navigation.navigate("Login");
         },
       });
+      setLogoutTrigger(true); // Attiva l'effetto per il logout ritardato
     } catch (error) {
       setNotification({
         isVisible: true,

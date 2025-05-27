@@ -1,10 +1,8 @@
-﻿// filepath: e:\Projects\Taskly\src\navigation\screens\TaskList.tsx
-import React from "react";
+﻿import React from "react";
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../types';
 import { TaskListContainer, addTaskToList } from "../../../components/TaskList";
 import Task from "../../../components/Task";
-import AddTask from "../../../components/AddTask";
 import { getTasks, addTask, deleteTask, updateTask, completeTask, disCompleteTask } from "../../services/taskService";
 
 type TaskListRouteProp = RouteProp<RootStackParamList, 'TaskList'>;
@@ -20,9 +18,8 @@ export function TaskList({ route }: Props) {
   return (
     <TaskListContainer 
       categoryName={categoryName}
-      categoryId={categoryId || categoryName} // Usa categoryName come fallback se categoryId non è disponibile
+      categoryId={String(categoryId || categoryName)} // Converti in stringa
       Task={Task}
-      AddTask={AddTask}
       taskService={{
         getTasks,
         addTask,

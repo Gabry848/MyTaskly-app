@@ -8,7 +8,7 @@ import CalendarGrid from './CalendarGrid';
 import TaskCard from './TaskCard';
 import AddTask from './AddTask';
 import AddTaskButton from './AddTaskButton';
-import { addTaskToList } from '../src/navigation/screens/TaskList';
+import { addTaskToList } from './TaskList/types';
 
 const CalendarView: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<string>(dayjs().format('YYYY-MM-DD'));

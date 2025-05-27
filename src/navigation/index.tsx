@@ -1,163 +1,204 @@
-import React from "react";
-import { NavigationContainer, LinkingOptions } from "@react-navigation/native";
+import React, { useEffect, useState } from "react";
+import { NavigationContainer, useNavigation, NavigationProp } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import Home from "./screens/Home";
-import Profile from "./screens/Profile";
-import Settings from "./screens/Settings";
-import { NotFound } from "./screens/NotFound";
-import TaskList from "./screens/TaskList";
-import Login from "./screens/Login";
-import Register from "./screens/Register";
-import Categories from "./screens/Categories";
-import Notes from "./screens/Notes";
-import Statistics from "./screens/Statistics"; 
-import ChatBotShowcase from "./screens/BotChat"; // schermata demo chat bot
-import { RootStackParamList } from "../types";
-import { Home as HomeIcon, BookType, FolderKanban, MessageSquare } from "lucide-react-native";
+import { BackHandler } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import LoginScreen from "./screens/Login";
+import RegisterScreen from "./screens/Register";
+import HomeScreen from "./screens/Home";
+import TaskListScreen from "./screens/TaskList";
+import CategoriesScreen from "./screens/Categories";
+import ProfileScreen from "./screens/Profile";
+import NotesScreen from "./screens/Notes";
+import BotChatScreen from "./screens/BotChat";
+import { Updates as UpdatesScreen } from "./screens/Updates";
+import SettingsScreen from "./screens/Settings";
+import StatisticsScreen from "./screens/Statistics";
+import { NotFound as NotFoundScreen } from "./screens/NotFound";
+import eventEmitter from "../utils/eventEmitter";
+import { check_login } from "../services/authService";
+
+// Definizione del tipo per le route dello Stack principale
+export type RootStackParamList = {
+  Login: undefined;
+  Register: undefined;
+  HomeTabs: undefined; // Contiene il Tab Navigator
+  TaskList: { categoryId: number | string };
+  Profile: undefined;
+  Settings: undefined;
+  Statistics: undefined;
+  Updates: undefined;
+  NotFound: undefined;
+};
+
+// Definizione del tipo per le route dei Tab
+export type TabParamList = {
+  Home: undefined;
+  Categories: undefined;
+  Notes: undefined;
+  BotChat: undefined;
+};
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
-const Tab = createBottomTabNavigator<RootStackParamList>();
+const Tab = createBottomTabNavigator<TabParamList>();
 
-// Bottom tabs navigator
-function TabNavigator() {
+// Tab Navigator per le schermate principali
+function HomeTabs() {
   return (
     <Tab.Navigator
       id={undefined}
-      screenOptions={{
-        tabBarActiveTintColor: "#007BFF",
-        tabBarInactiveTintColor: "#888",
-        tabBarStyle: {
-          height: 60,
-          paddingBottom: 10,
+      screenOptions={({ route }) => ({
+        tabBarIcon: ({ focused, color, size }) => {
+          let iconName: keyof typeof Ionicons.glyphMap;
+
+          switch (route.name) {
+            case 'Home':
+              iconName = focused ? 'home' : 'home-outline';
+              break;
+            case 'Categories':
+              iconName = focused ? 'grid' : 'grid-outline';
+              break;
+            case 'Notes':
+              iconName = focused ? 'document-text' : 'document-text-outline';
+              break;
+            case 'BotChat':
+              iconName = focused ? 'chatbubbles' : 'chatbubbles-outline';
+              break;
+            default:
+              iconName = 'home-outline';
+          }
+
+          return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarLabelStyle: {
-          fontSize: 12,
-        },
-      }}
+        tabBarActiveTintColor: '#007AFF',
+        tabBarInactiveTintColor: 'gray',
+        headerShown: false,
+      })}
     >
-      <Tab.Screen
-        name="Home" // Corretto da "HomePage" a "Home"
-        component={Home}
-        options={{
-          title: "Home",
-          headerShown: false, // Nascondo l'header solo per Home
-          tabBarIcon: ({ color, size }) => (
-            <HomeIcon size={size} color={color} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Notes"
-        component={Notes}
-        options={{
-          tabBarIcon: ({ color, size }) => (
-            <BookType size={size} color={color} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Categories"
-        component={Categories}
-        options={{
-          tabBarIcon: ({ color, size }) => (
-            <FolderKanban size={size} color={color} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="BotChat"
-        component={ChatBotShowcase}
-        options={{
-          title: "Assistente",
-          tabBarIcon: ({ color, size }) => (
-            <MessageSquare size={size} color={color} />
-          ),
-        }}
-      />
+      <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'Home' }} />
+      <Tab.Screen name="Categories" component={CategoriesScreen} options={{ title: 'Categorie' }} />
+      <Tab.Screen name="Notes" component={NotesScreen} options={{ title: 'Note' }} />
+      <Tab.Screen name="BotChat" component={BotChatScreen} options={{ title: 'Chat Bot' }} />
     </Tab.Navigator>
   );
 }
+// Componente interno che gestisce l'event emitter
+function NavigationHandler() {
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
 
-const linking: LinkingOptions<RootStackParamList> = {
-  prefixes: ["https://taskly.com", "taskly://"],
-  config: {
-    screens: {
-      HomeTabs: "home", // Ora valido perché HomeTabs è in RootStackParamList
-      Profile: {
-        path: ":user(@[a-zA-Z0-9-_]+)",
-        parse: {
-          user: (value) => value.replace(/^@/, ""),
-        },
-        stringify: {
-          user: (value) => `@${value}`,
-        },
-      },
-      Settings: "settings",
-      NotFound: "*",
-      TaskList: "tasks",
-      Login: "login",
-      Register: "register",
-      Categories: "categories",
-      Notes: "notes",
-      Statistics: "statistics", // Aggiunto percorso per Statistics
-      BotChat: "botchat", // Aggiungo percorso per BotChat
-    },
-  },
-};
+  useEffect(() => {
+    const handleLogout = () => {
+      navigation.navigate("Login");
+    };
 
-export default function RootStack() {
+    const handleBackPress = () => {
+      const currentRoute = navigation.getState()?.routes[navigation.getState()?.index || 0]?.name;
+      
+      // Se siamo sulla schermata di Login, chiudi l'app
+      if (currentRoute === "Login") {
+        BackHandler.exitApp();
+        return true; // Previene il comportamento di default
+      }
+      
+      return false; // Lascia che React Navigation gestisca il back button
+    };
+
+    eventEmitter.on("logoutSuccess", handleLogout);
+    const backHandler = BackHandler.addEventListener("hardwareBackPress", handleBackPress);
+
+    return () => {
+      eventEmitter.off("logoutSuccess", handleLogout);
+      backHandler.remove();
+    };
+  }, [navigation]);
+
+  return null;
+}
+
+// Stack Navigator separato con controllo autenticazione
+function AppStack() {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  // Controlla lo stato di autenticazione all'avvio
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      try {
+        const authStatus = await check_login();
+        setIsAuthenticated(authStatus.isAuthenticated);
+      } catch (error) {
+        console.error("Errore nel controllo autenticazione:", error);
+        setIsAuthenticated(false);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkAuthStatus();
+  }, []);
+
+  // Listener per eventi di login/logout
+  useEffect(() => {
+    const handleLoginSuccess = () => {
+      setIsAuthenticated(true);
+    };
+
+    const handleLogoutSuccess = () => {
+      setIsAuthenticated(false);
+    };
+
+    eventEmitter.on("loginSuccess", handleLoginSuccess);
+    eventEmitter.on("logoutSuccess", handleLogoutSuccess);
+
+    return () => {
+      eventEmitter.off("loginSuccess", handleLoginSuccess);
+      eventEmitter.off("logoutSuccess", handleLogoutSuccess);
+    };
+  }, []);
+
+  // Mostra un loading screen mentre controlla l'autenticazione
+  if (isLoading) {
+    return null; // O un componente di loading se preferisci
+  }
+
+  const initialRoute = isAuthenticated ? "HomeTabs" : "Login";
   return (
-    <NavigationContainer linking={linking}>
-      <Stack.Navigator id={undefined}>
-        <Stack.Screen
-          name="HomeTabs" // Ora valido
-          component={TabNavigator}
-          options={{ title: "Taskly", headerShown: false }}
-        />
-        <Stack.Screen
-          name="Profile"
-          component={Profile}
-          options={{ title: "Profile" }}
-        />
-        <Stack.Screen
-          name="Settings"
-          component={Settings}
-          options={{ presentation: "modal" }}
-        />
-        <Stack.Screen
-          name="NotFound"
-          component={NotFound}
-          options={{ title: "404" }}
-        />
-        <Stack.Screen
-          name="TaskList"
-          component={TaskList}
-          options={{ title: "ToDo" }}
-        />
+    <>
+      <NavigationHandler />
+      <Stack.Navigator 
+        id={undefined}
+        initialRouteName={initialRoute}>
         <Stack.Screen
           name="Login"
-          component={Login}
-          options={{ title: "Login" }}
+          component={LoginScreen}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="Register"
-          component={Register}
-          options={{ title: "Register" }}
+          component={RegisterScreen}
+          options={{ headerShown: false }}
         />
-        {/* Schermata per le statistiche dettagliate */}
-        <Stack.Screen
-          name="Statistics"
-          component={Statistics}
-          options={{ title: "Statistiche Dettagliate" }}
+        <Stack.Screen 
+          name="HomeTabs" 
+          component={HomeTabs}
+          options={{ headerShown: false }}
         />
-        {/* Schermata per la chat con il bot */}
-        {/* <Stack.Screen
-          name="BotChat"
-          component={BotChat}
-          options={{ title: "Assistente Virtuale" }}
-        /> */}
+        <Stack.Screen name="TaskList" component={TaskListScreen} />
+        <Stack.Screen name="Profile" component={ProfileScreen} />
+        <Stack.Screen name="Settings" component={SettingsScreen} />
+        <Stack.Screen name="Statistics" component={StatisticsScreen} />
+        <Stack.Screen name="Updates" component={UpdatesScreen} />
+        <Stack.Screen name="NotFound" component={NotFoundScreen} />
       </Stack.Navigator>
+    </>
+  );
+}
+
+// Componente principale Navigation
+export default function Navigation() {
+  return (
+    <NavigationContainer>
+      <AppStack />
     </NavigationContainer>
   );
 }
