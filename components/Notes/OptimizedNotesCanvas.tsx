@@ -63,7 +63,7 @@ export const OptimizedNotesCanvas: React.FC<OptimizedNotesCanvasProps> = ({
     .onBegin(() => {
       'worklet';
       isPinching.value = true;
-      canDragNotes.value = false;
+      // Non disabilitare canDragNotes durante il pinch
       lastScale.value = scale.value;
     })
     .onUpdate((event) => {
@@ -73,8 +73,7 @@ export const OptimizedNotesCanvas: React.FC<OptimizedNotesCanvasProps> = ({
       // Zoom fluido con limiti ottimizzati
       const newScale = Math.min(Math.max(lastScale.value * event.scale, 0.5), 2.0);
       scale.value = newScale;
-    })
-    .onEnd(() => {
+    })    .onEnd(() => {
       'worklet';
       // Spring physics ottimizzate
       scale.value = withSpring(scale.value, {
@@ -87,9 +86,8 @@ export const OptimizedNotesCanvas: React.FC<OptimizedNotesCanvasProps> = ({
       setTimeout(() => {
         'worklet';
         isPinching.value = false;
-        canDragNotes.value = true;
       }, 150);
-    });  // Gesture pan semplificato e stabile
+    });// Gesture pan semplificato e stabile
   const panGesture = Gesture.Pan()
     .maxPointers(1)
     .onBegin(() => {

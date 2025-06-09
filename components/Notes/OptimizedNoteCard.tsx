@@ -67,14 +67,14 @@ export const OptimizedNoteCard: React.FC<OptimizedNoteCardProps> = React.memo(({
       console.log('Haptic feedback non disponibile');
     }
   }, []);
-
   // Gesture di trascinamento semplificato
   const dragGesture = Gesture.Pan()
     .enabled(!isEditing)
-    .maxPointers(1)    .onBegin(() => {
+    .maxPointers(1)
+    .onBegin(() => {
       'worklet';
-      // Controlli di sicurezza
-      if (isPinching.value || isPanning.value || !canDragNotes.value) {
+      // Controlli di sicurezza ridotti - permetti il drag anche durante pan/pinch del canvas
+      if (!canDragNotes.value) {
         return false;
       }
 
