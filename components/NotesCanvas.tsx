@@ -1,9 +1,11 @@
 import React, { useRef, useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Dimensions, Text } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { Note as NoteInterface } from '../src/services/noteService';
-import DraggableNote from './DraggableNote';
+import { GestureNoteCard } from './GestureNoteCard';
 import { ReactNativeZoomableView } from '@openspacelabs/react-native-zoomable-view';
+import { useSharedValue, withSpring, withTiming, runOnUI, useAnimatedStyle, interpolate } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 
 interface NotesCanvasProps {
   notes: NoteInterface[];
@@ -27,10 +29,14 @@ const NotesCanvas: React.FC<NotesCanvasProps> = ({
   
   // Creazione di un riferimento allo ZoomableView per controllarlo programmaticamente
   const zoomableViewRef = useRef(null);
-  
   // Stato per tracciare lo zoom corrente
   const [currentZoom, setCurrentZoom] = useState(1);
   const [isPanning, setIsPanning] = useState(false);
+  // Shared values per il controllo delle gesture delle note con animazioni fluide
+  const canvasScale = useSharedValue(1);
+  const isPinchingRef = useSharedValue(false);
+  const canDragNotesRef = useSharedValue(true);  const zoomTransition = useSharedValue(1);
+  const panningTransition = useSharedValue(0);
   
   // Funzione per resettare lo zoom e la posizione
   const resetView = () => {
@@ -59,69 +65,101 @@ const NotesCanvas: React.FC<NotesCanvasProps> = ({
         onPress={resetView}
       >
         <FontAwesome name="refresh" size={20} color="#007AFF" />
-      </TouchableOpacity>
-
-      {/* Indicatore di zoom attuale */}
-      <View style={[
-        styles.zoomIndicator,
-        { opacity: currentZoom !== 1 || isPanning ? 0.7 : 0 }
-      ]}>
-        <FontAwesome 
-          name={isPanning ? "arrows" : "search"} 
-          size={16} 
-          color="white" 
-        />
-        <View style={styles.zoomTextContainer}>
-          <FontAwesome name="search" size={12} color="white" />
-          <View style={styles.zoomValueContainer}>
-            <FontAwesome 
-              name={currentZoom >= 1 ? "plus" : "minus"} 
-              size={8} 
-              color="white" 
-              style={styles.zoomIcon} 
-            />
-            <View style={styles.zoomBarContainer}>
-              <View 
-                style={[
-                  styles.zoomBar, 
-                  { 
-                    width: Math.min(Math.abs((currentZoom - 1) * 50), 100),
-                    backgroundColor: currentZoom >= 1 ? '#4CAF50' : '#FF5252'
-                  }
-                ]} 
+      </TouchableOpacity>      {/* Indicatore di zoom semplificato senza accessi diretti a variabili di stato */}
+      {(currentZoom !== 1 || isPanning) && (
+        <View style={[styles.zoomIndicator, { opacity: 0.7 }]}>
+          <FontAwesome 
+            name={isPanning ? "arrows" : "search"} 
+            size={16} 
+            color="white" 
+          />
+          <View style={styles.zoomTextContainer}>
+            <FontAwesome name="search" size={12} color="white" />
+            <View style={styles.zoomValueContainer}>
+              <FontAwesome 
+                name={currentZoom >= 1 ? "plus" : "minus"} 
+                size={8} 
+                color="white" 
+                style={styles.zoomIcon} 
               />
+              <View style={styles.zoomBarContainer}>
+                <View 
+                  style={[
+                    styles.zoomBar, 
+                    { 
+                      width: Math.min(Math.abs((currentZoom - 1) * 50), 100),       
+                      backgroundColor: currentZoom >= 1 ? '#4CAF50' : '#FF5252'
+                    }
+                  ]} 
+                />
+              </View>
+              <Text style={styles.zoomText}>
+                {Math.round(currentZoom * 100)}%
+              </Text>
             </View>
           </View>
         </View>
-      </View>
-
-      {/* Area zoomabile e trascinabile con React Native Zoomable View */}
+      )}{/* Area zoomabile e trascinabile con React Native Zoomable View */}
       <ReactNativeZoomableView
         ref={zoomableViewRef}
-        maxZoom={5}
-        minZoom={0.5}
-        zoomStep={0.5}
+        maxZoom={8}
+        minZoom={0.2}
+        zoomStep={0.2}
         initialZoom={1}
         bindToBorders={true}
         contentWidth={CANVAS_WIDTH}
         contentHeight={CANVAS_HEIGHT}
-        panBoundaryPadding={50}
+        panBoundaryPadding={100}
         style={styles.zoomableViewContainer}
-        onZoomAfter={(event) => {
-          if (event && event.zoomLevel !== undefined) {
-            setCurrentZoom(event.zoomLevel);
+        movementSensibility={1.2}
+        doubleTapDelay={250}
+        longPressDuration={400}
+        onZoomBefore={(event, gestureState, zoomableViewEventObject) => {
+          runOnUI(() => {
+            isPinchingRef.value = true;
+            canDragNotesRef.value = false;
+            zoomTransition.value = withTiming(1, { duration: 150 });
+          })();
+          return true;
+        }}
+        onZoomAfter={(event, gestureState, zoomableViewEventObject) => {
+          if (zoomableViewEventObject && zoomableViewEventObject.zoomLevel !== undefined) {
+            setCurrentZoom(zoomableViewEventObject.zoomLevel);
+            runOnUI(() => {
+              canvasScale.value = withSpring(zoomableViewEventObject.zoomLevel, {
+                damping: 15,
+                stiffness: 200,
+                mass: 0.8
+              });
+            })();
           }
+          // Ritarda leggermente la riattivazione del drag per evitare conflitti
+          setTimeout(() => {
+            runOnUI(() => {
+              isPinchingRef.value = false;
+              canDragNotesRef.value = true;
+              zoomTransition.value = withTiming(0, { duration: 200 });
+            })();
+          }, 100);
         }}
-        onShiftingBefore={(event) => {
+        onShiftingBefore={(event, gestureState, zoomableViewEventObject) => {
           setIsPanning(true);
+          runOnUI(() => {
+            panningTransition.value = withTiming(1, { duration: 100 });
+          })();
+          return true;
         }}
-        onShiftingAfter={(event) => {
+        onShiftingAfter={(event, gestureState, zoomableViewEventObject) => {
           setTimeout(() => {
             setIsPanning(false);
-          }, 150);
+            runOnUI(() => {
+              panningTransition.value = withTiming(0, { duration: 150 });
+            })();
+          }, 100);
+          return true;
         }}
         onTransform={(event) => {
-          // Qui potremmo aggiungere ulteriore logica durante la trasformazione se necessario
+          // Logica di trasformazione fluida se necessaria
         }}
         disablePanOnInitialZoom={false}
         doubleTapZoomToCenter={true}
@@ -129,17 +167,20 @@ const NotesCanvas: React.FC<NotesCanvasProps> = ({
         {/* Canvas con sfondo */}
         <View style={[styles.canvas, { width: CANVAS_WIDTH, height: CANVAS_HEIGHT }]}>
           {/* Sfondo della canvas */}
-          <View style={[styles.backgroundLayer, { width: CANVAS_WIDTH, height: CANVAS_HEIGHT }]} />
-          
-          {/* Note - posizionate in modo assoluto all'interno della canvas */}
+          <View style={[styles.backgroundLayer, { width: CANVAS_WIDTH, height: CANVAS_HEIGHT }]} />            {/* Note - posizionate in modo assoluto all'interno della canvas */}
           {notes.map((note) => (
-            <DraggableNote
+            <GestureNoteCard
               key={note.id}
               note={note}
               onDelete={onDeleteNote}
-              onUpdateText={onUpdateNote}
+              onUpdate={onUpdateNote}
               onUpdatePosition={onUpdatePosition}
               onBringToFront={onBringToFront}
+              isPinchingRef={isPinchingRef}
+              canvasScale={canvasScale}
+              canDragNotesRef={canDragNotesRef}
+              zoomTransition={zoomTransition}
+              panningTransition={panningTransition}
             />
           ))}
         </View>
@@ -221,10 +262,15 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     marginLeft: 2,
     overflow: 'hidden',
-  },
-  zoomBar: {
+  },  zoomBar: {
     height: '100%',
     borderRadius: 4,
+  },
+  zoomText: {
+    color: 'white',
+    fontSize: 10,
+    fontWeight: '600',
+    marginLeft: 4,
   }
 });
 

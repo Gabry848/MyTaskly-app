@@ -2,11 +2,14 @@ import React, { useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import * as Haptics from 'expo-haptics';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
   runOnJS,
   SharedValue,
+  withSpring,
+  withTiming,
 } from 'react-native-reanimated';
 import { Note as NoteInterface } from '../src/services/noteService';
 
@@ -18,7 +21,9 @@ interface GestureNoteCardProps {
   onBringToFront: (id: string) => void;
   isPinchingRef: SharedValue<boolean>;
   canvasScale: SharedValue<number>;
-  canDragNotesRef?: SharedValue<boolean>; // Nuova proprietà per controllare se le note possono essere trascinate
+  canDragNotesRef?: SharedValue<boolean>;
+  zoomTransition?: SharedValue<number>;
+  panningTransition?: SharedValue<number>;
 }
 
 export const GestureNoteCard: React.FC<GestureNoteCardProps> = ({
@@ -30,87 +35,174 @@ export const GestureNoteCard: React.FC<GestureNoteCardProps> = ({
   isPinchingRef,
   canvasScale,
   canDragNotesRef,
+  zoomTransition,
+  panningTransition,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(note.text);
-
-  // Stati condivisi per la posizione della nota
+  // Stati condivisi per la posizione e animazioni della nota con physics avanzate
   const translateX = useSharedValue(note.position.x);
   const translateY = useSharedValue(note.position.y);
   const savedTranslateX = useSharedValue(note.position.x);
   const savedTranslateY = useSharedValue(note.position.y);
   const isDragging = useSharedValue(false);
+  const scale = useSharedValue(1);
+  const shadowOpacity = useSharedValue(0.25);
+  const velocity = useSharedValue({ x: 0, y: 0 });
+  const lastTimestamp = useSharedValue(0);
 
   // Gestione dei callback
   const handleBringToFront = () => {
-    console.log(`Note ${note.id} brought to front`);
     onBringToFront(note.id);
   };
 
   const handlePositionUpdate = (x: number, y: number) => {
-    console.log(`Note ${note.id} position updated: X=${x.toFixed(2)}, Y=${y.toFixed(2)}`);
     onUpdatePosition(note.id, { x, y });
   };
 
-  // Definizione del gesto di trascinamento
+  const triggerHapticFeedback = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };  // Definizione del gesto di trascinamento ultra-fluido con momentum
   const dragGesture = Gesture.Pan()
     .enabled(!isEditing)
-    .maxPointers(1) // Solo un dito per trascinare la nota
+    .maxPointers(1)
     .onBegin(() => {
+      'worklet';
       if (isPinchingRef.value || (canDragNotesRef && !canDragNotesRef.value)) {
-        console.log(`Note ${note.id} drag prevented - isPinching: ${isPinchingRef.value}, canDragNotes: ${canDragNotesRef ? canDragNotesRef.value : true}`);
         return false;
       }
-      console.log(`Note ${note.id} drag started`);
+      
+      // Feedback tattile per l'inizio del trascinamento
+      runOnJS(triggerHapticFeedback)();
+      
+      // Reset velocity e inizializzazione
+      velocity.value = { x: 0, y: 0 };
+      lastTimestamp.value = Date.now();
+      
+      // Animazioni ultra-fluide per l'inizio del trascinamento
       isDragging.value = true;
+      scale.value = withSpring(1.08, { 
+        damping: 18, 
+        stiffness: 350,
+        mass: 0.7
+      });
+      shadowOpacity.value = withTiming(0.45, { duration: 120 });
+      
       runOnJS(handleBringToFront)();
-      return true;
-    })
+      return true;    })
     .onUpdate((event) => {
-      // Calcola lo spostamento tenendo conto del livello di zoom
-      // Utilizzo di una funzione di easing per rendere il movimento più naturale a diversi livelli di zoom
-      const zoomFactor = Math.max(0.5, 1 / canvasScale.value);
+      'worklet';
+      // Calcolo della velocità per momentum
+      const currentTime = Date.now();
+      const deltaTime = Math.max(currentTime - lastTimestamp.value, 1);
       
-      // Applica uno spostamento inversamente proporzionale al livello di zoom
-      // Con un fattore di smoothing per evitare movimenti troppo bruschi a zoom elevati
-      translateX.value = savedTranslateX.value + (event.translationX * zoomFactor);
-      translateY.value = savedTranslateY.value + (event.translationY * zoomFactor);
+      // Fattore di zoom adattivo con interpolazione smooth
+      const zoomFactor = Math.max(0.25, Math.min(2.5, 1 / canvasScale.value));
       
-      // Log meno frequente per non sovraccaricare la console
-      if (Math.abs(event.translationX) % 20 < 1 || Math.abs(event.translationY) % 20 < 1) {
-        console.log(`Note ${note.id} moving: X=${translateX.value.toFixed(2)}, Y=${translateY.value.toFixed(2)}, scale=${canvasScale.value.toFixed(2)}, zoomFactor=${zoomFactor.toFixed(2)}`);
-      }
-    })
+      // Fattore di smoothing ultra-fluido
+      const smoothingFactor = 0.985;
+      
+      // Calcolo movimento con accelerazione smooth
+      const deltaX = event.translationX * zoomFactor * smoothingFactor;
+      const deltaY = event.translationY * zoomFactor * smoothingFactor;
+      
+      // Aggiornamento velocità per momentum
+      velocity.value = {
+        x: (deltaX - (translateX.value - savedTranslateX.value)) / deltaTime * 1000,
+        y: (deltaY - (translateY.value - savedTranslateY.value)) / deltaTime * 1000
+      };
+      
+      // Applica il movimento con ultra-smooth interpolation
+      translateX.value = savedTranslateX.value + deltaX;
+      translateY.value = savedTranslateY.value + deltaY;
+      
+      lastTimestamp.value = currentTime;    })
     .onEnd(() => {
-      console.log(`Note ${note.id} drag ended`);
-      savedTranslateX.value = translateX.value;
-      savedTranslateY.value = translateY.value;
-      runOnJS(handlePositionUpdate)(translateX.value, translateY.value);
+      'worklet';
+      // Momentum finale con physics realistiche
+      const momentumFactor = 0.3;
+      const maxMomentum = 200;
+      
+      const finalVelocityX = Math.max(-maxMomentum, Math.min(maxMomentum, velocity.value.x * momentumFactor));
+      const finalVelocityY = Math.max(-maxMomentum, Math.min(maxMomentum, velocity.value.y * momentumFactor));
+      
+      // Animazioni ultra-fluide per la fine del trascinamento
+      scale.value = withSpring(1, { 
+        damping: 18, 
+        stiffness: 350,
+        mass: 0.7
+      });
+      shadowOpacity.value = withTiming(0.25, { duration: 180 });
+      
+      // Movimento finale con momentum e spring physics
+      const finalX = translateX.value + finalVelocityX * 0.1;
+      const finalY = translateY.value + finalVelocityY * 0.1;
+      
+      translateX.value = withSpring(finalX, { 
+        damping: 22, 
+        stiffness: 450,
+        mass: 0.6
+      });
+      translateY.value = withSpring(finalY, { 
+        damping: 22, 
+        stiffness: 450,
+        mass: 0.6
+      });
+      
+      // Salva la posizione finale con ultra-smooth settling
+      savedTranslateX.value = withSpring(finalX, { 
+        damping: 25, 
+        stiffness: 500,
+        mass: 0.5
+      });
+      savedTranslateY.value = withSpring(finalY, { 
+        damping: 25, 
+        stiffness: 500,
+        mass: 0.5
+      });
+      
+      runOnJS(handlePositionUpdate)(finalX, finalY);
       isDragging.value = false;
     });
-
-  // Stile animato per la nota
+  // Stile animato ultra-fluido per la nota con effetti avanzati
   const noteAnimatedStyle = useAnimatedStyle(() => {
+    // Effetto responsivo al zoom della canvas
+    const zoomInfluence = zoomTransition ? 1 + zoomTransition.value * 0.02 : 1;
+    const panInfluence = panningTransition ? 1 - panningTransition.value * 0.01 : 1;
+    
     return {
       transform: [
         { translateX: translateX.value },
         { translateY: translateY.value },
-      ] as any, // Cast to 'any' to resolve type issues
+        { scale: scale.value * zoomInfluence * panInfluence }
+      ] as any,
       zIndex: isDragging.value ? 9999 : note.zIndex,
-      elevation: isDragging.value ? 10 : note.zIndex / 10,
+      elevation: isDragging.value ? 18 : note.zIndex / 8,
+    };
+  });
+
+  // Stile animato per l'ombra ultra-dinamica
+  const shadowAnimatedStyle = useAnimatedStyle(() => {
+    const zoomShadowFactor = zoomTransition ? 1 + zoomTransition.value * 0.5 : 1;
+    
+    return {
+      shadowOpacity: shadowOpacity.value,
+      shadowRadius: isDragging.value ? 12 * zoomShadowFactor : 4 * zoomShadowFactor,
+      shadowOffset: {
+        width: 0,
+        height: isDragging.value ? 6 : 2,
+      },
     };
   });
 
   // Gestione dell'editing
   const handleLongPress = () => {
-    console.log(`Note ${note.id} editing started`);
     setIsEditing(true);
     setEditText(note.text);
   };
 
   const handleSave = () => {
     if (editText.trim() !== '') {
-      console.log(`Note ${note.id} text updated`);
       onUpdate(note.id, editText);
     }
     setIsEditing(false);
@@ -123,14 +215,12 @@ export const GestureNoteCard: React.FC<GestureNoteCardProps> = ({
           styles.note,
           { backgroundColor: note.color },
           noteAnimatedStyle,
+          shadowAnimatedStyle,
         ]}
       >
         <TouchableOpacity
           style={styles.deleteButton}
-          onPress={() => {
-            console.log(`Note ${note.id} deleted`);
-            onDelete(note.id);
-          }}
+          onPress={() => onDelete(note.id)}
         >
           <FontAwesome name="times" size={16} color="#555" />
         </TouchableOpacity>
@@ -140,18 +230,17 @@ export const GestureNoteCard: React.FC<GestureNoteCardProps> = ({
             <TextInput
               style={styles.editInput}
               value={editText}
-              onChangeText={(text) => {
-                setEditText(text);
-              }}
+              onChangeText={setEditText}
               multiline
               autoFocus
+              blurOnSubmit={false}
             />
             <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
               <FontAwesome name="check" size={16} color="#fff" />
             </TouchableOpacity>
           </View>
         ) : (
-          <TouchableOpacity onPress={handleLongPress}>
+          <TouchableOpacity onPress={handleLongPress} activeOpacity={0.8}>
             <Text style={styles.noteText}>{note.text}</Text>
           </TouchableOpacity>
         )}
@@ -160,13 +249,12 @@ export const GestureNoteCard: React.FC<GestureNoteCardProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  note: {
+const styles = StyleSheet.create({  note: {
     position: 'absolute',
     width: 200,
     minHeight: 120,
     padding: 15,
-    borderRadius: 10,
+    borderRadius: 12,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -179,6 +267,7 @@ const styles = StyleSheet.create({
   noteText: {
     fontSize: 16,
     color: '#333',
+    lineHeight: 22,
   },
   deleteButton: {
     position: 'absolute',
@@ -187,10 +276,18 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 10,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 1.5,
+    elevation: 2,
   },
   editContainer: {
     flex: 1,
@@ -201,9 +298,11 @@ const styles = StyleSheet.create({
     minHeight: 80,
     fontSize: 16,
     color: '#333',
-    backgroundColor: 'rgba(255, 255, 255, 0.5)',
-    borderRadius: 6,
-    padding: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    borderRadius: 8,
+    padding: 12,
+    textAlignVertical: 'top',
+    lineHeight: 22,
   },
   saveButton: {
     position: 'absolute',
@@ -215,5 +314,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#4CAF50',
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 2,
+    elevation: 3,
   },
 });

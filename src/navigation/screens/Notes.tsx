@@ -6,10 +6,13 @@ import {
   TouchableOpacity,
   Dimensions,
   Alert,
+  Text,
 } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import NotesCanvas from '../../../components/NotesCanvas';
+// Utilizziamo solo OptimizedNotesCanvas per evitare conflitti
+import { OptimizedNotesCanvas } from '../../../components/Notes/OptimizedNotesCanvas';
+import { SimpleNotesTest } from '../../../components/SimpleNotesTest';
 import { Note as NoteInterface, addNote, deleteNote, getNotes, updateNote, updateNotePosition } from '../../services/noteService';
 
 const COLORS = ['#FFCDD2', '#F8BBD0', '#E1BEE7', '#D1C4E9', '#C5CAE9', '#BBDEFB', '#B3E5FC', '#B2EBF2', '#B2DFDB', '#C8E6C9'];
@@ -104,99 +107,114 @@ export default function Notes() {
       setNotes(prevNotes => prevNotes.filter(note => note.id !== newNote.id));
     }
   };
-
   const handleDeleteNote = async (id: string) => {
-    // Rimuove localmente la nota prima di eliminarla sul server
-    setNotes(prevNotes => prevNotes.filter(note => note.id !== id));
-
+    console.log(`[DEBUG] handleDeleteNote called for note ${id}`);
+    
+    if (!id || id.trim() === '') {
+      console.error('[DEBUG] Invalid note ID provided for deletion');
+      return;
+    }
+    
     try {
+      // Rimuove localmente la nota prima di eliminarla sul server
+      setNotes(prevNotes => prevNotes.filter(note => note.id !== id));
+
       // Elimina la nota sul server
       await deleteNote(id);
+      console.log(`[DEBUG] Note ${id} deleted successfully`);
     } catch (error) {
-      console.error("Errore nell'eliminazione della nota:", error);
+      console.error(`[DEBUG] Errore nell'eliminazione della nota ${id}:`, error);
       Alert.alert("Errore", "Impossibile eliminare la nota dal server");
       
       // Se l'eliminazione fallisce, recarica tutte le note dal server
       fetchNotes();
     }
   };
-
   const handleUpdateNote = async (id: string, newText: string) => {
-    // Aggiorna localmente la nota prima di aggiornarla sul server
-    setNotes(prevNotes => {
-      return prevNotes.map(note => {
-        if (note.id === id) {
-          return {
-            ...note,
-            text: newText
-          };
-        }
-        return note;
-      });
-    });
-
+    console.log(`[DEBUG] handleUpdateNote called for note ${id} with text:`, newText);
+    
+    if (!id || id.trim() === '') {
+      console.error('[DEBUG] Invalid note ID provided for update');
+      return;
+    }
+    
     try {
+      // Aggiorna localmente la nota prima di aggiornarla sul server
+      setNotes(prevNotes => {
+        return prevNotes.map(note => {
+          if (note.id === id) {
+            return {
+              ...note,
+              text: newText
+            };
+          }
+          return note;
+        });
+      });
+
       // Aggiorna la nota sul server
       await updateNote(id, { text: newText });
+      console.log(`[DEBUG] Note ${id} updated successfully`);
     } catch (error) {
-      console.error("Errore nell'aggiornamento della nota:", error);
+      console.error(`[DEBUG] Errore nell'aggiornamento della nota ${id}:`, error);
       Alert.alert("Errore", "Impossibile aggiornare la nota sul server");
       
       // Se l'aggiornamento fallisce, recarica tutte le note dal server
       fetchNotes();
     }
-  };
-
-  const handleUpdatePosition = async (id: string, newPosition: { x: number; y: number }) => {
-    // Aggiorna localmente la posizione della nota
-    setNotes(prevNotes => {
-      return prevNotes.map(note => {
-        if (note.id === id) {
-          return {
-            ...note,
-            position: newPosition
-          };
-        }
-        return note;
-      });
-    });
+  };  const handleUpdatePosition = async (id: string, newPosition: { x: number; y: number }) => {
+    console.log(`[DEBUG] handleUpdatePosition called for note ${id}:`, newPosition);
     
-    // Aggiorna la posizione sul server
-    try {
-      console.log("Invio posizione al server per la nota", id);
-      await updateNotePosition(id, newPosition);
-      console.log("Posizione aggiornata con successo sul server");
-    } catch (error) {
-      console.error("Errore nell'aggiornamento della posizione:", error);
-      // Non mostriamo un alert qui per non interrompere l'esperienza utente
+    if (!id || id.trim() === '') {
+      console.error('[DEBUG] Invalid note ID provided for position update');
+      return;
     }
-  };
-
-  const handleBringToFront = (id: string) => {
-    const newZIndex = nextZIndex + 1;
-    setNotes(prevNotes => {
-      const index = prevNotes.findIndex(n => n.id === id);
-      if (index === -1) return prevNotes;
-      const updatedNotes = [...prevNotes];
-      const [selectedNote] = updatedNotes.splice(index, 1);
-      selectedNote.zIndex = newZIndex;
-      updatedNotes.push(selectedNote);
-      return updatedNotes;
-    });
-    setNextZIndex(newZIndex);
+    
+    // Validazione delle coordinate
+    if (typeof newPosition.x !== 'number' || typeof newPosition.y !== 'number' || 
+        !isFinite(newPosition.x) || !isFinite(newPosition.y)) {
+      console.error('[DEBUG] Invalid position coordinates:', newPosition);
+      return;
+    }
+    
+    try {
+      // Aggiorna localmente la posizione della nota
+      setNotes(prevNotes => {
+        return prevNotes.map(note => {
+          if (note.id === id) {
+            return {
+              ...note,
+              position: newPosition
+            };
+          }
+          return note;
+        });
+      });
+      
+      // Aggiorna la posizione sul server
+      console.log(`[DEBUG] Invio posizione al server per la nota ${id}`);
+      await updateNotePosition(id, newPosition);
+      console.log(`[DEBUG] Posizione aggiornata con successo sul server per nota ${id}`);
+    } catch (error) {
+      console.error(`[DEBUG] Errore nell'aggiornamento della posizione per nota ${id}:`, error);      // Non mostriamo un alert qui per non interrompere l'esperienza utente
+    }
   };
 
   return (
     <View style={styles.container}>
-      {/* Area delle note con NotesCanvas per gestire pan e zoom */}
-      <View style={styles.notesArea}>
-        <NotesCanvas
-          notes={notes}
-          onUpdatePosition={handleUpdatePosition}
-          onDeleteNote={handleDeleteNote}
-          onUpdateNote={handleUpdateNote}
-          onBringToFront={handleBringToFront}
-        />
+      {/* Area delle note con OptimizedNotesCanvas per prestazioni massime */}
+      <View style={styles.notesArea}>        {notes.length >= 0 ? (
+          <OptimizedNotesCanvas
+            notes={notes}
+            onUpdatePosition={handleUpdatePosition}
+            onDeleteNote={handleDeleteNote}
+            onUpdateNote={handleUpdateNote}
+          />
+        ) : (
+          <View style={styles.loadingContainer}>
+            <Text>Caricamento note...</Text>
+          </View>
+        )}
       </View>
       
       {/* Area di input non soggetta a pan e zoom */}
@@ -224,6 +242,11 @@ const styles = StyleSheet.create({
   notesArea: {
     flex: 1,
     width: '100%',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   inputContainer: {
     flexDirection: 'row',

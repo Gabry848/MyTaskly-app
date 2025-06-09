@@ -3,6 +3,7 @@ import { NavigationContainer, useNavigation, NavigationProp } from "@react-navig
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { BackHandler } from "react-native";
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Ionicons } from "@expo/vector-icons";
 import LoginScreen from "./screens/Login";
 import RegisterScreen from "./screens/Register";
@@ -197,8 +198,10 @@ function AppStack() {
 // Componente principale Navigation
 export default function Navigation() {
   return (
-    <NavigationContainer>
-      <AppStack />
-    </NavigationContainer>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <NavigationContainer>
+        <AppStack />
+      </NavigationContainer>
+    </GestureHandlerRootView>
   );
 }

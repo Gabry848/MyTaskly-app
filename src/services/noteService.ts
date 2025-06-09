@@ -174,9 +174,20 @@ export async function deleteNote(noteId: string) {
 // Funzione per aggiornare la posizione di una nota
 export async function updateNotePosition(noteId: string, position: { x: number, y: number }) {
   try {
+    console.log(`[DEBUG] updateNotePosition called for note ${noteId}:`, position);
+    
+    if (!noteId || noteId.trim() === '') {
+      throw new Error('Invalid note ID provided');
+    }
+    
+    if (typeof position.x !== 'number' || typeof position.y !== 'number' || 
+        !isFinite(position.x) || !isFinite(position.y)) {
+      throw new Error('Invalid position coordinates');
+    }
+    
     const token = await getValidToken();
     if (!token) {
-      return null;
+      throw new Error('Authentication token not available');
     }
     
     // Adattiamo al formato atteso dal server
@@ -185,15 +196,19 @@ export async function updateNotePosition(noteId: string, position: { x: number, 
       position_y: Math.round(position.y).toString()
     };
     
+    console.log(`[DEBUG] Sending position data to server:`, data);
+    
     const response = await axios.put(`/notes/${noteId}/position`, data, {
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
     });
+    
+    console.log(`[DEBUG] Position update response:`, response.status);
     return response.data;
   } catch (error) {
-    console.error("Errore nell'aggiornamento della posizione della nota:", error);
+    console.error(`[DEBUG] Errore nell'aggiornamento della posizione della nota ${noteId}:`, error);
     throw error;
   }
 }
