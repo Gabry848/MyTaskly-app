@@ -167,8 +167,7 @@ const NotesCanvas: React.FC<NotesCanvasProps> = ({
         {/* Canvas con sfondo */}
         <View style={[styles.canvas, { width: CANVAS_WIDTH, height: CANVAS_HEIGHT }]}>
           {/* Sfondo della canvas */}
-          <View style={[styles.backgroundLayer, { width: CANVAS_WIDTH, height: CANVAS_HEIGHT }]} />            {/* Note - posizionate in modo assoluto all'interno della canvas */}
-          {notes.map((note) => (
+          <View style={[styles.backgroundLayer, { width: CANVAS_WIDTH, height: CANVAS_HEIGHT }]} />            {/* Note - posizionate in modo assoluto all'interno della canvas */}          {notes.map((note) => (
             <GestureNoteCard
               key={note.id}
               note={note}
@@ -176,11 +175,7 @@ const NotesCanvas: React.FC<NotesCanvasProps> = ({
               onUpdate={onUpdateNote}
               onUpdatePosition={onUpdatePosition}
               onBringToFront={onBringToFront}
-              isPinchingRef={isPinchingRef}
-              canvasScale={canvasScale}
               canDragNotesRef={canDragNotesRef}
-              zoomTransition={zoomTransition}
-              panningTransition={panningTransition}
             />
           ))}
         </View>

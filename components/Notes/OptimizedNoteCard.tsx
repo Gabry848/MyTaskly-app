@@ -18,8 +18,6 @@ interface OptimizedNoteCardProps {
   onUpdatePosition: (id: string, position: { x: number; y: number }) => void;
   onDelete: (id: string) => void;
   onUpdate: (id: string, text: string) => void;
-  canvasScale: SharedValue<number>;
-  isPinching: SharedValue<boolean>;
   isPanning: SharedValue<boolean>;
   canDragNotes: SharedValue<boolean>;
 }
@@ -29,8 +27,6 @@ export const OptimizedNoteCard: React.FC<OptimizedNoteCardProps> = React.memo(({
   onUpdatePosition,
   onDelete,
   onUpdate,
-  canvasScale,
-  isPinching,
   isPanning,
   canDragNotes,
 }) => {
@@ -95,7 +91,8 @@ export const OptimizedNoteCard: React.FC<OptimizedNoteCardProps> = React.memo(({
       if (!isDragging.value) return;
 
       // Compensazione zoom semplificata
-      const zoomFactor = 1 / Math.max(0.5, Math.min(2, canvasScale.value));
+      // Senza zoom, il fattore è costante
+      const zoomFactor = 1;
       
       // Movimento fluido
       translateX.value = savedTranslateX.value + event.translationX * zoomFactor;

@@ -62,13 +62,11 @@ export const SimpleNotesTest: React.FC = () => {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Test Notes - {notes.length} note</Text>
-      </View>
-      <OptimizedNotesCanvas
+      </View>      <OptimizedNotesCanvas
         notes={notes}
         onUpdatePosition={handleUpdatePosition}
         onDeleteNote={handleDeleteNote}
         onUpdateNote={handleUpdateNote}
-        onBringToFront={handleBringToFront}
       />
     </View>
   );

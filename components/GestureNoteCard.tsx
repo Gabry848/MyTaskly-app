@@ -19,11 +19,7 @@ interface GestureNoteCardProps {
   onDelete: (id: string) => void;
   onUpdate: (id: string, text: string) => void;
   onBringToFront: (id: string) => void;
-  isPinchingRef: SharedValue<boolean>;
-  canvasScale: SharedValue<number>;
   canDragNotesRef?: SharedValue<boolean>;
-  zoomTransition?: SharedValue<number>;
-  panningTransition?: SharedValue<number>;
 }
 
 export const GestureNoteCard: React.FC<GestureNoteCardProps> = ({
@@ -32,11 +28,7 @@ export const GestureNoteCard: React.FC<GestureNoteCardProps> = ({
   onDelete,
   onUpdate,
   onBringToFront,
-  isPinchingRef,
-  canvasScale,
   canDragNotesRef,
-  zoomTransition,
-  panningTransition,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(note.text);
@@ -67,8 +59,7 @@ export const GestureNoteCard: React.FC<GestureNoteCardProps> = ({
     .enabled(!isEditing)
     .maxPointers(1)
     .onBegin(() => {
-      'worklet';
-      if (isPinchingRef.value || (canDragNotesRef && !canDragNotesRef.value)) {
+      'worklet';      if (canDragNotesRef && !canDragNotesRef.value) {
         return false;
       }
       
@@ -95,9 +86,8 @@ export const GestureNoteCard: React.FC<GestureNoteCardProps> = ({
       // Calcolo della velocità per momentum
       const currentTime = Date.now();
       const deltaTime = Math.max(currentTime - lastTimestamp.value, 1);
-      
-      // Fattore di zoom adattivo con interpolazione smooth
-      const zoomFactor = Math.max(0.25, Math.min(2.5, 1 / canvasScale.value));
+        // Fattore costante senza zoom
+      const zoomFactor = 1;
       
       // Fattore di smoothing ultra-fluido
       const smoothingFactor = 0.985;
@@ -163,31 +153,23 @@ export const GestureNoteCard: React.FC<GestureNoteCardProps> = ({
       
       runOnJS(handlePositionUpdate)(finalX, finalY);
       isDragging.value = false;
-    });
-  // Stile animato ultra-fluido per la nota con effetti avanzati
+    });  // Stile animato semplificato per la nota senza zoom
   const noteAnimatedStyle = useAnimatedStyle(() => {
-    // Effetto responsivo al zoom della canvas
-    const zoomInfluence = zoomTransition ? 1 + zoomTransition.value * 0.02 : 1;
-    const panInfluence = panningTransition ? 1 - panningTransition.value * 0.01 : 1;
-    
     return {
       transform: [
         { translateX: translateX.value },
         { translateY: translateY.value },
-        { scale: scale.value * zoomInfluence * panInfluence }
+        { scale: scale.value }
       ] as any,
       zIndex: isDragging.value ? 9999 : note.zIndex,
       elevation: isDragging.value ? 18 : note.zIndex / 8,
     };
   });
-
-  // Stile animato per l'ombra ultra-dinamica
+  // Stile animato per l'ombra semplificato
   const shadowAnimatedStyle = useAnimatedStyle(() => {
-    const zoomShadowFactor = zoomTransition ? 1 + zoomTransition.value * 0.5 : 1;
-    
     return {
       shadowOpacity: shadowOpacity.value,
-      shadowRadius: isDragging.value ? 12 * zoomShadowFactor : 4 * zoomShadowFactor,
+      shadowRadius: isDragging.value ? 12 : 4,
       shadowOffset: {
         width: 0,
         height: isDragging.value ? 6 : 2,

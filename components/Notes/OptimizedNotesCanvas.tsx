@@ -1,15 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
-  withTiming,
-  interpolate,
-  Extrapolate,
-  useDerivedValue,
-  runOnJS,
 } from 'react-native-reanimated';
 import { Note as NoteInterface } from '../../src/services/noteService';
 import { OptimizedNoteCard } from './OptimizedNoteCard';
@@ -28,66 +23,21 @@ export const OptimizedNotesCanvas: React.FC<OptimizedNotesCanvasProps> = ({
   onUpdateNote,
 }) => {
   const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
-  
-  // State per il testo dello zoom
-  const [zoomDisplayText, setZoomDisplayText] = useState('100%');
     // Canvas ottimizzata - ridotta per evitare problemi di posizionamento
   const CANVAS_WIDTH = screenWidth * 2;
   const CANVAS_HEIGHT = screenHeight * 2;
   
-  // Shared values ottimizzati con posizione iniziale centrata
-  const scale = useSharedValue(1);
+  // Shared values ottimizzati senza zoom - solo panning
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
   
-  // Stato gesture
-  const isPinching = useSharedValue(false);
+  // Stato gesture semplificato
   const isPanning = useSharedValue(false);
   const canDragNotes = useSharedValue(true);
-    // Physics ottimizzate con posizione iniziale corretta
-  const lastScale = useSharedValue(1);
+  
+  // Physics ottimizzate per il panning
   const lastTranslateX = useSharedValue(0);
-  const lastTranslateY = useSharedValue(0);
-
-  // Callback per aggiornare il display del zoom
-  const updateZoomDisplay = (newScale: number) => {
-    setZoomDisplayText(`${Math.round(newScale * 100)}%`);
-  };
-
-  // Derived value per il testo dello zoom (solo per uso interno)
-  const zoomText = useDerivedValue(() => {
-    runOnJS(updateZoomDisplay)(scale.value);
-    return `${Math.round(scale.value * 100)}%`;
-  });  // Gesture pinch ottimizzato e semplificato
-  const pinchGesture = Gesture.Pinch()
-    .onBegin(() => {
-      'worklet';
-      isPinching.value = true;
-      // Non disabilitare canDragNotes durante il pinch
-      lastScale.value = scale.value;
-    })
-    .onUpdate((event) => {
-      'worklet';
-      if (!event.scale || isNaN(event.scale)) return;
-      
-      // Zoom fluido con limiti ottimizzati
-      const newScale = Math.min(Math.max(lastScale.value * event.scale, 0.5), 2.0);
-      scale.value = newScale;
-    })    .onEnd(() => {
-      'worklet';
-      // Spring physics ottimizzate
-      scale.value = withSpring(scale.value, {
-        damping: 20,
-        stiffness: 300,
-        mass: 0.8,
-      });
-      
-      // Ritarda la riattivazione per evitare conflitti
-      setTimeout(() => {
-        'worklet';
-        isPinching.value = false;
-      }, 150);
-    });// Gesture pan semplificato e stabile
+  const lastTranslateY = useSharedValue(0);  // Gesture pan semplificato senza zoom
   const panGesture = Gesture.Pan()
     .maxPointers(1)
     .onBegin(() => {
@@ -95,74 +45,80 @@ export const OptimizedNotesCanvas: React.FC<OptimizedNotesCanvasProps> = ({
       isPanning.value = true;
       lastTranslateX.value = translateX.value;
       lastTranslateY.value = translateY.value;
+      return true;
     })
     .onUpdate((event) => {
       'worklet';
-      if (!isPinching.value && event.translationX && event.translationY) {
-        // Validazione dei valori
-        if (isNaN(event.translationX) || isNaN(event.translationY)) return;
-        
-        // Pan con sensibilità adattiva
-        const sensitivity = 1.0 / Math.max(0.5, scale.value);
-        const newX = lastTranslateX.value + event.translationX * sensitivity;
-        const newY = lastTranslateY.value + event.translationY * sensitivity;
-        
-        // Limiti semplificati
-        const maxOffset = 200;
-        const minX = -CANVAS_WIDTH + screenWidth - maxOffset;
-        const maxX = maxOffset;
-        const minY = -CANVAS_HEIGHT + screenHeight - maxOffset;
-        const maxY = maxOffset;
-        
-        translateX.value = Math.min(Math.max(newX, minX), maxX);
-        translateY.value = Math.min(Math.max(newY, minY), maxY);
+      // Verifica che i valori siano validi
+      if (!event.translationX || 
+          !event.translationY ||
+          isNaN(event.translationX) || 
+          isNaN(event.translationY) ||
+          !isFinite(event.translationX) ||
+          !isFinite(event.translationY)) {
+        return;
+      }
+      
+      // Pan con sensibilità costante
+      const sensitivity = 1.0;
+      
+      // Calcolo sicuro delle nuove posizioni
+      const newX = lastTranslateX.value + event.translationX * sensitivity;
+      const newY = lastTranslateY.value + event.translationY * sensitivity;
+      
+      // Validazione delle nuove posizioni
+      if (!isFinite(newX) || !isFinite(newY)) {
+        return;
+      }
+      
+      // Limiti semplificati
+      const maxOffset = 200;
+      const minX = -CANVAS_WIDTH + screenWidth - maxOffset;
+      const maxX = maxOffset;
+      const minY = -CANVAS_HEIGHT + screenHeight - maxOffset;
+      const maxY = maxOffset;
+      
+      // Applica solo se i valori sono validi
+      const clampedX = Math.min(Math.max(newX, minX), maxX);
+      const clampedY = Math.min(Math.max(newY, minY), maxY);
+      
+      if (isFinite(clampedX) && isFinite(clampedY)) {
+        translateX.value = clampedX;
+        translateY.value = clampedY;
       }
     })
     .onEnd(() => {
       'worklet';
       isPanning.value = false;
     });
-  // Double-tap semplificato per reset
+
+  // Double-tap per centrare la vista
   const doubleTapGesture = Gesture.Tap()
     .numberOfTaps(2)
     .onEnd(() => {
       'worklet';
-      if (scale.value > 1.2) {
-        // Reset view
-        scale.value = withSpring(1, { damping: 20, stiffness: 300 });
-        translateX.value = withSpring(0, { damping: 20, stiffness: 300 });
-        translateY.value = withSpring(0, { damping: 20, stiffness: 300 });
-      } else {
-        // Zoom in
-        scale.value = withSpring(1.5, { damping: 20, stiffness: 300 });
-      }
+      // Reset view al centro
+      translateX.value = withSpring(0, { damping: 20, stiffness: 300 });
+      translateY.value = withSpring(0, { damping: 20, stiffness: 300 });
     });
 
-  // Composizione gesture ottimizzata
+  // Composizione gesture semplificata
   const composedGesture = Gesture.Simultaneous(
-    pinchGesture,
     panGesture,
     doubleTapGesture
-  );
-
-  // Stile canvas animato
-  const canvasAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: translateX.value },
-      { translateY: translateY.value },
-      { scale: scale.value },
-    ],
-  } as any));
-  // Indicatore zoom semplificato
-  const zoomIndicatorStyle = useAnimatedStyle(() => {
-    const shouldShow = scale.value !== 1 || isPanning.value;
+  );  // Stile canvas animato semplificato senza zoom
+  const canvasAnimatedStyle = useAnimatedStyle(() => {
+    // Validazione dei valori prima di applicare le trasformazioni
+    const safeTranslateX = isFinite(translateX.value) ? translateX.value : 0;
+    const safeTranslateY = isFinite(translateY.value) ? translateY.value : 0;
     
     return {
-      opacity: withTiming(shouldShow ? 0.8 : 0, { duration: 200 }),
-      transform: [{ scale: withSpring(shouldShow ? 1 : 0.8, { damping: 15, stiffness: 200 }) }],
+      transform: [
+        { translateX: safeTranslateX },
+        { translateY: safeTranslateY },
+      ],
     } as any;
-  });
-  // Memoizzazione delle note per performance
+  });  // Memoizzazione delle note per performance senza zoom
   const renderedNotes = useMemo(() => {
     return notes.map((note) => (
       <OptimizedNoteCard
@@ -171,23 +127,13 @@ export const OptimizedNotesCanvas: React.FC<OptimizedNotesCanvasProps> = ({
         onDelete={onDeleteNote}
         onUpdate={onUpdateNote}
         onUpdatePosition={onUpdatePosition}
-        canvasScale={scale}
-        isPinching={isPinching}
         isPanning={isPanning}
         canDragNotes={canDragNotes}
       />
     ));
-  }, [notes, onDeleteNote, onUpdateNote, onUpdatePosition, scale, isPinching, isPanning, canDragNotes]);
-  return (
+  }, [notes, onDeleteNote, onUpdateNote, onUpdatePosition, isPanning, canDragNotes]);  return (
     <View style={styles.container}>
-      {/* Indicatore zoom con state invece di SharedValue */}
-      <Animated.View style={[styles.zoomIndicator, zoomIndicatorStyle]}>
-        <Animated.Text style={styles.zoomText}>
-          {zoomDisplayText}
-        </Animated.Text>
-      </Animated.View>
-
-      {/* Canvas gesture ottimizzata */}
+      {/* Canvas gesture semplificata */}
       <GestureDetector gesture={composedGesture}>
         <Animated.View style={styles.gestureArea}>
           <Animated.View style={[styles.canvas, canvasAnimatedStyle]}>
@@ -228,25 +174,5 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     opacity: 0.03,
     // Qui si potrebbe aggiungere un pattern SVG o CSS per il grid
-  },
-  zoomIndicator: {
-    position: 'absolute',
-    top: 50,
-    right: 20,
-    zIndex: 1000,
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-  },
-  zoomText: {
-    color: '#ffffff',
-    fontSize: 11,
-    fontWeight: '600',
   },
 });

@@ -61,13 +61,11 @@ export const NotesTestComponent: React.FC = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <OptimizedNotesCanvas
+    <View style={styles.container}>      <OptimizedNotesCanvas
         notes={notes}
         onUpdatePosition={handleUpdatePosition}
         onDeleteNote={handleDeleteNote}
         onUpdateNote={handleUpdateNote}
-        onBringToFront={handleBringToFront}
       />
     </View>
   );
