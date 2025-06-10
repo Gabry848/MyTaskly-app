@@ -30,7 +30,10 @@ export interface Note {
 
 // Funzione per convertire dal formato del server al formato interno dell'app
 const mapServerNoteToClientNote = (serverNote: ServerNote): Note => {
-  return {
+  console.log(`[DEBUG] mapServerNoteToClientNote: Converting server note:`, serverNote);
+  console.log(`[DEBUG] mapServerNoteToClientNote: Server title: "${serverNote.title}"`);
+  
+  const result = {
     id: serverNote.note_id,
     text: serverNote.title,
     position: {
@@ -40,6 +43,9 @@ const mapServerNoteToClientNote = (serverNote: ServerNote): Note => {
     color: serverNote.color || '#FFCDD2', // Colore predefinito se non fornito
     zIndex: 1 // Valore predefinito
   };
+  
+  console.log(`[DEBUG] mapServerNoteToClientNote: Mapped result text: "${result.text}"`);
+  return result;
 };
 
 // Funzione per convertire dal formato interno dell'app al formato del server
@@ -113,6 +119,8 @@ export async function addNote(note: Note): Promise<Note | null> {
 // Funzione per aggiornare una nota esistente
 export async function updateNote(noteId: string, updatedNote: Partial<Note>): Promise<Note | null> {
   try {
+    console.log(`[DEBUG] noteService.updateNote: Updating note ${noteId} with data:`, updatedNote);
+    
     const token = await getValidToken();
     if (!token) {
       return null;
@@ -123,6 +131,7 @@ export async function updateNote(noteId: string, updatedNote: Partial<Note>): Pr
     
     if (updatedNote.text !== undefined) {
       noteData.title = updatedNote.text;
+      console.log(`[DEBUG] noteService.updateNote: Setting title to: "${noteData.title}"`);
     }
     
     if (updatedNote.position !== undefined) {
@@ -132,10 +141,10 @@ export async function updateNote(noteId: string, updatedNote: Partial<Note>): Pr
     
     if (updatedNote.color !== undefined) {
       noteData.color = updatedNote.color;
-    }
-    
+    }    
     // Non inviamo zIndex al server
 
+    console.log(`[DEBUG] noteService.updateNote: Sending to server:`, noteData);
     const response = await axios.put(`/notes/${noteId}`, noteData, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -143,8 +152,11 @@ export async function updateNote(noteId: string, updatedNote: Partial<Note>): Pr
       },
     });
     
+    console.log(`[DEBUG] noteService.updateNote: Server response:`, response.data);
     // Convertiamo la risposta nel formato dell'app
-    return mapServerNoteToClientNote(response.data);
+    const result = mapServerNoteToClientNote(response.data);
+    console.log(`[DEBUG] noteService.updateNote: Mapped result:`, result);
+    return result;
   } catch (error) {
     console.error("Errore nell'aggiornamento della notafdsfsfs:", error);
     throw error;

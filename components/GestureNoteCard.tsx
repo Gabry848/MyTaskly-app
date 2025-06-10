@@ -29,9 +29,8 @@ export const GestureNoteCard: React.FC<GestureNoteCardProps> = ({
   onUpdate,
   onBringToFront,
   canDragNotesRef,
-}) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editText, setEditText] = useState(note.text);
+}) => {  const [isEditing, setIsEditing] = useState(false);
+  const [editText, setEditText] = useState(note.text || '');
   // Stati condivisi per la posizione e animazioni della nota con physics avanzate
   const translateX = useSharedValue(note.position.x);
   const translateY = useSharedValue(note.position.y);
@@ -176,11 +175,10 @@ export const GestureNoteCard: React.FC<GestureNoteCardProps> = ({
       },
     };
   });
-
   // Gestione dell'editing
   const handleLongPress = () => {
     setIsEditing(true);
-    setEditText(note.text);
+    setEditText(note.text || '');
   };
 
   const handleSave = () => {
@@ -220,10 +218,9 @@ export const GestureNoteCard: React.FC<GestureNoteCardProps> = ({
             <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
               <FontAwesome name="check" size={16} color="#fff" />
             </TouchableOpacity>
-          </View>
-        ) : (
+          </View>        ) : (
           <TouchableOpacity onPress={handleLongPress} activeOpacity={0.8}>
-            <Text style={styles.noteText}>{note.text}</Text>
+            <Text style={styles.noteText}>{editText || ''}</Text>
           </TouchableOpacity>
         )}
       </Animated.View>

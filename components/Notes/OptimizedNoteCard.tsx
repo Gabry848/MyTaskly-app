@@ -31,7 +31,7 @@ export const OptimizedNoteCard: React.FC<OptimizedNoteCardProps> = React.memo(({
   canDragNotes,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [editText, setEditText] = useState(note.text);
+  const [editText, setEditText] = useState(note.text || '');
 
   // Shared values per animazioni fluide ma semplificate
   const translateX = useSharedValue(note.position.x);
@@ -51,6 +51,16 @@ export const OptimizedNoteCard: React.FC<OptimizedNoteCardProps> = React.memo(({
       savedTranslateY.value = note.position.y;
     }
   }, [note.position.x, note.position.y]);
+
+  // NOTA: Non aggiorniamo più il testo automaticamente quando note.text cambia
+  // perché ora usiamo un approccio "optimistic" - aggiorniamo prima localmente
+  // e poi sincronizziamo con il server solo se necessario
+  
+  // Inizializza editText solo al primo mount del componente
+  React.useEffect(() => {
+    setEditText(note.text || '');
+  }, []); // Dipendenze vuote = solo al mount
+  
   // Callbacks ottimizzati
   const handlePositionUpdate = useCallback((x: number, y: number) => {
     onUpdatePosition(note.id, { x, y });
@@ -122,10 +132,9 @@ export const OptimizedNoteCard: React.FC<OptimizedNoteCardProps> = React.memo(({
     .minDuration(500)
     .onEnd(() => {
       'worklet';
-      if (!isDragging.value && !isEditing) {
-        runOnJS(() => {
+      if (!isDragging.value && !isEditing) {        runOnJS(() => {
           setIsEditing(true);
-          setEditText(note.text);
+          setEditText(note.text || '');
           triggerHapticFeedback();
         })();
       }
@@ -157,17 +166,19 @@ export const OptimizedNoteCard: React.FC<OptimizedNoteCardProps> = React.memo(({
       },
     };
   });
-
   // Gestione editing
   const handleSave = useCallback(() => {
+    console.log(`[DEBUG] OptimizedNoteCard handleSave: Saving note ${note.id} with text: "${editText}"`);
     if (editText.trim() !== '') {
+      console.log(`[DEBUG] OptimizedNoteCard handleSave: Text is valid, calling onUpdate`);
       onUpdate(note.id, editText);
+    } else {
+      console.log(`[DEBUG] OptimizedNoteCard handleSave: Text is empty or whitespace only`);
     }
     setIsEditing(false);
-  }, [editText, note.id, onUpdate]);
-  const handleLongPress = useCallback(() => {
+  }, [editText, note.id, onUpdate]);  const handleLongPress = useCallback(() => {
     setIsEditing(true);
-    setEditText(note.text);
+    setEditText(note.text || '');
   }, [note.text]);
   const handleDelete = useCallback(() => {
     console.log(`[DEBUG] OptimizedNoteCard handleDelete called for note ${note.id}`);
@@ -197,14 +208,15 @@ export const OptimizedNoteCard: React.FC<OptimizedNoteCardProps> = React.memo(({
           activeOpacity={0.7}
         >
           <FontAwesome name="times" size={14} color="#666" />
-        </TouchableOpacity>
-
-        {isEditing ? (
+        </TouchableOpacity>        {isEditing ? (
           <View style={styles.editContainer}>
             <TextInput
               style={styles.editInput}
               value={editText}
-              onChangeText={setEditText}
+              onChangeText={(text) => {
+                console.log(`[DEBUG] OptimizedNoteCard TextInput onChange: "${text}"`);
+                setEditText(text);
+              }}
               multiline
               autoFocus
               blurOnSubmit={false}
@@ -212,10 +224,9 @@ export const OptimizedNoteCard: React.FC<OptimizedNoteCardProps> = React.memo(({
             <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
               <FontAwesome name="check" size={14} color="#fff" />
             </TouchableOpacity>
-          </View>
-        ) : (
+          </View>        ) : (
           <TouchableOpacity onPress={handleLongPress} activeOpacity={0.8}>
-            <Text style={styles.noteText}>{note.text}</Text>
+            <Text style={styles.noteText}>{editText || ''}</Text>
           </TouchableOpacity>
         )}
       </Animated.View>

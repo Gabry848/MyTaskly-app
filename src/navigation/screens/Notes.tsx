@@ -157,8 +157,7 @@ export default function Notes() {
       fetchNotes();
     }
     console.log(`[DEBUG] handleDeleteNote function completed`);
-  };
-  const handleUpdateNote = async (id: string, newText: string) => {
+  };  const handleUpdateNote = async (id: string, newText: string) => {
     console.log(`[DEBUG] handleUpdateNote called for note ${id} with text:`, newText);
     
     if (!id || id.trim() === '') {
@@ -180,9 +179,15 @@ export default function Notes() {
         });
       });
 
-      // Aggiorna la nota sul server
+      // Aggiorna la nota sul server (ma non aggiorniamo lo stato con la risposta)
+      console.log(`[DEBUG] Sending update to server for note ${id}`);
       await updateNote(id, { text: newText });
-      console.log(`[DEBUG] Note ${id} updated successfully`);
+      console.log(`[DEBUG] Note ${id} updated successfully on server`);
+      
+      // TEMPORANEO: Non aggiorniamo lo stato con la risposta del server
+      // perché il server sembra restituire il testo vecchio
+      console.log(`[DEBUG] Keeping local state instead of server response`);
+      
     } catch (error) {
       console.error(`[DEBUG] Errore nell'aggiornamento della nota ${id}:`, error);
       Alert.alert("Errore", "Impossibile aggiornare la nota sul server");
@@ -190,7 +195,7 @@ export default function Notes() {
       // Se l'aggiornamento fallisce, recarica tutte le note dal server
       fetchNotes();
     }
-  };  const handleUpdatePosition = async (id: string, newPosition: { x: number; y: number }) => {
+  };const handleUpdatePosition = async (id: string, newPosition: { x: number; y: number }) => {
     console.log(`[DEBUG] handleUpdatePosition called for note ${id}:`, newPosition);
     
     if (!id || id.trim() === '') {

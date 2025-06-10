@@ -33,23 +33,26 @@ const DraggableNote: React.FC<DraggableNoteProps> = ({
   onBringToFront
 }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [editText, setEditText] = useState(note.text);
+  const [editText, setEditText] = useState(note.text || '');
   
   // Creiamo un panResponder locale se non ne viene fornito uno
   const position = useRef(new Animated.ValueXY({
     x: note.position.x,
     y: note.position.y
   })).current;
-  
-  // Se non viene fornito un panResponder, creiamone uno localmente
+    // Se non viene fornito un panResponder, creiamone uno localmente
   const localPanResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => !isEditing,
       onPanResponderGrant: () => {
+        // Usa addListener per ottenere i valori correnti
+        const currentX = (position.x as any).__getValue();
+        const currentY = (position.y as any).__getValue();
+        
         position.setOffset({
-          x: position.x._value,
-          y: position.y._value
+          x: currentX,
+          y: currentY
         });
         position.setValue({ x: 0, y: 0 });
         
@@ -67,9 +70,12 @@ const DraggableNote: React.FC<DraggableNoteProps> = ({
         
         // Aggiorna la posizione se la funzione è disponibile
         if (onUpdatePosition) {
+          const currentX = (position.x as any).__getValue();
+          const currentY = (position.y as any).__getValue();
+          
           onUpdatePosition(note.id, {
-            x: position.x._value,
-            y: position.y._value
+            x: currentX,
+            y: currentY
           });
         }
       },
@@ -79,10 +85,9 @@ const DraggableNote: React.FC<DraggableNoteProps> = ({
   // Usiamo il panResponder fornito oppure quello locale
   const activePanResponder = panResponder || localPanResponder;
   const activePan = pan || position;
-
   const handleLongPress = () => {
     setIsEditing(true);
-    setEditText(note.text);
+    setEditText(note.text || '');
   };
 
   const handleSave = () => {
@@ -129,13 +134,12 @@ const DraggableNote: React.FC<DraggableNoteProps> = ({
             <FontAwesome name="check" size={16} color="#fff" />
           </TouchableOpacity>
         </View>
-      ) : (
-        <TouchableOpacity 
+      ) : (        <TouchableOpacity 
           onPress={handleLongPress} 
           // delayLongPress={500}
           activeOpacity={0.7}
         >
-          <Text style={styles.noteText}>{note.text}</Text>
+          <Text style={styles.noteText}>{editText || ''}</Text>
         </TouchableOpacity>
       )}
     </Animated.View>
