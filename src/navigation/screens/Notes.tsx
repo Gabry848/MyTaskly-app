@@ -106,29 +106,57 @@ export default function Notes() {
       // Rimuove la nota se il salvataggio fallisce
       setNotes(prevNotes => prevNotes.filter(note => note.id !== newNote.id));
     }
-  };
-  const handleDeleteNote = async (id: string) => {
+  };  const handleDeleteNote = async (id: string) => {
     console.log(`[DEBUG] handleDeleteNote called for note ${id}`);
+    console.log(`[DEBUG] ID type: ${typeof id}, ID value: "${id}"`);
     
-    if (!id || id.trim() === '') {
+    // Converti l'ID in stringa per sicurezza
+    const stringId = String(id);
+    console.log(`[DEBUG] Converted ID to string: "${stringId}"`);
+    
+    if (!stringId || stringId.trim() === '') {
       console.error('[DEBUG] Invalid note ID provided for deletion');
       return;
     }
     
+    console.log(`[DEBUG] ID validation passed`);
+    
+    // TEMPORANEO: Elimina direttamente senza conferma per debug
+    console.log(`[DEBUG] Proceeding with deletion of note ${stringId} (no confirmation)`);
+    
+    console.log(`[DEBUG] About to enter try block`);
     try {
+      console.log(`[DEBUG] Inside try block - about to remove from local state`);
       // Rimuove localmente la nota prima di eliminarla sul server
-      setNotes(prevNotes => prevNotes.filter(note => note.id !== id));
+      console.log(`[DEBUG] Removing note ${stringId} from local state`);
+      
+      console.log(`[DEBUG] Current notes before deletion:`, notes.map(n => ({ id: n.id, text: n.text.substring(0, 20) })));
+      
+      setNotes(prevNotes => {
+        console.log(`[DEBUG] Inside setNotes callback`);
+        const filteredNotes = prevNotes.filter(note => {
+          const shouldKeep = String(note.id) !== stringId;
+          console.log(`[DEBUG] Note ${note.id}: shouldKeep = ${shouldKeep}`);
+          return shouldKeep;
+        });
+        console.log(`[DEBUG] Local notes count: ${prevNotes.length} -> ${filteredNotes.length}`);
+        return filteredNotes;
+      });
 
+      console.log(`[DEBUG] Local state update completed, about to call server`);
       // Elimina la nota sul server
-      await deleteNote(id);
-      console.log(`[DEBUG] Note ${id} deleted successfully`);
+      console.log(`[DEBUG] Calling deleteNote service for note ${stringId}`);
+      const result = await deleteNote(stringId);
+      console.log(`[DEBUG] Note ${stringId} deleted successfully from server:`, result);
     } catch (error) {
-      console.error(`[DEBUG] Errore nell'eliminazione della nota ${id}:`, error);
+      console.error(`[DEBUG] Errore nell'eliminazione della nota ${stringId}:`, error);
       Alert.alert("Errore", "Impossibile eliminare la nota dal server");
       
       // Se l'eliminazione fallisce, recarica tutte le note dal server
+      console.log('[DEBUG] Reloading notes due to deletion error');
       fetchNotes();
     }
+    console.log(`[DEBUG] handleDeleteNote function completed`);
   };
   const handleUpdateNote = async (id: string, newText: string) => {
     console.log(`[DEBUG] handleUpdateNote called for note ${id} with text:`, newText);

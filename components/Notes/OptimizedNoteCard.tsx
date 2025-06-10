@@ -165,11 +165,22 @@ export const OptimizedNoteCard: React.FC<OptimizedNoteCardProps> = React.memo(({
     }
     setIsEditing(false);
   }, [editText, note.id, onUpdate]);
-
   const handleLongPress = useCallback(() => {
     setIsEditing(true);
     setEditText(note.text);
   }, [note.text]);
+  const handleDelete = useCallback(() => {
+    console.log(`[DEBUG] OptimizedNoteCard handleDelete called for note ${note.id}`);
+    // Aggiungi feedback aptico per l'eliminazione
+    try {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    } catch (error) {
+      console.log('Haptic feedback non disponibile');
+    }
+    console.log(`[DEBUG] Calling onDelete prop function`);
+    onDelete(note.id);
+    console.log(`[DEBUG] onDelete prop function called successfully`);
+  }, [note.id, onDelete]);
 
   return (
     <GestureDetector gesture={composedGesture}>
@@ -180,12 +191,12 @@ export const OptimizedNoteCard: React.FC<OptimizedNoteCardProps> = React.memo(({
           noteAnimatedStyle,
           shadowAnimatedStyle,
         ]}
-      >
-        <TouchableOpacity
+      >        <TouchableOpacity
           style={styles.deleteButton}
-          onPress={() => onDelete(note.id)}
+          onPress={handleDelete}
+          activeOpacity={0.7}
         >
-          <FontAwesome name="times" size={14} color="#555" />
+          <FontAwesome name="times" size={14} color="#666" />
         </TouchableOpacity>
 
         {isEditing ? (
@@ -232,15 +243,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#333',
     lineHeight: 20,
-  },
-  deleteButton: {
+  },  deleteButton: {
     position: 'absolute',
     top: 5,
     right: 5,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 10,
@@ -249,9 +259,11 @@ const styles = StyleSheet.create({
       width: 0,
       height: 1,
     },
-    shadowOpacity: 0.2,
-    shadowRadius: 1,
-    elevation: 2,
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.1)',
   },
   editContainer: {
     flex: 1,

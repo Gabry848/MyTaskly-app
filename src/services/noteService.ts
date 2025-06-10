@@ -154,19 +154,35 @@ export async function updateNote(noteId: string, updatedNote: Partial<Note>): Pr
 // Funzione per eliminare una nota
 export async function deleteNote(noteId: string) {
   try {
+    console.log(`[DEBUG] deleteNote called for noteId: ${noteId}`);
+    
+    if (!noteId || noteId.trim() === '') {
+      throw new Error('Invalid note ID provided for deletion');
+    }
+    
     const token = await getValidToken();
     if (!token) {
-      return null;
+      console.error('[DEBUG] No valid token available for note deletion');
+      throw new Error('Authentication token not available');
     }
+    
+    console.log(`[DEBUG] Making DELETE request to /notes/${noteId}`);
     const response = await axios.delete(`/notes/${noteId}`, {
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
     });
+    
+    console.log(`[DEBUG] Delete response status: ${response.status}`);
+    console.log(`[DEBUG] Delete response data:`, response.data);
     return response.data;
   } catch (error) {
-    console.error("Errore nell'eliminazione della nota:", error);
+    console.error(`[DEBUG] Errore nell'eliminazione della nota ${noteId}:`, error);
+    if (error.response) {
+      console.error(`[DEBUG] Response status: ${error.response.status}`);
+      console.error(`[DEBUG] Response data:`, error.response.data);
+    }
     throw error;
   }
 }
