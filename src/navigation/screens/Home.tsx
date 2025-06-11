@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from "react";
 import { View, StyleSheet, Text, Dimensions, ScrollView, TouchableOpacity, Animated, StatusBar, Alert } from "react-native";
 import { useNavigation, NavigationProp, useFocusEffect } from "@react-navigation/native";
 import { LineChart } from "react-native-chart-kit";
-import { ChevronDown, ChevronRight } from "lucide-react-native";
 import Fuse from 'fuse.js';
 
 // Componenti esistenti
@@ -441,11 +440,17 @@ function Home() {
                   Prossimi impegni
                 </Text>
                 <TouchableOpacity onPress={toggleTaskCard} style={{ padding: 5 }}>
-                  {isTaskCardOpen ? (
-                    <ChevronDown size={20} color="#007bff" />
-                  ) : (
-                    <ChevronRight size={20} color="#007bff" />
-                  )}
+                    <View>
+                    <Animated.Image
+                      source={
+                      isTaskCardOpen
+                        ? require("../../assets/chevron-down.png")
+                        : require("../../assets/chevron-right.png")
+                      }
+                      style={{ width: 20, height: 20, tintColor: "#007bff" }}
+                      resizeMode="contain"
+                    />
+                    </View>
                 </TouchableOpacity>
               </View>
               <Animated.View
