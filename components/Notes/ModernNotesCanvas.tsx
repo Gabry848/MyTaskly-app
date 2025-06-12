@@ -42,13 +42,14 @@ export const ModernNotesCanvas: React.FC<ModernNotesCanvasProps> = ({
   // Canvas estesa per permettere il panning
   const CANVAS_WIDTH = screenWidth * 2.5;
   const CANVAS_HEIGHT = screenHeight * 2.5;
-  
-  // Shared values per il canvas
+    // Shared values per il canvas
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
   const scale = useSharedValue(1);
   const isPanning = useSharedValue(false);
   const canDragNotes = useSharedValue(true);
+  const savedTranslateX = useSharedValue(0);
+  const savedTranslateY = useSharedValue(0);
 
   // Gesture di pan del canvas
   const panGesture = Gesture.Pan()
@@ -57,12 +58,14 @@ export const ModernNotesCanvas: React.FC<ModernNotesCanvasProps> = ({
       'worklet';
       isPanning.value = true;
       canDragNotes.value = false;
+      savedTranslateX.value = translateX.value;
+      savedTranslateY.value = translateY.value;
     })
     .onUpdate((event) => {
       'worklet';
-      // Movimento fluido del canvas
-      translateX.value += event.changeX;
-      translateY.value += event.changeY;
+      // Movimento fluido del canvas basato sulla translazione totale
+      translateX.value = savedTranslateX.value + event.translationX;
+      translateY.value = savedTranslateY.value + event.translationY;
       
       // Limiti elastici
       const maxOffset = 300;
@@ -153,7 +156,6 @@ export const ModernNotesCanvas: React.FC<ModernNotesCanvasProps> = ({
     Gesture.Simultaneous(panGesture, pinchGesture),
     doubleTapGesture
   );
-
   // Stile animato del canvas
   const canvasAnimatedStyle = useAnimatedStyle(() => {
     return {
@@ -161,7 +163,7 @@ export const ModernNotesCanvas: React.FC<ModernNotesCanvasProps> = ({
         { translateX: translateX.value },
         { translateY: translateY.value },
         { scale: scale.value },
-      ],
+      ] as any,
     };
   });
 

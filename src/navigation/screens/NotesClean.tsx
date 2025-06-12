@@ -1,14 +1,15 @@
 import React from 'react';
-import { 
-  View, 
-  StyleSheet, 
-  SafeAreaView 
+import {
+  View,
+  StyleSheet,
+  SafeAreaView,
 } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { NotesProvider } from '../../context/NotesContext';
 import { ModernNotesCanvas } from '../../../components/Notes/ModernNotesCanvas';
 import { ModernNoteInput } from '../../../components/Notes/ModernNoteInput';
 import { NotesErrorBoundary } from '../../../components/Notes/NotesErrorBoundary';
-import { NotesProvider, useNotesState, useNotesActions } from '../../context/NotesContext';
+import { useNotesState, useNotesActions } from '../../context/NotesContext';
 
 const NotesContent: React.FC = () => {
   const state = useNotesState();
@@ -17,7 +18,7 @@ const NotesContent: React.FC = () => {
   return (
     <NotesErrorBoundary error={state.error} onClearError={actions.clearError}>
       <View style={styles.content}>
-        {/* Area canvas per le note */}
+        {/* Area canvas per le note - ora moderna e ottimizzata */}
         <View style={styles.canvasContainer}>
           <ModernNotesCanvas
             notes={state.notes}
@@ -29,7 +30,7 @@ const NotesContent: React.FC = () => {
           />
         </View>
 
-        {/* Input per nuove note - posizione fissa */}
+        {/* Input per nuove note - design moderno con blur */}
         <View style={styles.inputContainer}>
           <ModernNoteInput
             onAddNote={actions.addNote}
@@ -41,7 +42,7 @@ const NotesContent: React.FC = () => {
   );
 };
 
-export default function NotesScreen() {
+export default function Notes() {
   return (
     <GestureHandlerRootView style={styles.root}>
       <SafeAreaView style={styles.container}>

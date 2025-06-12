@@ -128,7 +128,6 @@ export const ModernNoteCard: React.FC<ModernNoteCardProps> = memo(({
 
   // Composizione gesture
   const composedGesture = Gesture.Exclusive(dragGesture, longPressGesture);
-
   // Stili animati
   const noteAnimatedStyle = useAnimatedStyle(() => {
     const shadowRadius = interpolate(
@@ -143,7 +142,7 @@ export const ModernNoteCard: React.FC<ModernNoteCardProps> = memo(({
         { translateY: translateY.value },
         { scale: scale.value },
         { rotate: `${rotation.value}deg` },
-      ],
+      ] as any,
       shadowOpacity: shadowOpacity.value,
       shadowRadius,
       zIndex: isDragging.value ? 1000 : note.zIndex || 1,

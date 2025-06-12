@@ -49,26 +49,6 @@ export function useNotes(options: UseNotesOptions = {}): [NotesState, NotesActio
   const { width, height } = Dimensions.get('window');
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Auto-refresh quando la schermata riceve il focus
-  useFocusEffect(
-    useCallback(() => {
-      if (autoRefreshOnFocus) {
-        refreshNotes();
-      }
-      return () => {
-        // Cleanup: cancella operazioni in corso
-        if (abortControllerRef.current) {
-          abortControllerRef.current.abort();
-        }
-      };
-    }, [autoRefreshOnFocus])
-  );
-
-  // Carica le note inizialmente
-  useEffect(() => {
-    refreshNotes();
-  }, []);
-
   const updateState = useCallback((updates: Partial<NotesState>) => {
     setState(prev => ({ ...prev, ...updates }));
   }, []);
@@ -139,54 +119,87 @@ export function useNotes(options: UseNotesOptions = {}): [NotesState, NotesActio
     }
   }, [updateState, validateNote]);
 
+  // Auto-refresh quando la schermata riceve il focus
+  useFocusEffect(
+    useCallback(() => {
+      if (autoRefreshOnFocus) {
+        refreshNotes();
+      }
+      return () => {
+        // Cleanup: cancella operazioni in corso
+        if (abortControllerRef.current) {
+          abortControllerRef.current.abort();
+        }
+      };
+    }, [autoRefreshOnFocus, refreshNotes])
+  );
+
+  // Carica le note inizialmente
+  useEffect(() => {
+    refreshNotes();
+  }, [refreshNotes]);
+
   const addNoteAction = useCallback(async (text: string) => {
     if (!text.trim()) return;
 
     const tempId = `temp-${Date.now()}`;
-    const newNote: Note = {
-      id: tempId,
-      text: text.trim(),
-      position: generateRandomPosition(),
-      color: getRandomColor(),
-      zIndex: state.nextZIndex,
-    };
+    
+    // Usa setState con funzione per evitare dipendenze dallo state
+    setState(prevState => {
+      const newNote: Note = {
+        id: tempId,
+        text: text.trim(),
+        position: generateRandomPosition(),
+        color: getRandomColor(),
+        zIndex: prevState.nextZIndex,
+      };
 
-    // Aggiunta ottimistica
-    updateState({
-      notes: [...state.notes, newNote],
-      nextZIndex: state.nextZIndex + 1,
+      return {
+        ...prevState,
+        notes: [...prevState.notes, newNote],
+        nextZIndex: prevState.nextZIndex + 1,
+      };
     });
 
     try {
-      const savedNote = await addNote(newNote);
-      
-      // Aggiorna con l'ID reale dal server
-      updateState({
-        notes: state.notes.map(note =>
-          note.id === tempId
-            ? { ...note, id: savedNote.id }
-            : note
-        ),
+      // Ottieni lo state aggiornato per la chiamata API
+      setState(prevState => {
+        const newNote = prevState.notes.find(note => note.id === tempId);
+        if (newNote) {
+          // Chiamata asincrona per salvare
+          addNote(newNote).then(savedNote => {
+            setState(currentState => ({
+              ...currentState,
+              notes: currentState.notes.map(note =>
+                note.id === tempId ? { ...note, id: savedNote.id } : note
+              ),
+            }));
+          }).catch(error => {
+            console.error('Errore nel salvataggio della nota:', error);
+            setState(currentState => ({
+              ...currentState,
+              notes: currentState.notes.filter(note => note.id !== tempId),
+              error: 'Impossibile salvare la nota',
+            }));
+          });
+        }
+        return prevState;
       });
     } catch (error: any) {
       console.error('Errore nel salvataggio della nota:', error);
-      
-      // Rimuovi la nota temporanea in caso di errore
-      updateState({
-        notes: state.notes.filter(note => note.id !== tempId),
-        error: 'Impossibile salvare la nota',
-      });
     }
-  }, [state.notes, state.nextZIndex, generateRandomPosition, getRandomColor, updateState]);
+  }, [generateRandomPosition, getRandomColor]);
 
   const updateNoteAction = useCallback(async (id: string, newText: string) => {
     if (!id.trim() || !newText.trim()) return;
 
     // Aggiornamento ottimistico
-    const updatedNotes = state.notes.map(note =>
-      note.id === id ? { ...note, text: newText.trim() } : note
-    );
-    updateState({ notes: updatedNotes });
+    setState(prevState => ({
+      ...prevState,
+      notes: prevState.notes.map(note =>
+        note.id === id ? { ...note, text: newText.trim() } : note
+      ),
+    }));
 
     try {
       await updateNote(id, { text: newText.trim() });
@@ -196,14 +209,16 @@ export function useNotes(options: UseNotesOptions = {}): [NotesState, NotesActio
       // Ripristina lo stato precedente
       refreshNotes();
     }
-  }, [state.notes, updateState, refreshNotes]);
+  }, [updateState, refreshNotes]);
 
   const deleteNoteAction = useCallback(async (id: string) => {
     if (!id.trim()) return;
 
     // Rimozione ottimistica
-    const filteredNotes = state.notes.filter(note => note.id !== id);
-    updateState({ notes: filteredNotes });
+    setState(prevState => ({
+      ...prevState,
+      notes: prevState.notes.filter(note => note.id !== id),
+    }));
 
     try {
       await deleteNote(id);
@@ -213,16 +228,18 @@ export function useNotes(options: UseNotesOptions = {}): [NotesState, NotesActio
       // Ripristina lo stato precedente
       refreshNotes();
     }
-  }, [state.notes, updateState, refreshNotes]);
+  }, [updateState, refreshNotes]);
 
   const updateNotePositionAction = useCallback(async (id: string, newPosition: { x: number; y: number }) => {
     if (!id.trim() || !isFinite(newPosition.x) || !isFinite(newPosition.y)) return;
 
     // Aggiornamento ottimistico della posizione
-    const updatedNotes = state.notes.map(note =>
-      note.id === id ? { ...note, position: newPosition } : note
-    );
-    updateState({ notes: updatedNotes });
+    setState(prevState => ({
+      ...prevState,
+      notes: prevState.notes.map(note =>
+        note.id === id ? { ...note, position: newPosition } : note
+      ),
+    }));
 
     try {
       await updateNotePosition(id, newPosition);
@@ -230,7 +247,7 @@ export function useNotes(options: UseNotesOptions = {}): [NotesState, NotesActio
       console.error('Errore nell\'aggiornamento della posizione:', error);
       // Non mostriamo errore per le posizioni per non interrompere il drag
     }
-  }, [state.notes, updateState]);
+  }, []);
 
   const clearError = useCallback(() => {
     updateState({ error: null });
