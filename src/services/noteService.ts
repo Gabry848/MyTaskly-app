@@ -5,7 +5,7 @@ import { STORAGE_KEYS } from "../constants/authConstants";
 
 // Interfaccia per i dati restituiti dal server
 interface ServerNote {
-  note_id: string;
+  note_id: string | number; // Il server può restituire sia string che number
   title: string;
   position_x: number;
   position_y: number;
@@ -33,16 +33,45 @@ const mapServerNoteToClientNote = (serverNote: ServerNote): Note => {
   console.log(`[DEBUG] mapServerNoteToClientNote: Converting server note:`, serverNote);
   console.log(`[DEBUG] mapServerNoteToClientNote: Server title: "${serverNote.title}"`);
   
+  // Validazione dei dati del server
+  if (!serverNote || typeof serverNote !== 'object') {
+    console.error('[DEBUG] mapServerNoteToClientNote: Invalid server note object:', serverNote);
+    throw new Error('Invalid server note object');
+  }
+    if (!serverNote.note_id) {
+    console.error('[DEBUG] mapServerNoteToClientNote: Missing note_id:', serverNote.note_id);
+    throw new Error('Missing note_id from server');
+  }
+  
+  // Converti note_id in stringa (il server potrebbe inviare un numero)
+  const noteId = String(serverNote.note_id);
+  if (!noteId || noteId === 'undefined' || noteId === 'null') {
+    console.error('[DEBUG] mapServerNoteToClientNote: Invalid note_id after conversion:', noteId);
+    throw new Error('Invalid note_id from server');
+  }
+  
+  // Assicurati che il title sia sempre una stringa
+  const noteText = typeof serverNote.title === 'string' ? serverNote.title : '';
+  if (noteText === '' && serverNote.title !== '') {
+    console.warn('[DEBUG] mapServerNoteToClientNote: Non-string title converted to empty string:', serverNote.title);
+  }
   const result = {
-    id: serverNote.note_id,
-    text: serverNote.title,
+    id: noteId,
+    text: noteText,
     position: {
-      x: serverNote.position_x,
-      y: serverNote.position_y
+      x: Number(serverNote.position_x) || 0,
+      y: Number(serverNote.position_y) || 0
     },
     color: serverNote.color || '#FFCDD2', // Colore predefinito se non fornito
     zIndex: 1 // Valore predefinito
   };
+  
+  // Validazione finale del risultato
+  if (!isFinite(result.position.x) || !isFinite(result.position.y)) {
+    console.error('[DEBUG] mapServerNoteToClientNote: Invalid position after conversion:', result.position);
+    result.position.x = 0;
+    result.position.y = 0;
+  }
   
   console.log(`[DEBUG] mapServerNoteToClientNote: Mapped result text: "${result.text}"`);
   return result;
@@ -77,7 +106,41 @@ export async function getNotes(): Promise<Note[]> {
     
     // Mappiamo le note dal formato del server al formato dell'app
     const serverNotes = response.data as ServerNote[];
-    return serverNotes.map(mapServerNoteToClientNote);
+    
+    // Valida che la risposta sia un array
+    if (!Array.isArray(serverNotes)) {
+      console.error('[DEBUG] getNotes: Server response is not an array:', serverNotes);
+      return [];
+    }
+      // Mappa e filtra le note valide
+    const mappedNotes: Note[] = [];
+    for (const serverNote of serverNotes) {
+      try {
+        const clientNote = mapServerNoteToClientNote(serverNote);
+        
+        // Validazione aggiuntiva per assicurarsi che la nota sia valida prima di aggiungerla
+        if (clientNote && 
+            typeof clientNote === 'object' && 
+            typeof clientNote.id === 'string' && 
+            clientNote.id.length > 0 &&
+            typeof clientNote.text === 'string' &&
+            clientNote.position &&
+            typeof clientNote.position.x === 'number' &&
+            typeof clientNote.position.y === 'number' &&
+            isFinite(clientNote.position.x) &&
+            isFinite(clientNote.position.y)) {
+          mappedNotes.push(clientNote);
+        } else {
+          console.error('[DEBUG] getNotes: Invalid mapped note, skipping:', clientNote);
+        }
+      } catch (error) {
+        console.error('[DEBUG] getNotes: Failed to map server note:', serverNote, error);
+        // Continua con le altre note invece di fallire completamente
+      }
+    }
+    
+    console.log(`[DEBUG] getNotes: Successfully mapped ${mappedNotes.length} out of ${serverNotes.length} notes`);
+    return mappedNotes;
   } catch (error) {
     console.error("Errore nel recupero delle note:", error);
     return [];

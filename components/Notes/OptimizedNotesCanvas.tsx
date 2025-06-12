@@ -120,18 +120,71 @@ export const OptimizedNotesCanvas: React.FC<OptimizedNotesCanvasProps> = ({
     } as any;
   });  // Memoizzazione delle note per performance senza zoom
   const renderedNotes = useMemo(() => {
-    return notes.map((note) => (
-      <OptimizedNoteCard
-        key={note.id}
-        note={note}
-        onDelete={onDeleteNote}
-        onUpdate={onUpdateNote}
-        onUpdatePosition={onUpdatePosition}
-        isPanning={isPanning}
-        canDragNotes={canDragNotes}
-      />
-    ));
-  }, [notes, onDeleteNote, onUpdateNote, onUpdatePosition, isPanning, canDragNotes]);  return (
+    // Validazione iniziale dell'array notes
+    if (!Array.isArray(notes)) {
+      console.error('[DEBUG] OptimizedNotesCanvas: notes is not an array:', notes);
+      return [];
+    }
+    
+    // Filtra e valida le note prima del rendering
+    const validNotes = notes.filter(note => {
+      // Assicurati che la nota sia un oggetto valido
+      if (!note || typeof note !== 'object') {
+        console.error('[DEBUG] OptimizedNotesCanvas: Invalid note object:', note);
+        return false;
+      }
+      
+      // Assicurati che abbia le proprietà necessarie
+      if (!note.id || typeof note.id !== 'string') {
+        console.error('[DEBUG] OptimizedNotesCanvas: Note missing valid id:', note);
+        return false;
+      }
+      
+      // Assicurati che il testo sia una stringa
+      if (typeof note.text !== 'string') {
+        console.error('[DEBUG] OptimizedNotesCanvas: Note text is not a string:', note);
+        return false;
+      }
+      
+      // Assicurati che la posizione sia valida
+      if (!note.position || typeof note.position.x !== 'number' || typeof note.position.y !== 'number') {
+        console.error('[DEBUG] OptimizedNotesCanvas: Note missing valid position:', note);
+        return false;
+      }
+      
+      // Validazioni aggiuntive per prevenire errori di rendering
+      if (!isFinite(note.position.x) || !isFinite(note.position.y)) {
+        console.error('[DEBUG] OptimizedNotesCanvas: Note position contains invalid numbers:', note.position);
+        return false;
+      }
+      
+      return true;
+    });
+    
+    console.log(`[DEBUG] OptimizedNotesCanvas: Filtered ${notes.length} notes to ${validNotes.length} valid notes`);
+    
+    // Aggiungi una validazione finale prima del rendering
+    const renderedComponents = validNotes.map((note) => {
+      try {
+        return (
+          <OptimizedNoteCard
+            key={note.id}
+            note={note}
+            onDelete={onDeleteNote}
+            onUpdate={onUpdateNote}
+            onUpdatePosition={onUpdatePosition}
+            isPanning={isPanning}
+            canDragNotes={canDragNotes}
+          />
+        );
+      } catch (error) {
+        console.error('[DEBUG] OptimizedNotesCanvas: Error rendering note:', note.id, error);
+        return null;
+      }
+    }).filter(Boolean); // Rimuovi eventuali elementi null
+    
+    return renderedComponents;
+  }, [notes, onDeleteNote, onUpdateNote, onUpdatePosition, isPanning, canDragNotes]);return (
     <View style={styles.container}>
       {/* Canvas gesture semplificata */}
       <GestureDetector gesture={composedGesture}>

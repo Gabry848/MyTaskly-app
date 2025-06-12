@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -29,8 +29,21 @@ export const GestureNoteCard: React.FC<GestureNoteCardProps> = ({
   onUpdate,
   onBringToFront,
   canDragNotesRef,
-}) => {  const [isEditing, setIsEditing] = useState(false);
-  const [editText, setEditText] = useState(note.text || '');
+}) => {
+  const [isEditing, setIsEditing] = useState(false);
+  // Assicuriamoci che editText sia sempre una stringa valida
+  const [editText, setEditText] = useState(() => {
+    return typeof note.text === 'string' ? note.text : '';
+  });
+  
+  // Aggiorna editText quando note.text cambia, assicurandoci che sia sempre una stringa
+  React.useEffect(() => {
+    if (!isEditing) {
+      const newText = typeof note.text === 'string' ? note.text : '';
+      setEditText(newText);
+    }
+  }, [note.text, isEditing]);
+  
   // Stati condivisi per la posizione e animazioni della nota con physics avanzate
   const translateX = useSharedValue(note.position.x);
   const translateY = useSharedValue(note.position.y);
@@ -220,7 +233,7 @@ export const GestureNoteCard: React.FC<GestureNoteCardProps> = ({
             </TouchableOpacity>
           </View>        ) : (
           <TouchableOpacity onPress={handleLongPress} activeOpacity={0.8}>
-            <Text style={styles.noteText}>{editText || ''}</Text>
+            <Text style={styles.noteText}>{typeof editText === 'string' ? editText : ''}</Text>
           </TouchableOpacity>
         )}
       </Animated.View>

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated, TextInput, PanResponder } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 
@@ -33,7 +33,18 @@ const DraggableNote: React.FC<DraggableNoteProps> = ({
   onBringToFront
 }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [editText, setEditText] = useState(note.text || '');
+  // Assicuriamoci che editText sia sempre una stringa valida
+  const [editText, setEditText] = useState(() => {
+    return typeof note.text === 'string' ? note.text : '';
+  });
+  
+  // Aggiorna editText quando note.text cambia, assicurandoci che sia sempre una stringa
+  React.useEffect(() => {
+    if (!isEditing) {
+      const newText = typeof note.text === 'string' ? note.text : '';
+      setEditText(newText);
+    }
+  }, [note.text, isEditing]);
   
   // Creiamo un panResponder locale se non ne viene fornito uno
   const position = useRef(new Animated.ValueXY({
@@ -137,9 +148,8 @@ const DraggableNote: React.FC<DraggableNoteProps> = ({
       ) : (        <TouchableOpacity 
           onPress={handleLongPress} 
           // delayLongPress={500}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.noteText}>{editText || ''}</Text>
+          activeOpacity={0.7}        >
+          <Text style={styles.noteText}>{typeof editText === 'string' ? editText : ''}</Text>
         </TouchableOpacity>
       )}
     </Animated.View>

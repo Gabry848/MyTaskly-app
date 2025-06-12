@@ -12,7 +12,6 @@ import { FontAwesome } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 // Utilizziamo solo OptimizedNotesCanvas per evitare conflitti
 import { OptimizedNotesCanvas } from '../../../components/Notes/OptimizedNotesCanvas';
-import { SimpleNotesTest } from '../../../components/SimpleNotesTest';
 import { Note as NoteInterface, addNote, deleteNote, getNotes, updateNote, updateNotePosition } from '../../services/noteService';
 
 const COLORS = ['#FFCDD2', '#F8BBD0', '#E1BEE7', '#D1C4E9', '#C5CAE9', '#BBDEFB', '#B3E5FC', '#B2EBF2', '#B2DFDB', '#C8E6C9'];
@@ -49,11 +48,43 @@ export default function Notes() {
       const fetchedNotes = await getNotes();
       console.log(`Fetched ${fetchedNotes.length} notes from server`);
       
-      setNotes(fetchedNotes);
+      // Valida e filtra le note ricevute dal server
+      const validNotes = fetchedNotes.filter(note => {
+        if (!note || typeof note !== 'object') {
+          console.error('[DEBUG] Notes.fetchNotes: Invalid note object:', note);
+          return false;
+        }
+        
+        if (!note.id || typeof note.id !== 'string') {
+          console.error('[DEBUG] Notes.fetchNotes: Note missing valid id:', note);
+          return false;
+        }
+        
+        if (typeof note.text !== 'string') {
+          console.error('[DEBUG] Notes.fetchNotes: Note text is not a string:', note);
+          return false;
+        }
+        
+        if (!note.position || typeof note.position.x !== 'number' || typeof note.position.y !== 'number') {
+          console.error('[DEBUG] Notes.fetchNotes: Note missing valid position:', note);
+          return false;
+        }
+        
+        return true;
+      });
+        console.log(`[DEBUG] Notes.fetchNotes: Filtered ${fetchedNotes.length} notes to ${validNotes.length} valid notes`);
+      
+      // Ulteriore validazione per assicurarsi che setNotes riceva sempre un array valido
+      if (Array.isArray(validNotes)) {
+        setNotes(validNotes);
+      } else {
+        console.error('[DEBUG] Notes.fetchNotes: validNotes is not an array, setting empty array');
+        setNotes([]);
+      }
       
       // Trova lo zIndex più alto tra le note esistenti
-      if (fetchedNotes.length > 0) {
-        const highestZIndex = Math.max(...fetchedNotes.map(note => note.zIndex));
+      if (validNotes.length > 0) {
+        const highestZIndex = Math.max(...validNotes.map(note => note.zIndex || 1));
         setNextZIndex(highestZIndex + 1);
       }
     } catch (error) {
@@ -81,10 +112,19 @@ export default function Notes() {
       color: randomColor,
       zIndex: nextZIndex,
       key: `temp-${Date.now()}`,
-    };
-
-    // Aggiunge localmente la nota prima di salvarla sul server
-    setNotes(prevNotes => [...prevNotes, newNote]);
+    };    // Aggiunge localmente la nota prima di salvarla sul server
+    setNotes(prevNotes => {
+      // Valida che la nuova nota sia corretta
+      if (!newNote || typeof newNote !== 'object' || typeof newNote.text !== 'string') {
+        console.error('[DEBUG] Notes.handleAddNote: Invalid note object:', newNote);
+        return prevNotes;
+      }
+      
+      // Assicurati che prevNotes sia sempre un array valido
+      const validPrevNotes = Array.isArray(prevNotes) ? prevNotes : [];
+      
+      return [...validPrevNotes, newNote];
+    });
     
     setNewNoteText('');
     setNextZIndex(nextZIndex + 1);
@@ -92,13 +132,18 @@ export default function Notes() {
     try {
       // Invia la nota al server
       const savedNote = await addNote(newNote);
-      
-      // Aggiorna l'ID temporaneo con l'ID restituito dal server
-      setNotes(prevNotes => 
-        prevNotes.map(note => 
-          note.id === newNote.id ? { ...note, id: savedNote.id } : note
-        )
-      );
+        // Aggiorna l'ID temporaneo con l'ID restituito dal server
+      setNotes(prevNotes => {
+        // Assicurati che prevNotes sia sempre un array valido
+        const validPrevNotes = Array.isArray(prevNotes) ? prevNotes : [];
+        
+        return validPrevNotes.map(note => {
+          if (note.id === newNote.id && savedNote && typeof savedNote.id === 'string') {
+            return { ...note, id: savedNote.id };
+          }
+          return note;
+        });
+      });
     } catch (error) {
       console.error("Errore nel salvataggio della nota:", error);
       Alert.alert("Errore", "Impossibile salvare la nota sul server");
@@ -126,20 +171,22 @@ export default function Notes() {
     
     console.log(`[DEBUG] About to enter try block`);
     try {
-      console.log(`[DEBUG] Inside try block - about to remove from local state`);
-      // Rimuove localmente la nota prima di eliminarla sul server
+      console.log(`[DEBUG] Inside try block - about to remove from local state`);      // Rimuove localmente la nota prima di eliminarla sul server
       console.log(`[DEBUG] Removing note ${stringId} from local state`);
       
       console.log(`[DEBUG] Current notes before deletion:`, notes.map(n => ({ id: n.id, text: n.text.substring(0, 20) })));
       
       setNotes(prevNotes => {
         console.log(`[DEBUG] Inside setNotes callback`);
-        const filteredNotes = prevNotes.filter(note => {
+        // Assicurati che prevNotes sia sempre un array valido
+        const validPrevNotes = Array.isArray(prevNotes) ? prevNotes : [];
+        
+        const filteredNotes = validPrevNotes.filter(note => {
           const shouldKeep = String(note.id) !== stringId;
           console.log(`[DEBUG] Note ${note.id}: shouldKeep = ${shouldKeep}`);
           return shouldKeep;
         });
-        console.log(`[DEBUG] Local notes count: ${prevNotes.length} -> ${filteredNotes.length}`);
+        console.log(`[DEBUG] Local notes count: ${validPrevNotes.length} -> ${filteredNotes.length}`);
         return filteredNotes;
       });
 
@@ -165,10 +212,12 @@ export default function Notes() {
       return;
     }
     
-    try {
-      // Aggiorna localmente la nota prima di aggiornarla sul server
+    try {      // Aggiorna localmente la nota prima di aggiornarla sul server
       setNotes(prevNotes => {
-        return prevNotes.map(note => {
+        // Assicurati che prevNotes sia sempre un array valido
+        const validPrevNotes = Array.isArray(prevNotes) ? prevNotes : [];
+        
+        return validPrevNotes.map(note => {
           if (note.id === id) {
             return {
               ...note,
@@ -210,10 +259,12 @@ export default function Notes() {
       return;
     }
     
-    try {
-      // Aggiorna localmente la posizione della nota
+    try {      // Aggiorna localmente la posizione della nota
       setNotes(prevNotes => {
-        return prevNotes.map(note => {
+        // Assicurati che prevNotes sia sempre un array valido
+        const validPrevNotes = Array.isArray(prevNotes) ? prevNotes : [];
+        
+        return validPrevNotes.map(note => {
           if (note.id === id) {
             return {
               ...note,
@@ -234,9 +285,9 @@ export default function Notes() {
   };
 
   return (
-    <View style={styles.container}>
-      {/* Area delle note con OptimizedNotesCanvas per prestazioni massime */}
-      <View style={styles.notesArea}>        {notes.length >= 0 ? (
+    <View style={styles.container}>      {/* Area delle note con OptimizedNotesCanvas per prestazioni massime */}
+      <View style={styles.notesArea}>
+        {Array.isArray(notes) && notes.length > 0 ? (
           <OptimizedNotesCanvas
             notes={notes}
             onUpdatePosition={handleUpdatePosition}
@@ -245,7 +296,7 @@ export default function Notes() {
           />
         ) : (
           <View style={styles.loadingContainer}>
-            <Text>Caricamento note...</Text>
+            <Text>{isLoading ? "Caricamento note..." : "Nessuna nota disponibile"}</Text>
           </View>
         )}
       </View>

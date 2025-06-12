@@ -3,7 +3,8 @@ import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-nativ
 import { FontAwesome } from '@expo/vector-icons';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
-import Animated, {
+import Animated,
+{
   useAnimatedStyle,
   useSharedValue,
   runOnJS,
@@ -31,7 +32,10 @@ export const OptimizedNoteCard: React.FC<OptimizedNoteCardProps> = React.memo(({
   canDragNotes,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [editText, setEditText] = useState(note.text || '');
+  // Assicuriamoci che editText sia sempre una stringa valida
+  const [editText, setEditText] = useState(() => {
+    return typeof note.text === 'string' ? note.text : '';
+  });
 
   // Shared values per animazioni fluide ma semplificate
   const translateX = useSharedValue(note.position.x);
@@ -52,14 +56,13 @@ export const OptimizedNoteCard: React.FC<OptimizedNoteCardProps> = React.memo(({
     }
   }, [note.position.x, note.position.y]);
 
-  // NOTA: Non aggiorniamo più il testo automaticamente quando note.text cambia
-  // perché ora usiamo un approccio "optimistic" - aggiorniamo prima localmente
-  // e poi sincronizziamo con il server solo se necessario
-  
-  // Inizializza editText solo al primo mount del componente
+  // Aggiorna editText quando note.text cambia, assicurandoci che sia sempre una stringa
   React.useEffect(() => {
-    setEditText(note.text || '');
-  }, []); // Dipendenze vuote = solo al mount
+    if (!isEditing) {
+      const newText = typeof note.text === 'string' ? note.text : '';
+      setEditText(newText);
+    }
+  }, [note.text, isEditing]);
   
   // Callbacks ottimizzati
   const handlePositionUpdate = useCallback((x: number, y: number) => {
@@ -208,7 +211,9 @@ export const OptimizedNoteCard: React.FC<OptimizedNoteCardProps> = React.memo(({
           activeOpacity={0.7}
         >
           <FontAwesome name="times" size={14} color="#666" />
-        </TouchableOpacity>        {isEditing ? (
+        </TouchableOpacity>
+        
+        {isEditing ? (
           <View style={styles.editContainer}>
             <TextInput
               style={styles.editInput}
@@ -224,9 +229,10 @@ export const OptimizedNoteCard: React.FC<OptimizedNoteCardProps> = React.memo(({
             <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
               <FontAwesome name="check" size={14} color="#fff" />
             </TouchableOpacity>
-          </View>        ) : (
+          </View>
+        ) : (
           <TouchableOpacity onPress={handleLongPress} activeOpacity={0.8}>
-            <Text style={styles.noteText}>{editText || ''}</Text>
+            <Text style={styles.noteText}>{typeof note.text === 'string' ? note.text : ''}</Text>
           </TouchableOpacity>
         )}
       </Animated.View>
