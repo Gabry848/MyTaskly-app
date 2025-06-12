@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { FontAwesome } from '@expo/vector-icons';
+import { StyleSheet, Text, TextInput, TouchableOpacity, View, Image } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
 import Animated, {
@@ -210,12 +209,11 @@ export const GestureNoteCard: React.FC<GestureNoteCardProps> = ({
           noteAnimatedStyle,
           shadowAnimatedStyle,
         ]}
-      >
-        <TouchableOpacity
+      >        <TouchableOpacity
           style={styles.deleteButton}
           onPress={() => onDelete(note.id)}
         >
-          <FontAwesome name="times" size={16} color="#555" />
+          <Image source={require('../src/assets/x.png')} style={styles.deleteIcon} />
         </TouchableOpacity>
 
         {isEditing ? (
@@ -227,13 +225,14 @@ export const GestureNoteCard: React.FC<GestureNoteCardProps> = ({
               multiline
               autoFocus
               blurOnSubmit={false}
-            />
-            <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-              <FontAwesome name="check" size={16} color="#fff" />
+            />            <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+              <Image source={require('../src/assets/ceck.png')} style={styles.saveIcon} />
             </TouchableOpacity>
           </View>        ) : (
           <TouchableOpacity onPress={handleLongPress} activeOpacity={0.8}>
-            <Text style={styles.noteText}>{typeof editText === 'string' ? editText : ''}</Text>
+            <Text style={styles.noteText}>
+              {typeof editText === 'string' && editText.trim() !== '' ? editText : 'Testo nota...'}
+            </Text>
           </TouchableOpacity>
         )}
       </Animated.View>
@@ -260,8 +259,7 @@ const styles = StyleSheet.create({  note: {
     fontSize: 16,
     color: '#333',
     lineHeight: 22,
-  },
-  deleteButton: {
+  },  deleteButton: {
     position: 'absolute',
     top: 5,
     right: 5,
@@ -281,6 +279,11 @@ const styles = StyleSheet.create({  note: {
     shadowRadius: 1.5,
     elevation: 2,
   },
+  deleteIcon: {
+    width: 14,
+    height: 14,
+    tintColor: '#555',
+  },
   editContainer: {
     flex: 1,
     marginTop: 10,
@@ -295,8 +298,7 @@ const styles = StyleSheet.create({  note: {
     padding: 12,
     textAlignVertical: 'top',
     lineHeight: 22,
-  },
-  saveButton: {
+  },  saveButton: {
     position: 'absolute',
     bottom: 5,
     right: 5,
@@ -314,5 +316,10 @@ const styles = StyleSheet.create({  note: {
     shadowOpacity: 0.25,
     shadowRadius: 2,
     elevation: 3,
+  },
+  saveIcon: {
+    width: 14,
+    height: 14,
+    tintColor: '#fff',
   },
 });

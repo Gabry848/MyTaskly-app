@@ -1,0 +1,250 @@
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Alert, Dimensions } from 'react-native';
+import { Note, addNote, deleteNote, getNotes, updateNote, updateNotePosition } from '../services/noteService';
+import { useFocusEffect } from '@react-navigation/native';
+
+const COLORS = [
+  '#FFCDD2', // Rosa chiaro
+  '#F8BBD0', // Rosa
+  '#E1BEE7', // Violetto chiaro
+  '#D1C4E9', // Violetto
+  '#C5CAE9', // Indaco chiaro
+  '#BBDEFB', // Blu chiaro
+  '#B3E5FC', // Azzurro
+  '#B2EBF2', // Ciano
+  '#B2DFDB', // Verde acqua
+  '#C8E6C9', // Verde chiaro
+];
+
+interface UseNotesOptions {
+  autoRefreshOnFocus?: boolean;
+}
+
+export interface NotesState {
+  notes: Note[];
+  isLoading: boolean;
+  error: string | null;
+  nextZIndex: number;
+}
+
+export interface NotesActions {
+  addNote: (text: string) => Promise<void>;
+  updateNote: (id: string, text: string) => Promise<void>;
+  deleteNote: (id: string) => Promise<void>;
+  updateNotePosition: (id: string, position: { x: number; y: number }) => Promise<void>;
+  refreshNotes: () => Promise<void>;
+  clearError: () => void;
+  generateRandomPosition: () => { x: number; y: number };
+}
+
+export function useNotes(options: UseNotesOptions = {}): [NotesState, NotesActions] {
+  const { autoRefreshOnFocus = true } = options;
+  const [state, setState] = useState<NotesState>({
+    notes: [],
+    isLoading: false,
+    error: null,
+    nextZIndex: 1,
+  });
+
+  const { width, height } = Dimensions.get('window');
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Auto-refresh quando la schermata riceve il focus
+  useFocusEffect(
+    useCallback(() => {
+      if (autoRefreshOnFocus) {
+        refreshNotes();
+      }
+      return () => {
+        // Cleanup: cancella operazioni in corso
+        if (abortControllerRef.current) {
+          abortControllerRef.current.abort();
+        }
+      };
+    }, [autoRefreshOnFocus])
+  );
+
+  // Carica le note inizialmente
+  useEffect(() => {
+    refreshNotes();
+  }, []);
+
+  const updateState = useCallback((updates: Partial<NotesState>) => {
+    setState(prev => ({ ...prev, ...updates }));
+  }, []);
+
+  const generateRandomPosition = useCallback(() => {
+    const padding = 50;
+    const noteWidth = 200;
+    const noteHeight = 120;
+    
+    return {
+      x: Math.random() * (width - noteWidth - padding * 2) + padding,
+      y: Math.random() * (height - noteHeight - padding * 2) + padding,
+    };
+  }, [width, height]);
+
+  const getRandomColor = useCallback(() => {
+    return COLORS[Math.floor(Math.random() * COLORS.length)];
+  }, []);
+
+  const validateNote = useCallback((note: any): boolean => {
+    if (!note || typeof note !== 'object') return false;
+    if (!note.id || typeof note.id !== 'string') return false;
+    if (typeof note.text !== 'string') return false;
+    if (!note.position || typeof note.position.x !== 'number' || typeof note.position.y !== 'number') return false;
+    if (!isFinite(note.position.x) || !isFinite(note.position.y)) return false;
+    return true;
+  }, []);
+
+  const refreshNotes = useCallback(async () => {
+    // Cancella operazioni precedenti
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    
+    abortControllerRef.current = new AbortController();
+    
+    updateState({ isLoading: true, error: null });
+    
+    try {
+      const fetchedNotes = await getNotes();
+      
+      // Valida e filtra le note
+      const validNotes = fetchedNotes.filter(validateNote);
+      
+      if (validNotes.length !== fetchedNotes.length) {
+        console.warn(`Filtrate ${fetchedNotes.length - validNotes.length} note non valide`);
+      }
+
+      // Calcola il prossimo zIndex
+      const maxZIndex = validNotes.length > 0 
+        ? Math.max(...validNotes.map(note => note.zIndex || 1))
+        : 0;
+
+      updateState({
+        notes: validNotes,
+        nextZIndex: maxZIndex + 1,
+        isLoading: false,
+        error: null,
+      });
+    } catch (error: any) {
+      if (!abortControllerRef.current?.signal.aborted) {
+        console.error('Errore nel caricamento delle note:', error);
+        updateState({
+          isLoading: false,
+          error: 'Impossibile caricare le note dal server',
+        });
+      }
+    }
+  }, [updateState, validateNote]);
+
+  const addNoteAction = useCallback(async (text: string) => {
+    if (!text.trim()) return;
+
+    const tempId = `temp-${Date.now()}`;
+    const newNote: Note = {
+      id: tempId,
+      text: text.trim(),
+      position: generateRandomPosition(),
+      color: getRandomColor(),
+      zIndex: state.nextZIndex,
+    };
+
+    // Aggiunta ottimistica
+    updateState({
+      notes: [...state.notes, newNote],
+      nextZIndex: state.nextZIndex + 1,
+    });
+
+    try {
+      const savedNote = await addNote(newNote);
+      
+      // Aggiorna con l'ID reale dal server
+      updateState({
+        notes: state.notes.map(note =>
+          note.id === tempId
+            ? { ...note, id: savedNote.id }
+            : note
+        ),
+      });
+    } catch (error: any) {
+      console.error('Errore nel salvataggio della nota:', error);
+      
+      // Rimuovi la nota temporanea in caso di errore
+      updateState({
+        notes: state.notes.filter(note => note.id !== tempId),
+        error: 'Impossibile salvare la nota',
+      });
+    }
+  }, [state.notes, state.nextZIndex, generateRandomPosition, getRandomColor, updateState]);
+
+  const updateNoteAction = useCallback(async (id: string, newText: string) => {
+    if (!id.trim() || !newText.trim()) return;
+
+    // Aggiornamento ottimistico
+    const updatedNotes = state.notes.map(note =>
+      note.id === id ? { ...note, text: newText.trim() } : note
+    );
+    updateState({ notes: updatedNotes });
+
+    try {
+      await updateNote(id, { text: newText.trim() });
+    } catch (error: any) {
+      console.error('Errore nell\'aggiornamento della nota:', error);
+      updateState({ error: 'Impossibile aggiornare la nota' });
+      // Ripristina lo stato precedente
+      refreshNotes();
+    }
+  }, [state.notes, updateState, refreshNotes]);
+
+  const deleteNoteAction = useCallback(async (id: string) => {
+    if (!id.trim()) return;
+
+    // Rimozione ottimistica
+    const filteredNotes = state.notes.filter(note => note.id !== id);
+    updateState({ notes: filteredNotes });
+
+    try {
+      await deleteNote(id);
+    } catch (error: any) {
+      console.error('Errore nell\'eliminazione della nota:', error);
+      updateState({ error: 'Impossibile eliminare la nota' });
+      // Ripristina lo stato precedente
+      refreshNotes();
+    }
+  }, [state.notes, updateState, refreshNotes]);
+
+  const updateNotePositionAction = useCallback(async (id: string, newPosition: { x: number; y: number }) => {
+    if (!id.trim() || !isFinite(newPosition.x) || !isFinite(newPosition.y)) return;
+
+    // Aggiornamento ottimistico della posizione
+    const updatedNotes = state.notes.map(note =>
+      note.id === id ? { ...note, position: newPosition } : note
+    );
+    updateState({ notes: updatedNotes });
+
+    try {
+      await updateNotePosition(id, newPosition);
+    } catch (error: any) {
+      console.error('Errore nell\'aggiornamento della posizione:', error);
+      // Non mostriamo errore per le posizioni per non interrompere il drag
+    }
+  }, [state.notes, updateState]);
+
+  const clearError = useCallback(() => {
+    updateState({ error: null });
+  }, [updateState]);
+
+  const actions: NotesActions = {
+    addNote: addNoteAction,
+    updateNote: updateNoteAction,
+    deleteNote: deleteNoteAction,
+    updateNotePosition: updateNotePositionAction,
+    refreshNotes,
+    clearError,
+    generateRandomPosition,
+  };
+
+  return [state, actions];
+}

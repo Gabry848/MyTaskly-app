@@ -1,6 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { FontAwesome } from '@expo/vector-icons';
+import { StyleSheet, Text, TextInput, TouchableOpacity, View, Image } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
 import Animated,
@@ -210,7 +209,7 @@ export const OptimizedNoteCard: React.FC<OptimizedNoteCardProps> = React.memo(({
           onPress={handleDelete}
           activeOpacity={0.7}
         >
-          <FontAwesome name="times" size={14} color="#666" />
+          <Image source={require('../../src/assets/x.png')} style={styles.deleteIcon} />
         </TouchableOpacity>
         
         {isEditing ? (
@@ -225,14 +224,14 @@ export const OptimizedNoteCard: React.FC<OptimizedNoteCardProps> = React.memo(({
               multiline
               autoFocus
               blurOnSubmit={false}
-            />
-            <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-              <FontAwesome name="check" size={14} color="#fff" />
+            />            <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+              <Image source={require('../../src/assets/ceck.png')} style={styles.saveIcon} />
             </TouchableOpacity>
-          </View>
-        ) : (
+          </View>        ) : (
           <TouchableOpacity onPress={handleLongPress} activeOpacity={0.8}>
-            <Text style={styles.noteText}>{typeof note.text === 'string' ? note.text : ''}</Text>
+            <Text style={styles.noteText}>
+              {typeof note.text === 'string' && note.text.trim() !== '' ? note.text : 'Testo nota...'}
+            </Text>
           </TouchableOpacity>
         )}
       </Animated.View>
@@ -282,6 +281,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(0, 0, 0, 0.1)',
   },
+  deleteIcon: {
+    width: 12,
+    height: 12,
+    tintColor: '#666',
+  },
   editContainer: {
     flex: 1,
     marginTop: 20,
@@ -296,8 +300,7 @@ const styles = StyleSheet.create({
     padding: 8,
     textAlignVertical: 'top',
     lineHeight: 20,
-  },
-  saveButton: {
+  },  saveButton: {
     position: 'absolute',
     bottom: 5,
     right: 5,
@@ -315,5 +318,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 2,
     elevation: 3,
+  },
+  saveIcon: {
+    width: 12,
+    height: 12,
+    tintColor: '#fff',
   },
 });

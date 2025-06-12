@@ -196,8 +196,8 @@ export const OptimizedNotesCanvas: React.FC<OptimizedNotesCanvasProps> = ({
             {/* Grid pattern sottile */}
             <View style={[styles.gridPattern, { width: CANVAS_WIDTH, height: CANVAS_HEIGHT }]} />
             
-            {/* Note ottimizzate */}
-            {renderedNotes}
+            {/* Note ottimizzate - renderizza le note validate */}
+            {renderedNotes && renderedNotes.length > 0 ? renderedNotes : null}
           </Animated.View>
         </Animated.View>
       </GestureDetector>

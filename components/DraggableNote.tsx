@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, TextInput, PanResponder } from 'react-native';
-import { FontAwesome } from '@expo/vector-icons';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, TextInput, PanResponder, Image } from 'react-native';
 
 interface Note {
   id: string;
@@ -124,12 +123,11 @@ const DraggableNote: React.FC<DraggableNoteProps> = ({
           elevation: note.zIndex,
         },
       ]}
-    >
-      <TouchableOpacity 
+    >      <TouchableOpacity 
         style={styles.deleteButton} 
         onPress={() => onDelete(note.id)}
       >
-        <FontAwesome name="times" size={16} color="#555" />
+        <Image source={require('../src/assets/x.png')} style={styles.deleteIcon} />
       </TouchableOpacity>
       
       {isEditing ? (
@@ -140,16 +138,16 @@ const DraggableNote: React.FC<DraggableNoteProps> = ({
             onChangeText={setEditText}
             multiline
             autoFocus
-          />
-          <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-            <FontAwesome name="check" size={16} color="#fff" />
+          />          <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+            <Image source={require('../src/assets/ceck.png')} style={styles.saveIcon} />
           </TouchableOpacity>
-        </View>
-      ) : (        <TouchableOpacity 
+        </View>        ) : (        <TouchableOpacity 
           onPress={handleLongPress} 
           // delayLongPress={500}
           activeOpacity={0.7}        >
-          <Text style={styles.noteText}>{typeof editText === 'string' ? editText : ''}</Text>
+          <Text style={styles.noteText}>
+            {typeof editText === 'string' && editText.trim() !== '' ? editText : 'Testo nota...'}
+          </Text>
         </TouchableOpacity>
       )}
     </Animated.View>
@@ -175,8 +173,7 @@ const styles = StyleSheet.create({
   noteText: {
     fontSize: 16,
     color: '#333',
-  },
-  deleteButton: {
+  },  deleteButton: {
     position: 'absolute',
     top: 5,
     right: 5,
@@ -187,6 +184,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 10,
+  },
+  deleteIcon: {
+    width: 14,
+    height: 14,
+    tintColor: '#555',
   },
   editContainer: {
     flex: 1,
@@ -200,8 +202,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.5)',
     borderRadius: 6,
     padding: 8,
-  },
-  saveButton: {
+  },  saveButton: {
     position: 'absolute',
     bottom: 5,
     right: 5,
@@ -211,7 +212,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#4CAF50',
     justifyContent: 'center',
     alignItems: 'center',
-  }
+  },
+  saveIcon: {
+    width: 14,
+    height: 14,
+    tintColor: '#fff',
+  },
 });
 
 export default DraggableNote;

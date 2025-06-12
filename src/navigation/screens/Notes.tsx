@@ -286,34 +286,35 @@ export default function Notes() {
 
   return (
     <View style={styles.container}>      {/* Area delle note con OptimizedNotesCanvas per prestazioni massime */}
-      <View style={styles.notesArea}>
-        {Array.isArray(notes) && notes.length > 0 ? (
-          <OptimizedNotesCanvas
-            notes={notes}
-            onUpdatePosition={handleUpdatePosition}
-            onDeleteNote={handleDeleteNote}
-            onUpdateNote={handleUpdateNote}
-          />
-        ) : (
-          <View style={styles.loadingContainer}>
-            <Text>{isLoading ? "Caricamento note..." : "Nessuna nota disponibile"}</Text>
-          </View>
-        )}
-      </View>
+    <View style={styles.notesArea}>
+      {Array.isArray(notes) && notes.length > 0 ? (
+        <OptimizedNotesCanvas
+          notes={notes}
+          onUpdatePosition={handleUpdatePosition}
+          onDeleteNote={handleDeleteNote}
+          onUpdateNote={handleUpdateNote}
+        />      ) : (
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>
+            {isLoading ? "Caricamento note..." : "Nessuna nota disponibile"}
+          </Text>
+        </View>
+      )}
+    </View>
       
-      {/* Area di input non soggetta a pan e zoom */}
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          value={newNoteText}
-          onChangeText={setNewNoteText}
-          placeholder="Scrivi una nuova nota..."
-          multiline
-        />
-        <TouchableOpacity style={styles.addButton} onPress={handleAddNote}>
-          <FontAwesome name="plus" size={20} color="#fff" />
-        </TouchableOpacity>
-      </View>
+    //   {/* Area di input non soggetta a pan e zoom */}
+    <View style={styles.inputContainer}>
+      <TextInput
+        style={styles.input}
+        value={newNoteText}
+        onChangeText={setNewNoteText}
+        placeholder="Scrivi una nuova nota..."
+        multiline
+      />
+      <TouchableOpacity style={styles.addButton} onPress={handleAddNote}>
+        <FontAwesome name="plus" size={20} color="#fff" />
+      </TouchableOpacity>
+    </View>
     </View>
   );
 }
