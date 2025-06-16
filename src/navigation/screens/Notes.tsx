@@ -3,42 +3,28 @@ import {
   View,
   StyleSheet,
   SafeAreaView,
+  Text,
 } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { NotesProvider } from '../../context/NotesContext';
-import { ModernNotesCanvas } from '../../../components/Notes/ModernNotesCanvas';
-import { ModernNoteInput } from '../../../components/Notes/ModernNoteInput';
-import { NotesErrorBoundary } from '../../../components/Notes/NotesErrorBoundary';
-import { useNotesState, useNotesActions } from '../../context/NotesContext';
+// Importazioni temporaneamente commentate per disabilitare la pagina
+// import { NotesProvider } from '../../context/NotesContext';
+// import { ModernNotesCanvas } from '../../../components/Notes/ModernNotesCanvas';
+// import { ModernNoteInput } from '../../../components/Notes/ModernNoteInput';
+// import { NotesErrorBoundary } from '../../../components/Notes/NotesErrorBoundary';
+// import { useNotesState, useNotesActions } from '../../context/NotesContext';
+
+// PAGINA TEMPORANEAMENTE DISABILITATA
+// Componente semplificato che mostra un messaggio di disabilitazione
 
 const NotesContent: React.FC = () => {
-  const state = useNotesState();
-  const actions = useNotesActions();
-
   return (
-    <NotesErrorBoundary error={state.error} onClearError={actions.clearError}>
-      <View style={styles.content}>
-        {/* Area canvas per le note - ora moderna e ottimizzata */}
-        <View style={styles.canvasContainer}>
-          <ModernNotesCanvas
-            notes={state.notes}
-            isLoading={state.isLoading}
-            onUpdatePosition={actions.updateNotePosition}
-            onDeleteNote={actions.deleteNote}
-            onUpdateNote={actions.updateNote}
-            onRefresh={actions.refreshNotes}
-          />
-        </View>
-
-        {/* Input per nuove note - design moderno con blur */}
-        <View style={styles.inputContainer}>
-          <ModernNoteInput
-            onAddNote={actions.addNote}
-            isLoading={state.isLoading}
-          />
-        </View>
-      </View>
-    </NotesErrorBoundary>
+    <View style={styles.disabledContainer}>
+      <Text style={styles.disabledTitle}>Note temporaneamente disabilitate</Text>
+      <Text style={styles.disabledMessage}>
+        La pagina delle note è temporaneamente non disponibile.
+        {'\n'}Tornerà presto!
+      </Text>
+    </View>
   );
 };
 
@@ -46,9 +32,7 @@ export default function Notes() {
   return (
     <GestureHandlerRootView style={styles.root}>
       <SafeAreaView style={styles.container}>
-        <NotesProvider autoRefreshOnFocus={true}>
-          <NotesContent />
-        </NotesProvider>
+        <NotesContent />
       </SafeAreaView>
     </GestureHandlerRootView>
   );
@@ -62,18 +46,39 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f8f9fa',
   },
-  content: {
+  // Stili per la pagina disabilitata
+  disabledContainer: {
     flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
   },
-  canvasContainer: {
-    flex: 1,
+  disabledTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#666',
+    marginBottom: 16,
+    textAlign: 'center',
   },
-  inputContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'transparent',
-    zIndex: 1000,
+  disabledMessage: {
+    fontSize: 16,
+    color: '#888',
+    textAlign: 'center',
+    lineHeight: 24,
   },
+  // Stili originali commentati per riferimento futuro
+  // content: {
+  //   flex: 1,
+  // },
+  // canvasContainer: {
+  //   flex: 1,
+  // },
+  // inputContainer: {
+  //   position: 'absolute',
+  //   bottom: 0,
+  //   left: 0,
+  //   right: 0,
+  //   backgroundColor: 'transparent',
+  //   zIndex: 1000,
+  // },
 });
