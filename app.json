@@ -27,7 +27,7 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#ffffff",
-          "image": "./assets/splash-icon.png"
+          "image": "./assets/icon.png"
         }
       ],
       "react-native-edge-to-edge"
