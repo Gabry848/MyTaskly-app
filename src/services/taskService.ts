@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios from "./axiosInterceptor";
 import { getValidToken } from "./authService";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { STORAGE_KEYS } from "../constants/authConstants";

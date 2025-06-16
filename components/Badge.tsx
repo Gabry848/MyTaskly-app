@@ -6,22 +6,23 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { STORAGE_KEYS } from "../src/constants/authConstants";
 import { useFocusEffect } from '@react-navigation/native';
 
-import { check_login, refreshToken } from "../src/services/authService";
-
 export default function Badge() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const [letter, setLetter] = useState<string>("U"); // Valore predefinito
-
   const handlePress = async () => {
-    const login_data = check_login();
-
-    if ((await login_data).isAuthenticated) {
-      navigation.navigate("Profile");
-    } else if ((await login_data).canRefresh) {
-      await refreshToken();
-      // Se necessario, puoi anche navigare dopo il refresh
-      // navigation.navigate("Profile", { user: letter });
-    } else {
+    try {
+      // Utilizza la nuova funzione di controllo con refresh automatico
+      const { checkAndRefreshAuth } = await import("../src/services/authService");
+      const authResult = await checkAndRefreshAuth();
+      
+      if (authResult.isAuthenticated) {
+        navigation.navigate("Profile");
+      } else {
+        // Se l'autenticazione fallisce, vai al login
+        navigation.navigate("Login");
+      }
+    } catch (error) {
+      console.error("Errore nel controllo autenticazione:", error);
       navigation.navigate("Login");
     }
   };

@@ -120,13 +120,21 @@ function NavigationHandler() {
 // Stack Navigator separato con controllo autenticazione
 function AppStack() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  // Controlla lo stato di autenticazione all'avvio
+  const [isLoading, setIsLoading] = useState(true);  // Controlla lo stato di autenticazione all'avvio
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
-        const authStatus = await check_login();
-        setIsAuthenticated(authStatus.isAuthenticated);
+        // Importa la funzione di controllo e refresh automatico
+        const { checkAndRefreshAuth } = await import("../services/authService");
+        const authResult = await checkAndRefreshAuth();
+        
+        if (authResult.isAuthenticated) {
+          console.log(authResult.message);
+        } else {
+          console.log(authResult.message);
+        }
+        
+        setIsAuthenticated(authResult.isAuthenticated);
       } catch (error) {
         console.error("Errore nel controllo autenticazione:", error);
         setIsAuthenticated(false);

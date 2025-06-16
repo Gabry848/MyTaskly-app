@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import axios from "axios";
+import axios from "./axiosInterceptor";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { STORAGE_KEYS, DEFAULT_BASE_URL, API_ENDPOINTS } from "../constants/authConstants";
 
@@ -437,6 +437,69 @@ export async function getValidToken(): Promise<string | null> {
   }
 }
 
+/**
+ * Controlla l'autenticazione e tenta automaticamente il refresh del token se necessario
+ * Questa funzione è utile per essere chiamata all'avvio dell'app o quando si accede a risorse protette
+ * 
+ * @returns {Promise<Object>} Un oggetto che indica se l'utente è autenticato dopo eventuali tentativi di refresh
+ */
+async function checkAndRefreshAuth(): Promise<{ 
+  isAuthenticated: boolean; 
+  message: string; 
+  needsLogin: boolean;
+}> {
+  try {
+    const authStatus = await check_login();
+    
+    // Se l'utente è già autenticato, restituisci true
+    if (authStatus.isAuthenticated) {
+      return {
+        isAuthenticated: true,
+        message: "Utente già autenticato",
+        needsLogin: false
+      };
+    }
+    
+    // Se il bearer token è scaduto ma il refresh token è ancora valido
+    if (authStatus.canRefresh && !authStatus.refreshTokenExpired) {
+      console.log("Bearer token scaduto, tentativo di refresh automatico...");
+      
+      const refreshResult = await refreshToken();
+      
+      if (refreshResult.success) {
+        console.log("Token aggiornato con successo tramite refresh");
+        return {
+          isAuthenticated: true,
+          message: "Token aggiornato con successo",
+          needsLogin: false
+        };
+      } else {
+        console.log("Refresh token fallito");
+        return {
+          isAuthenticated: false,
+          message: "Refresh token scaduto o non valido",
+          needsLogin: true
+        };
+      }
+    }
+    
+    // Se entrambi i token sono scaduti
+    return {
+      isAuthenticated: false,
+      message: "Sessione scaduta, è necessario effettuare nuovamente il login",
+      needsLogin: true
+    };
+    
+  } catch (error) {
+    console.error("Errore nel controllo autenticazione:", error);
+    return {
+      isAuthenticated: false,
+      message: "Errore nel controllo autenticazione",
+      needsLogin: true
+    };
+  }
+}
+
 // Esporta le funzioni
 export {
   login,
@@ -446,4 +509,5 @@ export {
   loadStoredData,
   logout,
   initializeAuth,
+  checkAndRefreshAuth,
 };

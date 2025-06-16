@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios from "./axiosInterceptor";
 import { getValidToken } from "./authService";
 
 /**
