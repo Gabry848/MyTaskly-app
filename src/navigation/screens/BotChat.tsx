@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { StyleSheet, View, KeyboardAvoidingView, Platform, SafeAreaView, Alert } from 'react-native';
+import { StyleSheet, View, KeyboardAvoidingView, Platform, SafeAreaView, Alert, Keyboard } from 'react-native';
 import { sendMessageToBot, createNewChat } from '../../services/botservice';
 import { 
   ChatHeader, 
@@ -13,6 +13,7 @@ const BotChat: React.FC = () => {
   // Stati
   const [messages, setMessages] = useState<Message[]>([]);
   const [modelType, setModelType] = useState<'base' | 'advanced'>('base');
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
   
   // Costanti
   const USER = 'user';
@@ -21,6 +22,21 @@ const BotChat: React.FC = () => {
   // Inizializzazione della chat al primo render
   useEffect(() => {
     initializeChat();
+  }, []);
+
+  // Gestione eventi tastiera per Android
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
+      setKeyboardVisible(true);
+    });
+    const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
+      setKeyboardVisible(false);
+    });
+
+    return () => {
+      keyboardDidShowListener?.remove();
+      keyboardDidHideListener?.remove();
+    };
   }, []);
   // Funzione per inizializzare la chat con messaggi di benvenuto
   const initializeChat = async () => {
@@ -125,14 +141,13 @@ const BotChat: React.FC = () => {
         }
       ]);
     }
-  }, [modelType, messages]);
-
-  return (
+  }, [modelType, messages]);  return (
     <SafeAreaView style={chatStyles.container}>
       <KeyboardAvoidingView
         style={chatStyles.chatContainer}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+        enabled={Platform.OS === 'ios' || keyboardVisible}
       >
         <ChatHeader
           modelType={modelType}

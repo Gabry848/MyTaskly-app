@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { StyleSheet, FlatList } from 'react-native';
+import { StyleSheet, FlatList, Keyboard, Platform } from 'react-native';
 import { ChatListProps } from './types';
 import MessageBubble from './MessageBubble';
 
@@ -14,7 +14,21 @@ const ChatList: React.FC<ChatListProps> = ({ messages, style }) => {
       }, 100);
     }
   }, [messages.length]);
-  return (
+
+  // Gestione tastiera per scroll automatico su Android
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
+      if (Platform.OS === 'android') {
+        setTimeout(() => {
+          flatListRef.current?.scrollToEnd({ animated: true });
+        }, 100);
+      }
+    });
+
+    return () => {
+      keyboardDidShowListener?.remove();
+    };
+  }, []);  return (
     <FlatList
       ref={flatListRef}
       data={messages}
@@ -26,6 +40,12 @@ const ChatList: React.FC<ChatListProps> = ({ messages, style }) => {
       showsVerticalScrollIndicator={false}
       onLayout={() => flatListRef.current?.scrollToEnd({ animated: false })}
       keyboardShouldPersistTaps="always"
+      keyboardDismissMode="interactive"
+      maintainVisibleContentPosition={{
+        minIndexForVisible: 0,
+        autoscrollToTopThreshold: 10,
+      }}
+      removeClippedSubviews={Platform.OS === 'android'}
     />
   );
 };
