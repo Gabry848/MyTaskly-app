@@ -32,7 +32,6 @@ const ChatList: React.FC<ChatListProps> = ({ messages, style }) => {
 
 const styles = StyleSheet.create({
   messagesList: {
-    paddingHorizontal: 15,
     paddingVertical: 15,
   },
 });

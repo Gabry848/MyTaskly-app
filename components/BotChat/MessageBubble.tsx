@@ -43,7 +43,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style }) => {
     const legacyMessage = `Ecco i tuoi impegni:\n📅 TASK:\n${JSON.stringify(message.tasks)}\n📊 Totale task trovati: ${message.tasks.length}`;
     return <TaskTableBubble message={legacyMessage} style={style} />;
   }
-
   // Altrimenti, visualizza il messaggio di testo normale
   return (
     <View style={[
@@ -80,16 +79,13 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style }) => {
 const styles = StyleSheet.create({
   messageContainer: {
     marginVertical: 6,
-    flexDirection: 'row',
-    alignItems: 'flex-end',
+    paddingHorizontal: 15,
   },
   userMessageContainer: {
-    justifyContent: 'flex-end',
-    alignSelf: 'flex-end',
+    alignItems: 'flex-end',
   },
   botMessageContainer: {
-    justifyContent: 'flex-start',
-    alignSelf: 'flex-start',
+    alignItems: 'flex-start',
   },
   messageBubble: {
     maxWidth: '80%',
@@ -121,11 +117,10 @@ const styles = StyleSheet.create({
   },
   botText: {
     color: '#333333',
-  },
-  messageTime: {
+  },  messageTime: {
     fontSize: 11,
+    marginTop: 4,
     marginHorizontal: 8,
-    marginBottom: 2,
   },
   userTime: {
     color: '#FFFFFF80',
