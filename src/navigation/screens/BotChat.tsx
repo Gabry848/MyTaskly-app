@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { StyleSheet, View, KeyboardAvoidingView, Platform, SafeAreaView, Alert, Keyboard } from 'react-native';
+import { StyleSheet, View, KeyboardAvoidingView, Platform, SafeAreaView, Alert, Keyboard, Dimensions } from 'react-native';
 import { sendMessageToBot, createNewChat } from '../../services/botservice';
 import { 
   ChatHeader, 
@@ -19,15 +19,60 @@ const BotChat: React.FC = () => {
   const USER = 'user';
   const BOT = 'bot';
 
+  // Helper per determinare il tipo di dispositivo
+  const getDeviceType = () => {
+    const { width, height } = Dimensions.get('window');
+    const aspectRatio = height / width;
+    
+    if (Platform.OS === 'ios') {
+      // iPad ha generalmente un aspect ratio più piccolo (più quadrato)
+      // iPhone ha un aspect ratio più alto (più rettangolare)
+      return aspectRatio < 1.6 ? 'ipad' : 'iphone';
+    }
+    return 'android';
+  };
+
+  const deviceType = getDeviceType();
+  // Configurazione KeyboardAvoidingView basata sul dispositivo
+  const getKeyboardAvoidingViewConfig = () => {
+    switch (deviceType) {
+      case 'ipad':
+        return {
+          behavior: 'padding' as const, // Usiamo padding anche per iPad
+          keyboardVerticalOffset: 20, // Ma con offset molto ridotto
+          enabled: true
+        };
+      case 'iphone':
+        return {
+          behavior: 'padding' as const,
+          keyboardVerticalOffset: 90,
+          enabled: true
+        };
+      case 'android':
+      default:
+        return {
+          behavior: 'height' as const,
+          keyboardVerticalOffset: 0,
+          enabled: keyboardVisible
+        };
+    }
+  };
+
   // Inizializzazione della chat al primo render
   useEffect(() => {
     initializeChat();
   }, []);
-
-  // Gestione eventi tastiera per Android
+  // Gestione eventi tastiera per Android e iPad
   useEffect(() => {
-    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
+    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', (event) => {
       setKeyboardVisible(true);
+      
+      // Su iPad, forziamo uno scroll aggiuntivo per assicurarci che l'input sia visibile
+      if (deviceType === 'ipad') {
+        setTimeout(() => {
+          // Scroll aggiuntivo specifico per iPad
+        }, 150);
+      }
     });
     const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
       setKeyboardVisible(false);
@@ -37,7 +82,7 @@ const BotChat: React.FC = () => {
       keyboardDidShowListener?.remove();
       keyboardDidHideListener?.remove();
     };
-  }, []);
+  }, [deviceType]);
   // Funzione per inizializzare la chat con messaggi di benvenuto
   const initializeChat = async () => {
     const welcomeMessages = await createNewChat();
@@ -140,14 +185,41 @@ const BotChat: React.FC = () => {
           createdAt: new Date(),
         }
       ]);
-    }
-  }, [modelType, messages]);  return (
+    }  }, [modelType, messages]);
+
+  const keyboardConfig = getKeyboardAvoidingViewConfig();
+
+  // Per iPad, usiamo un approccio ibrido: KeyboardAvoidingView con offset minimo
+  if (deviceType === 'ipad') {
+    return (
+      <SafeAreaView style={chatStyles.container}>
+        <View style={chatStyles.chatContainer}>
+          <ChatHeader
+            modelType={modelType}
+            onModelChange={handleModelChange}
+            onNewChat={handleNewChat}
+          />
+          <ChatList messages={messages} />
+          <KeyboardAvoidingView
+            behavior="padding"
+            keyboardVerticalOffset={20}
+            enabled={true}
+          >
+            <ChatInput onSendMessage={handleSendMessage} />
+          </KeyboardAvoidingView>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Per iPhone e Android, usiamo l'approccio standard
+  return (
     <SafeAreaView style={chatStyles.container}>
       <KeyboardAvoidingView
         style={chatStyles.chatContainer}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-        enabled={Platform.OS === 'ios' || keyboardVisible}
+        behavior={keyboardConfig.behavior}
+        keyboardVerticalOffset={keyboardConfig.keyboardVerticalOffset}
+        enabled={keyboardConfig.enabled}
       >
         <ChatHeader
           modelType={modelType}

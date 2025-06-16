@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { StyleSheet, View, TextInput, TouchableOpacity, Platform, Keyboard } from 'react-native';
+import { StyleSheet, View, TextInput, TouchableOpacity, Platform, Keyboard, Dimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { ChatInputProps } from './types';
 
@@ -7,6 +7,19 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, style }) => {
   const [inputText, setInputText] = useState('');
   const [inputHeight, setInputHeight] = useState(44);
   const inputRef = useRef<TextInput>(null);
+
+  // Helper per determinare il tipo di dispositivo
+  const getDeviceType = () => {
+    const { width, height } = Dimensions.get('window');
+    const aspectRatio = height / width;
+    
+    if (Platform.OS === 'ios') {
+      return aspectRatio < 1.6 ? 'ipad' : 'iphone';
+    }
+    return 'android';
+  };
+
+  const deviceType = getDeviceType();
 
   const handleSend = useCallback(() => {
     if (inputText.trim() === '') return;
@@ -22,9 +35,13 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, style }) => {
   const handleContentSizeChange = useCallback((event: any) => {
     const height = Math.max(44, Math.min(120, event.nativeEvent.contentSize.height + 20));
     setInputHeight(height);
-  }, []);
-  return (
-    <View style={[styles.inputContainer, style]}>
+  }, []);  return (
+    <View style={[
+      styles.inputContainer, 
+      style,
+      // Su iPad, aggiungiamo un po' meno ombra e padding
+      deviceType === 'ipad' && styles.ipadContainer
+    ]}>
       <TextInput
         ref={inputRef}
         style={[styles.input, { height: inputHeight }]}
@@ -73,6 +90,12 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
     alignItems: 'flex-end', // Allinea gli elementi in basso
+  },
+  ipadContainer: {
+    // Su iPad riduciamo l'ombra e il padding
+    shadowOpacity: 0.02,
+    elevation: 1,
+    padding: 8,
   },
   input: {
     flex: 1,

@@ -1,10 +1,23 @@
 import React, { useRef, useEffect } from 'react';
-import { StyleSheet, FlatList, Keyboard, Platform } from 'react-native';
+import { StyleSheet, FlatList, Keyboard, Platform, Dimensions } from 'react-native';
 import { ChatListProps } from './types';
 import MessageBubble from './MessageBubble';
 
 const ChatList: React.FC<ChatListProps> = ({ messages, style }) => {
   const flatListRef = useRef<FlatList>(null);
+
+  // Helper per determinare il tipo di dispositivo
+  const getDeviceType = () => {
+    const { width, height } = Dimensions.get('window');
+    const aspectRatio = height / width;
+    
+    if (Platform.OS === 'ios') {
+      return aspectRatio < 1.6 ? 'ipad' : 'iphone';
+    }
+    return 'android';
+  };
+
+  const deviceType = getDeviceType();
 
   // Scroll automatico quando arrivano nuovi messaggi
   useEffect(() => {
@@ -15,10 +28,11 @@ const ChatList: React.FC<ChatListProps> = ({ messages, style }) => {
     }
   }, [messages.length]);
 
-  // Gestione tastiera per scroll automatico su Android
+  // Gestione tastiera per scroll automatico
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
-      if (Platform.OS === 'android') {
+      // Su iPad scrolliamo sempre, su Android solo se necessario, su iPhone lasciamo gestire al KeyboardAvoidingView
+      if (deviceType === 'ipad' || deviceType === 'android') {
         setTimeout(() => {
           flatListRef.current?.scrollToEnd({ animated: true });
         }, 100);
@@ -28,7 +42,7 @@ const ChatList: React.FC<ChatListProps> = ({ messages, style }) => {
     return () => {
       keyboardDidShowListener?.remove();
     };
-  }, []);  return (
+  }, [deviceType]);  return (
     <FlatList
       ref={flatListRef}
       data={messages}
@@ -36,7 +50,12 @@ const ChatList: React.FC<ChatListProps> = ({ messages, style }) => {
         return <MessageBubble message={item} />;
       }}
       keyExtractor={(item) => item.id}
-      contentContainerStyle={[styles.messagesList, style]}
+      contentContainerStyle={[
+        styles.messagesList, 
+        style,
+        // Su iPad, aggiungiamo meno padding extra dato che ora usiamo KeyboardAvoidingView
+        deviceType === 'ipad' && styles.ipadPadding
+      ]}
       showsVerticalScrollIndicator={false}
       onLayout={() => flatListRef.current?.scrollToEnd({ animated: false })}
       keyboardShouldPersistTaps="always"
@@ -53,6 +72,9 @@ const ChatList: React.FC<ChatListProps> = ({ messages, style }) => {
 const styles = StyleSheet.create({
   messagesList: {
     paddingVertical: 15,
+  },
+  ipadPadding: {
+    paddingBottom: 20, // Padding ridotto per iPad dato che ora usiamo KeyboardAvoidingView
   },
 });
 
