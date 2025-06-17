@@ -123,16 +123,11 @@ const BotChat: React.FC = () => {
       }
     ]);
   };
-
-  // Handler per inviare messaggi vocali
+  // Handler per inviare messaggi vocali (ora gestito direttamente nel hook)
   const handleSendVoiceMessage = useCallback(async (audioUri: string) => {
-    // Per ora gestiamo i messaggi vocali come messaggi di testo
-    // In futuro si potrebbe mantenere anche l'URI audio per la riproduzione
-    console.log('Messaggio vocale ricevuto:', audioUri);
-    
-    // Il messaggio vocale viene già trascritto e inserito nel campo di input
-    // dal componente ChatInput, quindi non è necessario fare altro qui
-    // Se volessi, potresti aggiungere metadata sul messaggio vocale
+    // Questa funzione è mantenuta per compatibilità ma non viene più utilizzata
+    // La logica è stata spostata nel hook useVoiceRecording
+    console.log('Messaggio vocale gestito direttamente dal hook:', audioUri);
   }, []);
 
   // Handler per inviare messaggi
@@ -211,11 +206,11 @@ const BotChat: React.FC = () => {
           <KeyboardAvoidingView
             behavior="padding"
             keyboardVerticalOffset={10}
-            enabled={true}
-          >
+            enabled={true}          >
             <ChatInput 
               onSendMessage={handleSendMessage}
               onSendVoiceMessage={handleSendVoiceMessage}
+              modelType={modelType}
             />
           </KeyboardAvoidingView>
         </View>
@@ -240,6 +235,7 @@ const BotChat: React.FC = () => {
         <ChatInput 
           onSendMessage={handleSendMessage}
           onSendVoiceMessage={handleSendVoiceMessage}
+          modelType={modelType}
         />
       </KeyboardAvoidingView>
     </SafeAreaView>

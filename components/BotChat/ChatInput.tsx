@@ -3,19 +3,26 @@ import { StyleSheet, View, TextInput, TouchableOpacity, Platform, Keyboard, Dime
 import { MaterialIcons } from '@expo/vector-icons';
 import { ChatInputProps } from './types';
 import { useVoiceRecording } from './hooks/useVoiceRecording';
-import { speechToTextService } from './services/speechToTextService';
 import VoiceRecordButton from './VoiceRecordButton';
 
-const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, onSendVoiceMessage, style }) => {
-  const [inputText, setInputText] = useState('');
+interface ExtendedChatInputProps extends ChatInputProps {
+  modelType?: 'base' | 'advanced';
+}
+
+const ChatInput: React.FC<ExtendedChatInputProps> = ({ 
+  onSendMessage, 
+  onSendVoiceMessage, 
+  style, 
+  modelType = 'base' 
+}) => {  const [inputText, setInputText] = useState('');
   const [inputHeight, setInputHeight] = useState(44);
-  const [isTranscribing, setIsTranscribing] = useState(false);
   const inputRef = useRef<TextInput>(null);
   
   // Hook per la registrazione vocale
   const {
     isRecording,
     recordingDuration,
+    isProcessing,
     startRecording,
     stopRecording,
     requestPermissions,
@@ -58,43 +65,20 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, onSendVoiceMessage
       Alert.alert('Errore', 'Impossibile avviare la registrazione vocale.');
     }
   }, [startRecording]);
-
   const handleStopRecording = useCallback(async () => {
     try {
-      const audioUri = await stopRecording();
+      // Il nuovo hook gestisce internamente l'invio al backend e restituisce la trascrizione
+      const transcribedText = await stopRecording(modelType);
       
-      if (audioUri) {
-        setIsTranscribing(true);
-        
-        try {
-          // Trascrivi l'audio
-          const transcribedText = await speechToTextService.transcribeAudio(audioUri);
-          
-          if (transcribedText.trim()) {
-            // Se abbiamo una trascrizione, la aggiungiamo al campo di input
-            setInputText(transcribedText);
-            
-            // Opzionalmente, invia automaticamente il messaggio
-            // onSendMessage(transcribedText);
-            
-            // Oppure, se implementato, invia il messaggio vocale
-            if (onSendVoiceMessage) {
-              onSendVoiceMessage(audioUri);
-            }
-          }
-        } catch (error) {
-          console.error('Errore durante la trascrizione:', error);
-          Alert.alert('Errore', 'Impossibile trascrivere il messaggio vocale.');
-        } finally {
-          setIsTranscribing(false);
-        }
+      if (transcribedText && transcribedText.trim()) {
+        // Se abbiamo una trascrizione/risposta dal bot, la inviamo come messaggio
+        onSendMessage(transcribedText);
       }
     } catch (error) {
       console.error('Errore durante l\'arresto della registrazione:', error);
-      Alert.alert('Errore', 'Impossibile fermare la registrazione vocale.');
-      setIsTranscribing(false);
+      Alert.alert('Errore', 'Impossibile processare il messaggio vocale.');
     }
-  }, [stopRecording, onSendMessage, onSendVoiceMessage]);  return (
+  }, [stopRecording, modelType, onSendMessage]);return (
     <View style={[
       styles.inputContainer, 
       style,
@@ -105,8 +89,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, onSendVoiceMessage
         ref={inputRef}
         style={[styles.input, { height: inputHeight }]}
         value={inputText}
-        onChangeText={setInputText}
-        placeholder={isTranscribing ? "Trascrizione in corso..." : "Scrivi un messaggio..."}
+        onChangeText={setInputText}        placeholder={isProcessing ? "Elaborazione in corso..." : "Scrivi un messaggio..."}
         placeholderTextColor="#999"
         onSubmitEditing={handleSend}
         returnKeyType="send"
@@ -120,26 +103,25 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, onSendVoiceMessage
         onContentSizeChange={handleContentSizeChange}
         blurOnSubmit={false}
         textAlignVertical="top"
-        editable={!isRecording && !isTranscribing}      />
+        editable={!isRecording && !isProcessing}      />
       
-      <View style={styles.buttonContainer}>
-        <VoiceRecordButton
+      <View style={styles.buttonContainer}>        <VoiceRecordButton
           isRecording={isRecording}
           recordingDuration={recordingDuration}
           onStartRecording={handleStartRecording}
           onStopRecording={handleStopRecording}
-          disabled={isTranscribing}
+          disabled={isProcessing}
         />
         
         <TouchableOpacity 
           style={[styles.sendButton, { height: inputHeight }]} 
           onPress={handleSend}
-          disabled={inputText.trim() === '' || isRecording || isTranscribing}
+          disabled={inputText.trim() === '' || isRecording || isProcessing}
         >
           <MaterialIcons 
             name="send" 
             size={24} 
-            color={(inputText.trim() === '' || isRecording || isTranscribing) ? '#CCC' : '#007bff'} 
+            color={(inputText.trim() === '' || isRecording || isProcessing) ? '#CCC' : '#007bff'} 
           />
         </TouchableOpacity>
       </View>
