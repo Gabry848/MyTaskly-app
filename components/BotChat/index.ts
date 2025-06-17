@@ -3,6 +3,7 @@ import { StyleSheet } from 'react-native';
 import ChatHeader from './ChatHeader';
 import ChatInput from './ChatInput';
 import ChatList from './ChatList';
+import VoiceRecordButton from './VoiceRecordButton';
 import { Message, ChatSession } from './types';
 
 // Esporto tutti i componenti e i tipi per facilitare l'import
@@ -10,6 +11,7 @@ export {
   ChatHeader,
   ChatInput,
   ChatList,
+  VoiceRecordButton,
   Message,
   ChatSession
 };

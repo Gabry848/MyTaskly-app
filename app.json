@@ -9,20 +9,27 @@
     "newArchEnabled": true,
     "scheme": "myapptodolist",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "Questa app richiede l'accesso al microfono per registrare messaggi vocali."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.anonymous.myapptodolist"
+      "package": "com.anonymous.myapptodolist",
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "expo-asset",
+      "expo-av",
       [
         "expo-splash-screen",
         {

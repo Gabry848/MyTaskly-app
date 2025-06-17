@@ -32,8 +32,7 @@ const BotChat: React.FC = () => {
     return 'android';
   };
 
-  const deviceType = getDeviceType();
-  // Configurazione KeyboardAvoidingView basata sul dispositivo
+  const deviceType = getDeviceType();  // Configurazione KeyboardAvoidingView basata sul dispositivo
   const getKeyboardAvoidingViewConfig = () => {
     switch (deviceType) {
       case 'ipad':
@@ -45,7 +44,7 @@ const BotChat: React.FC = () => {
       case 'iphone':
         return {
           behavior: 'padding' as const,
-          keyboardVerticalOffset: 90,
+          keyboardVerticalOffset: 35, // Ridotto da 90 a 35 per meno spazio
           enabled: true
         };
       case 'android':
@@ -125,6 +124,17 @@ const BotChat: React.FC = () => {
     ]);
   };
 
+  // Handler per inviare messaggi vocali
+  const handleSendVoiceMessage = useCallback(async (audioUri: string) => {
+    // Per ora gestiamo i messaggi vocali come messaggi di testo
+    // In futuro si potrebbe mantenere anche l'URI audio per la riproduzione
+    console.log('Messaggio vocale ricevuto:', audioUri);
+    
+    // Il messaggio vocale viene già trascritto e inserito nel campo di input
+    // dal componente ChatInput, quindi non è necessario fare altro qui
+    // Se volessi, potresti aggiungere metadata sul messaggio vocale
+  }, []);
+
   // Handler per inviare messaggi
   const handleSendMessage = useCallback(async (text: string) => {
     // Creiamo il messaggio dell'utente
@@ -188,7 +198,6 @@ const BotChat: React.FC = () => {
     }  }, [modelType, messages]);
 
   const keyboardConfig = getKeyboardAvoidingViewConfig();
-
   // Per iPad, usiamo un approccio ibrido: KeyboardAvoidingView con offset minimo
   if (deviceType === 'ipad') {
     return (
@@ -198,14 +207,16 @@ const BotChat: React.FC = () => {
             modelType={modelType}
             onModelChange={handleModelChange}
             onNewChat={handleNewChat}
-          />
-          <ChatList messages={messages} />
+          />          <ChatList messages={messages} />
           <KeyboardAvoidingView
             behavior="padding"
-            keyboardVerticalOffset={20}
+            keyboardVerticalOffset={10}
             enabled={true}
           >
-            <ChatInput onSendMessage={handleSendMessage} />
+            <ChatInput 
+              onSendMessage={handleSendMessage}
+              onSendVoiceMessage={handleSendVoiceMessage}
+            />
           </KeyboardAvoidingView>
         </View>
       </SafeAreaView>
@@ -225,9 +236,11 @@ const BotChat: React.FC = () => {
           modelType={modelType}
           onModelChange={handleModelChange}
           onNewChat={handleNewChat}
+        />        <ChatList messages={messages} />
+        <ChatInput 
+          onSendMessage={handleSendMessage}
+          onSendVoiceMessage={handleSendVoiceMessage}
         />
-        <ChatList messages={messages} />
-        <ChatInput onSendMessage={handleSendMessage} />
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

@@ -48,6 +48,7 @@ export interface MessageBubbleProps {
 // Props per il componente ChatInput
 export interface ChatInputProps {
   onSendMessage: (text: string) => void;
+  onSendVoiceMessage?: (audioUri: string) => void;
   style?: StyleProp<ViewStyle>;
 }
 
