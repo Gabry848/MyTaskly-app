@@ -3,7 +3,25 @@ import { getValidToken } from "./authService";
 import { Platform } from "react-native";
 
 /**
- * Prepara gli ultimi 5 messaggi per l'invio al server, limitando la lunghezza totale.
+ * Prepa        // Controlla se è un errore di configurazione del server
+        if (message.includes('❌') || 
+            message.includes('Errore durante il riconoscimento vocale') ||
+            message.includes('Your default credentials were not found') ||
+            message.includes('Application Default Credentials')) {
+          
+          // Distingui tra errori di configurazione e rate limiting
+          if (message.includes('429') || 
+              message.includes('rate-limited') || 
+              message.includes('Rate limit') ||
+              message.includes('temporarily rate-limited')) {
+            
+            console.warn("Rate limiting rilevato:", message);
+            return "Il servizio è temporaneamente sovraccarico. Riprova tra qualche secondo.";
+          }
+          
+          console.error("Errore di configurazione del server:", message);
+          return "Il servizio di riconoscimento vocale non è attualmente configurato sul server. Contatta l'amministratore.";
+        }timi 5 messaggi per l'invio al server, limitando la lunghezza totale.
  * @param {Array} messages - I messaggi della chat
  * @param {number} maxMessages - Numero massimo di messaggi da includere
  * @param {number} maxTotalLength - Lunghezza massima totale consentita in caratteri
@@ -117,18 +135,20 @@ export async function sendVoiceMessageToBot(
   try {
     const token = await getValidToken();
     if (!token) {
-      return "Mi dispiace, sembra che tu non sia autenticato. Effettua il login per continuare.";    }
+      return "Mi dispiace, sembra che tu non sia autenticato. Effettua il login per continuare.";
+        }
 
     // Usa la utility per creare FormData compatibile
     const { formData, mimeType, extension } = createCompatibleFormData(audioUri, modelType);
-    
-    console.log("Invio file audio al server:", { 
+      console.log("Invio file audio al server:", { 
       audioUri, 
       modelType, 
       fileType: mimeType, 
       fileName: `voice_message${extension}`,
       platform: Platform.OS 
     });
+
+    console.log(`Modello utilizzato per la richiesta: ${modelType}`);
 
     const response = await axios.post("/chat_bot_voice", formData, {
       headers: {
@@ -150,7 +170,15 @@ export async function sendVoiceMessageToBot(
             message.includes('Application Default Credentials')) {
           
           console.error("Errore di configurazione del server:", message);
-          return "Il servizio di riconoscimento vocale non è attualmente configurato sul server. Contatta l'amministratore.";
+          return "Il servizio di riconoscimento vocale non è attualmente configurato sul server. Contatta l'amministratore.";        }
+        
+        // Se c'è recognized_text o user_message, quello è il messaggio trascritto dell'utente
+        const recognizedText = response.data.recognized_text || response.data.user_message;
+        if (recognizedText) {
+          console.log("Messaggio utente trascritto:", recognizedText);
+          console.log("Risposta bot:", message);
+          console.log("Confidence:", response.data.confidence);
+          return recognizedText; // Restituisce il messaggio trascritto dell'utente
         }
         
         if (response.data.mode) {
@@ -160,8 +188,15 @@ export async function sendVoiceMessageToBot(
             return JSON.stringify(response.data);
           }
         }
-        return message;
+        return message;      }
+      
+      // Se non c'è message ma c'è recognized_text o user_message
+      const recognizedText = response.data.recognized_text || response.data.user_message;
+      if (recognizedText) {
+        console.log("Messaggio utente trascritto:", recognizedText);
+        return recognizedText;
       }
+      
       if (response.data.response) {
         return response.data.response;
       }
@@ -220,9 +255,10 @@ export async function sendVoiceMessageToBotDebug(
     
     const { formData, mimeType, extension } = createCompatibleFormData(audioUri, modelType);
     
-    console.log(`File info - MIME: ${mimeType}, Estensione: ${extension}`);
-    console.log(`Platform: ${Platform.OS}`);
-    console.log("FormData creato, invio al server...");
+  console.log(`File info - MIME: ${mimeType}, Estensione: ${extension}`);
+  console.log(`Platform: ${Platform.OS}`);
+  console.log(`Modello utilizzato: ${modelType}`);
+  console.log("FormData creato, invio al server...");
 
     const response = await axios.post("/chat_bot_voice", formData, {
       headers: {
@@ -237,18 +273,43 @@ export async function sendVoiceMessageToBotDebug(
     // Gestisci errori di servizio anche se lo status è 200
     if (response.data?.message) {
       const message = response.data.message;
-      
-      // Controlla se è un errore di configurazione del server
+        // Controlla se è un errore di configurazione del server o rate limiting
       if (message.includes('❌') || 
           message.includes('Errore durante il riconoscimento vocale') ||
           message.includes('Your default credentials were not found') ||
           message.includes('Application Default Credentials')) {
         
+        // Distingui tra errori di configurazione e rate limiting
+        if (message.includes('429') || 
+            message.includes('rate-limited') || 
+            message.includes('Rate limit') ||
+            message.includes('temporarily rate-limited')) {
+          
+          console.warn("Rate limiting rilevato:", message);
+          return "Il servizio è temporaneamente sovraccarico. Riprova tra qualche secondo.";
+        }
+        
         console.error("Errore di configurazione del server:", message);
         return "Il servizio di riconoscimento vocale non è attualmente configurato sul server. Contatta l'amministratore.";
       }
       
+      // Se c'è recognized_text o user_message, quello è il messaggio trascritto dell'utente
+      const recognizedText = response.data.recognized_text || response.data.user_message;
+      if (recognizedText) {
+        console.log("Messaggio utente trascritto:", recognizedText);
+        console.log("Risposta bot:", message);
+        console.log("Confidence:", response.data.confidence);
+        return recognizedText; // Restituisce il messaggio trascritto dell'utente
+      }
+      
       return message;
+    }
+    
+    // Se non c'è message ma c'è recognized_text o user_message
+    const recognizedText = response.data?.recognized_text || response.data?.user_message;
+    if (recognizedText) {
+      console.log("Messaggio utente trascritto:", recognizedText);
+      return recognizedText;
     }
     
     return response.data?.response || response.data || "Messaggio processato con successo";
@@ -276,6 +337,97 @@ export async function sendVoiceMessageToBotDebug(
 export async function createNewChat() {
   // Messaggi di benvenuto predefiniti
   return [];
+}
+
+/**
+ * Invia un file audio al bot e restituisce sia il messaggio trascritto che la risposta del bot
+ * @param {string} audioUri - L'URI del file audio registrato
+ * @param {string} modelType - Il tipo di modello da utilizzare ('base' o 'advanced')
+ * @returns {Promise<{userMessage: string, botResponse: string} | null>} - Il messaggio trascritto e la risposta del bot
+ */
+export async function sendVoiceMessageToBotComplete(
+  audioUri: string,
+  modelType: "base" | "advanced" = "base"
+): Promise<{userMessage: string, botResponse: string} | null> {
+  try {
+    const token = await getValidToken();
+    if (!token) {
+      return null;
+    }
+
+    // Usa la utility per creare FormData compatibile
+    const { formData, mimeType, extension } = createCompatibleFormData(audioUri, modelType);
+      console.log("Invio file audio al server per trascrizione completa:", { 
+      audioUri, 
+      modelType, 
+      fileType: mimeType, 
+      fileName: `voice_message${extension}`,
+      platform: Platform.OS 
+    });
+
+    console.log(`Modello utilizzato per la richiesta completa: ${modelType}`);
+
+    const response = await axios.post("/chat_bot_voice", formData, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    console.log("Risposta completa ricevuta dal server:", response.data);    // Gestisce la risposta del server
+    if (response.data && typeof response.data === "object") {
+      // Controlla se è un errore di configurazione del server o rate limiting
+      if (response.data.message && (
+          response.data.message.includes('❌') || 
+          response.data.message.includes('Errore durante il riconoscimento vocale') ||
+          response.data.message.includes('Your default credentials were not found') ||
+          response.data.message.includes('Application Default Credentials'))) {
+        
+        // Distingui tra errori di configurazione e rate limiting
+        if (response.data.message.includes('429') || 
+            response.data.message.includes('rate-limited') || 
+            response.data.message.includes('Rate limit') ||
+            response.data.message.includes('temporarily rate-limited')) {
+          
+          console.warn("Rate limiting rilevato:", response.data.message);
+          return {
+            userMessage: "[Messaggio vocale non processato]",
+            botResponse: "Il servizio è temporaneamente sovraccarico. Riprova tra qualche secondo."
+          };
+        }
+        
+        console.error("Errore di configurazione del server:", response.data.message);
+        return null;
+      }
+
+      // Il server restituisce recognized_text (e anche user_message per compatibilità)
+      const recognizedText = response.data.recognized_text || response.data.user_message;
+      
+      // Se abbiamo sia recognized_text che la risposta del bot
+      if (recognizedText && response.data.message) {
+        console.log("Testo riconosciuto:", recognizedText);
+        console.log("Risposta bot:", response.data.message);
+        console.log("Confidence:", response.data.confidence);
+        
+        return {
+          userMessage: recognizedText,
+          botResponse: response.data.message
+        };
+      }
+      
+      // Se abbiamo solo recognized_text (caso raro)
+      if (recognizedText) {
+        return {
+          userMessage: recognizedText,
+          botResponse: "Messaggio ricevuto."
+        };
+      }
+    }
+
+    return null;
+  } catch (error: any) {
+    console.error("Errore nell'invio del messaggio vocale completo:", error);
+    return null;
+  }
 }
 
 // Aggiungi una utility per creare FormData compatibile

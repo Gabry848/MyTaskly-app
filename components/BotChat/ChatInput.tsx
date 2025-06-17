@@ -64,15 +64,18 @@ const ChatInput: React.FC<ExtendedChatInputProps> = ({
       console.error('Errore durante l\'avvio della registrazione:', error);
       Alert.alert('Errore', 'Impossibile avviare la registrazione vocale.');
     }
-  }, [startRecording]);
-  const handleStopRecording = useCallback(async () => {
+  }, [startRecording]);  const handleStopRecording = useCallback(async () => {
     try {
-      // Il nuovo hook gestisce internamente l'invio al backend e restituisce la trascrizione
-      const transcribedText = await stopRecording(modelType);
+      // Il nuovo hook gestisce internamente l'invio al backend e restituisce messaggio utente e risposta bot
+      const result = await stopRecording(modelType);
       
-      if (transcribedText && transcribedText.trim()) {
-        // Se abbiamo una trascrizione/risposta dal bot, la inviamo come messaggio
-        onSendMessage(transcribedText);
+      if (result && result.userMessage && result.userMessage.trim()) {
+        // Invia il messaggio trascritto dell'utente come messaggio normale
+        onSendMessage(result.userMessage);
+        
+        // TODO: In futuro, se volessi mostrare anche la risposta del bot automaticamente,
+        // potresti anche gestire result.botResponse qui
+        console.log("Risposta bot disponibile:", result.botResponse);
       }
     } catch (error) {
       console.error('Errore durante l\'arresto della registrazione:', error);

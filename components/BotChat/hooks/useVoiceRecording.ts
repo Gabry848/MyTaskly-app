@@ -1,14 +1,14 @@
 import { useState, useRef } from 'react';
 import { Audio } from 'expo-av';
 import { Alert, Platform } from 'react-native';
-import { sendVoiceMessageToBot, sendVoiceMessageToBotDebug } from '../../../src/services/botservice';
+import { sendVoiceMessageToBot, sendVoiceMessageToBotDebug, sendVoiceMessageToBotComplete } from '../../../src/services/botservice';
 
 export interface UseVoiceRecordingReturn {
   isRecording: boolean;
   recordingDuration: number;
   isProcessing: boolean;
   startRecording: () => Promise<void>;
-  stopRecording: (modelType?: 'base' | 'advanced') => Promise<string | null>;
+  stopRecording: (modelType?: 'base' | 'advanced') => Promise<{userMessage: string, botResponse: string} | null>;
   requestPermissions: () => Promise<boolean>;
 }
 
@@ -120,7 +120,7 @@ export const useVoiceRecording = (): UseVoiceRecordingReturn => {
       console.error('Errore durante l\'avvio della registrazione:', error);
       Alert.alert('Errore', 'Impossibile avviare la registrazione vocale.');
     }
-  };  const stopRecording = async (modelType: 'base' | 'advanced' = 'base'): Promise<string | null> => {
+  };  const stopRecording = async (modelType: 'base' | 'advanced' = 'base'): Promise<{userMessage: string, botResponse: string} | null> => {
     try {
       if (!recordingRef.current) return null;
 
@@ -156,15 +156,20 @@ export const useVoiceRecording = (): UseVoiceRecordingReturn => {
         console.error("URI del file registrato è vuoto");
         Alert.alert('Errore', 'Il file audio registrato non è valido.');
         return null;
-      }
+      }      console.log("URI valido, tentativo di invio:", uri);
 
-      console.log("URI valido, tentativo di invio:", uri);      // Invia il file audio al backend e ottieni la trascrizione
+      // Invia il file audio al backend e ottieni sia messaggio utente che risposta bot
       setIsProcessing(true);
       try {
-        // Ora che sappiamo che il formato funziona, usa la funzione principale
-        const transcription = await sendVoiceMessageToBot(uri, modelType);
-        console.log("Trascrizione ricevuta:", transcription);
-        return transcription;
+        const result = await sendVoiceMessageToBotComplete(uri, modelType);
+        console.log("Risultato completo ricevuto:", result);
+        
+        if (!result) {
+          Alert.alert('Errore', 'Impossibile processare il messaggio vocale.');
+          return null;
+        }
+        
+        return result;
       } catch (error) {
         console.error('Errore durante l\'invio del messaggio vocale:', error);
         Alert.alert('Errore', 'Impossibile processare il messaggio vocale.');
