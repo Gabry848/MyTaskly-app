@@ -1,13 +1,18 @@
 import React, { useEffect, useState } from "react";
-import { NavigationContainer, useNavigation, NavigationProp } from "@react-navigation/native";
+import {
+  NavigationContainer,
+  useNavigation,
+  NavigationProp,
+} from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { BackHandler } from "react-native";
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Ionicons } from "@expo/vector-icons";
 import LoginScreen from "./screens/Login";
 import RegisterScreen from "./screens/Register";
 import HomeScreen from "./screens/Home";
+import Home20Screen from "./screens/Home20";
 import TaskListScreen from "./screens/TaskList";
 import CategoriesScreen from "./screens/Categories";
 import ProfileScreen from "./screens/Profile";
@@ -25,6 +30,7 @@ export type RootStackParamList = {
   Login: undefined;
   Register: undefined;
   HomeTabs: undefined; // Contiene il Tab Navigator
+  Home20: undefined; // Nuova schermata Home2.0
   TaskList: { categoryId: number | string };
   Profile: undefined;
   Settings: undefined;
@@ -39,6 +45,7 @@ export type TabParamList = {
   Categories: undefined;
   Notes: undefined;
   BotChat: undefined;
+  Home20: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -54,33 +61,54 @@ function HomeTabs() {
           let iconName: keyof typeof Ionicons.glyphMap;
 
           switch (route.name) {
-            case 'Home':
-              iconName = focused ? 'home' : 'home-outline';
+            case "Home":
+              iconName = focused ? "home" : "home-outline";
               break;
-            case 'Categories':
-              iconName = focused ? 'grid' : 'grid-outline';
+            case "Categories":
+              iconName = focused ? "grid" : "grid-outline";
               break;
-            case 'Notes':
-              iconName = focused ? 'document-text' : 'document-text-outline';
+            case "Notes":
+              iconName = focused ? "document-text" : "document-text-outline";
               break;
-            case 'BotChat':
-              iconName = focused ? 'chatbubbles' : 'chatbubbles-outline';
+            case "BotChat":
+              iconName = focused ? "chatbubbles" : "chatbubbles-outline";
               break;
             default:
-              iconName = 'home-outline';
+              iconName = "home-outline";
           }
 
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: '#007AFF',
-        tabBarInactiveTintColor: 'gray',
+        tabBarActiveTintColor: "#007AFF",
+        tabBarInactiveTintColor: "gray",
         headerShown: false,
       })}
     >
-      <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'Home' }} />
-      <Tab.Screen name="Categories" component={CategoriesScreen} options={{ title: 'Categorie' }} />
-      <Tab.Screen name="Notes" component={NotesScreen} options={{ title: 'Note' }} />
-      <Tab.Screen name="BotChat" component={BotChatScreen} options={{ title: 'Chat Bot' }} />
+      <Tab.Screen
+        name="Home"
+        component={HomeScreen}
+        options={{ title: "Home" }}
+      />
+      <Tab.Screen
+        name="Categories"
+        component={CategoriesScreen}
+        options={{ title: "Categorie" }}
+      />
+      <Tab.Screen
+        name="Notes"
+        component={NotesScreen}
+        options={{ title: "Note" }}
+      />
+      <Tab.Screen
+        name="BotChat"
+        component={BotChatScreen}
+        options={{ title: "Chat Bot" }}
+      />
+      <Tab.Screen
+        name="Home20"
+        component={Home20Screen}
+        options={{ title: "Home 2.0" }}
+      />
     </Tab.Navigator>
   );
 }
@@ -94,19 +122,23 @@ function NavigationHandler() {
     };
 
     const handleBackPress = () => {
-      const currentRoute = navigation.getState()?.routes[navigation.getState()?.index || 0]?.name;
-      
+      const currentRoute =
+        navigation.getState()?.routes[navigation.getState()?.index || 0]?.name;
+
       // Se siamo sulla schermata di Login, chiudi l'app
       if (currentRoute === "Login") {
         BackHandler.exitApp();
         return true; // Previene il comportamento di default
       }
-      
+
       return false; // Lascia che React Navigation gestisca il back button
     };
 
     eventEmitter.on("logoutSuccess", handleLogout);
-    const backHandler = BackHandler.addEventListener("hardwareBackPress", handleBackPress);
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      handleBackPress
+    );
 
     return () => {
       eventEmitter.off("logoutSuccess", handleLogout);
@@ -120,20 +152,20 @@ function NavigationHandler() {
 // Stack Navigator separato con controllo autenticazione
 function AppStack() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-  const [isLoading, setIsLoading] = useState(true);  // Controlla lo stato di autenticazione all'avvio
+  const [isLoading, setIsLoading] = useState(true); // Controlla lo stato di autenticazione all'avvio
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
         // Importa la funzione di controllo e refresh automatico
         const { checkAndRefreshAuth } = await import("../services/authService");
         const authResult = await checkAndRefreshAuth();
-        
+
         if (authResult.isAuthenticated) {
           console.log(authResult.message);
         } else {
           console.log(authResult.message);
         }
-        
+
         setIsAuthenticated(authResult.isAuthenticated);
       } catch (error) {
         console.error("Errore nel controllo autenticazione:", error);
@@ -173,10 +205,8 @@ function AppStack() {
   const initialRoute = isAuthenticated ? "HomeTabs" : "Login";
   return (
     <>
-      <NavigationHandler />
-      <Stack.Navigator 
-        id={undefined}
-        initialRouteName={initialRoute}>
+      <NavigationHandler />{" "}
+      <Stack.Navigator id={undefined} initialRouteName={initialRoute}>
         <Stack.Screen
           name="Login"
           component={LoginScreen}
@@ -187,10 +217,18 @@ function AppStack() {
           component={RegisterScreen}
           options={{ headerShown: false }}
         />
-        <Stack.Screen 
-          name="HomeTabs" 
+        <Stack.Screen
+          name="HomeTabs"
           component={HomeTabs}
           options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Home20"
+          component={Home20Screen}
+          options={{
+            headerShown: false,
+            title: "Home 2.0",
+          }}
         />
         <Stack.Screen name="TaskList" component={TaskListScreen} />
         <Stack.Screen name="Profile" component={ProfileScreen} />

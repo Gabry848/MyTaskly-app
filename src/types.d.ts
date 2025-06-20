@@ -16,6 +16,7 @@ export type RootStackParamList = {
   Login: undefined;
   Register: undefined;
   HomeTabs: undefined;
+  Home20: undefined; // Nuova schermata Home2.0
   TaskList: { categoryId: number | string; category_name: string };
   Profile: undefined;
   Settings: undefined;
