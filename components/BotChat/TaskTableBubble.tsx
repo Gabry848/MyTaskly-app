@@ -97,8 +97,7 @@ const TaskTableBubble: React.FC<TaskTableBubbleProps> = ({ message, style }) => 
     return 'Elenco Impegni';
   };
 
-  const title = extractTitle(message);
-  return (
+  const title = extractTitle(message);  return (
     <Animated.View style={[
       styles.container, 
       style,
@@ -108,41 +107,47 @@ const TaskTableBubble: React.FC<TaskTableBubbleProps> = ({ message, style }) => 
       }
     ]}>
       <Text style={styles.title}>{title}</Text>
-      <ScrollView horizontal>
-        <View>
-          {/* Intestazione Tabella */}
-          <View style={styles.tableRow}>
-            <Text style={[styles.tableHeader, styles.status]}>Stato</Text>
-            <Text style={[styles.tableHeader, styles.priority]}>Priorità</Text>
-            <Text style={[styles.tableHeader, styles.category]}>Categoria</Text>
-            <Text style={[styles.tableHeader, styles.endTime]}>Fine</Text>
-            <Text style={[styles.tableHeader, styles.taskTitle]}>Titolo</Text>
-          </View>
-          
-          {/* Se non ci sono task, mostra messaggio */}
-          {tasks.length === 0 ? (
-            <View style={styles.emptyMessageContainer}>
-              <Text style={styles.emptyMessage}>
-                {message.includes('📅 Nessun task trovato') 
-                  ? message.split('📅')[1]?.trim() || 'Nessun task trovato per questa data'
-                  : 'Nessun task trovato per questa data'
-                }
-              </Text>
-            </View>
-          ) : (
-            /* Righe Tabella */
-            tasks.map((task) => (
-              <View key={task.task_id} style={styles.tableRow}>
-                <Text style={[styles.tableCell, styles.status]}>{task.status}</Text>
-                <Text style={[styles.tableCell, styles.priority]}>{task.priority}</Text>
-                <Text style={[styles.tableCell, styles.category]}>{task.category}</Text>
-                <Text style={[styles.tableCell, styles.endTime]}>{new Date(task.end_time).toLocaleDateString()}</Text>
-                <Text style={[styles.tableCell, styles.taskTitle]}>{task.title}</Text>
-              </View>
-            ))
-          )}
+      
+      {/* Se non ci sono task, mostra messaggio */}
+      {tasks.length === 0 ? (
+        <View style={styles.emptyMessageContainer}>
+          <Text style={styles.emptyMessage}>
+            {message.includes('📅 Nessun task trovato') 
+              ? message.split('📅')[1]?.trim() || 'Nessun task trovato per questa data'
+              : 'Nessun task trovato per questa data'
+            }
+          </Text>
         </View>
-      </ScrollView>    </Animated.View>
+      ) : (
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContainer}
+        >
+          <View style={styles.tableContainer}>
+            {/* Intestazione Tabella */}
+            <View style={styles.tableRow}>
+              <Text style={[styles.tableHeader, styles.status]}>Stato</Text>
+              <Text style={[styles.tableHeader, styles.priority]}>Priorità</Text>
+              <Text style={[styles.tableHeader, styles.category]}>Categoria</Text>
+              <Text style={[styles.tableHeader, styles.endTime]}>Fine</Text>
+              <Text style={[styles.tableHeader, styles.taskTitle]}>Titolo</Text>
+            </View>
+            
+            {/* Righe Tabella */}
+            {tasks.map((task) => (
+              <View key={task.task_id} style={styles.tableRow}>
+                <Text style={[styles.tableCell, styles.status]} numberOfLines={1}>{task.status}</Text>
+                <Text style={[styles.tableCell, styles.priority]} numberOfLines={1}>{task.priority}</Text>
+                <Text style={[styles.tableCell, styles.category]} numberOfLines={1}>{task.category}</Text>
+                <Text style={[styles.tableCell, styles.endTime]} numberOfLines={1}>{new Date(task.end_time).toLocaleDateString()}</Text>
+                <Text style={[styles.tableCell, styles.taskTitle]} numberOfLines={2}>{task.title}</Text>
+              </View>
+            ))}
+          </View>
+        </ScrollView>
+      )}
+    </Animated.View>
   );
 };
 
@@ -162,48 +167,57 @@ const styles = StyleSheet.create({
     elevation: 2,
     maxWidth: '85%',
     alignSelf: 'flex-start',
-  },  title: {
+  },
+  title: {
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 12,
-    color: '#1a1a1a', // Colore più intenso per il titolo
+    color: '#1a1a1a',
     fontFamily: 'System',
   },
-  tableRow: {
+  scrollContainer: {
+    flexGrow: 1,
+  },
+  tableContainer: {
+    minWidth: 500,
+    maxWidth: 700,
+  },  tableRow: {
     flexDirection: 'row',
     borderBottomWidth: 1,
     borderBottomColor: '#e8e8e8',
-    paddingVertical: 10,
-  },  tableHeader: {
-    fontSize: 13,
+    paddingVertical: 2,
+  },
+  tableHeader: {
+    fontSize: 12,
     fontWeight: '600',
-    color: '#2c2c2c', // Colore più intenso per gli header della tabella
-    paddingHorizontal: 8,
+    color: '#2c2c2c',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
     fontFamily: 'System',
-  },  tableCell: {
-    fontSize: 13,
-    color: '#2a2a2a', // Colore più intenso per le celle della tabella
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    alignSelf: 'center',
+  },
+  tableCell: {
+    fontSize: 15,
+    color: '#2a2a2a',
+    paddingHorizontal: 6,
+    paddingVertical: 5,
     fontFamily: 'System',
     fontWeight: '400',
   },
   status: {
-    width: 100,
-  },
-  priority: {
     width: 80,
   },
-  category: {
-    width: 120,
+  priority: {
+    width: 70,
   },
-  endTime: {
+  category: {
     width: 100,
   },
+  endTime: {
+    width: 80,
+  },
   taskTitle: {
-    flex: 1,
-    minWidth: 150,
+    width: 200,
+    flexWrap: 'wrap',
   },
   emptyMessageContainer: {
     paddingVertical: 24,
@@ -212,9 +226,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderBottomWidth: 1,
     borderBottomColor: '#e8e8e8',
-  },  emptyMessage: {
+  },
+  emptyMessage: {
     fontSize: 15,
-    color: '#4a4a4a', // Colore più intenso per i messaggi vuoti
+    color: '#4a4a4a',
     textAlign: 'center',
     fontStyle: 'italic',
     fontFamily: 'System',

@@ -76,18 +76,21 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 12,
-    margin: 10,
-    backgroundColor: "#fff",
-    borderRadius: 16,
+    padding: 16, // Aumentato per più respiro
+    marginHorizontal: 15, // Margini orizzontali come Home20
+    marginVertical: 8, // Margini verticali ridotti per compattezza
+    backgroundColor: "#ffffff", // Bianco puro come Home20
+    borderRadius: 16, // Mantenuto arrotondato
+    borderWidth: 1.5, // Aggiunto bordo come Home20
+    borderColor: "#e1e5e9", // Stesso colore del bordo dell'input di Home20
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 4, // Aumentato per coerenza con Home20
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOpacity: 0.08, // Stesso valore di Home20
+    shadowRadius: 12, // Stesso valore di Home20
+    elevation: 3, // Stesso valore di Home20
   },
 });
 

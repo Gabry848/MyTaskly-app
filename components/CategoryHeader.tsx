@@ -59,13 +59,14 @@ const styles = StyleSheet.create({
   },
   categoryContainer: {
     flex: 1,
-    marginHorizontal: 12,
+    marginHorizontal: 15, // Aumentato per coerenza con Home20
   },
   add: {
     fontSize: 18,
-    fontWeight: "700",
+    fontWeight: "400", // Alleggerito per coerenza con Home20
     padding: 5,
-    color: "#333",
+    color: "#000000", // Nero puro come Home20
+    fontFamily: "System",
   },
   counterRow: {
     flexDirection: 'row',
@@ -74,8 +75,10 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 14,
-    color: "#666",
-    marginLeft: 4,
+    color: "#666666", // Colore leggermente più morbido
+    marginLeft: 6, // Leggermente aumentato
+    fontFamily: "System",
+    fontWeight: "300", // Più leggero per coerenza con Home20
   },
 });
 

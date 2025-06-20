@@ -181,14 +181,22 @@ const styles = StyleSheet.create({
   },
   addButton: {
     position: 'absolute',
-    bottom: 0, // Cambia da 'bottom: 20' a 'bottom: 0'
-    left: 20, // Cambia da 'right' a 'left'
-    backgroundColor: '#007BFF',
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    bottom: 0,
+    left: 20,
+    backgroundColor: '#000000', // Cambiato da #007BFF a #000000 per coerenza con Home20
+    width: 56, // Leggermente più grande per un aspetto più moderno
+    height: 56,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.08, // Stesso valore di Home20
+    shadowRadius: 12, // Stesso valore di Home20
+    elevation: 3, // Stesso valore di Home20
   },
   addButtonIcon: {
     width: 28,
@@ -196,62 +204,86 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)', // Leggermente più scuro per modernità
     justifyContent: 'center',
     alignItems: 'center',
   },
   formContainer: {
-    width: '80%',
-    backgroundColor: '#F9F9F9',
-    borderRadius: 8,
+    width: '85%', // Leggermente più largo
+    backgroundColor: '#ffffff', // Bianco puro come Home20
+    borderRadius: 16, // Più arrotondato per modernità
     overflow: 'hidden',
-    padding: 16,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 8,
+    },
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
+    elevation: 8,
   },
   formContent: {
-    padding: 16,
+    padding: 24, // Più padding per respiro
   },
   label: {
-    fontSize: 14,
-    color: '#333333',
-    marginBottom: 4,
+    fontSize: 16, // Leggermente più grande
+    color: '#000000', // Nero per coerenza con Home20
+    marginBottom: 8,
+    fontFamily: "System",
+    fontWeight: "400",
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#CCC',
-    borderRadius: 8,
-    padding: 8,
-    marginBottom: 12,
-    fontSize: 14,
+    borderWidth: 1.5, // Stesso spessore dell'input di Home20
+    borderColor: '#e1e5e9', // Stesso colore del bordo dell'input di Home20
+    borderRadius: 12, // Più arrotondato
+    padding: 16, // Più padding come Home20
+    marginBottom: 20,
+    fontSize: 17, // Stessa dimensione dell'input di Home20
+    fontFamily: "System",
+    fontWeight: "400",
+    backgroundColor: '#ffffff',
   },
   buttonRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 16,
+    marginTop: 20,
+    gap: 12, // Aggiunge spazio uniforme tra i bottoni
   },
   submitButton: {
-    backgroundColor: '#28A745',
-    paddingVertical: 12,
+    backgroundColor: '#000000', // Nero come Home20
+    paddingVertical: 16, // Più padding
     alignItems: 'center',
-    borderRadius: 8,
+    borderRadius: 12, // Più arrotondato
     flex: 1,
-    marginRight: 8,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 2,
   },
   submitButtonText: {
-    color: '#FFF',
+    color: '#ffffff',
     fontSize: 16,
-    fontWeight: 'bold',
+    fontFamily: "System",
+    fontWeight: "500", // Leggermente più grassetto
   },
   cancelButton: {
-    backgroundColor: '#DC3545',
-    paddingVertical: 12,
+    backgroundColor: '#f0f0f0', // Stesso colore del pulsante send di Home20
+    paddingVertical: 16,
     alignItems: 'center',
-    borderRadius: 8,
+    borderRadius: 12,
     flex: 1,
+    borderWidth: 1.5,
+    borderColor: '#e1e5e9',
   },
   cancelButtonText: {
-    color: '#FFF',
+    color: '#000000', // Nero per coerenza
     fontSize: 16,
-    fontWeight: 'bold',
+    fontFamily: "System",
+    fontWeight: "400",
   },
 });
 

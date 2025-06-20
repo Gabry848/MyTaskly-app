@@ -57,14 +57,10 @@ const CategoryView: React.FC<CategoryViewProps> = ({
   useEffect(() => {
     fetchCategories();
   }, []);
-
   return (
-    <ScrollView>
-      {/* RIMOSSO AddCategoryButton che era visualizzato all'inizio */}
+    <ScrollView style={styles.container}>
+      {/* Header container ora più minimal */}
       <View style={styles.headerContainer}>
-        <Text style={styles.headerTitle}>
-          <Text style={{ fontWeight: "bold" }}>Le mie categorie</Text>
-        </Text>
         <TouchableOpacity
           style={styles.reloadButton}
           onPress={reloadCategories}
@@ -119,54 +115,79 @@ const CategoryView: React.FC<CategoryViewProps> = ({
 };
 
 const styles = StyleSheet.create({
-  headerContainer: {
+  container: {
+    flex: 1,
+    paddingHorizontal: 15,
+  },  headerContainer: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "flex-end", // Allinea il pulsante a destra
     alignItems: "center",
-    margin: 10,
+    marginTop: 10,
+    marginBottom: 20,
+    paddingHorizontal: 5,
+    minHeight: 44, // Altezza minima per evitare che vada a capo
+    flexWrap: "nowrap", // Impedisce il wrapping
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 30,
+    fontWeight: "200", // Stesso peso di Home20
+    color: "#000000",
+    fontFamily: "System",
+    letterSpacing: -1.5,
   },
   noCategoriesContainer: {
     textAlign: "center",
-    marginTop: 20,
+    marginTop: 50,
+    paddingHorizontal: 20,
   },
   noCategoriesMessage: {
     fontSize: 18,
-    color: "#555",
+    color: "#666666", // Colore più morbido
     textAlign: "center",
-  },
-  reloadButton: {
-    backgroundColor: "#007bff",
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    borderRadius: 8,
-    marginTop: 10,
+    fontFamily: "System",
+    fontWeight: "300",
+    lineHeight: 26,
+  },  reloadButton: {
+    backgroundColor: "#f0f0f0", // Stesso colore del send button di Home20
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 20, // Stesso stile dei bottoni di Home20
     alignItems: "center",
     justifyContent: "center",
-    padding: 10,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+    minWidth: 44, // Larghezza minima per evitare problemi di layout
+    minHeight: 44, // Altezza minima per evitare problemi di layout
+    flexShrink: 0, // Impedisce al pulsante di ridursi
   },
   goToLoginButton: {
     width: 150,
     alignSelf: "center",
   },
   reloadButtonText: {
-    color: "#fff",
+    color: "#000000",
     fontSize: 16,
-    fontWeight: "bold",
+    fontFamily: "System",
+    fontWeight: "400",
   },
   loadingSpinner: {
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    height: Dimensions.get("window").height,
+    height: Dimensions.get("window").height * 0.6,
+    paddingTop: 50,
   },
   spinner: {
-    borderWidth: 4,
+    borderWidth: 3,
     borderColor: "rgba(0, 0, 0, 0.1)",
-    borderLeftColor: "#22a6b3",
+    borderLeftColor: "#000000", // Cambiato per coerenza con Home20
     borderRadius: 50,
     width: 40,
     height: 40,

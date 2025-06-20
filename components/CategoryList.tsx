@@ -76,12 +76,22 @@ const CategoryList = forwardRef((props, ref) => {
   useImperativeHandle(ref, () => ({
     reloadCategories
   }));
-
   // Il gestore dell'aggiunta della categoria
   const handleCategoryAdded = (newCategory: CategoryType) => {
     console.log("handleCategoryAdded chiamato con:", newCategory);
     // Non abbiamo più bisogno di gestire manualmente l'aggiunta,
     // poiché ora utilizziamo l'EventEmitter
+  };
+
+  // Gestori per l'editing e la cancellazione delle categorie
+  const handleCategoryDeleted = () => {
+    console.log("Categoria eliminata, aggiornamento vista");
+    refreshComponent();
+  };
+
+  const handleCategoryEdited = () => {
+    console.log("Categoria modificata, aggiornamento vista");
+    refreshComponent();
   };
 
   // Gestisce il cambio di modalità di visualizzazione
@@ -92,10 +102,11 @@ const CategoryList = forwardRef((props, ref) => {
   return (
     <View style={styles.container} key={refreshKey}>
       {/* Visualizzazione condizionale in base alla modalità selezionata */}
-      <View style={styles.contentContainer}>
-        {viewMode === 'categories' ? (
+      <View style={styles.contentContainer}>        {viewMode === 'categories' ? (
           <CategoryView 
             onCategoryAdded={handleCategoryAdded}
+            onCategoryDeleted={handleCategoryDeleted}
+            onCategoryEdited={handleCategoryEdited}
             reloadCategories={reloadCategories}
           />
         ) : (
@@ -117,32 +128,32 @@ const CategoryList = forwardRef((props, ref) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: "#ffffff", // Cambiato da #fff a #ffffff per coerenza
     display: "flex",
     flexDirection: "column",
   },
   contentContainer: {
     flex: 1,
-    paddingBottom: 70, // Aggiunge spazio nella parte inferiore per evitare che il contenuto venga nascosto dal selettore fisso
+    paddingBottom: 70,
   },
   fixedSelectorContainer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)', // Leggero effetto traslucido
-    paddingTop: 5,
-    paddingBottom: Platform.OS === 'ios' ? 20 : 10, // Più padding per iOS a causa della barra di home
+    backgroundColor: 'rgba(255, 255, 255, 0.98)', // Leggermente più opaco per coerenza
+    paddingTop: 15, // Aumentato per dare più respiro
+    paddingBottom: Platform.OS === 'ios' ? 25 : 15,
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
+    borderTopColor: '#e1e5e9', // Stesso colore del bordo dell'input di Home20
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: -2,
+      height: -4, // Aumentato per coerenza con Home20
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowOpacity: 0.08, // Stesso valore di Home20
+    shadowRadius: 12, // Stesso valore di Home20
+    elevation: 3, // Stesso valore di Home20
   },
 });
 
