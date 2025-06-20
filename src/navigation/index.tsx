@@ -12,7 +12,6 @@ import { Ionicons } from "@expo/vector-icons";
 import LoginScreen from "./screens/Login";
 import RegisterScreen from "./screens/Register";
 import HomeScreen from "./screens/Home";
-import Home20Screen from "./screens/Home20";
 import TaskListScreen from "./screens/TaskList";
 import CategoriesScreen from "./screens/Categories";
 import ProfileScreen from "./screens/Profile";
@@ -30,7 +29,6 @@ export type RootStackParamList = {
   Login: undefined;
   Register: undefined;
   HomeTabs: undefined; // Contiene il Tab Navigator
-  Home20: undefined; // Nuova schermata Home2.0
   TaskList: { categoryId: number | string };
   Profile: undefined;
   Settings: undefined;
@@ -45,7 +43,6 @@ export type TabParamList = {
   Categories: undefined;
   Notes: undefined;
   BotChat: undefined;
-  Home20: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -99,16 +96,11 @@ function HomeTabs() {
         component={NotesScreen}
         options={{ title: "Note" }}
       />
-      <Tab.Screen
+      {/* <Tab.Screen
         name="BotChat"
         component={BotChatScreen}
         options={{ title: "Chat Bot" }}
-      />
-      <Tab.Screen
-        name="Home20"
-        component={Home20Screen}
-        options={{ title: "Home 2.0" }}
-      />
+      /> */}
     </Tab.Navigator>
   );
 }
@@ -221,14 +213,6 @@ function AppStack() {
           name="HomeTabs"
           component={HomeTabs}
           options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="Home20"
-          component={Home20Screen}
-          options={{
-            headerShown: false,
-            title: "Home 2.0",
-          }}
         />
         <Stack.Screen name="TaskList" component={TaskListScreen} />
         <Stack.Screen name="Profile" component={ProfileScreen} />
