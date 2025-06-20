@@ -134,12 +134,11 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     fontFamily: 'System',
     fontWeight: '400',
-  },
-  userText: {
+  },  userText: {
     color: '#FFFFFF',
   },
   botText: {
-    color: '#000000',
+    color: '#1a1a1a', // Colore più intenso per il testo del bot
   },
   messageTime: {
     fontSize: 11,

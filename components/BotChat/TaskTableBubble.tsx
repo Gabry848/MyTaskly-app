@@ -162,12 +162,11 @@ const styles = StyleSheet.create({
     elevation: 2,
     maxWidth: '85%',
     alignSelf: 'flex-start',
-  },
-  title: {
+  },  title: {
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 12,
-    color: '#000000',
+    color: '#1a1a1a', // Colore più intenso per il titolo
     fontFamily: 'System',
   },
   tableRow: {
@@ -175,17 +174,15 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e8e8e8',
     paddingVertical: 10,
-  },
-  tableHeader: {
+  },  tableHeader: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#000000',
+    color: '#2c2c2c', // Colore più intenso per gli header della tabella
     paddingHorizontal: 8,
     fontFamily: 'System',
-  },
-  tableCell: {
+  },  tableCell: {
     fontSize: 13,
-    color: '#333333',
+    color: '#2a2a2a', // Colore più intenso per le celle della tabella
     paddingHorizontal: 8,
     paddingVertical: 6,
     alignSelf: 'center',
@@ -215,10 +212,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderBottomWidth: 1,
     borderBottomColor: '#e8e8e8',
-  },
-  emptyMessage: {
+  },  emptyMessage: {
     fontSize: 15,
-    color: '#666666',
+    color: '#4a4a4a', // Colore più intenso per i messaggi vuoti
     textAlign: 'center',
     fontStyle: 'italic',
     fontFamily: 'System',
