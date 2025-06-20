@@ -1,136 +1,40 @@
 import axios from "./axiosInterceptor";
 import { getValidToken } from "./authService";
-import { Platform } from "react-native";
-import RNBlobUtil from 'react-native-blob-util';
-import * as RNFS from 'react-native-fs';
-import { Audio } from 'expo-av';
-
-// Constants per lo streaming
-const CHUNK_SIZE = 8192; // 8KB chunks for audio streaming
-const AUDIO_BUFFER_SIZE = 4096; // Buffer size for audio playback
-const STREAM_TIMEOUT = 30000; // 30 secondi timeout per stream
-const RETRY_ATTEMPTS = 3; // Numero tentativi di retry
-const RETRY_DELAY_BASE = 1000; // Delay base per retry in ms
 
 /**
- * Utility per retry con backoff esponenziale
+ * Service per la gestione della comunicazione con il bot
+ * Gestisce solo messaggi testuali - le funzionalità vocali sono state rimosse
  */
-async function retryWithBackoff<T>(
-  operation: () => Promise<T>,
-  maxAttempts: number = RETRY_ATTEMPTS,
-  baseDelay: number = RETRY_DELAY_BASE
-): Promise<T> {
-  let lastError: any;
-  
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    try {
-      console.log(`🔄 Tentativo ${attempt}/${maxAttempts}...`);
-      return await operation();
-    } catch (error: any) {
-      lastError = error;
-      
-      // Se è l'ultimo tentativo, lancia l'errore
-      if (attempt === maxAttempts) {
-        throw error;
-      }
-      
-      // Calcola delay con backoff esponenziale
-      const delay = baseDelay * Math.pow(2, attempt - 1);
-      console.warn(`⚠️ Tentativo ${attempt} fallito, riprovo tra ${delay}ms...`, error.message);
-      
-      // Attendi prima del prossimo tentativo
-      await new Promise(resolve => setTimeout(resolve, delay));
-    }
-  }
-  
-  throw lastError;
-}
+
+// Costanti per la configurazione del servizio
+const MESSAGE_MAX_LENGTH = 1000; // Lunghezza massima totale dei messaggi precedenti
+const MAX_PREVIOUS_MESSAGES = 5; // Numero massimo di messaggi precedenti da includere nel contesto
 
 /**
- * Analizza la risposta del server per determinare il tipo di errore
- */
-function analyzeServerError(response: any): {
-  isRetryable: boolean;
-  errorType: 'rate_limit' | 'config' | 'auth' | 'network' | 'unknown';
-  message: string;
-} {
-  const message = response?.data?.message || response?.message || '';
-  
-  // Rate limiting - ritentabile
-  if (message.includes('429') || 
-      message.includes('rate-limited') || 
-      message.includes('Rate limit') ||
-      message.includes('temporarily rate-limited')) {
-    return {
-      isRetryable: true,
-      errorType: 'rate_limit',
-      message: 'Il servizio è temporaneamente sovraccarico. Riprovo automaticamente...'
-    };
-  }
-  
-  // Errori di configurazione Google Cloud - non ritentabile
-  if (message.includes('❌') || 
-      message.includes('Errore durante il riconoscimento vocale') ||
-      message.includes('Your default credentials were not found') ||
-      message.includes('Application Default Credentials') ||
-      message.includes('Configurazione Google Cloud mancante')) {
-    return {
-      isRetryable: false,
-      errorType: 'config',
-      message: 'Il servizio di riconoscimento vocale non è configurato correttamente sul server.'
-    };
-  }
-  
-  // Errori di autenticazione - non ritentabile
-  if (message.includes('autenticazione') || message.includes('Unauthorized')) {
-    return {
-      isRetryable: false,
-      errorType: 'auth',
-      message: 'Errore di autenticazione. Effettua il login.'
-    };
-  }
-  
-  // Altri errori - ritentabile
-  return {
-    isRetryable: true,
-    errorType: 'unknown',
-    message: 'Errore temporaneo del servizio. Riprovo...'
-  };
-}
-
-/**
- * Interfaccia per il controllo dello streaming audio
- */
-interface AudioStreamController {
-  isStreaming: boolean;
-  audioBuffer: ArrayBuffer[];
-  currentSound?: Audio.Sound;
-  abort: () => void;
-}
-
-/**
- * Prepara gli ultimi 5 messaggi per l'invio al server, limitando la lunghezza totale.
+ * Prepara gli ultimi messaggi per l'invio al server, limitando la lunghezza totale
  * @param {Array} messages - I messaggi della chat
- * @param {number} maxMessages - Numero massimo di messaggi da includere
- * @param {number} maxTotalLength - Lunghezza massima totale consentita in caratteri
- * @returns {Array} - I messaggi formattati per l'invio
+ * @param {number} maxMessages - Numero massimo di messaggi da includere (default: 5)
+ * @param {number} maxTotalLength - Lunghezza massima totale consentita in caratteri (default: 1000)
+ * @returns {Array} - I messaggi formattati per l'invio al server
  */
 function preparePreviousMessages(
   messages: Array<any>,
-  maxMessages: number = 5,
-  maxTotalLength: number = 1000
+  maxMessages: number = MAX_PREVIOUS_MESSAGES,
+  maxTotalLength: number = MESSAGE_MAX_LENGTH
 ): Array<{ content: string; role: string }> {
+  // Verifica input
   if (!messages || messages.length === 0) return [];
 
-  // togli l'ultimo messaggio perche' e' quello dell'utente che sta scrivendo
-  messages = messages.slice(0, -1);
-  // Prendiamo solo gli ultimi N messaggi
-  const recentMessages = messages.slice(-maxMessages);
+  // Rimuovi l'ultimo messaggio perché è quello dell'utente che sta scrivendo
+  const messagesWithoutLast = messages.slice(0, -1);
+  
+  // Prendi solo gli ultimi N messaggi
+  const recentMessages = messagesWithoutLast.slice(-maxMessages);
 
-  // Formatta i messaggi nel formato richiesto dal server e calcola la lunghezza totale
+  // Formatta i messaggi nel formato richiesto dal server
   const formattedMessages = recentMessages.map((msg) => ({
-    content: msg.text,
-    role: msg.sender,
+    content: msg.text || msg.content || "",
+    role: msg.sender || msg.role || "user",
   }));
 
   // Calcola la lunghezza totale di tutti i messaggi
@@ -148,356 +52,10 @@ function preparePreviousMessages(
 }
 
 /**
- * Ottiene i metadati audio dall'URI
- */
-function getAudioMetadata(audioUri: string): { mimeType: string; extension: string } {
-  let extension = '.m4a';
-  let mimeType = 'audio/m4a';
-  
-  if (audioUri.includes('.webm')) {
-    extension = '.webm';
-    mimeType = 'audio/webm';
-  } else if (audioUri.includes('.wav')) {
-    extension = '.wav';
-    mimeType = 'audio/wav';
-  } else if (audioUri.includes('.mp3')) {
-    extension = '.mp3';
-    mimeType = 'audio/mp3';
-  }
-  
-  return { mimeType, extension };
-}
-
-/**
- * Crea FormData compatibile per l'invio audio
- */
-function createCompatibleFormData(audioUri: string, modelType: string) {
-  const formData = new FormData();
-  
-  // Determina l'estensione e il MIME type dall'URI
-  const { mimeType, extension } = getAudioMetadata(audioUri);
-  
-  // Per React Native, usa il formato specifico
-  if (Platform.OS === 'android' || Platform.OS === 'ios') {
-    // Su mobile, React Native gestisce automaticamente i file con questo formato
-    formData.append('audio_file', {
-      uri: audioUri,
-      type: mimeType,
-      name: `voice_message${extension}`,
-    } as any);
-  } else {
-    // Su web, potrebbe essere necessario un approccio diverso
-    // Ma per ora manteniamo lo stesso formato
-    formData.append('audio_file', {
-      uri: audioUri,
-      type: mimeType,
-      name: `voice_message${extension}`,
-    } as any);
-  }
-  
-  formData.append('model', modelType);
-  
-  return { formData, mimeType, extension };
-}
-
-/**
- * Controller per la gestione dello streaming audio
- */
-class AudioStreamManager {
-  private controllers: Map<string, AudioStreamController> = new Map();
-  /**
-   * Avvia lo streaming audio con playback in tempo reale
-   */
-  async startAudioStream(
-    audioUri: string, 
-    modelType: "base" | "advanced",
-    previousMessages: Array<any> = [],
-    onChunkReceived?: (chunk: string) => void,
-    onAudioReceived?: (audioData: ArrayBuffer) => void
-  ): Promise<string> {
-    const streamId = `stream_${Date.now()}`;
-    
-    const controller: AudioStreamController = {
-      isStreaming: true,
-      audioBuffer: [],
-      abort: () => {
-        controller.isStreaming = false;
-        this.controllers.delete(streamId);
-      }
-    };
-    
-    this.controllers.set(streamId, controller);
-
-    try {
-      console.log('🎵 Avvio processamento audio per:', modelType);
-        // Usa modalità avanzata per advanced model
-      if (modelType === "advanced") {
-        return await this.handleAdvancedStreaming(audioUri, controller, onChunkReceived, onAudioReceived, previousMessages);
-      } else {
-        // Fallback su metodo classico per base model
-        return await this.handleBaseUpload(audioUri, modelType);
-      }
-    } catch (error) {
-      console.error('❌ Errore durante il processamento audio:', error);
-      controller.abort();
-      throw error;
-    }
-  }
-  /**
-   * Gestisce la modalità avanzata usando l'endpoint /chat_bot_voice_advanced
-   */
-  private async handleAdvancedStreaming(
-    audioUri: string,
-    controller: AudioStreamController,
-    onChunkReceived?: (chunk: string) => void,
-    onAudioReceived?: (audioData: ArrayBuffer) => void,
-    previousMessages: Array<any> = []
-  ): Promise<string> {
-    try {
-      console.log('🚀 Usando endpoint avanzato del server');
-      
-      // Usa l'endpoint avanzato del server
-      return await this.sendAdvancedVoiceMessage(audioUri, "advanced", previousMessages, onChunkReceived);
-      
-    } catch (error) {
-      console.error('❌ Errore nella modalità avanzata:', error);
-      // Fallback automatico su upload classico
-      return await this.handleBaseUpload(audioUri, "advanced");
-    }
-  }
-
-  /**
-   * Gestisce l'upload base (non streaming)
-   */
-  private async handleBaseUpload(audioUri: string, modelType: string): Promise<string> {
-    console.log('📤 Usando upload classico per modalità base');
-    
-    // Usa la funzione esistente per compatibility
-    const { formData } = createCompatibleFormData(audioUri, modelType);
-    const token = await getValidToken();
-    
-    const response = await axios.post("/chat_bot_voice", formData, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      timeout: STREAM_TIMEOUT,    });
-    
-    // Gestisci la risposta usando la utility
-    const { botResponse, userMessage, confidence, language, audioFormat } = extractVoiceResponseFields(response.data);
-    
-    return botResponse;
-  }
-  /**
-   * Invia audio all'endpoint avanzato del server
-   */
-  private async sendAdvancedVoiceMessage(
-    audioUri: string, 
-    modelType: string, 
-    previousMessages: Array<any> = [],
-    onChunkReceived?: (chunk: string) => void
-  ): Promise<string> {
-    const token = await getValidToken();
-    if (!token) {
-      throw new Error('Token di autenticazione non disponibile');
-    }
-
-    console.log('🚀 Invio all\'endpoint avanzato del server:', audioUri);
-
-    // Prepara FormData per l'endpoint avanzato
-    const { formData, mimeType, extension } = createCompatibleFormData(audioUri, modelType);
-    
-    // Aggiungi parametri aggiuntivi per l'endpoint avanzato
-    formData.append('language', 'it-IT');
-    
-    // Converti previous_messages nel formato server
-    const serverMessages = previousMessages.map(msg => ({
-      role: msg.sender || msg.role || 'user',
-      content: msg.text || msg.content || ''
-    }));
-    formData.append('previous_messages', JSON.stringify(serverMessages));
-
-    const response = await retryWithBackoff(async () => {
-      const res = await axios.post("/chat_bot_voice_advanced", formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          // Content-Type gestito automaticamente da axios per FormData
-        },
-        timeout: STREAM_TIMEOUT,
-      });
-
-      // Analizza la risposta per errori che richiedono retry
-      if (res.data && res.data.message) {
-        const errorAnalysis = analyzeServerError(res.data);
-        
-        // Se è un errore di rate limiting, lancia eccezione per trigger retry
-        if (errorAnalysis.errorType === 'rate_limit') {
-          console.warn('⚠️ Rate limit rilevato, trigger retry:', res.data.message);
-          throw new Error('RATE_LIMIT: ' + errorAnalysis.message);
-        }
-        
-        // Per errori non ritentabili, procedi normalmente
-        if (!errorAnalysis.isRetryable) {
-          console.warn('⚠️ Errore non ritentabile:', errorAnalysis.message);
-        }
-      }
-
-      return res;
-    }, RETRY_ATTEMPTS, RETRY_DELAY_BASE);
-
-    console.log('✅ Risposta endpoint avanzato ricevuta:', response.data);    // Gestisci la risposta dal server usando la utility
-    if (response.data && typeof response.data === "object") {
-      const { botResponse, userMessage, confidence, language, audioFormat } = extractVoiceResponseFields(response.data);
-      
-      // Simula streaming chiamando onChunkReceived se disponibile
-      if (onChunkReceived && botResponse) {
-        // Simula chunk progressivi per migliorare UX
-        const chunkSize = Math.max(20, Math.floor(botResponse.length / 5));
-        
-        for (let i = 0; i < botResponse.length; i += chunkSize) {
-          const chunk = botResponse.slice(i, i + chunkSize);
-          onChunkReceived(chunk);
-          // Piccolo delay per simulare streaming
-          await new Promise(resolve => setTimeout(resolve, 50));
-        }
-      }
-
-      return botResponse;
-    }return response.data || 'Errore nella risposta del server';
-  }
-
-  /**
-   * Converte ArrayBuffer in base64 (utility conservata per future implementazioni)
-   */
-  private arrayBufferToBase64(buffer: ArrayBuffer): string {
-    const uint8Array = new Uint8Array(buffer);
-    let binary = '';
-    for (let i = 0; i < uint8Array.byteLength; i++) {
-      binary += String.fromCharCode(uint8Array[i]);
-    }
-    return btoa(binary);
-  }
-
-  /**
-   * Ferma tutti gli streaming attivi
-   */
-  stopAllStreams(): void {
-    this.controllers.forEach(controller => controller.abort());
-    this.controllers.clear();
-  }
-}
-
-// Istanza globale del manager
-const audioStreamManager = new AudioStreamManager();
-
-/**
- * 🚀 FUNZIONE OTTIMIZZATA CON DIAGNOSTICA: Invia messaggio vocale con modalità avanzata
- * Utilizza retry intelligente e diagnostica automatica per risolvere problemi
- * @param {string} audioUri - L'URI del file audio registrato
- * @param {string} modelType - Il tipo di modello ('base' usa /chat_bot_voice, 'advanced' usa /chat_bot_voice_advanced)
- * @param {Array} previousMessages - Messaggi precedenti per contestualizzare la risposta
- * @param {Function} onChunkReceived - Callback per chunk di testo ricevuti (simulato per UX)
- * @param {Function} onAudioReceived - Callback per chunk audio ricevuti (riservato per future implementazioni)
- * @returns {Promise<string>} - La risposta del bot
- */
-export async function sendVoiceMessageToBotOptimized(
-  audioUri: string,
-  modelType: "base" | "advanced" = "base",
-  previousMessages: Array<any> = [],
-  onChunkReceived?: (chunk: string) => void,
-  onAudioReceived?: (audioData: ArrayBuffer) => void
-): Promise<string> {
-  console.log('🚀 MODALITÀ OTTIMIZZATA CON DIAGNOSTICA - Modello:', modelType);
-  console.log('📜 Messaggi precedenti:', previousMessages.length);
-  
-  try {
-    return await audioStreamManager.startAudioStream(
-      audioUri, 
-      modelType,
-      previousMessages,
-      onChunkReceived, 
-      onAudioReceived
-    );
-  } catch (error: any) {
-    console.error('❌ Errore nella modalità ottimizzata:', error);
-    
-    // Se l'errore indica problemi del server, esegui diagnostica
-    if (error.message?.includes('sovraccarico') || 
-        error.message?.includes('rate') || 
-        error.message?.includes('configurazione') ||
-        error.response?.status === 429) {
-      
-      console.log('🔍 Eseguo diagnostica automatica...');
-      
-      try {
-        const diagnosis = await diagnoseVoiceBotIssues(audioUri);
-        
-        console.log('📋 Risultato diagnostica:', diagnosis);
-        
-        // Se il server è down, non tentare retry
-        if (diagnosis.serverStatus === 'down' && !diagnosis.canRetry) {
-          return `❌ ${diagnosis.diagnosis}. ${diagnosis.recommendations.join('. ')}.`;
-        }
-        
-        // Se il server è degradato ma ritentabile, prova modalità base
-        if (diagnosis.serverStatus === 'degraded' && modelType === 'advanced') {
-          console.log('🔄 Server degradato, fallback automatico su modalità base...');
-          
-          try {
-            return await audioStreamManager.startAudioStream(
-              audioUri,
-              "base", // Forza modalità base
-              [], // Nessun messaggio precedente per modalità base
-              onChunkReceived,
-              onAudioReceived
-            );
-          } catch (baseError) {
-            console.error('❌ Anche modalità base fallita:', baseError);
-          }
-        }
-        
-        // Se può ritentare, suggerisci azioni
-        if (diagnosis.canRetry) {
-          return `⚠️ ${diagnosis.diagnosis}. Suggerimento: ${diagnosis.recommendations[0] || 'Riprova tra qualche minuto'}.`;
-        }
-        
-      } catch (diagError) {
-        console.error('❌ Errore durante diagnostica:', diagError);
-      }
-    }
-    
-    // Fallback finale sul metodo originale
-    console.log('🔄 Fallback finale su metodo originale...');
-    try {
-      return await sendVoiceMessageToBot(audioUri, modelType);
-    } catch (fallbackError: any) {
-      console.error('❌ Anche il fallback finale è fallito:', fallbackError);
-      
-      // Messaggio finale all'utente
-      if (fallbackError.message?.includes('sovraccarico') || fallbackError.response?.status === 429) {
-        return "⏳ Il servizio è temporaneamente sovraccarico. Riprova tra 2-3 minuti o contatta il supporto se il problema persiste.";
-      }
-      
-      if (fallbackError.message?.includes('configurazione') || fallbackError.message?.includes('Google Cloud')) {
-        return "⚙️ Il servizio di riconoscimento vocale non è configurato correttamente. Contatta l'amministratore del sistema.";
-      }
-      
-      return "❌ Servizio temporaneamente non disponibile. Riprova più tardi o contatta il supporto tecnico.";
-    }
-  }
-}
-
-/**
- * Ferma tutti gli streaming audio attivi
- */
-export function stopAllAudioStreams(): void {
-  audioStreamManager.stopAllStreams();
-}
-
-/**
- * Invia un messaggio al bot e riceve una risposta
+ * Invia un messaggio testuale al bot e riceve una risposta
  * @param {string} userMessage - Il messaggio dell'utente da inviare al bot
  * @param {string} modelType - Il tipo di modello da utilizzare ('base' o 'advanced')
- * @param {Array} previousMessages - Gli ultimi messaggi scambiati tra utente e bot
+ * @param {Array} previousMessages - Gli ultimi messaggi scambiati tra utente e bot per il contesto
  * @returns {Promise<string>} - La risposta del bot
  */
 export async function sendMessageToBot(
@@ -506,697 +64,154 @@ export async function sendMessageToBot(
   previousMessages: Array<any> = []
 ): Promise<string> {
   try {
+    // Verifica che l'utente sia autenticato
     const token = await getValidToken();
     if (!token) {
       return "Mi dispiace, sembra che tu non sia autenticato. Effettua il login per continuare.";
     }
 
-    // Prepara i messaggi precedenti - limitati a non più di 1000 caratteri totali
+    // Prepara i messaggi precedenti per fornire contesto al bot
     const formattedPreviousMessages = preparePreviousMessages(previousMessages);
-    const quest = {
+    
+    // Costruisci il payload per la richiesta
+    const requestPayload = {
       quest: userMessage,
       model: modelType,
       previous_messages: formattedPreviousMessages,
     };
-    console.log("Invio al server:", quest);
-    const response = await axios.post("/chat_bot", quest, {
+    
+    console.log("📤 Invio messaggio al bot:", requestPayload);
+
+    // Invia la richiesta al server
+    const response = await axios.post("/chat_bot", requestPayload, {
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
     });
 
-    // Stampa la risposta del server per debug
-    console.log("Risposta ricevuta dal server:", response.data);
+    console.log("📥 Risposta ricevuta dal server:", response.data);
 
-    // Controlla il formato della risposta e estrai il valore corretto
+    // Elabora la risposta del server
     if (response.data && typeof response.data === "object") {
-      // Se la risposta contiene message e mode
+      // Gestisci risposte con modalità speciali (normal/view)
       if (response.data.message && response.data.mode) {
         if (response.data.mode === "normal") {
-          // Per modalità normal, restituisce solo il messaggio
+          // Modalità normale: restituisce solo il messaggio
           return response.data.message;
         } else if (response.data.mode === "view") {
-          // Per modalità view, restituisce l'intero oggetto come stringa JSON 
-          // che verrà poi gestito nel componente Message per visualizzare TaskTableBubble
+          // Modalità view: restituisce l'intero oggetto come JSON
+          // Questo viene gestito nel componente per visualizzare tabelle o contenuti speciali
           return JSON.stringify(response.data);
         }
       }
-      // Se la risposta è un oggetto con chiave 'response'
+      
+      // Se la risposta ha un campo 'response'
       if (response.data.response) {
         return response.data.response;
       }
+      
+      // Se la risposta ha un campo 'message'
+      if (response.data.message) {
+        return response.data.message;
+      }
     }
 
-    // Se la risposta è già una stringa, restituiscila direttamente
+    // Fallback: restituisci la risposta diretta o un messaggio predefinito
     return (
       response.data || "Non ho capito la tua richiesta. Potresti riprovare?"
     );
-  } catch (error) {
-    console.error("Errore nella comunicazione con il bot:", error);
+    
+  } catch (error: any) {
+    console.error("❌ Errore nella comunicazione con il bot:", error);
+    
+    // Gestisci errori specifici
+    if (error.response?.status === 401) {
+      return "Sessione scaduta. Effettua nuovamente il login.";
+    }
+    
+    if (error.response?.status === 429) {
+      return "Troppe richieste. Riprova tra qualche secondo.";
+    }
+    
+    if (error.response?.status >= 500) {
+      return "Il servizio è temporaneamente non disponibile. Riprova più tardi.";
+    }
+    
+    // Errore generico
     return "Mi dispiace, si è verificato un errore. Riprova più tardi.";
   }
 }
 
 /**
- * Invia un file audio al bot per la trascrizione e l'elaborazione
- * @param {string} audioUri - L'URI del file audio registrato
- * @param {string} modelType - Il tipo di modello da utilizzare ('base' o 'advanced')
- * @returns {Promise<string>} - La risposta del bot alla trascrizione
+ * Crea una nuova chat vuota
+ * @returns {Promise<Array>} - Array vuoto per inizializzare una nuova chat
  */
-export async function sendVoiceMessageToBot(
-  audioUri: string,
-  modelType: "base" | "advanced" = "base"
-): Promise<string> {
-  try {
-    const token = await getValidToken();
-    if (!token) {
-      return "Mi dispiace, sembra che tu non sia autenticato. Effettua il login per continuare.";
-    }
-
-    // Usa la utility per creare FormData compatibile
-    const { formData, mimeType, extension } = createCompatibleFormData(audioUri, modelType);
-    console.log("Invio file audio al server:", { 
-      audioUri, 
-      modelType, 
-      fileType: mimeType, 
-      fileName: `voice_message${extension}`,
-      platform: Platform.OS 
-    });
-
-    console.log(`Modello utilizzato per la richiesta: ${modelType}`);
-
-    const response = await axios.post("/chat_bot_voice", formData, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        // Rimuovo Content-Type perché axios lo gestisce automaticamente per FormData
-      },
-    });
-
-    // Stampa la risposta del server per debug
-    console.log("Risposta audio ricevuta dal server:", response.data);
-
-    // Gestisce la risposta del server (simile a sendMessageToBot)
-    if (response.data && typeof response.data === "object") {
-      if (response.data.message) {
-        const message = response.data.message;
-        
-        // Controlla se è un errore di configurazione del server
-        if (message.includes('❌') || 
-            message.includes('Errore durante il riconoscimento vocale') ||
-            message.includes('Your default credentials were not found') ||
-            message.includes('Application Default Credentials')) {
-          
-          // Distingui tra errori di configurazione e rate limiting
-          if (message.includes('429') || 
-              message.includes('rate-limited') || 
-              message.includes('Rate limit') ||
-              message.includes('temporarily rate-limited')) {
-            
-            console.warn("Rate limiting rilevato:", message);
-            return "Il servizio è temporaneamente sovraccarico. Riprova tra qualche secondo.";
-          }
-          
-          console.error("Errore di configurazione del server:", message);
-          return "Il servizio di riconoscimento vocale non è attualmente configurato sul server. Contatta l'amministratore.";
-        }
-          // Se c'è recognized_text o user_message, logga il messaggio trascritto dell'utente
-        const recognizedText = response.data.recognized_text || response.data.user_message;
-        if (recognizedText) {
-          console.log("📝 Messaggio utente trascritto:", recognizedText);
-          console.log("🤖 Risposta bot:", message);
-          console.log("📊 Confidence:", response.data.confidence);
-          // Restituisci la risposta del bot, non il testo riconosciuto dell'utente
-          return message;
-        }
-        
-        if (response.data.mode) {
-          if (response.data.mode === "normal") {
-            return message;
-          } else if (response.data.mode === "view") {
-            return JSON.stringify(response.data);
-          }
-        }
-        return message;
-      }
-      
-      // Se non c'è message ma c'è recognized_text o user_message
-      const recognizedText = response.data.recognized_text || response.data.user_message;
-      if (recognizedText) {
-        console.log("📝 Messaggio utente trascritto (fallback):", recognizedText);
-        // Se non c'è message, restituisci almeno il testo riconosciuto come fallback
-        return "Messaggio ricevuto ma nessuna risposta dal bot disponibile.";
-      }
-      
-      if (response.data.response) {
-        return response.data.response;
-      }
-    }
-
-    return (
-      response.data || "Non sono riuscito a processare il messaggio vocale. Riprova più tardi."
-    );
-  } catch (error: any) {
-    console.error("Errore nell'invio del messaggio vocale:", error);
-    
-    // Logga dettagli specifici per errore 400
-    if (error.response?.status === 400) {
-      console.error("Dettagli errore 400:", {
-        status: error.response.status,
-        statusText: error.response.statusText,
-        data: error.response.data,
-        headers: error.response.headers,
-      });
-      
-      // Se il server fornisce un messaggio di errore specifico, usalo
-      if (error.response.data?.message) {
-        return `Errore del server: ${error.response.data.message}`;
-      } else if (error.response.data?.detail) {
-        return `Errore del server: ${error.response.data.detail}`;
-      } else {
-        return `Errore 400: Richiesta non valida. Controlla il formato del file audio.`;
-      }
-    }
-    
-    return "Mi dispiace, si è verificato un errore nell'elaborazione del messaggio vocale. Riprova più tardi.";
-  }
-}
-
-/**
- * Versione alternativa per debug dell'invio file audio
- * Prova diversi formati se il primo fallisce
- */
-export async function sendVoiceMessageToBotDebug(
-  audioUri: string,
-  modelType: "base" | "advanced" = "base"
-): Promise<string> {
-  const token = await getValidToken();
-  if (!token) {
-    return "Mi dispiace, sembra che tu non sia autenticato. Effettua il login per continuare.";
-  }
-
-  console.log("=== DEBUG AUDIO FILE ===");
-  console.log("Audio URI:", audioUri);
-  
-  // Verifica che l'URI sia valido
-  if (!audioUri || audioUri.trim() === '') {
-    console.error("URI del file audio è vuoto o non valido");
-    return "Errore: file audio non valido";
-  }
-
-  try {
-    console.log("=== CREAZIONE FORMDATA ===");
-    
-    const { formData, mimeType, extension } = createCompatibleFormData(audioUri, modelType);
-    
-    console.log(`File info - MIME: ${mimeType}, Estensione: ${extension}`);
-    console.log(`Platform: ${Platform.OS}`);
-    console.log(`Modello utilizzato: ${modelType}`);
-    console.log("FormData creato, invio al server...");
-
-    const response = await axios.post("/chat_bot_voice", formData, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        // Lascia che axios gestisca il Content-Type automaticamente
-      },
-      timeout: 30000,
-    });
-
-    console.log("=== RISPOSTA RICEVUTA ===");
-    console.log("Status:", response.status);
-    console.log("Data:", response.data);
-    
-    // Gestisci errori di servizio anche se lo status è 200
-    if (response.data?.message) {
-      const message = response.data.message;
-      
-      // Controlla se è un errore di configurazione del server o rate limiting
-      if (message.includes('❌') || 
-          message.includes('Errore durante il riconoscimento vocale') ||
-          message.includes('Your default credentials were not found') ||
-          message.includes('Application Default Credentials')) {
-        
-        // Distingui tra errori di configurazione e rate limiting
-        if (message.includes('429') || 
-            message.includes('rate-limited') || 
-            message.includes('Rate limit') ||
-            message.includes('temporarily rate-limited')) {
-          
-          console.warn("Rate limiting rilevato:", message);
-          return "Il servizio è temporaneamente sovraccarico. Riprova tra qualche secondo.";
-        }
-        
-        console.error("Errore di configurazione del server:", message);
-        return "Il servizio di riconoscimento vocale non è attualmente configurato sul server. Contatta l'amministratore.";
-      }
-      
-      // Se c'è recognized_text o user_message, quello è il messaggio trascritto dell'utente
-      const recognizedText = response.data.recognized_text || response.data.user_message;
-      if (recognizedText) {
-        console.log("Messaggio utente trascritto:", recognizedText);
-        console.log("Risposta bot:", message);
-        console.log("Confidence:", response.data.confidence);
-        return recognizedText; // Restituisce il messaggio trascritto dell'utente
-      }
-      
-      return message;
-    }
-    
-    // Se non c'è message ma c'è recognized_text o user_message
-    const recognizedText = response.data?.recognized_text || response.data?.user_message;
-    if (recognizedText) {
-      console.log("Messaggio utente trascritto:", recognizedText);
-      return recognizedText;
-    }
-    
-    return response.data?.response || response.data || "Messaggio processato con successo";
-    
-  } catch (error: any) {
-    console.error("=== ERRORE DETTAGLIATO ===");
-    console.error("Status:", error.response?.status);
-    console.error("Data:", error.response?.data);
-    console.error("Headers response:", error.response?.headers);
-    console.error("Headers request:", error.config?.headers);
-    console.error("Error completo:", error);
-    
-    if (error.response?.data?.detail) {
-      return `Errore del server: ${error.response.data.detail}`;
-    }
-    
-    return "Impossibile processare il file audio. Verifica che la registrazione sia andata a buon fine.";
-  }
-}
-
-/**
- * Crea una nuova chat con un messaggio di benvenuto
- * @returns {Promise<Array>} - Array con i messaggi di benvenuto
- */
-export async function createNewChat() {
-  // Messaggi di benvenuto predefiniti
+export async function createNewChat(): Promise<Array<any>> {
+  // Restituisce un array vuoto - i messaggi di benvenuto possono essere gestiti dall'UI
   return [];
 }
 
 /**
- * Invia un file audio al bot e restituisce sia il messaggio trascritto che la risposta del bot
- * @param {string} audioUri - L'URI del file audio registrato
- * @param {string} modelType - Il tipo di modello da utilizzare ('base' o 'advanced')
- * @returns {Promise<{userMessage: string, botResponse: string} | null>} - Il messaggio trascritto e la risposta del bot
+ * Valida un messaggio prima dell'invio
+ * @param {string} message - Il messaggio da validare
+ * @returns {boolean} - True se il messaggio è valido
  */
-export async function sendVoiceMessageToBotComplete(
-  audioUri: string,
-  modelType: "base" | "advanced" = "base"
-): Promise<{userMessage: string, botResponse: string} | null> {
+export function validateMessage(message: string): boolean {
+  if (!message || typeof message !== 'string') {
+    return false;
+  }
+  
+  const trimmedMessage = message.trim();
+  
+  // Controllo lunghezza minima e massima
+  if (trimmedMessage.length === 0 || trimmedMessage.length > 5000) {
+    return false;
+  }
+  
+  return true;
+}
+
+/**
+ * Formatta un messaggio per la visualizzazione
+ * @param {string} message - Il messaggio da formattare
+ * @returns {string} - Il messaggio formattato
+ */
+export function formatMessage(message: string): string {
+  if (!message || typeof message !== 'string') {
+    return "";
+  }
+  
+  return message.trim();
+}
+
+/**
+ * Determina se una risposta del bot contiene dati strutturati (JSON)
+ * @param {string} response - La risposta del bot
+ * @returns {boolean} - True se la risposta contiene dati strutturati
+ */
+export function isStructuredResponse(response: string): boolean {
+  if (!response || typeof response !== 'string') {
+    return false;
+  }
+  
   try {
-    const token = await getValidToken();
-    if (!token) {
-      return null;
-    }
+    const parsed = JSON.parse(response);
+    return parsed && typeof parsed === 'object' && parsed.mode === 'view';
+  } catch {
+    return false;
+  }
+}
 
-    // Usa la utility per creare FormData compatibile
-    const { formData, mimeType, extension } = createCompatibleFormData(audioUri, modelType);
-    console.log("Invio file audio al server per trascrizione completa:", { 
-      audioUri, 
-      modelType, 
-      fileType: mimeType, 
-      fileName: `voice_message${extension}`,
-      platform: Platform.OS 
-    });
-
-    console.log(`Modello utilizzato per la richiesta completa: ${modelType}`);
-
-    const response = await axios.post("/chat_bot_voice", formData, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    console.log("Risposta completa ricevuta dal server:", response.data);
-
-    // Gestisce la risposta del server
-    if (response.data && typeof response.data === "object") {
-      // Controlla se è un errore di configurazione del server o rate limiting
-      if (response.data.message && (
-          response.data.message.includes('❌') || 
-          response.data.message.includes('Errore durante il riconoscimento vocale') ||
-          response.data.message.includes('Your default credentials were not found') ||
-          response.data.message.includes('Application Default Credentials'))) {
-        
-        // Distingui tra errori di configurazione e rate limiting
-        if (response.data.message.includes('429') || 
-            response.data.message.includes('rate-limited') || 
-            response.data.message.includes('Rate limit') ||
-            response.data.message.includes('temporarily rate-limited')) {
-          
-          console.warn("Rate limiting rilevato:", response.data.message);
-          return {
-            userMessage: "[Messaggio vocale non processato]",
-            botResponse: "Il servizio è temporaneamente sovraccarico. Riprova tra qualche secondo."
-          };
-        }
-        
-        console.error("Errore di configurazione del server:", response.data.message);
-        return null;
-      }
-
-      // Il server restituisce recognized_text (e anche user_message per compatibilità)
-      const recognizedText = response.data.recognized_text || response.data.user_message;
-      
-      // Se abbiamo sia recognized_text che la risposta del bot
-      if (recognizedText && response.data.message) {
-        console.log("Testo riconosciuto:", recognizedText);
-        console.log("Risposta bot:", response.data.message);
-        console.log("Confidence:", response.data.confidence);
-        
-        return {
-          userMessage: recognizedText,
-          botResponse: response.data.message
-        };
-      }
-      
-      // Se abbiamo solo recognized_text (caso raro)
-      if (recognizedText) {
-        return {
-          userMessage: recognizedText,
-          botResponse: "Messaggio ricevuto."
-        };
-      }
-    }
-
-    return null;
-  } catch (error: any) {
-    console.error("Errore nell'invio del messaggio vocale completo:", error);
+/**
+ * Estrae i dati strutturati da una risposta del bot
+ * @param {string} response - La risposta del bot in formato JSON
+ * @returns {any} - I dati strutturati estratti o null se non validi
+ */
+export function extractStructuredData(response: string): any {
+  try {
+    return JSON.parse(response);
+  } catch {
     return null;
   }
-}
-
-/**
- * Funzione di diagnostica avanzata per problemi con il bot vocale
- */
-export async function diagnoseVoiceBotIssues(audioUri: string): Promise<{
-  diagnosis: string;
-  recommendations: string[];
-  serverStatus: 'healthy' | 'degraded' | 'down';
-  canRetry: boolean;
-}> {
-  console.log('🔍 === INIZIO DIAGNOSTICA BOT VOCALE ===');
-  
-  const recommendations: string[] = [];
-  let serverStatus: 'healthy' | 'degraded' | 'down' = 'healthy';
-  let canRetry = true;
-  
-  try {
-    // Test 1: Verifica token
-    console.log('1️⃣ Verifica token di autenticazione...');
-    const token = await getValidToken();
-    if (!token) {
-      return {
-        diagnosis: 'Token di autenticazione mancante o scaduto',
-        recommendations: ['Effettua il login', 'Verifica le credenziali'],
-        serverStatus: 'down',
-        canRetry: false
-      };
-    }
-    console.log('✅ Token valido');
-    
-    // Test 2: Test connettività server base
-    console.log('2️⃣ Test connettività server...');
-    try {
-      const testResponse = await axios.get('/health', {
-        headers: { Authorization: `Bearer ${token}` },
-        timeout: 5000
-      });
-      console.log('✅ Server raggiungibile');
-    } catch (error) {
-      console.warn('⚠️ Endpoint /health non disponibile, continuo...');
-    }
-    
-    // Test 3: Test endpoint base /chat_bot_voice
-    console.log('3️⃣ Test endpoint base /chat_bot_voice...');
-    try {
-      const { formData } = createCompatibleFormData(audioUri, 'base');
-      const baseResponse = await axios.post("/chat_bot_voice", formData, {
-        headers: { Authorization: `Bearer ${token}` },
-        timeout: 10000,
-      });
-      
-      console.log('📋 Risposta endpoint base:', baseResponse.data);
-      
-      if (baseResponse.data.message) {
-        const errorAnalysis = analyzeServerError(baseResponse.data);
-        
-        if (errorAnalysis.errorType === 'rate_limit') {
-          serverStatus = 'degraded';
-          recommendations.push('Attendi alcuni minuti prima di riprovare');
-          recommendations.push('Usa modalità base invece di advanced');
-          
-          return {
-            diagnosis: 'Server sovraccarico - Rate limiting attivo',
-            recommendations,
-            serverStatus,
-            canRetry: true
-          };
-        }
-        
-        if (errorAnalysis.errorType === 'config') {
-          serverStatus = 'down';
-          canRetry = false;
-          recommendations.push('Contatta l\'amministratore del sistema');
-          recommendations.push('Verifica configurazione Google Cloud sul server');
-          
-          return {
-            diagnosis: 'Configurazione server incompleta - Google Cloud non configurato',
-            recommendations,
-            serverStatus,
-            canRetry: false
-          };
-        }
-      }
-      
-    } catch (error: any) {
-      console.error('❌ Test endpoint base fallito:', error);
-      
-      if (error.response?.status === 429) {
-        serverStatus = 'degraded';
-        recommendations.push('Rate limiting attivo - attendi e riprova');
-        return {
-          diagnosis: 'Rate limiting del server',
-          recommendations,
-          serverStatus,
-          canRetry: true
-        };
-      }
-      
-      if (error.response?.status >= 500) {
-        serverStatus = 'down';
-        recommendations.push('Errore interno del server - riprova più tardi');
-        return {
-          diagnosis: 'Errore interno del server',
-          recommendations,
-          serverStatus,
-          canRetry: true
-        };
-      }
-    }
-    
-    // Test 4: Test endpoint avanzato /chat_bot_voice_advanced
-    console.log('4️⃣ Test endpoint avanzato /chat_bot_voice_advanced...');
-    try {
-      const { formData } = createCompatibleFormData(audioUri, 'advanced');
-      formData.append('language', 'it-IT');
-      formData.append('previous_messages', '[]');
-      
-      const advancedResponse = await axios.post("/chat_bot_voice_advanced", formData, {
-        headers: { Authorization: `Bearer ${token}` },
-        timeout: 10000,
-      });
-      
-      console.log('📋 Risposta endpoint avanzato:', advancedResponse.data);
-      
-      if (advancedResponse.data.recognized_text) {
-        return {
-          diagnosis: 'Tutti i sistemi funzionano correttamente',
-          recommendations: ['Il servizio è operativo', 'Puoi usare entrambe le modalità'],
-          serverStatus: 'healthy',
-          canRetry: true
-        };
-      }
-      
-    } catch (error: any) {
-      console.error('❌ Test endpoint avanzato fallito:', error);
-      serverStatus = 'degraded';
-      recommendations.push('Usa modalità base invece di advanced');
-    }
-    
-    return {
-      diagnosis: 'Endpoint base funziona, advanced ha problemi',
-      recommendations,
-      serverStatus,
-      canRetry: true
-    };
-    
-  } catch (error: any) {
-    console.error('❌ Errore durante diagnostica:', error);
-    
-    return {
-      diagnosis: 'Errore di rete o server non raggiungibile',
-      recommendations: [
-        'Verifica la connessione internet',
-        'Riprova tra qualche minuto',
-        'Contatta il supporto tecnico se il problema persiste'
-      ],
-      serverStatus: 'down',
-      canRetry: true
-    };
-  } finally {
-    console.log('🔍 === FINE DIAGNOSTICA ===');
-  }
-}
-
-/**
- * Funzione helper per l'UI - gestisce automaticamente errori e retry
- */
-export async function sendVoiceMessageWithSmartHandling(
-  audioUri: string,
-  options: {
-    modelType?: "base" | "advanced";
-    previousMessages?: Array<any>;
-    onProgress?: (message: string) => void;
-    onChunkReceived?: (chunk: string) => void;
-    maxRetries?: number;
-  } = {}
-): Promise<{
-  success: boolean;
-  response: string;
-  userMessage?: string;
-  metadata?: {
-    confidence?: number;
-    language?: string;
-    audioFormat?: string;
-    retryCount?: number;
-    diagnosticInfo?: any;
-  };
-}> {
-  const {
-    modelType = "advanced",
-    previousMessages = [],
-    onProgress,
-    onChunkReceived,
-    maxRetries = 2
-  } = options;
-
-  let retryCount = 0;
-  let lastDiagnostic: any = null;
-  const attemptSend = async (attempt: number): Promise<any> => {
-    try {
-      onProgress?.(`🚀 Tentativo ${attempt}/${maxRetries + 1}...`);
-      
-      // Chiamiamo la funzione ottimizzata che ora restituisce la risposta del bot
-      const botResponse = await sendVoiceMessageToBotOptimized(
-        audioUri,
-        modelType,
-        previousMessages,
-        onChunkReceived
-      );
-
-      // Per ottenere anche i metadati, facciamo una chiamata diretta all'endpoint 
-      // (opzionale, solo se serve per UI)
-      let metadata: any = { retryCount: attempt - 1 };
-      
-      return {
-        success: true,
-        response: botResponse, // Questa è la risposta del bot
-        metadata
-      };
-
-    } catch (error: any) {
-      console.error(`❌ Tentativo ${attempt} fallito:`, error);
-      
-      // Se è l'ultimo tentativo, esegui diagnostica
-      if (attempt > maxRetries) {
-        onProgress?.('🔍 Eseguo diagnostica finale...');
-        
-        try {
-          lastDiagnostic = await diagnoseVoiceBotIssues(audioUri);
-          
-          return {
-            success: false,
-            response: `❌ ${lastDiagnostic.diagnosis}`,
-            metadata: {
-              retryCount: attempt - 1,
-              diagnosticInfo: lastDiagnostic
-            }
-          };
-        } catch (diagError) {
-          return {
-            success: false,
-            response: "❌ Servizio non disponibile. Riprova più tardi.",
-            metadata: { retryCount: attempt - 1 }
-          };
-        }
-      }
-
-      // Determina se ritentare
-      if (error.message?.includes('sovraccarico') || 
-          error.response?.status === 429) {
-        
-        const waitTime = Math.pow(2, attempt) * 1000; // Backoff esponenziale
-        onProgress?.(`⏳ Attendo ${waitTime/1000}s prima del prossimo tentativo...`);
-        
-        await new Promise(resolve => setTimeout(resolve, waitTime));
-        return attemptSend(attempt + 1);
-      }
-
-      // Per altri errori, non ritentare
-      throw error;
-    }
-  };
-
-  try {
-    return await attemptSend(1);
-  } catch (error: any) {
-    console.error('❌ Errore definitivo:', error);
-    
-    return {
-      success: false,
-      response: error.message || "Errore sconosciuto",
-      metadata: { retryCount }
-    };
-  }
-}
-
-/**
- * Utility per estrarre correttamente i campi dalla risposta del server
- */
-export function extractVoiceResponseFields(responseData: any): {
-  botResponse: string;
-  userMessage?: string;
-  confidence?: number;
-  language?: string;
-  audioFormat?: string;
-} {
-  if (!responseData || typeof responseData !== "object") {
-    return { botResponse: "Errore nella risposta del server" };
-  }
-
-  // Il campo 'message' contiene la risposta del bot
-  const botResponse = responseData.message || responseData.response || "Nessuna risposta dal bot";
-  
-  // Il campo 'recognized_text' o 'user_message' contiene quello che l'utente ha detto
-  const userMessage = responseData.recognized_text || responseData.user_message;
-  
-  // Metadati aggiuntivi
-  const confidence = responseData.confidence;
-  const language = responseData.language_detected;
-  const audioFormat = responseData.audio_format;
-
-  console.log('📋 Campi estratti dalla risposta:');
-  console.log('🤖 Bot Response:', botResponse);
-  console.log('👤 User Message:', userMessage);
-  console.log('📊 Confidence:', confidence);
-  console.log('🗣️ Language:', language);
-  console.log('🎵 Audio Format:', audioFormat);
-
-  return {
-    botResponse,
-    userMessage,  };
 }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -8,25 +8,25 @@ import {
   Dimensions,
   StatusBar,
   SafeAreaView,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
 
-const { width, height } = Dimensions.get('window');
+const { width, height } = Dimensions.get("window");
 
 const Home20 = () => {
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState("");
   const navigation = useNavigation();
 
   const handleVoicePress = () => {
     // Gestione del pulsante microfono
-    console.log('Voice button pressed');
+    console.log("Voice button pressed");
   };
 
   const handleSubmit = () => {
     if (message.trim()) {
-      console.log('Message submitted:', message);
-      setMessage('');
+      console.log("Message submitted:", message);
+      setMessage("");
     }
   };
 
@@ -37,11 +37,8 @@ const Home20 = () => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
-        {/* Header con titolo principale */}
+      {/* Header con titolo principale */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
-          <Ionicons name="arrow-back" size={24} color="#000000" />
-        </TouchableOpacity>
         <Text style={styles.mainTitle}>Mytaskly</Text>
       </View>
 
@@ -50,7 +47,7 @@ const Home20 = () => {
         {/* Saluto personalizzato */}
         <View style={styles.greetingSection}>
           <Text style={styles.greetingText}>
-            Ciao Gabry,{'\n'}che vuoi fare oggi?
+            Ciao Gabry,{"\n"}che vuoi fare oggi?
           </Text>
         </View>
 
@@ -67,16 +64,12 @@ const Home20 = () => {
               onSubmitEditing={handleSubmit}
               returnKeyType="send"
             />
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.voiceButton}
               onPress={handleVoicePress}
               activeOpacity={0.7}
             >
-              <Ionicons 
-                name="mic" 
-                size={24} 
-                color="#666666" 
-              />
+              <Ionicons name="mic" size={24} color="#666666" />
             </TouchableOpacity>
           </View>
         </View>
@@ -88,57 +81,63 @@ const Home20 = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
-  },  header: {
+    backgroundColor: "#ffffff",
+  },
+  header: {
     paddingTop: 20,
-    paddingHorizontal: 40,
+    paddingHorizontal: 15,
     paddingBottom: 40,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
   },
   backButton: {
     marginTop: 12,
     marginRight: 20,
     padding: 8,
-  },mainTitle: {
-    fontSize: 52,
-    fontWeight: '200', // Più leggero per un look più elegante
-    color: '#000000',
-    textAlign: 'left',
-    fontFamily: 'System',
+  },
+  mainTitle: {
+    paddingTop: 10,
+    fontSize: 30,
+    fontWeight: "200", // Più leggero per un look più elegante
+    color: "#000000",
+    textAlign: "left",
+    fontFamily: "System",
     letterSpacing: -1.5,
     marginBottom: 10,
   },
   content: {
     flex: 1,
     paddingHorizontal: 40,
-    justifyContent: 'center',
+    justifyContent: "center",
+    paddingBottom: 100,
   },
   greetingSection: {
     marginBottom: 80,
-  },  greetingText: {
+  },
+  greetingText: {
     fontSize: 34,
-    fontWeight: '300', // Leggermente più leggero
-    color: '#000000',
-    textAlign: 'center',
+    fontWeight: "300", // Leggermente più leggero
+    color: "#000000",
+    textAlign: "center",
     lineHeight: 44,
-    fontFamily: 'System',
+    fontFamily: "System",
     letterSpacing: -0.8,
   },
   inputSection: {
-    alignItems: 'center',
-  },  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#ffffff',
+    alignItems: "center",
+  },
+  inputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#ffffff",
     borderRadius: 30,
     paddingHorizontal: 24,
     paddingVertical: 16,
-    width: '100%',
+    width: "100%",
     maxWidth: 420,
     borderWidth: 1.5,
-    borderColor: '#e1e5e9',
-    shadowColor: '#000',
+    borderColor: "#e1e5e9",
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 4,
@@ -146,19 +145,20 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 12,
     elevation: 3,
-  },  textInput: {
+  },
+  textInput: {
     flex: 1,
     fontSize: 17,
-    color: '#000000',
-    fontFamily: 'System',
-    fontWeight: '400',
+    color: "#000000",
+    fontFamily: "System",
+    fontWeight: "400",
     paddingVertical: 10,
   },
   voiceButton: {
     marginLeft: 12,
     padding: 8,
     borderRadius: 20,
-    backgroundColor: 'transparent',
+    backgroundColor: "transparent",
   },
 });
 
