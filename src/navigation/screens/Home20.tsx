@@ -182,7 +182,7 @@ const Home20 = () => {
       // Invia il messaggio al bot
       const botResponse = await sendMessageToBot(
         trimmedMessage,
-        "base", // Puoi renderlo configurabile
+        "advanced", // Puoi renderlo configurabile
         messages
       );
 
@@ -192,7 +192,7 @@ const Home20 = () => {
         text: botResponse,
         sender: "bot",
         createdAt: new Date(),
-        modelType: "base",
+        modelType: "advanced",
       };
 
       // Aggiungi la risposta del bot con un leggero delay per una migliore UX
@@ -436,7 +436,7 @@ const styles = StyleSheet.create({
     paddingBottom: 80, // Ridotto per dare più spazio alla chat
   },  contentChatStarted: {
     flex: 1,
-    paddingHorizontal: 40,
+    paddingHorizontal: 0, // Rimosso padding laterale per la chat
     paddingTop: 0, // Ancora più in alto per massimizzare lo spazio della chat
     paddingBottom: 80,
   },
