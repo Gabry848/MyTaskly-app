@@ -1,10 +1,28 @@
-import React from 'react';
-import { StyleSheet, View, Text } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { StyleSheet, View, Text, Animated } from 'react-native';
 import { MessageBubbleProps } from './types';
 import TaskTableBubble from './TaskTableBubble'; // Importa il nuovo componente
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style }) => {
   const isBot = message.sender === 'bot';
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(20)).current;
+
+  // Animazione di entrata per ogni nuovo messaggio
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
   
   // Formatta la data per la visualizzazione
   const formatTime = (date: Date) => {
@@ -42,13 +60,16 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style }) => {
   if (isBot && message.tasks && message.tasks.length > 0) {
     const legacyMessage = `Ecco i tuoi impegni:\n📅 TASK:\n${JSON.stringify(message.tasks)}\n📊 Totale task trovati: ${message.tasks.length}`;
     return <TaskTableBubble message={legacyMessage} style={style} />;
-  }
-  // Altrimenti, visualizza il messaggio di testo normale
+  }  // Altrimenti, visualizza il messaggio di testo normale
   return (
-    <View style={[
+    <Animated.View style={[
       styles.messageContainer,
       isBot ? styles.botMessageContainer : styles.userMessageContainer,
-      style
+      style,
+      {
+        opacity: fadeAnim,
+        transform: [{ translateY: slideAnim }]
+      }
     ]}>
       <View style={[
         styles.messageBubble,
@@ -72,14 +93,14 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style }) => {
       ]}>
         {formatTime(message.createdAt)}
       </Text>
-    </View>
+    </Animated.View>
   );
 };
 
 const styles = StyleSheet.create({
   messageContainer: {
-    marginVertical: 6,
-    paddingHorizontal: 15,
+    marginVertical: 8,
+    paddingHorizontal: 20,
   },
   userMessageContainer: {
     alignItems: 'flex-end',
@@ -88,51 +109,57 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   messageBubble: {
-    maxWidth: '80%',
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    borderRadius: 16,
+    maxWidth: '85%',
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    borderRadius: 22,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
-    shadowRadius: 2,
-    elevation: 1,
+    shadowRadius: 8,
+    elevation: 2,
   },
   userBubble: {
-    backgroundColor: '#5B37B7', // Viola primario dell'app
-    borderBottomRightRadius: 4,
+    backgroundColor: '#000000', // Nero elegante per coerenza con Home20
+    borderBottomRightRadius: 6,
   },
   botBubble: {
-    backgroundColor: '#FFFFFF',
-    borderBottomLeftRadius: 4,
+    backgroundColor: '#f8f9fa',
+    borderBottomLeftRadius: 6,
     borderWidth: 1,
-    borderColor: '#E8E8E8',
+    borderColor: '#e1e5e9',
   },
   messageText: {
     fontSize: 16,
-    lineHeight: 22,
+    lineHeight: 24,
+    fontFamily: 'System',
+    fontWeight: '400',
   },
   userText: {
     color: '#FFFFFF',
   },
   botText: {
-    color: '#333333',
-  },  messageTime: {
+    color: '#000000',
+  },
+  messageTime: {
     fontSize: 11,
-    marginTop: 4,
-    marginHorizontal: 8,
+    marginTop: 6,
+    marginHorizontal: 12,
+    fontFamily: 'System',
+    fontWeight: '300',
   },
   userTime: {
-    color: '#FFFFFF80',
+    color: '#00000060',
   },
   botTime: {
-    color: '#33333380',
+    color: '#00000050',
   },
   modelType: {
     fontSize: 10,
-    color: '#666',
-    marginTop: 4,
+    color: '#666666',
+    marginTop: 6,
     fontStyle: 'italic',
+    fontFamily: 'System',
   },
 });
 

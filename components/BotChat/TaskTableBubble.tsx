@@ -1,8 +1,28 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, Animated } from 'react-native';
 import { TaskTableBubbleProps, TaskItem } from './types';
 
-const TaskTableBubble: React.FC<TaskTableBubbleProps> = ({ message, style }) => {  // Funzione per estrarre il JSON dal messaggio
+const TaskTableBubble: React.FC<TaskTableBubbleProps> = ({ message, style }) => {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(20)).current;
+
+  // Animazione di entrata
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
+  // Funzione per estrarre il JSON dal messaggio
   const extractTasksFromMessage = (text: string): TaskItem[] => {
     try {
       // Trova l'inizio e la fine del JSON array
@@ -78,9 +98,15 @@ const TaskTableBubble: React.FC<TaskTableBubbleProps> = ({ message, style }) => 
   };
 
   const title = extractTitle(message);
-
   return (
-    <View style={[styles.container, style]}>
+    <Animated.View style={[
+      styles.container, 
+      style,
+      {
+        opacity: fadeAnim,
+        transform: [{ translateY: slideAnim }]
+      }
+    ]}>
       <Text style={styles.title}>{title}</Text>
       <ScrollView horizontal>
         <View>
@@ -116,49 +142,55 @@ const TaskTableBubble: React.FC<TaskTableBubbleProps> = ({ message, style }) => 
             ))
           )}
         </View>
-      </ScrollView>
-    </View>
+      </ScrollView>    </Animated.View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    padding: 15,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 18,
+    padding: 18,
     marginVertical: 8,
-    borderColor: '#E8E8E8',
+    marginHorizontal: 20,
+    borderColor: '#e1e5e9',
     borderWidth: 1,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
-    shadowRadius: 2,
-    elevation: 1,
+    shadowRadius: 8,
+    elevation: 2,
+    maxWidth: '85%',
+    alignSelf: 'flex-start',
   },
   title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#333333',
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 12,
+    color: '#000000',
+    fontFamily: 'System',
   },
   tableRow: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#EFEFEF',
-    paddingVertical: 8,
+    borderBottomColor: '#e8e8e8',
+    paddingVertical: 10,
   },
   tableHeader: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#555555',
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#000000',
     paddingHorizontal: 8,
+    fontFamily: 'System',
   },
   tableCell: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#333333',
     paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingVertical: 6,
     alignSelf: 'center',
+    fontFamily: 'System',
+    fontWeight: '400',
   },
   status: {
     width: 100,
@@ -171,23 +203,26 @@ const styles = StyleSheet.create({
   },
   endTime: {
     width: 100,
-  },  taskTitle: {
+  },
+  taskTitle: {
     flex: 1,
     minWidth: 150,
   },
   emptyMessageContainer: {
-    paddingVertical: 20,
-    paddingHorizontal: 16,
+    paddingVertical: 24,
+    paddingHorizontal: 20,
     alignItems: 'center',
     justifyContent: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: '#EFEFEF',
+    borderBottomColor: '#e8e8e8',
   },
   emptyMessage: {
-    fontSize: 16,
+    fontSize: 15,
     color: '#666666',
     textAlign: 'center',
     fontStyle: 'italic',
+    fontFamily: 'System',
+    lineHeight: 22,
   },
 });
 

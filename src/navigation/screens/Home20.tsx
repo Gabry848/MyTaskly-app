@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,72 +8,385 @@ import {
   Dimensions,
   StatusBar,
   SafeAreaView,
+  Animated,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import { ChatList, Message } from "../../../components/BotChat";
+import { sendMessageToBot } from "../../services/botservice";
 
 const { width, height } = Dimensions.get("window");
 
 const Home20 = () => {
   const [message, setMessage] = useState("");
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [chatStarted, setChatStarted] = useState(false);
   const navigation = useNavigation();
+  
+  // Animazioni
+  const inputContainerTranslateY = useRef(new Animated.Value(0)).current;
+  const greetingOpacity = useRef(new Animated.Value(1)).current;
+  const chatListOpacity = useRef(new Animated.Value(0)).current;
+  const messagesSlideIn = useRef(new Animated.Value(50)).current;  // Effetto per gestire la visualizzazione della tastiera
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
+      if (chatStarted) {
+        // Quando la tastiera appare e la chat è iniziata, mantieni l'input in posizione fissa
+        // Non spostarla ulteriormente, rimane nella posizione della chat
+        return;
+      }
+    });
+
+    const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
+      if (chatStarted) {
+        // Quando la tastiera si nasconde e la chat è iniziata, mantieni l'input in posizione chat
+        return;
+      }
+    });
+
+    return () => {
+      keyboardDidShowListener?.remove();
+      keyboardDidHideListener?.remove();
+    };
+  }, [chatStarted]);
+
+  // Animazione dei puntini di caricamento
+  const dotAnimation1 = useRef(new Animated.Value(0)).current;
+  const dotAnimation2 = useRef(new Animated.Value(0)).current;
+  const dotAnimation3 = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (isLoading) {
+      const animateDots = () => {
+        Animated.sequence([
+          Animated.timing(dotAnimation1, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(dotAnimation2, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(dotAnimation3, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+          Animated.parallel([
+            Animated.timing(dotAnimation1, {
+              toValue: 0,
+              duration: 500,
+              useNativeDriver: true,
+            }),
+            Animated.timing(dotAnimation2, {
+              toValue: 0,
+              duration: 500,
+              useNativeDriver: true,
+            }),
+            Animated.timing(dotAnimation3, {
+              toValue: 0,
+              duration: 500,
+              useNativeDriver: true,
+            }),
+          ]),
+        ]).start(() => {
+          if (isLoading) {
+            animateDots();
+          }
+        });
+      };
+      animateDots();
+    } else {
+      // Reset animazioni quando non carica più
+      dotAnimation1.setValue(0);
+      dotAnimation2.setValue(0);
+      dotAnimation3.setValue(0);
+    }
+  }, [isLoading]);  const startChatAnimation = () => {
+    setChatStarted(true);
+    
+    // Animazione parallela per nascondere il greeting e mostrare la chat
+    Animated.parallel([
+      // Nascondi il greeting
+      Animated.timing(greetingOpacity, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      // Sposta l'input dalla posizione sotto il saluto alla posizione in basso
+      Animated.timing(inputContainerTranslateY, {
+        toValue: 200, // Valore positivo per spostare verso il basso
+        duration: 500,
+        useNativeDriver: true,
+      }),
+      // Mostra la lista dei messaggi
+      Animated.timing(chatListOpacity, {
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+      // Animazione di entrata per i messaggi
+      Animated.timing(messagesSlideIn, {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const generateMessageId = () => {
+    return `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  };
 
   const handleVoicePress = () => {
     // Gestione del pulsante microfono
     console.log("Voice button pressed");
   };
+  const handleSubmit = async () => {
+    const trimmedMessage = message.trim();
+    if (!trimmedMessage || isLoading) return;
 
-  const handleSubmit = () => {
-    if (message.trim()) {
-      console.log("Message submitted:", message);
-      setMessage("");
+    const userMessage: Message = {
+      id: generateMessageId(),
+      text: trimmedMessage,
+      sender: 'user',
+      createdAt: new Date(),
+    };
+
+    // Se è il primo messaggio, avvia l'animazione della chat
+    if (!chatStarted) {
+      startChatAnimation();
+    }
+
+    // Aggiungi il messaggio dell'utente
+    setMessages(prev => [...prev, userMessage]);
+    
+    // Resetta l'input immediatamente per una migliore UX
+    setMessage("");
+    setIsLoading(true);
+
+    try {
+      // Invia il messaggio al bot
+      const botResponse = await sendMessageToBot(
+        trimmedMessage,
+        'base', // Puoi renderlo configurabile
+        messages
+      );
+
+      // Crea il messaggio del bot
+      const botMessage: Message = {
+        id: generateMessageId(),
+        text: botResponse,
+        sender: 'bot',
+        createdAt: new Date(),
+        modelType: 'base',
+      };
+
+      // Aggiungi la risposta del bot con un leggero delay per una migliore UX
+      setTimeout(() => {
+        setMessages(prev => [...prev, botMessage]);
+        setIsLoading(false);
+      }, 300);
+
+    } catch (error) {
+      console.error("Errore nell'invio del messaggio:", error);
+      
+      // Messaggio di errore del bot
+      const errorMessage: Message = {
+        id: generateMessageId(),
+        text: "Mi dispiace, si è verificato un errore. Riprova più tardi.",
+        sender: 'bot',
+        createdAt: new Date(),
+        modelType: 'base',
+      };
+
+      setTimeout(() => {
+        setMessages(prev => [...prev, errorMessage]);
+        setIsLoading(false);
+      }, 300);
     }
   };
 
   const handleGoBack = () => {
     navigation.goBack();
   };
-
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+      
       {/* Header con titolo principale */}
       <View style={styles.header}>
         <Text style={styles.mainTitle}>Mytaskly</Text>
       </View>
 
-      {/* Contenuto principale */}
-      <View style={styles.content}>
-        {/* Saluto personalizzato */}
-        <View style={styles.greetingSection}>
-          <Text style={styles.greetingText}>
-            Ciao Gabry,{"\n"}che vuoi fare oggi?
-          </Text>
+      <KeyboardAvoidingView 
+        style={styles.keyboardAvoidingView}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >        {/* Contenuto principale */}
+        <View style={styles.content}>
+          
+          {/* Saluto personalizzato - nascosto quando la chat inizia */}
+          {!chatStarted && (
+            <Animated.View 
+              style={[
+                styles.greetingSection,
+                { opacity: greetingOpacity }
+              ]}
+            >
+              <Text style={styles.greetingText}>
+                Ciao Gabry,{"\n"}che vuoi fare oggi?
+              </Text>
+              
+              {/* Input area - sotto il saluto quando la chat non è iniziata */}
+              <View style={styles.inputSectionUnderGreeting}>
+                <View style={styles.inputContainer}>
+                  <TextInput
+                    style={styles.textInput}
+                    placeholder="Scrivi un messaggio..."
+                    placeholderTextColor="#999999"
+                    value={message}
+                    onChangeText={setMessage}
+                    multiline={false}
+                    onSubmitEditing={handleSubmit}
+                    returnKeyType="send"
+                    editable={!isLoading}
+                  />
+                  
+                  {/* Mostra il pulsante di invio se c'è del testo, altrimenti il microfono */}
+                  {message.trim() ? (
+                    <TouchableOpacity
+                      style={[
+                        styles.sendButton,
+                        isLoading && styles.sendButtonDisabled
+                      ]}
+                      onPress={handleSubmit}
+                      activeOpacity={0.7}
+                      disabled={isLoading}
+                    >
+                      <Ionicons name="send" size={20} color={isLoading ? "#ccc" : "#000"} />
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      style={[
+                        styles.voiceButton, 
+                        isLoading && styles.voiceButtonDisabled
+                      ]}
+                      onPress={handleVoicePress}
+                      activeOpacity={0.7}
+                      disabled={isLoading}
+                    >
+                      <Ionicons name="mic" size={24} color={isLoading ? "#ccc" : "#666666"} />
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+            </Animated.View>
+          )}
+
+          {/* Lista dei messaggi - visibile quando la chat inizia */}
+          {chatStarted && (
+            <Animated.View 
+              style={[
+                styles.chatSection,
+                { 
+                  opacity: chatListOpacity,
+                  transform: [{ translateY: messagesSlideIn }]
+                }
+              ]}
+            >
+              <ChatList messages={messages} />
+                {/* Indicatore di caricamento */}
+              {isLoading && (
+                <View style={styles.loadingContainer}>
+                  <View style={styles.loadingBubble}>
+                    <Text style={styles.loadingText}>Il bot sta scrivendo...</Text>
+                    <View style={styles.loadingDots}>
+                      <Animated.View 
+                        style={[
+                          styles.dot, 
+                          { opacity: dotAnimation1 }
+                        ]} 
+                      />
+                      <Animated.View 
+                        style={[
+                          styles.dot, 
+                          { opacity: dotAnimation2 }
+                        ]} 
+                      />
+                      <Animated.View 
+                        style={[
+                          styles.dot, 
+                          { opacity: dotAnimation3 }
+                        ]} 
+                      />
+                    </View>
+                  </View>
+                </View>
+              )}
+            </Animated.View>
+          )}
+
         </View>
 
-        {/* Input area */}
-        <View style={styles.inputSection}>
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Scrivi un messaggio..."
-              placeholderTextColor="#999999"
-              value={message}
-              onChangeText={setMessage}
-              multiline={false}
-              onSubmitEditing={handleSubmit}
-              returnKeyType="send"
-            />
-            <TouchableOpacity
-              style={styles.voiceButton}
-              onPress={handleVoicePress}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="mic" size={24} color="#666666" />
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
+        {/* Input area in basso - visibile solo quando la chat è iniziata */}
+        {chatStarted && (
+          <Animated.View 
+            style={[
+              styles.inputSection,
+              { transform: [{ translateY: inputContainerTranslateY }] }
+            ]}
+          >
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.textInput}
+                placeholder="Scrivi un messaggio..."
+                placeholderTextColor="#999999"
+                value={message}
+                onChangeText={setMessage}
+                multiline={false}
+                onSubmitEditing={handleSubmit}
+                returnKeyType="send"
+                editable={!isLoading}
+              />
+              
+              {/* Mostra il pulsante di invio se c'è del testo, altrimenti il microfono */}
+              {message.trim() ? (
+                <TouchableOpacity
+                  style={[
+                    styles.sendButton,
+                    isLoading && styles.sendButtonDisabled
+                  ]}
+                  onPress={handleSubmit}
+                  activeOpacity={0.7}
+                  disabled={isLoading}
+                >
+                  <Ionicons name="send" size={20} color={isLoading ? "#ccc" : "#000"} />
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={[
+                    styles.voiceButton, 
+                    isLoading && styles.voiceButtonDisabled
+                  ]}
+                  onPress={handleVoicePress}
+                  activeOpacity={0.7}
+                  disabled={isLoading}
+                >
+                  <Ionicons name="mic" size={24} color={isLoading ? "#ccc" : "#666666"} />
+                </TouchableOpacity>
+              )}
+            </View>
+          </Animated.View>
+        )}
+
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -82,6 +395,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#ffffff",
+  },
+  keyboardAvoidingView: {
+    flex: 1,
   },
   header: {
     paddingTop: 20,
@@ -104,15 +420,18 @@ const styles = StyleSheet.create({
     fontFamily: "System",
     letterSpacing: -1.5,
     marginBottom: 10,
-  },
-  content: {
+  },  content: {
     flex: 1,
     paddingHorizontal: 40,
-    justifyContent: "center",
-    paddingBottom: 100,
+    paddingTop: 250, // Aumentato per abbassare il saluto
+    paddingBottom: 80, // Ridotto per dare più spazio alla chat
+  },greetingSection: {
+    marginBottom: 30,
   },
-  greetingSection: {
-    marginBottom: 80,
+  inputSectionUnderGreeting: {
+    alignItems: "center",
+    paddingHorizontal: 0,
+    marginTop: 40,
   },
   greetingText: {
     fontSize: 34,
@@ -122,9 +441,50 @@ const styles = StyleSheet.create({
     lineHeight: 44,
     fontFamily: "System",
     letterSpacing: -0.8,
+  },chatSection: {
+    flex: 1,
+    marginBottom: 10, // Ridotto per ottimizzare lo spazio
+  },
+  loadingContainer: {
+    paddingHorizontal: 15,
+    marginVertical: 6,
+    alignItems: "flex-start",
+  },
+  loadingBubble: {
+    backgroundColor: "#f0f0f0",
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    borderRadius: 16,
+    maxWidth: "80%",
+    flexDirection: "row",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: "#666666",
+    marginRight: 8,
+    fontFamily: "System",
+  },
+  loadingDots: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#999999",
+    marginHorizontal: 2,
   },
   inputSection: {
     alignItems: "center",
+    paddingHorizontal: 40,
+    paddingBottom: 20,
   },
   inputContainer: {
     flexDirection: "row",
@@ -153,12 +513,26 @@ const styles = StyleSheet.create({
     fontFamily: "System",
     fontWeight: "400",
     paddingVertical: 10,
-  },
-  voiceButton: {
+  },  voiceButton: {
     marginLeft: 12,
     padding: 8,
     borderRadius: 20,
     backgroundColor: "transparent",
+  },
+  voiceButtonDisabled: {
+    opacity: 0.5,
+  },
+  sendButton: {
+    marginLeft: 12,
+    padding: 10,
+    borderRadius: 20,
+    backgroundColor: "#f0f0f0",
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sendButtonDisabled: {
+    opacity: 0.5,
+    backgroundColor: "#f8f8f8",
   },
 });
 
