@@ -25,13 +25,8 @@ const Home20 = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [chatStarted, setChatStarted] = useState(false);
-  const navigation = useNavigation();
-
-  // Animazioni
-  const inputContainerTranslateY = useRef(new Animated.Value(0)).current;
-  const greetingOpacity = useRef(new Animated.Value(1)).current;
-  const chatListOpacity = useRef(new Animated.Value(0)).current;
-  const messagesSlideIn = useRef(new Animated.Value(50)).current; // Effetto per gestire la visualizzazione della tastiera
+  const navigation = useNavigation();  // Animazioni
+  const messagesSlideIn = useRef(new Animated.Value(50)).current;// Effetto per gestire la visualizzazione della tastiera
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
       "keyboardDidShow",
@@ -57,94 +52,15 @@ const Home20 = () => {
     return () => {
       keyboardDidShowListener?.remove();
       keyboardDidHideListener?.remove();
-    };
-  }, [chatStarted]);
-
-  // Animazione dei puntini di caricamento
-  const dotAnimation1 = useRef(new Animated.Value(0)).current;
-  const dotAnimation2 = useRef(new Animated.Value(0)).current;
-  const dotAnimation3 = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    if (isLoading) {
-      const animateDots = () => {
-        Animated.sequence([
-          Animated.timing(dotAnimation1, {
-            toValue: 1,
-            duration: 500,
-            useNativeDriver: true,
-          }),
-          Animated.timing(dotAnimation2, {
-            toValue: 1,
-            duration: 500,
-            useNativeDriver: true,
-          }),
-          Animated.timing(dotAnimation3, {
-            toValue: 1,
-            duration: 500,
-            useNativeDriver: true,
-          }),
-          Animated.parallel([
-            Animated.timing(dotAnimation1, {
-              toValue: 0,
-              duration: 500,
-              useNativeDriver: true,
-            }),
-            Animated.timing(dotAnimation2, {
-              toValue: 0,
-              duration: 500,
-              useNativeDriver: true,
-            }),
-            Animated.timing(dotAnimation3, {
-              toValue: 0,
-              duration: 500,
-              useNativeDriver: true,
-            }),
-          ]),
-        ]).start(() => {
-          if (isLoading) {
-            animateDots();
-          }
-        });
-      };
-      animateDots();
-    } else {
-      // Reset animazioni quando non carica più
-      dotAnimation1.setValue(0);
-      dotAnimation2.setValue(0);
-      dotAnimation3.setValue(0);
-    }
-  }, [isLoading]);
-  const startChatAnimation = () => {
+    };  }, [chatStarted]);  const startChatAnimation = () => {
     setChatStarted(true);
 
-    // Animazione parallela per nascondere il greeting e mostrare la chat
-    Animated.parallel([
-      // Nascondi il greeting
-      Animated.timing(greetingOpacity, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      // Sposta l'input dalla posizione sotto il saluto alla posizione in basso
-      Animated.timing(inputContainerTranslateY, {
-        toValue: 200, // Valore positivo per spostare verso il basso
-        duration: 500,
-        useNativeDriver: true,
-      }),
-      // Mostra la lista dei messaggi
-      Animated.timing(chatListOpacity, {
-        toValue: 1,
-        duration: 400,
-        useNativeDriver: true,
-      }),
-      // Animazione di entrata per i messaggi
-      Animated.timing(messagesSlideIn, {
-        toValue: 0,
-        duration: 500,
-        useNativeDriver: true,
-      }),
-    ]).start();
+    // Animazione di entrata per i messaggi
+    Animated.timing(messagesSlideIn, {
+      toValue: 0,
+      duration: 500,
+      useNativeDriver: true,
+    }).start();
   };
 
   const generateMessageId = () => {
@@ -237,12 +153,9 @@ const Home20 = () => {
         keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
       >
         {" "}        {/* Contenuto principale */}
-        <View style={chatStarted ? styles.contentChatStarted : styles.content}>
-          {/* Saluto personalizzato - nascosto quando la chat inizia */}
+        <View style={chatStarted ? styles.contentChatStarted : styles.content}>          {/* Saluto personalizzato - nascosto quando la chat inizia */}
           {!chatStarted && (
-            <Animated.View
-              style={[styles.greetingSection, { opacity: greetingOpacity }]}
-            >
+            <View style={styles.greetingSection}>
               <Text style={styles.greetingText}>
                 Ciao Gabry,{"\n"}che vuoi fare oggi?
               </Text>
@@ -295,19 +208,15 @@ const Home20 = () => {
                         color={isLoading ? "#ccc" : "#666666"}
                       />
                     </TouchableOpacity>
-                  )}
-                </View>
+                  )}                </View>
               </View>
-            </Animated.View>
-          )}
-
-          {/* Lista dei messaggi - visibile quando la chat inizia */}
+            </View>
+          )}          {/* Lista dei messaggi - visibile quando la chat inizia */}
           {chatStarted && (
             <Animated.View
               style={[
                 styles.chatSection,
                 {
-                  opacity: chatListOpacity,
                   transform: [{ translateY: messagesSlideIn }],
                 },
               ]}
@@ -319,32 +228,19 @@ const Home20 = () => {
                   <View style={styles.loadingBubble}>
                     <Text style={styles.loadingText}>
                       Il bot sta scrivendo...
-                    </Text>
-                    <View style={styles.loadingDots}>
-                      <Animated.View
-                        style={[styles.dot, { opacity: dotAnimation1 }]}
-                      />
-                      <Animated.View
-                        style={[styles.dot, { opacity: dotAnimation2 }]}
-                      />
-                      <Animated.View
-                        style={[styles.dot, { opacity: dotAnimation3 }]}
-                      />
+                    </Text>                    <View style={styles.loadingDots}>
+                      <View style={styles.dot} />
+                      <View style={styles.dot} />
+                      <View style={styles.dot} />
                     </View>
                   </View>
                 </View>
               )}
             </Animated.View>
           )}
-        </View>
-        {/* Input area in basso - visibile solo quando la chat è iniziata */}
+        </View>        {/* Input area in basso - visibile solo quando la chat è iniziata */}
         {chatStarted && (
-          <Animated.View
-            style={[
-              styles.inputSection,
-              { transform: [{ translateY: inputContainerTranslateY }] },
-            ]}
-          >
+          <View style={styles.inputSection}>
             <View style={styles.inputContainer}>
               <TextInput
                 style={styles.textInput}
@@ -391,9 +287,8 @@ const Home20 = () => {
                     color={isLoading ? "#ccc" : "#666666"}
                   />
                 </TouchableOpacity>
-              )}
-            </View>
-          </Animated.View>
+              )}            </View>
+          </View>
         )}
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -534,9 +429,8 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 20,
     backgroundColor: "transparent",
-  },
-  voiceButtonDisabled: {
-    opacity: 0.5,
+  },  voiceButtonDisabled: {
+    backgroundColor: "#f8f8f8",
   },
   sendButton: {
     marginLeft: 12,
@@ -545,10 +439,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#f0f0f0",
     justifyContent: "center",
     alignItems: "center",
-  },
-  sendButtonDisabled: {
-    opacity: 0.5,
-    backgroundColor: "#f8f8f8",
+  },  sendButtonDisabled: {
+    backgroundColor: "#e8e8e8",
   },
 });
 
