@@ -26,27 +26,33 @@ const Home20 = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [chatStarted, setChatStarted] = useState(false);
   const navigation = useNavigation();
-  
+
   // Animazioni
   const inputContainerTranslateY = useRef(new Animated.Value(0)).current;
   const greetingOpacity = useRef(new Animated.Value(1)).current;
   const chatListOpacity = useRef(new Animated.Value(0)).current;
-  const messagesSlideIn = useRef(new Animated.Value(50)).current;  // Effetto per gestire la visualizzazione della tastiera
+  const messagesSlideIn = useRef(new Animated.Value(50)).current; // Effetto per gestire la visualizzazione della tastiera
   useEffect(() => {
-    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
-      if (chatStarted) {
-        // Quando la tastiera appare e la chat è iniziata, mantieni l'input in posizione fissa
-        // Non spostarla ulteriormente, rimane nella posizione della chat
-        return;
+    const keyboardDidShowListener = Keyboard.addListener(
+      "keyboardDidShow",
+      () => {
+        if (chatStarted) {
+          // Quando la tastiera appare e la chat è iniziata, mantieni l'input in posizione fissa
+          // Non spostarla ulteriormente, rimane nella posizione della chat
+          return;
+        }
       }
-    });
+    );
 
-    const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
-      if (chatStarted) {
-        // Quando la tastiera si nasconde e la chat è iniziata, mantieni l'input in posizione chat
-        return;
+    const keyboardDidHideListener = Keyboard.addListener(
+      "keyboardDidHide",
+      () => {
+        if (chatStarted) {
+          // Quando la tastiera si nasconde e la chat è iniziata, mantieni l'input in posizione chat
+          return;
+        }
       }
-    });
+    );
 
     return () => {
       keyboardDidShowListener?.remove();
@@ -108,9 +114,10 @@ const Home20 = () => {
       dotAnimation2.setValue(0);
       dotAnimation3.setValue(0);
     }
-  }, [isLoading]);  const startChatAnimation = () => {
+  }, [isLoading]);
+  const startChatAnimation = () => {
     setChatStarted(true);
-    
+
     // Animazione parallela per nascondere il greeting e mostrare la chat
     Animated.parallel([
       // Nascondi il greeting
@@ -155,7 +162,7 @@ const Home20 = () => {
     const userMessage: Message = {
       id: generateMessageId(),
       text: trimmedMessage,
-      sender: 'user',
+      sender: "user",
       createdAt: new Date(),
     };
 
@@ -165,8 +172,8 @@ const Home20 = () => {
     }
 
     // Aggiungi il messaggio dell'utente
-    setMessages(prev => [...prev, userMessage]);
-    
+    setMessages((prev) => [...prev, userMessage]);
+
     // Resetta l'input immediatamente per una migliore UX
     setMessage("");
     setIsLoading(true);
@@ -175,7 +182,7 @@ const Home20 = () => {
       // Invia il messaggio al bot
       const botResponse = await sendMessageToBot(
         trimmedMessage,
-        'base', // Puoi renderlo configurabile
+        "base", // Puoi renderlo configurabile
         messages
       );
 
@@ -183,31 +190,30 @@ const Home20 = () => {
       const botMessage: Message = {
         id: generateMessageId(),
         text: botResponse,
-        sender: 'bot',
+        sender: "bot",
         createdAt: new Date(),
-        modelType: 'base',
+        modelType: "base",
       };
 
       // Aggiungi la risposta del bot con un leggero delay per una migliore UX
       setTimeout(() => {
-        setMessages(prev => [...prev, botMessage]);
+        setMessages((prev) => [...prev, botMessage]);
         setIsLoading(false);
       }, 300);
-
     } catch (error) {
       console.error("Errore nell'invio del messaggio:", error);
-      
+
       // Messaggio di errore del bot
       const errorMessage: Message = {
         id: generateMessageId(),
         text: "Mi dispiace, si è verificato un errore. Riprova più tardi.",
-        sender: 'bot',
+        sender: "bot",
         createdAt: new Date(),
-        modelType: 'base',
+        modelType: "base",
       };
 
       setTimeout(() => {
-        setMessages(prev => [...prev, errorMessage]);
+        setMessages((prev) => [...prev, errorMessage]);
         setIsLoading(false);
       }, 300);
     }
@@ -219,31 +225,28 @@ const Home20 = () => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
-      
+
       {/* Header con titolo principale */}
       <View style={styles.header}>
         <Text style={styles.mainTitle}>Mytaskly</Text>
       </View>
 
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         style={styles.keyboardAvoidingView}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
-      >        {/* Contenuto principale */}
-        <View style={styles.content}>
-          
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+      >
+        {" "}        {/* Contenuto principale */}
+        <View style={chatStarted ? styles.contentChatStarted : styles.content}>
           {/* Saluto personalizzato - nascosto quando la chat inizia */}
           {!chatStarted && (
-            <Animated.View 
-              style={[
-                styles.greetingSection,
-                { opacity: greetingOpacity }
-              ]}
+            <Animated.View
+              style={[styles.greetingSection, { opacity: greetingOpacity }]}
             >
               <Text style={styles.greetingText}>
                 Ciao Gabry,{"\n"}che vuoi fare oggi?
               </Text>
-              
+
               {/* Input area - sotto il saluto quando la chat non è iniziata */}
               <View style={styles.inputSectionUnderGreeting}>
                 <View style={styles.inputContainer}>
@@ -258,31 +261,39 @@ const Home20 = () => {
                     returnKeyType="send"
                     editable={!isLoading}
                   />
-                  
+
                   {/* Mostra il pulsante di invio se c'è del testo, altrimenti il microfono */}
                   {message.trim() ? (
                     <TouchableOpacity
                       style={[
                         styles.sendButton,
-                        isLoading && styles.sendButtonDisabled
+                        isLoading && styles.sendButtonDisabled,
                       ]}
                       onPress={handleSubmit}
                       activeOpacity={0.7}
                       disabled={isLoading}
                     >
-                      <Ionicons name="send" size={20} color={isLoading ? "#ccc" : "#000"} />
+                      <Ionicons
+                        name="send"
+                        size={20}
+                        color={isLoading ? "#ccc" : "#000"}
+                      />
                     </TouchableOpacity>
                   ) : (
                     <TouchableOpacity
                       style={[
-                        styles.voiceButton, 
-                        isLoading && styles.voiceButtonDisabled
+                        styles.voiceButton,
+                        isLoading && styles.voiceButtonDisabled,
                       ]}
                       onPress={handleVoicePress}
                       activeOpacity={0.7}
                       disabled={isLoading}
                     >
-                      <Ionicons name="mic" size={24} color={isLoading ? "#ccc" : "#666666"} />
+                      <Ionicons
+                        name="mic"
+                        size={24}
+                        color={isLoading ? "#ccc" : "#666666"}
+                      />
                     </TouchableOpacity>
                   )}
                 </View>
@@ -292,39 +303,32 @@ const Home20 = () => {
 
           {/* Lista dei messaggi - visibile quando la chat inizia */}
           {chatStarted && (
-            <Animated.View 
+            <Animated.View
               style={[
                 styles.chatSection,
-                { 
+                {
                   opacity: chatListOpacity,
-                  transform: [{ translateY: messagesSlideIn }]
-                }
+                  transform: [{ translateY: messagesSlideIn }],
+                },
               ]}
             >
               <ChatList messages={messages} />
-                {/* Indicatore di caricamento */}
+              {/* Indicatore di caricamento */}
               {isLoading && (
                 <View style={styles.loadingContainer}>
                   <View style={styles.loadingBubble}>
-                    <Text style={styles.loadingText}>Il bot sta scrivendo...</Text>
+                    <Text style={styles.loadingText}>
+                      Il bot sta scrivendo...
+                    </Text>
                     <View style={styles.loadingDots}>
-                      <Animated.View 
-                        style={[
-                          styles.dot, 
-                          { opacity: dotAnimation1 }
-                        ]} 
+                      <Animated.View
+                        style={[styles.dot, { opacity: dotAnimation1 }]}
                       />
-                      <Animated.View 
-                        style={[
-                          styles.dot, 
-                          { opacity: dotAnimation2 }
-                        ]} 
+                      <Animated.View
+                        style={[styles.dot, { opacity: dotAnimation2 }]}
                       />
-                      <Animated.View 
-                        style={[
-                          styles.dot, 
-                          { opacity: dotAnimation3 }
-                        ]} 
+                      <Animated.View
+                        style={[styles.dot, { opacity: dotAnimation3 }]}
                       />
                     </View>
                   </View>
@@ -332,15 +336,13 @@ const Home20 = () => {
               )}
             </Animated.View>
           )}
-
         </View>
-
         {/* Input area in basso - visibile solo quando la chat è iniziata */}
         {chatStarted && (
-          <Animated.View 
+          <Animated.View
             style={[
               styles.inputSection,
-              { transform: [{ translateY: inputContainerTranslateY }] }
+              { transform: [{ translateY: inputContainerTranslateY }] },
             ]}
           >
             <View style={styles.inputContainer}>
@@ -355,37 +357,44 @@ const Home20 = () => {
                 returnKeyType="send"
                 editable={!isLoading}
               />
-              
+
               {/* Mostra il pulsante di invio se c'è del testo, altrimenti il microfono */}
               {message.trim() ? (
                 <TouchableOpacity
                   style={[
                     styles.sendButton,
-                    isLoading && styles.sendButtonDisabled
+                    isLoading && styles.sendButtonDisabled,
                   ]}
                   onPress={handleSubmit}
                   activeOpacity={0.7}
                   disabled={isLoading}
                 >
-                  <Ionicons name="send" size={20} color={isLoading ? "#ccc" : "#000"} />
+                  <Ionicons
+                    name="send"
+                    size={20}
+                    color={isLoading ? "#ccc" : "#000"}
+                  />
                 </TouchableOpacity>
               ) : (
                 <TouchableOpacity
                   style={[
-                    styles.voiceButton, 
-                    isLoading && styles.voiceButtonDisabled
+                    styles.voiceButton,
+                    isLoading && styles.voiceButtonDisabled,
                   ]}
                   onPress={handleVoicePress}
                   activeOpacity={0.7}
                   disabled={isLoading}
                 >
-                  <Ionicons name="mic" size={24} color={isLoading ? "#ccc" : "#666666"} />
+                  <Ionicons
+                    name="mic"
+                    size={24}
+                    color={isLoading ? "#ccc" : "#666666"}
+                  />
                 </TouchableOpacity>
               )}
             </View>
           </Animated.View>
         )}
-
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -425,7 +434,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
     paddingTop: 250, // Aumentato per abbassare il saluto
     paddingBottom: 80, // Ridotto per dare più spazio alla chat
-  },greetingSection: {
+  },  contentChatStarted: {
+    flex: 1,
+    paddingHorizontal: 40,
+    paddingTop: 0, // Ancora più in alto per massimizzare lo spazio della chat
+    paddingBottom: 80,
+  },
+  greetingSection: {
     marginBottom: 30,
   },
   inputSectionUnderGreeting: {
@@ -441,7 +456,8 @@ const styles = StyleSheet.create({
     lineHeight: 44,
     fontFamily: "System",
     letterSpacing: -0.8,
-  },chatSection: {
+  },
+  chatSection: {
     flex: 1,
     marginBottom: 10, // Ridotto per ottimizzare lo spazio
   },
@@ -480,11 +496,10 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     backgroundColor: "#999999",
     marginHorizontal: 2,
-  },
-  inputSection: {
+  },  inputSection: {
     alignItems: "center",
     paddingHorizontal: 40,
-    paddingBottom: 20,
+    paddingBottom: 53, // Aumentato per alzare l'input quando la chat è attiva
   },
   inputContainer: {
     flexDirection: "row",
@@ -513,7 +528,8 @@ const styles = StyleSheet.create({
     fontFamily: "System",
     fontWeight: "400",
     paddingVertical: 10,
-  },  voiceButton: {
+  },
+  voiceButton: {
     marginLeft: 12,
     padding: 8,
     borderRadius: 20,
@@ -527,8 +543,8 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 20,
     backgroundColor: "#f0f0f0",
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   sendButtonDisabled: {
     opacity: 0.5,
