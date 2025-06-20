@@ -2,101 +2,13 @@ import axios from "./axiosInterceptor";
 import { getValidToken } from "./authService";
 import { Platform } from "react-native";
 import RNBlobUtil from 'react-native-blob-util';
-import * as RNFS from 'react-native-fs';
+import RNFS from 'react-native-fs';
 import { Audio } from 'expo-av';
 
 // Constants per lo streaming
 const CHUNK_SIZE = 8192; // 8KB chunks for audio streaming
 const AUDIO_BUFFER_SIZE = 4096; // Buffer size for audio playback
 const STREAM_TIMEOUT = 30000; // 30 secondi timeout per stream
-const RETRY_ATTEMPTS = 3; // Numero tentativi di retry
-const RETRY_DELAY_BASE = 1000; // Delay base per retry in ms
-
-/**
- * Utility per retry con backoff esponenziale
- */
-async function retryWithBackoff<T>(
-  operation: () => Promise<T>,
-  maxAttempts: number = RETRY_ATTEMPTS,
-  baseDelay: number = RETRY_DELAY_BASE
-): Promise<T> {
-  let lastError: any;
-  
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    try {
-      console.log(`🔄 Tentativo ${attempt}/${maxAttempts}...`);
-      return await operation();
-    } catch (error: any) {
-      lastError = error;
-      
-      // Se è l'ultimo tentativo, lancia l'errore
-      if (attempt === maxAttempts) {
-        throw error;
-      }
-      
-      // Calcola delay con backoff esponenziale
-      const delay = baseDelay * Math.pow(2, attempt - 1);
-      console.warn(`⚠️ Tentativo ${attempt} fallito, riprovo tra ${delay}ms...`, error.message);
-      
-      // Attendi prima del prossimo tentativo
-      await new Promise(resolve => setTimeout(resolve, delay));
-    }
-  }
-  
-  throw lastError;
-}
-
-/**
- * Analizza la risposta del server per determinare il tipo di errore
- */
-function analyzeServerError(response: any): {
-  isRetryable: boolean;
-  errorType: 'rate_limit' | 'config' | 'auth' | 'network' | 'unknown';
-  message: string;
-} {
-  const message = response?.data?.message || response?.message || '';
-  
-  // Rate limiting - ritentabile
-  if (message.includes('429') || 
-      message.includes('rate-limited') || 
-      message.includes('Rate limit') ||
-      message.includes('temporarily rate-limited')) {
-    return {
-      isRetryable: true,
-      errorType: 'rate_limit',
-      message: 'Il servizio è temporaneamente sovraccarico. Riprovo automaticamente...'
-    };
-  }
-  
-  // Errori di configurazione Google Cloud - non ritentabile
-  if (message.includes('❌') || 
-      message.includes('Errore durante il riconoscimento vocale') ||
-      message.includes('Your default credentials were not found') ||
-      message.includes('Application Default Credentials') ||
-      message.includes('Configurazione Google Cloud mancante')) {
-    return {
-      isRetryable: false,
-      errorType: 'config',
-      message: 'Il servizio di riconoscimento vocale non è configurato correttamente sul server.'
-    };
-  }
-  
-  // Errori di autenticazione - non ritentabile
-  if (message.includes('autenticazione') || message.includes('Unauthorized')) {
-    return {
-      isRetryable: false,
-      errorType: 'auth',
-      message: 'Errore di autenticazione. Effettua il login.'
-    };
-  }
-  
-  // Altri errori - ritentabile
-  return {
-    isRetryable: true,
-    errorType: 'unknown',
-    message: 'Errore temporaneo del servizio. Riprovo...'
-  };
-}
 
 /**
  * Interfaccia per il controllo dello streaming audio
@@ -205,13 +117,13 @@ function createCompatibleFormData(audioUri: string, modelType: string) {
  */
 class AudioStreamManager {
   private controllers: Map<string, AudioStreamController> = new Map();
+
   /**
    * Avvia lo streaming audio con playback in tempo reale
    */
   async startAudioStream(
     audioUri: string, 
     modelType: "base" | "advanced",
-    previousMessages: Array<any> = [],
     onChunkReceived?: (chunk: string) => void,
     onAudioReceived?: (audioData: ArrayBuffer) => void
   ): Promise<string> {
@@ -229,38 +141,87 @@ class AudioStreamManager {
     this.controllers.set(streamId, controller);
 
     try {
-      console.log('🎵 Avvio processamento audio per:', modelType);
-        // Usa modalità avanzata per advanced model
+      console.log('🎵 Avvio streaming audio avanzato per:', modelType);
+      
+      // Usa modalità streaming solo per advanced model
       if (modelType === "advanced") {
-        return await this.handleAdvancedStreaming(audioUri, controller, onChunkReceived, onAudioReceived, previousMessages);
+        return await this.handleAdvancedStreaming(audioUri, controller, onChunkReceived, onAudioReceived);
       } else {
         // Fallback su metodo classico per base model
         return await this.handleBaseUpload(audioUri, modelType);
       }
     } catch (error) {
-      console.error('❌ Errore durante il processamento audio:', error);
+      console.error('❌ Errore durante lo streaming audio:', error);
       controller.abort();
       throw error;
     }
   }
+
   /**
-   * Gestisce la modalità avanzata usando l'endpoint /chat_bot_voice_advanced
+   * Gestisce lo streaming avanzato per il modello advanced
    */
   private async handleAdvancedStreaming(
     audioUri: string,
     controller: AudioStreamController,
     onChunkReceived?: (chunk: string) => void,
-    onAudioReceived?: (audioData: ArrayBuffer) => void,
-    previousMessages: Array<any> = []
+    onAudioReceived?: (audioData: ArrayBuffer) => void
   ): Promise<string> {
     try {
-      console.log('🚀 Usando endpoint avanzato del server');
+      // Verifica se il server supporta lo streaming
+      const supportsStreaming = await this.checkStreamingSupport();
       
-      // Usa l'endpoint avanzato del server
-      return await this.sendAdvancedVoiceMessage(audioUri, "advanced", previousMessages, onChunkReceived);
+      if (!supportsStreaming) {
+        console.log('⚠️ Server non supporta streaming, fallback su upload classico');
+        return await this.handleBaseUpload(audioUri, "advanced");
+      }
+
+      // Avvia lo streaming upload
+      const responseStream = await this.sendAudioStreamToServer(audioUri, "advanced");
+      const reader = responseStream.getReader();
+      
+      let fullResponse = '';
+      let audioChunks: ArrayBuffer[] = [];
+      
+      while (controller.isStreaming) {
+        const { done, value } = await reader.read();
+        
+        if (done) break;
+        
+        // Decodifica il chunk ricevuto
+        const textDecoder = new TextDecoder();
+        const chunk = textDecoder.decode(value);
+        
+        // Verifica se è un chunk di testo o audio
+        if (chunk.startsWith('data:audio/')) {
+          // È un chunk audio - convertilo e riproducilo
+          const audioData = this.decodeAudioChunk(chunk);
+          if (audioData) {
+            audioChunks.push(audioData);
+            onAudioReceived?.(audioData);
+            
+            // Riproduci il chunk audio se abbiamo abbastanza buffer
+            if (audioChunks.length >= 3) {
+              await this.playAudioChunk(controller, audioChunks.shift()!);
+            }
+          }
+        } else {
+          // È un chunk di testo
+          fullResponse += chunk;
+          onChunkReceived?.(chunk);
+        }
+      }
+      
+      // Riproduci eventuali chunk audio rimanenti
+      for (const audioChunk of audioChunks) {
+        if (controller.isStreaming) {
+          await this.playAudioChunk(controller, audioChunk);
+        }
+      }
+      
+      return fullResponse || 'Streaming completato con successo';
       
     } catch (error) {
-      console.error('❌ Errore nella modalità avanzata:', error);
+      console.error('❌ Errore nel streaming avanzato:', error);
       // Fallback automatico su upload classico
       return await this.handleBaseUpload(audioUri, "advanced");
     }
@@ -280,93 +241,176 @@ class AudioStreamManager {
       headers: {
         Authorization: `Bearer ${token}`,
       },
-      timeout: STREAM_TIMEOUT,    });
+      timeout: STREAM_TIMEOUT,
+    });
     
-    // Gestisci la risposta usando la utility
-    const { botResponse, userMessage, confidence, language, audioFormat } = extractVoiceResponseFields(response.data);
+    // Gestisci la risposta come nel metodo originale
+    if (response.data?.recognized_text) {
+      return response.data.recognized_text;
+    }
     
-    return botResponse;
+    return response.data?.message || response.data?.response || 'Messaggio processato';
   }
+
   /**
-   * Invia audio all'endpoint avanzato del server
+   * Invia audio al server usando streaming upload
    */
-  private async sendAdvancedVoiceMessage(
-    audioUri: string, 
-    modelType: string, 
-    previousMessages: Array<any> = [],
-    onChunkReceived?: (chunk: string) => void
-  ): Promise<string> {
+  private async sendAudioStreamToServer(audioUri: string, modelType: string): Promise<ReadableStream> {
     const token = await getValidToken();
     if (!token) {
       throw new Error('Token di autenticazione non disponibile');
     }
 
-    console.log('🚀 Invio all\'endpoint avanzato del server:', audioUri);
+    console.log('🚀 Avvio streaming upload audio:', audioUri);
 
-    // Prepara FormData per l'endpoint avanzato
-    const { formData, mimeType, extension } = createCompatibleFormData(audioUri, modelType);
-    
-    // Aggiungi parametri aggiuntivi per l'endpoint avanzato
-    formData.append('language', 'it-IT');
-    
-    // Converti previous_messages nel formato server
-    const serverMessages = previousMessages.map(msg => ({
-      role: msg.sender || msg.role || 'user',
-      content: msg.text || msg.content || ''
-    }));
-    formData.append('previous_messages', JSON.stringify(serverMessages));
+    if (Platform.OS === 'web') {
+      // Su web, usa l'API fetch con streaming
+      const formData = new FormData();
+      
+      // Leggi il file come blob per lo streaming
+      const response = await fetch(audioUri);
+      const audioBlob = await response.blob();
+      
+      formData.append('audio_file', audioBlob, 'voice_message.m4a');
+      formData.append('model', modelType);
+      formData.append('stream', 'true');
 
-    const response = await retryWithBackoff(async () => {
-      const res = await axios.post("/chat_bot_voice_advanced", formData, {
+      const streamResponse = await fetch('/chat_bot_voice_stream', {
+        method: 'POST',
         headers: {
-          Authorization: `Bearer ${token}`,
-          // Content-Type gestito automaticamente da axios per FormData
+          'Authorization': `Bearer ${token}`,
         },
-        timeout: STREAM_TIMEOUT,
+        body: formData,
       });
 
-      // Analizza la risposta per errori che richiedono retry
-      if (res.data && res.data.message) {
-        const errorAnalysis = analyzeServerError(res.data);
-        
-        // Se è un errore di rate limiting, lancia eccezione per trigger retry
-        if (errorAnalysis.errorType === 'rate_limit') {
-          console.warn('⚠️ Rate limit rilevato, trigger retry:', res.data.message);
-          throw new Error('RATE_LIMIT: ' + errorAnalysis.message);
-        }
-        
-        // Per errori non ritentabili, procedi normalmente
-        if (!errorAnalysis.isRetryable) {
-          console.warn('⚠️ Errore non ritentabile:', errorAnalysis.message);
-        }
+      if (!streamResponse.body) {
+        throw new Error('Risposta del server non contiene uno stream');
       }
 
-      return res;
-    }, RETRY_ATTEMPTS, RETRY_DELAY_BASE);
-
-    console.log('✅ Risposta endpoint avanzato ricevuta:', response.data);    // Gestisci la risposta dal server usando la utility
-    if (response.data && typeof response.data === "object") {
-      const { botResponse, userMessage, confidence, language, audioFormat } = extractVoiceResponseFields(response.data);
+      return streamResponse.body;
+    } else {
+      // Su mobile, simula streaming con chunked upload usando RNBlobUtil
+      const { mimeType, extension } = getAudioMetadata(audioUri);
       
-      // Simula streaming chiamando onChunkReceived se disponibile
-      if (onChunkReceived && botResponse) {
-        // Simula chunk progressivi per migliorare UX
-        const chunkSize = Math.max(20, Math.floor(botResponse.length / 5));
-        
-        for (let i = 0; i < botResponse.length; i += chunkSize) {
-          const chunk = botResponse.slice(i, i + chunkSize);
-          onChunkReceived(chunk);
-          // Piccolo delay per simulare streaming
-          await new Promise(resolve => setTimeout(resolve, 50));
-        }
-      }
+      return new ReadableStream({
+        async start(controller) {
+          try {
+            const response = await RNBlobUtil.fetch('POST', '/chat_bot_voice_stream', {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'multipart/form-data',
+            }, [
+              {
+                name: 'audio_file',
+                filename: `voice_message${extension}`,
+                type: mimeType,
+                data: RNBlobUtil.wrap(audioUri),
+              },
+              {
+                name: 'model',
+                data: modelType,
+              },
+              {
+                name: 'stream',
+                data: 'true',
+              },
+            ]);
 
-      return botResponse;
-    }return response.data || 'Errore nella risposta del server';
+            // Simula chunks di risposta
+            const responseText = await response.text();
+            const chunks = responseText.match(/.{1,100}/g) || [responseText];
+            
+            for (const chunk of chunks) {
+              controller.enqueue(new TextEncoder().encode(chunk));
+              await new Promise(resolve => setTimeout(resolve, 10)); // Simula delay streaming
+            }
+            
+            controller.close();
+          } catch (error) {
+            controller.error(error);
+          }
+        }
+      });
+    }
   }
 
   /**
-   * Converte ArrayBuffer in base64 (utility conservata per future implementazioni)
+   * Controlla se il server supporta lo streaming
+   */
+  private async checkStreamingSupport(): Promise<boolean> {
+    try {
+      const token = await getValidToken();
+      const response = await axios.get('/capabilities', {
+        headers: { Authorization: `Bearer ${token}` },
+        timeout: 5000,
+      });
+      
+      return response.data?.supports_audio_streaming === true;
+    } catch (error) {
+      console.log('⚠️ Impossibile verificare capacità streaming del server, assumo non supportato');
+      return false;
+    }
+  }
+
+  /**
+   * Decodifica un chunk audio da base64
+   */
+  private decodeAudioChunk(chunk: string): ArrayBuffer | null {
+    try {
+      // Estrai i dati base64 dal chunk
+      const base64Match = chunk.match(/data:audio\/[^;]+;base64,(.+)/);
+      if (!base64Match) return null;
+      
+      const base64Data = base64Match[1];
+      const binaryString = atob(base64Data);
+      const arrayBuffer = new ArrayBuffer(binaryString.length);
+      const uint8Array = new Uint8Array(arrayBuffer);
+      
+      for (let i = 0; i < binaryString.length; i++) {
+        uint8Array[i] = binaryString.charCodeAt(i);
+      }
+      
+      return arrayBuffer;
+    } catch (error) {
+      console.error('❌ Errore nella decodifica del chunk audio:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Riproduce un chunk audio usando expo-av
+   */
+  private async playAudioChunk(controller: AudioStreamController, audioData: ArrayBuffer): Promise<void> {
+    try {
+      // Converti ArrayBuffer in URI temporaneo
+      const base64Data = this.arrayBufferToBase64(audioData);
+      const audioUri = `data:audio/mp3;base64,${base64Data}`;
+      
+      // Crea e riproduci il suono
+      const { sound } = await Audio.Sound.createAsync(
+        { uri: audioUri },
+        { shouldPlay: true, volume: 1.0 }
+      );
+      
+      // Salva il riferimento per controllo
+      if (controller.currentSound) {
+        await controller.currentSound.unloadAsync();
+      }
+      controller.currentSound = sound;
+      
+      // Cleanup automatico quando finisce
+      sound.setOnPlaybackStatusUpdate((status) => {
+        if (status.isLoaded && status.didJustFinish) {
+          sound.unloadAsync();
+        }
+      });
+      
+    } catch (error) {
+      console.error('❌ Errore nella riproduzione del chunk audio:', error);
+    }
+  }
+
+  /**
+   * Converte ArrayBuffer in base64
    */
   private arrayBufferToBase64(buffer: ArrayBuffer): string {
     const uint8Array = new Uint8Array(buffer);
@@ -390,99 +434,34 @@ class AudioStreamManager {
 const audioStreamManager = new AudioStreamManager();
 
 /**
- * 🚀 FUNZIONE OTTIMIZZATA CON DIAGNOSTICA: Invia messaggio vocale con modalità avanzata
- * Utilizza retry intelligente e diagnostica automatica per risolvere problemi
+ * 🚀 NUOVA FUNZIONE OTTIMIZZATA: Invia messaggio vocale con streaming avanzato
+ * Riduce la latenza usando streaming upload e playback in tempo reale
  * @param {string} audioUri - L'URI del file audio registrato
- * @param {string} modelType - Il tipo di modello ('base' usa /chat_bot_voice, 'advanced' usa /chat_bot_voice_advanced)
- * @param {Array} previousMessages - Messaggi precedenti per contestualizzare la risposta
- * @param {Function} onChunkReceived - Callback per chunk di testo ricevuti (simulato per UX)
- * @param {Function} onAudioReceived - Callback per chunk audio ricevuti (riservato per future implementazioni)
+ * @param {string} modelType - Il tipo di modello ('base' usa upload classico, 'advanced' usa streaming)
+ * @param {Function} onChunkReceived - Callback per chunk di testo ricevuti
+ * @param {Function} onAudioReceived - Callback per chunk audio ricevuti
  * @returns {Promise<string>} - La risposta del bot
  */
 export async function sendVoiceMessageToBotOptimized(
   audioUri: string,
   modelType: "base" | "advanced" = "base",
-  previousMessages: Array<any> = [],
   onChunkReceived?: (chunk: string) => void,
   onAudioReceived?: (audioData: ArrayBuffer) => void
 ): Promise<string> {
-  console.log('🚀 MODALITÀ OTTIMIZZATA CON DIAGNOSTICA - Modello:', modelType);
-  console.log('📜 Messaggi precedenti:', previousMessages.length);
+  console.log('🚀 MODALITÀ OTTIMIZZATA - Modello:', modelType);
   
   try {
     return await audioStreamManager.startAudioStream(
       audioUri, 
-      modelType,
-      previousMessages,
+      modelType, 
       onChunkReceived, 
       onAudioReceived
     );
-  } catch (error: any) {
-    console.error('❌ Errore nella modalità ottimizzata:', error);
+  } catch (error) {
+    console.error('❌ Errore nella modalità ottimizzata, fallback su metodo classico:', error);
     
-    // Se l'errore indica problemi del server, esegui diagnostica
-    if (error.message?.includes('sovraccarico') || 
-        error.message?.includes('rate') || 
-        error.message?.includes('configurazione') ||
-        error.response?.status === 429) {
-      
-      console.log('🔍 Eseguo diagnostica automatica...');
-      
-      try {
-        const diagnosis = await diagnoseVoiceBotIssues(audioUri);
-        
-        console.log('📋 Risultato diagnostica:', diagnosis);
-        
-        // Se il server è down, non tentare retry
-        if (diagnosis.serverStatus === 'down' && !diagnosis.canRetry) {
-          return `❌ ${diagnosis.diagnosis}. ${diagnosis.recommendations.join('. ')}.`;
-        }
-        
-        // Se il server è degradato ma ritentabile, prova modalità base
-        if (diagnosis.serverStatus === 'degraded' && modelType === 'advanced') {
-          console.log('🔄 Server degradato, fallback automatico su modalità base...');
-          
-          try {
-            return await audioStreamManager.startAudioStream(
-              audioUri,
-              "base", // Forza modalità base
-              [], // Nessun messaggio precedente per modalità base
-              onChunkReceived,
-              onAudioReceived
-            );
-          } catch (baseError) {
-            console.error('❌ Anche modalità base fallita:', baseError);
-          }
-        }
-        
-        // Se può ritentare, suggerisci azioni
-        if (diagnosis.canRetry) {
-          return `⚠️ ${diagnosis.diagnosis}. Suggerimento: ${diagnosis.recommendations[0] || 'Riprova tra qualche minuto'}.`;
-        }
-        
-      } catch (diagError) {
-        console.error('❌ Errore durante diagnostica:', diagError);
-      }
-    }
-    
-    // Fallback finale sul metodo originale
-    console.log('🔄 Fallback finale su metodo originale...');
-    try {
-      return await sendVoiceMessageToBot(audioUri, modelType);
-    } catch (fallbackError: any) {
-      console.error('❌ Anche il fallback finale è fallito:', fallbackError);
-      
-      // Messaggio finale all'utente
-      if (fallbackError.message?.includes('sovraccarico') || fallbackError.response?.status === 429) {
-        return "⏳ Il servizio è temporaneamente sovraccarico. Riprova tra 2-3 minuti o contatta il supporto se il problema persiste.";
-      }
-      
-      if (fallbackError.message?.includes('configurazione') || fallbackError.message?.includes('Google Cloud')) {
-        return "⚙️ Il servizio di riconoscimento vocale non è configurato correttamente. Contatta l'amministratore del sistema.";
-      }
-      
-      return "❌ Servizio temporaneamente non disponibile. Riprova più tardi o contatta il supporto tecnico.";
-    }
+    // Fallback automatico sul metodo originale
+    return await sendVoiceMessageToBot(audioUri, modelType);
   }
 }
 
@@ -620,14 +599,14 @@ export async function sendVoiceMessageToBot(
           console.error("Errore di configurazione del server:", message);
           return "Il servizio di riconoscimento vocale non è attualmente configurato sul server. Contatta l'amministratore.";
         }
-          // Se c'è recognized_text o user_message, logga il messaggio trascritto dell'utente
+        
+        // Se c'è recognized_text o user_message, quello è il messaggio trascritto dell'utente
         const recognizedText = response.data.recognized_text || response.data.user_message;
         if (recognizedText) {
-          console.log("📝 Messaggio utente trascritto:", recognizedText);
-          console.log("🤖 Risposta bot:", message);
-          console.log("📊 Confidence:", response.data.confidence);
-          // Restituisci la risposta del bot, non il testo riconosciuto dell'utente
-          return message;
+          console.log("Messaggio utente trascritto:", recognizedText);
+          console.log("Risposta bot:", message);
+          console.log("Confidence:", response.data.confidence);
+          return recognizedText; // Restituisce il messaggio trascritto dell'utente
         }
         
         if (response.data.mode) {
@@ -643,9 +622,8 @@ export async function sendVoiceMessageToBot(
       // Se non c'è message ma c'è recognized_text o user_message
       const recognizedText = response.data.recognized_text || response.data.user_message;
       if (recognizedText) {
-        console.log("📝 Messaggio utente trascritto (fallback):", recognizedText);
-        // Se non c'è message, restituisci almeno il testo riconosciuto come fallback
-        return "Messaggio ricevuto ma nessuna risposta dal bot disponibile.";
+        console.log("Messaggio utente trascritto:", recognizedText);
+        return recognizedText;
       }
       
       if (response.data.response) {
@@ -887,316 +865,4 @@ export async function sendVoiceMessageToBotComplete(
     console.error("Errore nell'invio del messaggio vocale completo:", error);
     return null;
   }
-}
-
-/**
- * Funzione di diagnostica avanzata per problemi con il bot vocale
- */
-export async function diagnoseVoiceBotIssues(audioUri: string): Promise<{
-  diagnosis: string;
-  recommendations: string[];
-  serverStatus: 'healthy' | 'degraded' | 'down';
-  canRetry: boolean;
-}> {
-  console.log('🔍 === INIZIO DIAGNOSTICA BOT VOCALE ===');
-  
-  const recommendations: string[] = [];
-  let serverStatus: 'healthy' | 'degraded' | 'down' = 'healthy';
-  let canRetry = true;
-  
-  try {
-    // Test 1: Verifica token
-    console.log('1️⃣ Verifica token di autenticazione...');
-    const token = await getValidToken();
-    if (!token) {
-      return {
-        diagnosis: 'Token di autenticazione mancante o scaduto',
-        recommendations: ['Effettua il login', 'Verifica le credenziali'],
-        serverStatus: 'down',
-        canRetry: false
-      };
-    }
-    console.log('✅ Token valido');
-    
-    // Test 2: Test connettività server base
-    console.log('2️⃣ Test connettività server...');
-    try {
-      const testResponse = await axios.get('/health', {
-        headers: { Authorization: `Bearer ${token}` },
-        timeout: 5000
-      });
-      console.log('✅ Server raggiungibile');
-    } catch (error) {
-      console.warn('⚠️ Endpoint /health non disponibile, continuo...');
-    }
-    
-    // Test 3: Test endpoint base /chat_bot_voice
-    console.log('3️⃣ Test endpoint base /chat_bot_voice...');
-    try {
-      const { formData } = createCompatibleFormData(audioUri, 'base');
-      const baseResponse = await axios.post("/chat_bot_voice", formData, {
-        headers: { Authorization: `Bearer ${token}` },
-        timeout: 10000,
-      });
-      
-      console.log('📋 Risposta endpoint base:', baseResponse.data);
-      
-      if (baseResponse.data.message) {
-        const errorAnalysis = analyzeServerError(baseResponse.data);
-        
-        if (errorAnalysis.errorType === 'rate_limit') {
-          serverStatus = 'degraded';
-          recommendations.push('Attendi alcuni minuti prima di riprovare');
-          recommendations.push('Usa modalità base invece di advanced');
-          
-          return {
-            diagnosis: 'Server sovraccarico - Rate limiting attivo',
-            recommendations,
-            serverStatus,
-            canRetry: true
-          };
-        }
-        
-        if (errorAnalysis.errorType === 'config') {
-          serverStatus = 'down';
-          canRetry = false;
-          recommendations.push('Contatta l\'amministratore del sistema');
-          recommendations.push('Verifica configurazione Google Cloud sul server');
-          
-          return {
-            diagnosis: 'Configurazione server incompleta - Google Cloud non configurato',
-            recommendations,
-            serverStatus,
-            canRetry: false
-          };
-        }
-      }
-      
-    } catch (error: any) {
-      console.error('❌ Test endpoint base fallito:', error);
-      
-      if (error.response?.status === 429) {
-        serverStatus = 'degraded';
-        recommendations.push('Rate limiting attivo - attendi e riprova');
-        return {
-          diagnosis: 'Rate limiting del server',
-          recommendations,
-          serverStatus,
-          canRetry: true
-        };
-      }
-      
-      if (error.response?.status >= 500) {
-        serverStatus = 'down';
-        recommendations.push('Errore interno del server - riprova più tardi');
-        return {
-          diagnosis: 'Errore interno del server',
-          recommendations,
-          serverStatus,
-          canRetry: true
-        };
-      }
-    }
-    
-    // Test 4: Test endpoint avanzato /chat_bot_voice_advanced
-    console.log('4️⃣ Test endpoint avanzato /chat_bot_voice_advanced...');
-    try {
-      const { formData } = createCompatibleFormData(audioUri, 'advanced');
-      formData.append('language', 'it-IT');
-      formData.append('previous_messages', '[]');
-      
-      const advancedResponse = await axios.post("/chat_bot_voice_advanced", formData, {
-        headers: { Authorization: `Bearer ${token}` },
-        timeout: 10000,
-      });
-      
-      console.log('📋 Risposta endpoint avanzato:', advancedResponse.data);
-      
-      if (advancedResponse.data.recognized_text) {
-        return {
-          diagnosis: 'Tutti i sistemi funzionano correttamente',
-          recommendations: ['Il servizio è operativo', 'Puoi usare entrambe le modalità'],
-          serverStatus: 'healthy',
-          canRetry: true
-        };
-      }
-      
-    } catch (error: any) {
-      console.error('❌ Test endpoint avanzato fallito:', error);
-      serverStatus = 'degraded';
-      recommendations.push('Usa modalità base invece di advanced');
-    }
-    
-    return {
-      diagnosis: 'Endpoint base funziona, advanced ha problemi',
-      recommendations,
-      serverStatus,
-      canRetry: true
-    };
-    
-  } catch (error: any) {
-    console.error('❌ Errore durante diagnostica:', error);
-    
-    return {
-      diagnosis: 'Errore di rete o server non raggiungibile',
-      recommendations: [
-        'Verifica la connessione internet',
-        'Riprova tra qualche minuto',
-        'Contatta il supporto tecnico se il problema persiste'
-      ],
-      serverStatus: 'down',
-      canRetry: true
-    };
-  } finally {
-    console.log('🔍 === FINE DIAGNOSTICA ===');
-  }
-}
-
-/**
- * Funzione helper per l'UI - gestisce automaticamente errori e retry
- */
-export async function sendVoiceMessageWithSmartHandling(
-  audioUri: string,
-  options: {
-    modelType?: "base" | "advanced";
-    previousMessages?: Array<any>;
-    onProgress?: (message: string) => void;
-    onChunkReceived?: (chunk: string) => void;
-    maxRetries?: number;
-  } = {}
-): Promise<{
-  success: boolean;
-  response: string;
-  userMessage?: string;
-  metadata?: {
-    confidence?: number;
-    language?: string;
-    audioFormat?: string;
-    retryCount?: number;
-    diagnosticInfo?: any;
-  };
-}> {
-  const {
-    modelType = "advanced",
-    previousMessages = [],
-    onProgress,
-    onChunkReceived,
-    maxRetries = 2
-  } = options;
-
-  let retryCount = 0;
-  let lastDiagnostic: any = null;
-  const attemptSend = async (attempt: number): Promise<any> => {
-    try {
-      onProgress?.(`🚀 Tentativo ${attempt}/${maxRetries + 1}...`);
-      
-      // Chiamiamo la funzione ottimizzata che ora restituisce la risposta del bot
-      const botResponse = await sendVoiceMessageToBotOptimized(
-        audioUri,
-        modelType,
-        previousMessages,
-        onChunkReceived
-      );
-
-      // Per ottenere anche i metadati, facciamo una chiamata diretta all'endpoint 
-      // (opzionale, solo se serve per UI)
-      let metadata: any = { retryCount: attempt - 1 };
-      
-      return {
-        success: true,
-        response: botResponse, // Questa è la risposta del bot
-        metadata
-      };
-
-    } catch (error: any) {
-      console.error(`❌ Tentativo ${attempt} fallito:`, error);
-      
-      // Se è l'ultimo tentativo, esegui diagnostica
-      if (attempt > maxRetries) {
-        onProgress?.('🔍 Eseguo diagnostica finale...');
-        
-        try {
-          lastDiagnostic = await diagnoseVoiceBotIssues(audioUri);
-          
-          return {
-            success: false,
-            response: `❌ ${lastDiagnostic.diagnosis}`,
-            metadata: {
-              retryCount: attempt - 1,
-              diagnosticInfo: lastDiagnostic
-            }
-          };
-        } catch (diagError) {
-          return {
-            success: false,
-            response: "❌ Servizio non disponibile. Riprova più tardi.",
-            metadata: { retryCount: attempt - 1 }
-          };
-        }
-      }
-
-      // Determina se ritentare
-      if (error.message?.includes('sovraccarico') || 
-          error.response?.status === 429) {
-        
-        const waitTime = Math.pow(2, attempt) * 1000; // Backoff esponenziale
-        onProgress?.(`⏳ Attendo ${waitTime/1000}s prima del prossimo tentativo...`);
-        
-        await new Promise(resolve => setTimeout(resolve, waitTime));
-        return attemptSend(attempt + 1);
-      }
-
-      // Per altri errori, non ritentare
-      throw error;
-    }
-  };
-
-  try {
-    return await attemptSend(1);
-  } catch (error: any) {
-    console.error('❌ Errore definitivo:', error);
-    
-    return {
-      success: false,
-      response: error.message || "Errore sconosciuto",
-      metadata: { retryCount }
-    };
-  }
-}
-
-/**
- * Utility per estrarre correttamente i campi dalla risposta del server
- */
-export function extractVoiceResponseFields(responseData: any): {
-  botResponse: string;
-  userMessage?: string;
-  confidence?: number;
-  language?: string;
-  audioFormat?: string;
-} {
-  if (!responseData || typeof responseData !== "object") {
-    return { botResponse: "Errore nella risposta del server" };
-  }
-
-  // Il campo 'message' contiene la risposta del bot
-  const botResponse = responseData.message || responseData.response || "Nessuna risposta dal bot";
-  
-  // Il campo 'recognized_text' o 'user_message' contiene quello che l'utente ha detto
-  const userMessage = responseData.recognized_text || responseData.user_message;
-  
-  // Metadati aggiuntivi
-  const confidence = responseData.confidence;
-  const language = responseData.language_detected;
-  const audioFormat = responseData.audio_format;
-
-  console.log('📋 Campi estratti dalla risposta:');
-  console.log('🤖 Bot Response:', botResponse);
-  console.log('👤 User Message:', userMessage);
-  console.log('📊 Confidence:', confidence);
-  console.log('🗣️ Language:', language);
-  console.log('🎵 Audio Format:', audioFormat);
-
-  return {
-    botResponse,
-    userMessage,  };
 }
