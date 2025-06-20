@@ -118,11 +118,11 @@ const TaskTableBubble: React.FC<TaskTableBubbleProps> = ({ message, style }) => 
             }
           </Text>
         </View>
-      ) : (
-        <ScrollView 
+      ) : (        <ScrollView 
           horizontal 
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.scrollContainer}
+          style={styles.scrollViewStyle}
         >
           <View style={styles.tableContainer}>
             {/* Intestazione Tabella */}
@@ -174,13 +174,16 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     color: '#1a1a1a',
     fontFamily: 'System',
+  },  scrollContainer: {
   },
-  scrollContainer: {
-    flexGrow: 1,
+  scrollViewStyle: {
+    flexGrow: 0,
+    flexShrink: 1,
   },
   tableContainer: {
     minWidth: 500,
     maxWidth: 700,
+    alignSelf: 'flex-start',
   },  tableRow: {
     flexDirection: 'row',
     borderBottomWidth: 1,
@@ -226,8 +229,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderBottomWidth: 1,
     borderBottomColor: '#e8e8e8',
-  },
-  emptyMessage: {
+  },  emptyMessage: {
     fontSize: 15,
     color: '#4a4a4a',
     textAlign: 'center',
