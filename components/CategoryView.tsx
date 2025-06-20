@@ -61,15 +61,6 @@ const CategoryView: React.FC<CategoryViewProps> = ({
     <ScrollView style={styles.container}>
       {/* Header container ora più minimal */}
       <View style={styles.headerContainer}>
-        <TouchableOpacity
-          style={styles.reloadButton}
-          onPress={reloadCategories}
-        >
-          <Image
-            source={require("../assets/refresh.png")}
-            style={{ width: 20, height: 20 }}
-          />
-        </TouchableOpacity>
       </View>
       {categories && categories.length > 0
         ? categories.map((category, index) => (

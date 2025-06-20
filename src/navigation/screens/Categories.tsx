@@ -2,7 +2,6 @@ import React, { useRef } from "react";
 import { 
   View, 
   StyleSheet, 
-  ScrollView, 
   Text, 
   SafeAreaView,
   StatusBar
@@ -42,15 +41,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
-  },
-  header: {
+  },  header: {
     paddingTop: 20,
     paddingHorizontal: 15,
-    paddingBottom: 20,
+    paddingBottom: 0,
     flexDirection: "row",
     alignItems: "flex-start",
-  },
-  mainTitle: {
+  },  mainTitle: {
     paddingTop: 10,
     fontSize: 30,
     fontWeight: "200", // Stesso peso di Home20
@@ -58,7 +55,7 @@ const styles = StyleSheet.create({
     textAlign: "left",
     fontFamily: "System",
     letterSpacing: -1.5,
-    marginBottom: 10,
+    marginBottom: 0,
   },
   content: {
     flex: 1,

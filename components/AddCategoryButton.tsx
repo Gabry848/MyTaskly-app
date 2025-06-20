@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   formContent: {
-    padding: 24, // Più padding per respiro
+    padding: 34, // Incrementato da 24 a 34 (+10px)
   },
   label: {
     fontSize: 16, // Leggermente più grande
@@ -247,6 +247,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 20,
+    marginBottom: 20, // Aggiunto marginBottom
     gap: 12, // Aggiunge spazio uniforme tra i bottoni
   },
   submitButton: {
