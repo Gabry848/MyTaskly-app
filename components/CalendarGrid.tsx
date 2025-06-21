@@ -61,12 +61,11 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
       'Bassa': 1,
       'default': 0
     };
-    
-    // Colori delle priorità (più intensi per priorità più alte)
+      // Colori delle priorità (più sobri e coerenti con il tema)
     const priorityColors: Record<string, string> = {
-      'Alta': 'rgba(255, 107, 107, 0.3)',    // Rosso leggero
-      'Media': 'rgba(254, 202, 87, 0.3)',    // Giallo leggero
-      'Bassa': 'rgba(29, 209, 161, 0.3)',    // Verde leggero
+      'Alta': 'rgba(0, 0, 0, 0.08)',        // Nero molto leggero
+      'Media': 'rgba(0, 0, 0, 0.05)',       // Nero ancora più leggero
+      'Bassa': 'rgba(102, 102, 102, 0.05)', // Grigio molto leggero
       'default': 'transparent'
     };
     
@@ -121,19 +120,18 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
   };
 
   return (
-    <>
-      {/* Intestazione del calendario con navigazione */}
+    <>      {/* Intestazione del calendario con navigazione */}
       <View style={styles.calendarHeader}>
-        <TouchableOpacity onPress={onPreviousMonth}>
-          <Ionicons name="chevron-back" size={24} color="#007bff" />
+        <TouchableOpacity onPress={onPreviousMonth} style={{ padding: 8 }}>
+          <Ionicons name="chevron-back" size={24} color="#000000" />
         </TouchableOpacity>
         
         <Text style={styles.calendarMonthTitle}>
           {dayjs(selectedDate).format('MMMM YYYY')}
         </Text>
         
-        <TouchableOpacity onPress={onNextMonth}>
-          <Ionicons name="chevron-forward" size={24} color="#007bff" />
+        <TouchableOpacity onPress={onNextMonth} style={{ padding: 8 }}>
+          <Ionicons name="chevron-forward" size={24} color="#000000" />
         </TouchableOpacity>
       </View>
       
@@ -170,30 +168,38 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 10,
+    marginBottom: 25,
+    paddingHorizontal: 5,
   },
   calendarMonthTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
+    fontSize: 22,
+    fontWeight: "300",
+    color: "#000000",
+    fontFamily: "System",
+    letterSpacing: -0.8,
   },
   weekdaysRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 5,
+    marginBottom: 15,
+    paddingHorizontal: 5,
   },
   weekdayText: {
     flex: 1,
     textAlign: "center",
-    fontWeight: "bold",
-    color: "#007bff",
+    fontWeight: "500",
+    color: "#666666",
+    fontSize: 14,
+    fontFamily: "System",
   },
   calendarGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     width: "100%",
+    paddingHorizontal: 5,
     // Rimuovo l'altezza fissa che causava problemi su dispositivi diversi
     // Uso aspectRatio per mantenere la griglia proporzionata
-    aspectRatio: 2.3, // Un po' più larga che alta per adattarsi ai giorni
+    aspectRatio: 2.1, // Un po' più larga che alta per adattarsi ai giorni
   },
 });
 

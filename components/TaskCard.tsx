@@ -9,13 +9,12 @@ interface TaskCardProps {
   onPress?: (task: Task) => void;
 }
 
-const TaskCard: React.FC<TaskCardProps> = ({ task, onPress }) => {
-  // Determina il colore in base alla priorità
+const TaskCard: React.FC<TaskCardProps> = ({ task, onPress }) => {  // Determina il colore in base alla priorità (più sobrio e coerente)
   const priorityColors: Record<string, string> = {
-    'Alta': '#ff6b6b',
-    'Media': '#feca57',
-    'Bassa': '#1dd1a1',
-    'default': '#54a0ff'
+    'Alta': '#000000',
+    'Media': '#666666',
+    'Bassa': '#999999',
+    'default': '#cccccc'
   };
   
   const cardColor = task.priority ? 
@@ -47,10 +46,9 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onPress }) => {
             </View>
           ) : null}
           
-          <View style={styles.taskStatus}>
-            <Text style={[
+          <View style={styles.taskStatus}>            <Text style={[
               styles.taskStatusText, 
-              { color: task.status === 'Completato' ? '#1dd1a1' : '#ff6b6b' }
+              { color: task.status === 'Completato' ? '#000000' : '#666666' }
             ]}>
               {task.status}
             </Text>
@@ -73,53 +71,66 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onPress }) => {
 
 const styles = StyleSheet.create({
   taskCard: {
-    backgroundColor: "#fff",
-    borderRadius: 10,
-    padding: 10,
-    marginVertical: 5,
+    backgroundColor: "#ffffff",
+    borderRadius: 16,
+    padding: 16,
+    marginVertical: 6,
+    marginHorizontal: 2,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: "#f0f0f0",
   },
   taskCardContent: {
     flexDirection: "column",
   },
   taskTitle: {
     fontSize: 16,
-    fontWeight: "bold",
-    marginBottom: 5,
+    fontWeight: "500",
+    marginBottom: 6,
+    color: "#000000",
+    fontFamily: "System",
+    letterSpacing: -0.3,
   },
   taskDescription: {
     fontSize: 14,
-    color: "#666",
-    marginBottom: 5,
+    color: "#666666",
+    marginBottom: 8,
+    lineHeight: 20,
+    fontFamily: "System",
+    fontWeight: "300",
   },
   taskMetadata: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 5,
+    marginBottom: 8,
   },
   taskCategory: {
-    backgroundColor: "#f1f1f1",
-    borderRadius: 5,
-    paddingHorizontal: 5,
-    paddingVertical: 2,
+    backgroundColor: "#f8f8f8",
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
   taskCategoryText: {
     fontSize: 12,
-    color: "#666",
+    color: "#666666",
+    fontWeight: "400",
+    fontFamily: "System",
   },
   taskStatus: {
-    backgroundColor: "#f1f1f1",
-    borderRadius: 5,
-    paddingHorizontal: 5,
-    paddingVertical: 2,
+    backgroundColor: "#f8f8f8",
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
   taskStatusText: {
     fontSize: 12,
+    fontWeight: "400",
+    fontFamily: "System",
   },
   taskTimeInfo: {
     flexDirection: "row",
@@ -127,8 +138,10 @@ const styles = StyleSheet.create({
   },
   taskTimeText: {
     fontSize: 12,
-    color: "#666",
-    marginLeft: 5,
+    color: "#999999",
+    marginLeft: 6,
+    fontFamily: "System",
+    fontWeight: "300",
   },
 });
 

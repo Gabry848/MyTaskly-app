@@ -124,9 +124,7 @@ const CalendarView: React.FC = () => {
       );
       setShowAddTask(false);
     }
-  };
-
-  return (
+  };  return (
     <View style={styles.calendarContainer}>
       {/* Griglia del calendario */}
       <CalendarGrid
@@ -154,9 +152,8 @@ const CalendarView: React.FC = () => {
               onPress={handleTaskPress}
             />
           ))
-        ) : (
-          <View style={styles.noTasksContainer}>
-            <Ionicons name="calendar-outline" size={50} color="#ccc" />
+        ) : (          <View style={styles.noTasksContainer}>
+            <Ionicons name="calendar-outline" size={48} color="#cccccc" />
             <Text style={styles.noTasksText}>
               Nessun impegno per questa data
             </Text>
@@ -181,60 +178,73 @@ const CalendarView: React.FC = () => {
 const styles = StyleSheet.create({
   calendarContainer: {
     flex: 1,
-    padding: 10,
+    padding: 20,
+    backgroundColor: "#ffffff",
   },
   selectedDateHeader: {
-    marginTop: 10,
+    marginTop: 20,
+    marginBottom: 15,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center'
+    alignItems: 'center',
+    paddingHorizontal: 5,
   },
   selectedDateTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
+    fontSize: 18,
+    fontWeight: "300",
+    color: "#000000",
+    fontFamily: "System",
+    letterSpacing: -0.5,
   },
   taskList: {
     flex: 1,
+    paddingHorizontal: 5,
   },
   noTasksContainer: {
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 20,
+    marginTop: 60,
+    paddingHorizontal: 20,
   },
   noTasksText: {
     fontSize: 16,
-    color: "#ccc",
-    marginTop: 10,
-
+    color: "#999999",
+    marginTop: 15,
+    marginBottom: 25,
+    textAlign: "center",
+    fontFamily: "System",
+    fontWeight: "300",
   },
   addButton: {
-    backgroundColor: "#10e0e0",
+    backgroundColor: "#000000",
     width: 36,
     height: 36,
     borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 2,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   addTaskButton: {
-    backgroundColor: "#10e0e0",
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
+    backgroundColor: "#000000",
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 25,
     marginTop: 10,
-    elevation: 2,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 3,
   },
   addTaskButtonText: {
-    color: "#fff",
-    fontWeight: "bold",
+    color: "#ffffff",
+    fontWeight: "500",
+    fontSize: 15,
+    fontFamily: "System",
   }
 });
 
