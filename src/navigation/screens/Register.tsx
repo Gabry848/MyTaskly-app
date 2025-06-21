@@ -6,6 +6,9 @@ import {
   TouchableOpacity,
   StyleSheet,
   Dimensions,
+  StatusBar,
+  SafeAreaView,
+  Image,
 } from "react-native";
 import { FontAwesome } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
@@ -106,16 +109,19 @@ const RegisterScreen = () => {
         onFinish: () => setNotification((prev) => ({ ...prev, isVisible: false })),
       });
     }
-  }
-
-  return (
-    <View style={styles.container}>
-      <View style={styles.avatar} />
-      <View style={[styles.inputContainer, { width: width * 0.9 }]}>
-        <FontAwesome name="user" size={20} color="white" style={styles.icon} />
+  }  return (
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+      <View style={styles.avatar}>
+        <Image
+          source={require("../../../assets/circle-user.png")}
+          style={styles.avatarImage}
+        />
+      </View><View style={[styles.inputContainer, { width: width * 0.9 }]}>
+        <FontAwesome name="user" size={20} color="#666666" style={styles.icon} />
         <TextInput
           placeholder="Username"
-          placeholderTextColor="white"
+          placeholderTextColor="#999999"
           style={[styles.input, { width: width * 0.75 }]}
           value={username}
           onChangeText={handleUsernameChange}
@@ -125,12 +131,12 @@ const RegisterScreen = () => {
         <FontAwesome
           name="envelope"
           size={20}
-          color="white"
+          color="#666666"
           style={styles.icon}
         />
         <TextInput
           placeholder="Email"
-          placeholderTextColor="white"
+          placeholderTextColor="#999999"
           style={[styles.input, { width: width * 0.75 }]}
           keyboardType="email-address"
           value={email}
@@ -138,10 +144,10 @@ const RegisterScreen = () => {
         />
       </View>
       <View style={[styles.inputContainer, { width: width * 0.9 }]}>
-        <FontAwesome name="lock" size={20} color="white" style={styles.icon} />
+        <FontAwesome name="lock" size={20} color="#666666" style={styles.icon} />
         <TextInput
           placeholder="Password"
-          placeholderTextColor="white"
+          placeholderTextColor="#999999"
           style={[styles.input, { width: width * 0.75 }]}
           secureTextEntry
           value={password}
@@ -149,10 +155,10 @@ const RegisterScreen = () => {
         />
       </View>
       <View style={[styles.inputContainer, { width: width * 0.9 }]}>
-        <FontAwesome name="lock" size={20} color="white" style={styles.icon} />
+        <FontAwesome name="lock" size={20} color="#666666" style={styles.icon} />
         <TextInput
           placeholder="Confirm Password"
-          placeholderTextColor="white"
+          placeholderTextColor="#999999"
           style={[styles.input, { width: width * 0.75 }]}
           secureTextEntry
           value={confirmPassword}
@@ -174,11 +180,10 @@ const RegisterScreen = () => {
       </TouchableOpacity>
       <NotificationSnackbar
         isVisible={notification.isVisible}
-        message={notification.message}
-        isSuccess={notification.isSuccess}
+        message={notification.message}        isSuccess={notification.isSuccess}
         onFinish={notification.onFinish}
       />
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -187,59 +192,104 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#1E88E5",
+    backgroundColor: "#ffffff",
     width: "100%",
   },
   avatar: {
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: "white",
-    marginBottom: 20,
+    backgroundColor: "#f8f9fa",    marginBottom: 30,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.06,    shadowRadius: 8,
+    elevation: 2,
+  },
+  avatarImage: {
+    width: "100%",
+    height: "100%",
   },
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#64B5F6",
-    borderRadius: 25,
-    paddingHorizontal: 15,
-    marginBottom: 15,
+    backgroundColor: "#ffffff",
+    borderRadius: 16,
+    paddingHorizontal: 20,
+    marginBottom: 16,
+    borderWidth: 1.5,
+    borderColor: "#e1e5e9",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 1,
   },
   icon: {
-    marginRight: 10,
+    marginRight: 15,
   },
   input: {
     flex: 1,
-    color: "white",
-    height: 50,
+    color: "#000000",
+    height: 54,
+    fontSize: 16,
+    fontFamily: "System",
+    fontWeight: "400",
   },
   registerButton: {
-    backgroundColor: "#FF8A80",
-    paddingVertical: 15,
-    borderRadius: 25,
+    backgroundColor: "#000000",
+    paddingVertical: 16,
+    borderRadius: 16,
     alignItems: "center",
-    marginBottom: 15,
+    marginBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 3,
   },
   registerText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "bold",
+    color: "#ffffff",
+    fontSize: 17,
+    fontWeight: "500",
+    fontFamily: "System",
   },
   loginText: {
-    color: "white",
-    fontSize: 14,
-    marginBottom: 5,
+    color: "#666666",
+    fontSize: 16,
+    marginBottom: 12,
+    fontFamily: "System",
+    fontWeight: "400",
   },
   loginButton: {
-    borderWidth: 1,
-    borderColor: "white",
-    paddingVertical: 8,
-    paddingHorizontal: 20,
-    borderRadius: 25,
+    borderWidth: 1.5,
+    borderColor: "#e1e5e9",
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 16,
+    backgroundColor: "#ffffff",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
   },
   loginButtonText: {
-    color: "white",
-    fontSize: 14,
+    color: "#000000",
+    fontSize: 15,
+    fontWeight: "500",
+    fontFamily: "System",
   },
 });
 
