@@ -9,14 +9,14 @@ import {
   ScrollView,
   StatusBar,
   Animated,
+  SafeAreaView,
 } from "react-native";
-import { FontAwesome } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
 import * as authService from "../../services/authService";
 import { NotificationSnackbar } from "../../../components/NotificationSnackbar";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { STORAGE_KEYS } from "../../constants/authConstants";
-import { LinearGradient } from "expo-linear-gradient";
 import eventEmitter from "../../utils/eventEmitter";
 
 const { width } = Dimensions.get("window");
@@ -103,7 +103,6 @@ const ProfileScreen = () => {
       });
     }
   };
-
   const handleEditProfile = () => {
     // Implementazione per modifica profilo
     setNotification({
@@ -114,14 +113,16 @@ const ProfileScreen = () => {
     });
   };
 
+  const handleGoBack = () => {
+    navigation.goBack();
+  };
+
   return (
-    <>
-      <LinearGradient
-        colors={['#1A73E8', '#0D47A1']}
-        style={[styles.gradientBackground, { paddingTop: StatusBar.currentHeight }]}
-      >
+    <>      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+        
         <ScrollView contentContainerStyle={styles.scrollContainer}>
-          <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
+          <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
             <View style={styles.headerSection}>
               <View style={styles.avatar}>
                 <Image
@@ -135,14 +136,14 @@ const ProfileScreen = () => {
             <View style={styles.infoSection}>
               <View style={styles.infoItem}>
                 <View style={styles.iconContainer}>
-                  <FontAwesome name="envelope" size={20} color="#1A73E8" />
+                  <Ionicons name="mail-outline" size={20} color="#000000" />
                 </View>
                 <Text style={styles.infoText}>{userData.email}</Text>
               </View>
 
               <View style={styles.infoItem}>
                 <View style={styles.iconContainer}>
-                  <FontAwesome name="calendar" size={20} color="#1A73E8" />
+                  <Ionicons name="calendar-outline" size={20} color="#000000" />
                 </View>
                 <Text style={styles.infoText}>Iscritto dal: {userData.joinDate}</Text>
               </View>
@@ -152,33 +153,25 @@ const ProfileScreen = () => {
               <TouchableOpacity
                 style={styles.actionButton}
                 onPress={handleEditProfile}
-                activeOpacity={0.8}
+                activeOpacity={0.7}
               >
-                <LinearGradient
-                  colors={['#FF9A8B', '#FF6B95']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.gradientButton}
-                >
-                  <FontAwesome name="edit" size={18} color="white" style={styles.buttonIcon} />
+                <View style={styles.buttonContent}>
+                  <Ionicons name="create-outline" size={18} color="#000000" style={styles.buttonIcon} />
                   <Text style={styles.buttonText}>Modifica Profilo</Text>
-                </LinearGradient>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="#666666" />
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={styles.actionButton}
                 onPress={() => navigation.goBack()}
-                activeOpacity={0.8}
+                activeOpacity={0.7}
               >
-                <LinearGradient
-                  colors={['#4DB6AC', '#009688']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.gradientButton}
-                >
-                  <FontAwesome name="tasks" size={18} color="white" style={styles.buttonIcon} />
+                <View style={styles.buttonContent}>
+                  <Ionicons name="checkmark-circle-outline" size={18} color="#000000" style={styles.buttonIcon} />
                   <Text style={styles.buttonText}>Le mie Attività</Text>
-                </LinearGradient>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="#666666" />
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -186,38 +179,30 @@ const ProfileScreen = () => {
                 onPress={() => {
                   // Implementazione impostazioni
                 }}
-                activeOpacity={0.8}
+                activeOpacity={0.7}
               >
-                <LinearGradient
-                  colors={['#7986CB', '#3F51B5']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.gradientButton}
-                >
-                  <FontAwesome name="cog" size={18} color="white" style={styles.buttonIcon} />
+                <View style={styles.buttonContent}>
+                  <Ionicons name="settings-outline" size={18} color="#000000" style={styles.buttonIcon} />
                   <Text style={styles.buttonText}>Impostazioni</Text>
-                </LinearGradient>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="#666666" />
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={styles.actionButton}
+                style={[styles.actionButton, styles.logoutButton]}
                 onPress={handleLogout}
-                activeOpacity={0.8}
+                activeOpacity={0.7}
               >
-                <LinearGradient
-                  colors={['#FF5252', '#D32F2F']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.gradientButton}
-                >
-                  <FontAwesome name="sign-out" size={18} color="white" style={styles.buttonIcon} />
-                  <Text style={styles.buttonText}>Logout</Text>
-                </LinearGradient>
+                <View style={styles.buttonContent}>
+                  <Ionicons name="log-out-outline" size={18} color="#FF3B30" style={styles.buttonIcon} />
+                  <Text style={[styles.buttonText, styles.logoutText]}>Logout</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="#666666" />
               </TouchableOpacity>
             </View>
           </Animated.View>
         </ScrollView>
-      </LinearGradient>
+      </SafeAreaView>
 
       <NotificationSnackbar
         isVisible={notification.isVisible}
@@ -230,68 +215,91 @@ const ProfileScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  gradientBackground: {
+  container: {
     flex: 1,
+    backgroundColor: '#ffffff',
+  },
+  header: {
+    paddingTop: 20,
+    paddingHorizontal: 15,
+    paddingBottom: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e1e5e9',
+  },
+  backButton: {
+    padding: 8,
+    marginRight: 15,
+  },
+  title: {
+    fontSize: 30,
+    fontWeight: '200',
+    color: '#000000',
+    fontFamily: 'System',
+    letterSpacing: -1.5,
   },
   scrollContainer: {
     flexGrow: 1,
   },
-  container: {
+  content: {
     flex: 1,
     alignItems: "center",
     width: "100%",
-    paddingVertical: 30,
+    paddingVertical: 20,
   },
   headerSection: {
     alignItems: "center",
-    marginBottom: 40,
-    marginTop: 30,
+    marginBottom: 30,
+    marginTop: 20,
   },
   avatar: {
-    width: 130,
-    height: 130,
-    borderRadius: 65,
-    backgroundColor: "white",
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: "#ffffff",
     marginBottom: 15,
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 0,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 8,
-  },
-  avatarImage: {
-    width: "100%",
-    height: "100%",
-    borderRadius: 65,
-  },
-  username: {
-    fontSize: 26,
-    fontWeight: "bold",
-    color: "white",
-    textShadowColor: 'rgba(0, 0, 0, 0.2)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
-  },
-  infoSection: {
-    width: width * 0.9,
-    backgroundColor: "white",
-    borderRadius: 15,
-    padding: 20,
-    marginBottom: 25,
+    borderWidth: 2,
+    borderColor: "#e1e5e9",
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 2,
     },
-    shadowOpacity: 0.15,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  avatarImage: {
+    width: "90%",
+    height: "90%",
+    borderRadius: 45,
+  },
+  username: {
+    fontSize: 24,
+    fontWeight: "300",
+    color: "#000000",
+    fontFamily: 'System',
+    letterSpacing: -0.5,
+  },
+  infoSection: {
+    width: width * 0.9,
+    backgroundColor: "#ffffff",
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 25,
+    borderWidth: 1,
+    borderColor: "#e1e5e9",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
   },
   infoItem: {
     flexDirection: "row",
@@ -302,53 +310,65 @@ const styles = StyleSheet.create({
     paddingBottom: 15,
   },
   iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f0f0f0',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#f8f9fa',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 15,
   },
   infoText: {
-    color: "#333",
+    color: "#000000",
     fontSize: 16,
     flex: 1,
+    fontFamily: 'System',
+    fontWeight: '400',
   },
   actionSection: {
     width: "100%",
-    alignItems: "center",
+    paddingHorizontal: 20,
   },
   actionButton: {
-    width: width * 0.9,
-    height: 55,
-    marginBottom: 15,
-    borderRadius: 15,
-    overflow: 'hidden',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: "#ffffff",
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#e1e5e9",
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 1,
     },
-    shadowOpacity: 0.15,
-    shadowRadius: 3.84,
-    elevation: 3,
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
-  gradientButton: {
+  logoutButton: {
+    borderColor: "#FFE5E5",
+    backgroundColor: "#FEFEFE",
+  },
+  buttonContent: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    width: '100%',
-    height: '100%',
-    paddingHorizontal: 15,
+    flex: 1,
   },
   buttonIcon: {
     marginRight: 12,
   },
   buttonText: {
-    color: "white",
+    color: "#000000",
     fontSize: 16,
-    fontWeight: "bold",
+    fontFamily: 'System',
+    fontWeight: '400',
+  },
+  logoutText: {
+    color: "#FF3B30",
   },
 });
 

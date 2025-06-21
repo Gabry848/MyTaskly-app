@@ -17,7 +17,6 @@ import CategoriesScreen from "./screens/Categories";
 import ProfileScreen from "./screens/Profile";
 import NotesScreen from "./screens/Notes";
 import BotChatScreen from "./screens/BotChat";
-import { Updates as UpdatesScreen } from "./screens/Updates";
 import SettingsScreen from "./screens/Settings";
 import StatisticsScreen from "./screens/Statistics";
 import { NotFound as NotFoundScreen } from "./screens/NotFound";
@@ -218,7 +217,6 @@ function AppStack() {
         <Stack.Screen name="Profile" component={ProfileScreen} />
         <Stack.Screen name="Settings" component={SettingsScreen} />
         <Stack.Screen name="Statistics" component={StatisticsScreen} />
-        <Stack.Screen name="Updates" component={UpdatesScreen} />
         <Stack.Screen name="NotFound" component={NotFoundScreen} />
       </Stack.Navigator>
     </>

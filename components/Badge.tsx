@@ -60,20 +60,29 @@ export default function Badge() {
 
 const styles = StyleSheet.create({
   badge: {
-    position: "absolute",
-    top: 45,
-    right: 20,
-    backgroundColor: "#007AFF",
+    backgroundColor: "#000000",
     width: 40,
     height: 40,
     borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
-    zIndex: 100,
+    marginTop: 10,
+    borderWidth: 1.5,
+    borderColor: "#e1e5e9",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
   },
   text: {
     color: "white",
-    fontWeight: "bold",
+    fontWeight: "300",
     fontSize: 16,
+    fontFamily: "System",
+    letterSpacing: -0.3,
   },
 });

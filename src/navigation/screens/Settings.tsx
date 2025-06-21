@@ -1,8 +1,9 @@
 import { Text } from '@react-navigation/elements';
 import React from 'react';
-import { StyleSheet, View, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, SafeAreaView, StatusBar } from 'react-native';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../types';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function Settings() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
@@ -11,41 +12,88 @@ export default function Settings() {
     navigation.navigate('Home20');
   };
 
+  const handleGoBack = () => {
+    navigation.goBack();
+  };
+
   return (
-    <View style={styles.container}>
-      <Text>Settings Screen</Text>
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
       
-      <TouchableOpacity 
-        style={styles.button} 
-        onPress={handleNavigateToHome20}
-      >
-        <Text style={styles.buttonText}>Vai a Home 2.0</Text>
-      </TouchableOpacity>
-    </View>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
+          <Ionicons name="arrow-back" size={24} color="#000000" />
+        </TouchableOpacity>
+        <Text style={styles.title}>Impostazioni</Text>
+      </View>
+
+      {/* Content */}
+      <View style={styles.content}>
+        <TouchableOpacity 
+          style={styles.menuItem} 
+          onPress={handleNavigateToHome20}
+        >
+          <View style={styles.menuItemContent}>
+            <Ionicons name="home-outline" size={24} color="#000000" />
+            <Text style={styles.menuItemText}>Vai a Home 2.0</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#666666" />
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 10,
+    backgroundColor: '#ffffff',
   },
-  row: {
+  header: {
+    paddingTop: 20,
+    paddingHorizontal: 15,
+    paddingBottom: 20,
     flexDirection: 'row',
-    gap: 10,
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e1e5e9',
   },
-  button: {
-    backgroundColor: '#007AFF',
+  backButton: {
+    padding: 8,
+    marginRight: 15,
+  },
+  title: {
+    fontSize: 30,
+    fontWeight: '200',
+    color: '#000000',
+    fontFamily: 'System',
+    letterSpacing: -1.5,
+  },
+  content: {
+    flex: 1,
+    paddingTop: 20,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginTop: 20,
+    paddingVertical: 16,
+    backgroundColor: '#ffffff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
   },
-  buttonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
+  menuItemContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  menuItemText: {
+    fontSize: 17,
+    color: '#000000',
+    fontFamily: 'System',
+    fontWeight: '400',
+    marginLeft: 15,
   },
 });

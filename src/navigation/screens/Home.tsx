@@ -18,6 +18,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ChatList, Message } from "../../../components/BotChat";
 import { sendMessageToBot } from "../../services/botservice";
 import { STORAGE_KEYS } from "../../constants/authConstants";
+import Badge from "../../../components/Badge";
 
 const { width, height } = Dimensions.get("window");
 
@@ -182,6 +183,7 @@ const Home20 = () => {
       {/* Header con titolo principale */}
       <View style={styles.header}>
         <Text style={styles.mainTitle}>Mytaskly</Text>
+        <Badge />
       </View>
 
       <View style={styles.mainContent}>
@@ -357,13 +359,14 @@ const styles = StyleSheet.create({
   },
   mainContent: {
     flex: 1,
-  },
-  header: {
+  },  header: {
     paddingTop: 20,
     paddingHorizontal: 15,
     paddingBottom: 40,
     flexDirection: "row",
     alignItems: "flex-start",
+    justifyContent: "space-between",
+    position: "relative",
   },
   backButton: {
     marginTop: 12,
