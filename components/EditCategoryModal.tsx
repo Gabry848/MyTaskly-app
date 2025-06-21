@@ -56,13 +56,12 @@ const EditCategoryModal: React.FC<EditCategoryModalProps> = ({
               textAlignVertical="top"
             />
           </View>
-          
-          <View style={styles.buttonContainer}>
+            <View style={styles.buttonContainer}>
             <TouchableOpacity 
               style={[styles.button, styles.cancelButton]} 
               onPress={onClose}
             >
-              <Text style={styles.buttonText}>Annulla</Text>
+              <Text style={[styles.buttonText, { color: '#000000' }]}>Annulla</Text>
             </TouchableOpacity>
             
             <TouchableOpacity 
@@ -70,7 +69,7 @@ const EditCategoryModal: React.FC<EditCategoryModalProps> = ({
               onPress={onSave}
               disabled={isEditing}
             >
-              <Text style={styles.buttonText}>
+              <Text style={[styles.buttonText, { color: '#ffffff' }]}>
                 {isEditing ? "Salvataggio..." : "Salva"}
               </Text>
             </TouchableOpacity>
@@ -84,72 +83,91 @@ const EditCategoryModal: React.FC<EditCategoryModalProps> = ({
 const styles = StyleSheet.create({
   editModalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)', // Leggermente più scuro per coerenza con Home20
     justifyContent: 'center',
     alignItems: 'center',
   },
   editModalContainer: {
-    width: '90%',
-    backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 20,
+    width: '85%', // Leggermente più largo come AddCategoryButton
+    backgroundColor: '#ffffff', // Bianco puro come Home20
+    borderRadius: 16, // Mantenuto arrotondato come Home20
+    padding: 34, // Più padding come AddCategoryButton per coerenza
+    borderWidth: 1.5, // Aggiunto bordo come Home20
+    borderColor: '#e1e5e9', // Stesso colore del bordo dell'input di Home20
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: 4, // Coerente con Home20
     },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowOpacity: 0.08, // Stesso valore di Home20
+    shadowRadius: 12, // Stesso valore di Home20
+    elevation: 3, // Stesso valore di Home20
   },
   editModalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 20,
+    fontSize: 24, // Leggermente più grande per gerarchia visiva
+    fontWeight: '300', // Più leggero per coerenza con Home20
+    color: '#000000', // Nero come Home20
+    marginBottom: 24, // Più spazio
     textAlign: 'center',
+    fontFamily: "System", // Stessa famiglia di Home20
+    letterSpacing: -0.5, // Leggero spacing negativo per eleganza
   },
   formGroup: {
-    marginBottom: 16,
+    marginBottom: 20, // Più spazio tra i gruppi
   },
   label: {
-    fontSize: 16,
-    color: '#555',
+    fontSize: 16, // Leggermente più grande
+    color: '#000000', // Nero per coerenza con Home20
     marginBottom: 8,
+    fontFamily: "System", // Stessa famiglia di Home20
+    fontWeight: "400", // Stesso peso di Home20
   },
   input: {
-    backgroundColor: '#f5f5f5',
-    padding: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    fontSize: 16,
+    backgroundColor: '#ffffff', // Bianco puro come Home20
+    padding: 16, // Più padding come Home20
+    borderRadius: 12, // Più arrotondato come Home20
+    borderWidth: 1.5, // Stesso spessore dell'input di Home20
+    borderColor: '#e1e5e9', // Stesso colore del bordo dell'input di Home20
+    fontSize: 17, // Stessa dimensione dell'input di Home20
+    fontFamily: "System", // Stessa famiglia di Home20
+    fontWeight: "400", // Stesso peso di Home20
   },
   textarea: {
     height: 100,
+    textAlignVertical: 'top', // Spostato qui per chiarezza
   },
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 16,
+    marginTop: 20, // Più spazio
+    gap: 12, // Spazio uniforme tra i bottoni
   },
   button: {
     flex: 1,
-    padding: 14,
-    borderRadius: 8,
+    paddingVertical: 16, // Più padding come Home20
+    borderRadius: 12, // Più arrotondato come Home20
     alignItems: 'center',
-    marginHorizontal: 6,
   },
   cancelButton: {
-    backgroundColor: '#DC3545',
+    backgroundColor: '#f0f0f0', // Stesso colore del pulsante send di Home20
+    borderWidth: 1.5,
+    borderColor: '#e1e5e9', // Bordo coerente
   },
   saveButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#000000', // Nero come Home20
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 2,
   },
   buttonText: {
-    color: 'white',
-    fontWeight: 'bold',
     fontSize: 16,
+    fontFamily: "System", // Stessa famiglia di Home20
+    fontWeight: "500", // Leggermente più grassetto
   },
 });
 

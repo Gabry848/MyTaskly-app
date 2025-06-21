@@ -14,8 +14,10 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ChatList, Message } from "../../../components/BotChat";
 import { sendMessageToBot } from "../../services/botservice";
+import { STORAGE_KEYS } from "../../constants/authConstants";
 
 const { width, height } = Dimensions.get("window");
 
@@ -24,11 +26,28 @@ const Home20 = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [chatStarted, setChatStarted] = useState(false);
+  const [userName, setUserName] = useState("Utente");
   const navigation = useNavigation();
-
   // Animazioni
   const messagesSlideIn = useRef(new Animated.Value(50)).current;
   const inputBottomPosition = useRef(new Animated.Value(0)).current;
+
+  // Effetto per recuperare il nome dell'utente
+  useEffect(() => {
+    const fetchUserName = async () => {
+      try {
+        const storedUserName = await AsyncStorage.getItem(STORAGE_KEYS.USER_NAME);
+        if (storedUserName) {
+          setUserName(storedUserName);
+        }
+      } catch (error) {
+        console.error("Errore nel recupero del nome utente:", error);
+        // Mantieni il valore di default "Utente" in caso di errore
+      }
+    };
+
+    fetchUserName();
+  }, []);
 
   // Effetto per gestire la visualizzazione della tastiera
   useEffect(() => {
@@ -168,11 +187,10 @@ const Home20 = () => {
       <View style={styles.mainContent}>
         {/* Contenuto principale */}
         <View style={chatStarted ? styles.contentChatStarted : styles.content}>
-          {/* Saluto personalizzato - nascosto quando la chat inizia */}
-          {!chatStarted && (
+          {/* Saluto personalizzato - nascosto quando la chat inizia */}          {!chatStarted && (
             <View style={styles.greetingSection}>
               <Text style={styles.greetingText}>
-                Ciao Gabry,{"\n"}che vuoi fare oggi?
+                Ciao {userName},{"\n"}che vuoi fare oggi?
               </Text>
 
               {/* Input area - sotto il saluto quando la chat non è iniziata */}

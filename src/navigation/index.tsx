@@ -29,7 +29,7 @@ export type RootStackParamList = {
   Login: undefined;
   Register: undefined;
   HomeTabs: undefined; // Contiene il Tab Navigator
-  TaskList: { categoryId: number | string };
+  TaskList: { category_name: number | string };
   Profile: undefined;
   Settings: undefined;
   Statistics: undefined;
