@@ -100,7 +100,6 @@ const Home20 = () => {
       cursorOpacity.setValue(0);
     }
   }, [isTyping, cursorOpacity]);
-
   // Effetto per gestire la visualizzazione della tastiera
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
@@ -109,7 +108,7 @@ const Home20 = () => {
         if (chatStarted) {
           // Sposta solo l'input sopra la tastiera
           Animated.timing(inputBottomPosition, {
-            toValue: event.endCoordinates.height - 50, // 50px di margine dalla tastiera
+            toValue: event.endCoordinates.height - 35, // 35px   di margine dalla tastiera (5px in più)
             duration: 250,
             useNativeDriver: false,
           }).start();
