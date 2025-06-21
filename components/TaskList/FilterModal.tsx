@@ -52,24 +52,23 @@ export const FilterModal = ({
                   label="Tutte"
                   isSelected={filtroImportanza === "Tutte"}
                   onPress={() => setFiltroImportanza("Tutte")}
-                />
-                <FilterChip
+                />                <FilterChip
                   label="Alta"
                   isSelected={filtroImportanza === "Alta"}
                   onPress={() => setFiltroImportanza("Alta")}
-                  color="#FF5252"
+                  color="#000000"
                 />
                 <FilterChip
                   label="Media"
                   isSelected={filtroImportanza === "Media"}
                   onPress={() => setFiltroImportanza("Media")}
-                  color="#FFC107"
+                  color="#333333"
                 />
                 <FilterChip
                   label="Bassa"
                   isSelected={filtroImportanza === "Bassa"}
                   onPress={() => setFiltroImportanza("Bassa")}
-                  color="#4CAF50"
+                  color="#666666"
                 />
               </View>
             </View>

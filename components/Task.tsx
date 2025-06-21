@@ -12,7 +12,7 @@ import TaskEditModal from "./task/TaskEditModal";
 
 // Importa stili e utility
 import { styles } from "./task/TaskStyles";
-import { width, getPriorityColors } from "./task/TaskUtils";
+import { width, getPriorityColors, getPriorityBorderColor } from "./task/TaskUtils";
 
 // Abilita LayoutAnimation per Android
 if (Platform.OS === 'android') {
@@ -66,10 +66,10 @@ const Task = ({
 
   // Determina se il task è completato
   const isCompleted = task.status === "Completato";
-
-  // Ottieni il colore di priorità per lo sfondo
+  // Ottieni il colore di priorità per lo sfondo e il bordo
   const priorityBackgroundColor = getPriorityColors(task.priority);
-  const backgroundColor = isCompleted ? "#F5F5F5" : priorityBackgroundColor;
+  const priorityBorderColor = getPriorityBorderColor(task.priority);
+  const backgroundColor = isCompleted ? "#f8f8f8" : priorityBackgroundColor;
 
   // Effetti
   useEffect(() => {
@@ -338,11 +338,14 @@ const Task = ({
       ]}
       ref={componentRef}
       onLayout={onComponentLayout}
-    >
-      <Animated.View
+    >      <Animated.View
         style={[
           styles.card,
-          { backgroundColor },
+          { 
+            backgroundColor,
+            borderLeftWidth: 4,
+            borderLeftColor: isCompleted ? "#cccccc" : priorityBorderColor
+          },
           {
             opacity: deleteAnim,
             transform: [

@@ -2,7 +2,7 @@ import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import { MaterialIcons, Ionicons } from "@expo/vector-icons";
 import { styles } from "./TaskStyles";
-import { getDaysRemainingText, getDaysRemainingColor } from "./TaskUtils";
+import { getDaysRemainingText, getDaysRemainingColor, getPriorityTextColor } from "./TaskUtils";
 
 // Componente Checkbox riutilizzabile
 export const Checkbox = ({ checked, onPress }) => (
@@ -43,11 +43,19 @@ export const DaysRemaining = ({ endDate }) => {
 };
 
 // Componente per il titolo del task
-export const TaskTitle = ({ title, completed, numberOfLines }) => (
-  <Text
-    style={[styles.title, completed && styles.completedText]}
-    numberOfLines={numberOfLines}
-  >
-    {title}
-  </Text>
-);
+export const TaskTitle = ({ title, completed, numberOfLines, priority }) => {
+  const textColor = getPriorityTextColor(priority);
+  
+  return (
+    <Text
+      style={[
+        styles.title, 
+        completed && styles.completedText,
+        !completed && { color: textColor }
+      ]}
+      numberOfLines={numberOfLines}
+    >
+      {title}
+    </Text>
+  );
+};

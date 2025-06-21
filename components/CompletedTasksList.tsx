@@ -89,11 +89,10 @@ const CompletedTasksList: React.FC<CompletedTasksListProps> = ({
         >
           <Text style={styles.toggleButtonText}>
             {isExpanded ? "Chiudi" : "Mostra"}
-          </Text>
-          <MaterialIcons 
+          </Text>          <MaterialIcons 
             name={isExpanded ? "keyboard-arrow-up" : "keyboard-arrow-down"} 
             size={20} 
-            color="#007AFF" 
+            color="#000000" 
             style={{marginLeft: 4}}
           />
         </TouchableOpacity>
@@ -132,44 +131,45 @@ const CompletedTasksList: React.FC<CompletedTasksListProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#ffffff",
     borderRadius: 16,
-    padding: 16,
+    padding: 20,
     marginHorizontal: 16,
-    marginBottom: 16,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: "#e1e5e9",
     shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
   },
   headerContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 20,
   },
   titleContainer: {
     flexDirection: "row",
     alignItems: "center",
   },
   title: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#333",
+    fontSize: 20,
+    fontWeight: "400",
+    color: "#000000",
+    fontFamily: "System",
+    letterSpacing: -0.3,
   },
   counterText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#FFFFFF",
-    backgroundColor: "#34C759",
-    borderRadius: 10,
+    fontSize: 13,
+    fontWeight: "500",
+    color: "#ffffff",
+    backgroundColor: "#000000",    borderRadius: 12,
     paddingHorizontal: 8,
-    paddingVertical: 2,
-    marginLeft: 8,
+    paddingVertical: 4,
+    marginLeft: 10,
+    overflow: "hidden",
   },
   viewAllButton: {
     alignSelf: "center",
@@ -177,22 +177,24 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   viewAllText: {
-    color: "#007AFF",
-    fontWeight: "500",
-    fontSize: 14,
+    color: "#000000",
+    fontWeight: "400",
+    fontSize: 15,
+    fontFamily: "System",
   },
   taskCountText: {
     textAlign: "center",
-    color: "#8E8E93",
-    fontSize: 13,
+    color: "#666666",
+    fontSize: 14,
     marginTop: 8,
+    fontFamily: "System",
   },
   taskItem: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#F2F2F2",
+    borderBottomColor: "#e1e5e9",
   },
   checkIconContainer: {
     marginRight: 12,
@@ -201,14 +203,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   taskTitle: {
-    fontSize: 15,
-    fontWeight: "500",
-    color: "#333",
+    fontSize: 16,
+    fontWeight: "400",
+    color: "#000000",
     marginBottom: 2,
+    fontFamily: "System",
   },
   completedTime: {
-    fontSize: 12,
-    color: "#8E8E93",
+    fontSize: 13,
+    color: "#666666",
+    fontFamily: "System",
   },
   emptyContainer: {
     alignItems: "center",
@@ -217,23 +221,24 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     marginTop: 10,
-    color: "#8E8E93",
-    fontSize: 14,
+    color: "#666666",
+    fontSize: 15,
+    fontFamily: "System",
   },
   toggleButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F0F8FF",  // Azzurro chiaro
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 20,
+    backgroundColor: "#f8f8f8",
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 24,
     borderWidth: 1,
-    borderColor: "#DDEDFF",
-  },
+    borderColor: "#e1e5e9",  },
   toggleButtonText: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: "#007AFF",
+    fontSize: 15,
+    fontWeight: "400",
+    color: "#000000",
+    fontFamily: "System",
   },
 });
 

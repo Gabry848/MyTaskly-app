@@ -13,19 +13,26 @@ export const FilterChip = ({
   label, 
   isSelected, 
   onPress, 
-  color = '#10e0e0' 
+  color = '#000000' 
 }: FilterChipProps) => {
   return (
     <TouchableOpacity
       style={[
         styles.filterChip,
-        isSelected && { backgroundColor: color, borderColor: color }
+        isSelected && { 
+          backgroundColor: '#f8f8f8', 
+          borderColor: color,
+          borderWidth: 2 
+        }
       ]}
       onPress={onPress}
     >
       <Text style={[
         styles.filterChipText,
-        isSelected && { color: 'white' }
+        isSelected && { 
+          color: color,
+          fontWeight: '500'
+        }
       ]}>
         {label}
       </Text>

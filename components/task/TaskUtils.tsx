@@ -21,20 +21,46 @@ export const getDaysRemainingColor = (endDate) => {
   const diffTime = dueDate.getTime() - today.getTime();
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-  if (diffDays < 0) return "#ff4444";
-  if (diffDays <= 2) return "#ff8800";
-  return "#007AFF";
+  if (diffDays < 0) return "#000000"; // Nero per scaduti
+  if (diffDays <= 2) return "#333333"; // Grigio molto scuro per urgenti
+  return "#666666"; // Grigio medio per il resto
 };
 
-// Colori di priorità per lo sfondo della card
+// Colore del testo in base alla priorità (più scuro = più importante)
+export const getPriorityTextColor = (priority) => {
+  switch (priority) {
+    case "Alta":
+      return "#000000"; // Nero per alta priorità
+    case "Media":
+      return "#333333"; // Grigio scuro per media priorità
+    case "Bassa":
+    default:
+      return "#666666"; // Grigio medio per bassa priorità
+  }
+};
+
+// Colori di priorità per lo sfondo della card (gradiente di scurezza)
 export const getPriorityColors = (priority) => {
   switch (priority) {
     case "Alta":
-      return "#FFCDD2"; // Sfondo rosso acceso
+      return "#f0f0f0"; // Grigio molto chiaro per alta priorità (più scuro)
     case "Media":
-      return "#FFF8E6"; // Sfondo giallo chiaro
+      return "#f8f8f8"; // Grigio chiarissimo per media priorità
     case "Bassa":
     default:
-      return "#C8E6C9"; // Sfondo verde più chiaro
+      return "#ffffff"; // Bianco per bassa priorità (più chiaro)
+  }
+};
+
+// Ottieni il colore del bordo sinistro in base alla priorità (più scuro = più importante)
+export const getPriorityBorderColor = (priority) => {
+  switch (priority) {
+    case "Alta":
+      return "#000000"; // Nero per alta priorità
+    case "Media":
+      return "#333333"; // Grigio scuro per media priorità
+    case "Bassa":
+    default:
+      return "#666666"; // Grigio medio per bassa priorità
   }
 };

@@ -60,12 +60,11 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
       'Media': 2,
       'Bassa': 1,
       'default': 0
-    };
-      // Colori delle priorità (più sobri e coerenti con il tema)
+    };      // Colori delle priorità (gradiente di scurezza)
     const priorityColors: Record<string, string> = {
-      'Alta': 'rgba(0, 0, 0, 0.08)',        // Nero molto leggero
-      'Media': 'rgba(0, 0, 0, 0.05)',       // Nero ancora più leggero
-      'Bassa': 'rgba(102, 102, 102, 0.05)', // Grigio molto leggero
+      'Alta': 'rgba(0, 0, 0, 0.12)',        // Nero più evidente per alta priorità
+      'Media': 'rgba(51, 51, 51, 0.08)',    // Grigio scuro per media priorità
+      'Bassa': 'rgba(102, 102, 102, 0.05)', // Grigio medio per bassa priorità
       'default': 'transparent'
     };
     

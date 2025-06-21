@@ -45,9 +45,11 @@ const ProfileScreen = () => {
         setUserData({
           username: username || "Username",
           email: email || "email@example.com",
-          joinDate: joinDate ? new Date(parseInt(joinDate)).toLocaleDateString() : "01/01/2023",
+          joinDate: joinDate
+            ? new Date(parseInt(joinDate)).toLocaleDateString()
+            : "01/01/2023",
         });
-        
+
         // Avvia l'animazione di fade-in
         Animated.timing(fadeAnim, {
           toValue: 1,
@@ -99,7 +101,8 @@ const ProfileScreen = () => {
         isVisible: true,
         message: "Errore durante il logout",
         isSuccess: false,
-        onFinish: () => setNotification((prev) => ({ ...prev, isVisible: false })),
+        onFinish: () =>
+          setNotification((prev) => ({ ...prev, isVisible: false })),
       });
     }
   };
@@ -109,7 +112,8 @@ const ProfileScreen = () => {
       isVisible: true,
       message: "Funzionalità in sviluppo",
       isSuccess: true,
-      onFinish: () => setNotification((prev) => ({ ...prev, isVisible: false })),
+      onFinish: () =>
+        setNotification((prev) => ({ ...prev, isVisible: false })),
     });
   };
 
@@ -118,9 +122,11 @@ const ProfileScreen = () => {
   };
 
   return (
-    <>      <SafeAreaView style={styles.container}>
+    <>
+      {" "}
+      <SafeAreaView style={styles.container}>
         <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
-        
+
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
             <View style={styles.headerSection}>
@@ -145,7 +151,9 @@ const ProfileScreen = () => {
                 <View style={styles.iconContainer}>
                   <Ionicons name="calendar-outline" size={20} color="#000000" />
                 </View>
-                <Text style={styles.infoText}>Iscritto dal: {userData.joinDate}</Text>
+                <Text style={styles.infoText}>
+                  Iscritto dal: {userData.joinDate}
+                </Text>
               </View>
             </View>
 
@@ -156,7 +164,12 @@ const ProfileScreen = () => {
                 activeOpacity={0.7}
               >
                 <View style={styles.buttonContent}>
-                  <Ionicons name="create-outline" size={18} color="#000000" style={styles.buttonIcon} />
+                  <Ionicons
+                    name="create-outline"
+                    size={18}
+                    color="#000000"
+                    style={styles.buttonIcon}
+                  />
                   <Text style={styles.buttonText}>Modifica Profilo</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={20} color="#666666" />
@@ -168,7 +181,12 @@ const ProfileScreen = () => {
                 activeOpacity={0.7}
               >
                 <View style={styles.buttonContent}>
-                  <Ionicons name="checkmark-circle-outline" size={18} color="#000000" style={styles.buttonIcon} />
+                  <Ionicons
+                    name="checkmark-circle-outline"
+                    size={18}
+                    color="#000000"
+                    style={styles.buttonIcon}
+                  />
                   <Text style={styles.buttonText}>Le mie Attività</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={20} color="#666666" />
@@ -182,7 +200,12 @@ const ProfileScreen = () => {
                 activeOpacity={0.7}
               >
                 <View style={styles.buttonContent}>
-                  <Ionicons name="settings-outline" size={18} color="#000000" style={styles.buttonIcon} />
+                  <Ionicons
+                    name="settings-outline"
+                    size={18}
+                    color="#000000"
+                    style={styles.buttonIcon}
+                  />
                   <Text style={styles.buttonText}>Impostazioni</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={20} color="#666666" />
@@ -194,8 +217,15 @@ const ProfileScreen = () => {
                 activeOpacity={0.7}
               >
                 <View style={styles.buttonContent}>
-                  <Ionicons name="log-out-outline" size={18} color="#FF3B30" style={styles.buttonIcon} />
-                  <Text style={[styles.buttonText, styles.logoutText]}>Logout</Text>
+                  <Ionicons
+                    name="log-out-outline"
+                    size={18}
+                    color="#FF3B30"
+                    style={styles.buttonIcon}
+                  />
+                  <Text style={[styles.buttonText, styles.logoutText]}>
+                    Logout
+                  </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={20} color="#666666" />
               </TouchableOpacity>
@@ -203,7 +233,6 @@ const ProfileScreen = () => {
           </Animated.View>
         </ScrollView>
       </SafeAreaView>
-
       <NotificationSnackbar
         isVisible={notification.isVisible}
         message={notification.message}
@@ -217,16 +246,16 @@ const ProfileScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: "#ffffff",
   },
   header: {
     paddingTop: 20,
     paddingHorizontal: 15,
     paddingBottom: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     borderBottomWidth: 1,
-    borderBottomColor: '#e1e5e9',
+    borderBottomColor: "#e1e5e9",
   },
   backButton: {
     padding: 8,
@@ -234,9 +263,9 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 30,
-    fontWeight: '200',
-    color: '#000000',
-    fontFamily: 'System',
+    fontWeight: "200",
+    color: "#000000",
+    fontFamily: "System",
     letterSpacing: -1.5,
   },
   scrollContainer: {
@@ -281,7 +310,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "300",
     color: "#000000",
-    fontFamily: 'System',
+    fontFamily: "System",
     letterSpacing: -0.5,
   },
   infoSection: {
@@ -313,17 +342,17 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#f8f9fa',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#f8f9fa",
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 15,
   },
   infoText: {
     color: "#000000",
     fontSize: 16,
     flex: 1,
-    fontFamily: 'System',
-    fontWeight: '400',
+    fontFamily: "System",
+    fontWeight: "400",
   },
   actionSection: {
     width: "100%",
@@ -335,7 +364,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#222222",
     borderRadius: 12,
     marginBottom: 12,
     borderWidth: 1,
@@ -351,7 +380,7 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     borderColor: "#FFE5E5",
-    backgroundColor: "#FEFEFE",
+    backgroundColor: "#000000",
   },
   buttonContent: {
     flexDirection: "row",
@@ -362,10 +391,10 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   buttonText: {
-    color: "#000000",
+    color: "#ffffff",
     fontSize: 16,
-    fontFamily: 'System',
-    fontWeight: '400',
+    fontFamily: "System",
+    fontWeight: "400",
   },
   logoutText: {
     color: "#FF3B30",

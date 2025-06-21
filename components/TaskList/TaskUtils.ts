@@ -1,12 +1,12 @@
 import { Task } from './types';
 
-// Funzione per ottenere il colore in base alla priorità
+// Funzione per ottenere il colore in base alla priorità (gradiente di scurezza)
 export const getPriorityColor = (priority: string): string => {
   switch(priority) {
-    case "Alta": return "#FF5252";
-    case "Media": return "#FFC107";
-    case "Bassa": return "#4CAF50";
-    default: return "#10e0e0";
+    case "Alta": return "#000000";   // Nero per alta priorità
+    case "Media": return "#333333";  // Grigio scuro per media priorità
+    case "Bassa": return "#666666";  // Grigio medio per bassa priorità
+    default: return "#999999";       // Grigio chiaro per default
   }
 };
 

@@ -9,12 +9,12 @@ interface TaskCardProps {
   onPress?: (task: Task) => void;
 }
 
-const TaskCard: React.FC<TaskCardProps> = ({ task, onPress }) => {  // Determina il colore in base alla priorità (più sobrio e coerente)
+const TaskCard: React.FC<TaskCardProps> = ({ task, onPress }) => {  // Determina il colore in base alla priorità (gradiente di scurezza)
   const priorityColors: Record<string, string> = {
-    'Alta': '#000000',
-    'Media': '#666666',
-    'Bassa': '#999999',
-    'default': '#cccccc'
+    'Alta': '#000000',     // Nero per alta priorità
+    'Media': '#333333',    // Grigio scuro per media priorità
+    'Bassa': '#666666',    // Grigio medio per bassa priorità
+    'default': '#999999'   // Grigio chiaro per default
   };
   
   const cardColor = task.priority ? 

@@ -25,11 +25,11 @@ const TaskHeader = ({
         onPressIn={onPressIn}
         onPressOut={onPressOut}
         delayLongPress={500}
-      >
-        <TaskTitle 
+      >        <TaskTitle 
           title={task.title} 
           completed={isCompleted}
-          numberOfLines={expanded ? undefined : 1} 
+          numberOfLines={expanded ? undefined : 1}
+          priority={task.priority}
         />
 
         <View style={styles.infoRow}>
