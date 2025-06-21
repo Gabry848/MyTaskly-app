@@ -66,7 +66,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 10,
+    marginTop: 15,
     borderWidth: 1.5,
     borderColor: "#e1e5e9",
     shadowColor: "#000",

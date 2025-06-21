@@ -10,7 +10,6 @@ import {
   SafeAreaView,
   Animated,
   Keyboard,
-  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
@@ -20,24 +19,24 @@ import { sendMessageToBot } from "../../services/botservice";
 import { STORAGE_KEYS } from "../../constants/authConstants";
 import Badge from "../../../components/Badge";
 
-const { width, height } = Dimensions.get("window");
-
 const Home20 = () => {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [chatStarted, setChatStarted] = useState(false);
   const [userName, setUserName] = useState("Utente");
-  const navigation = useNavigation();
-  // Animazioni
+  const navigation = useNavigation();  // Animazioni
   const messagesSlideIn = useRef(new Animated.Value(50)).current;
+  const messagesOpacity = useRef(new Animated.Value(1)).current;
   const inputBottomPosition = useRef(new Animated.Value(0)).current;
 
   // Effetto per recuperare il nome dell'utente
   useEffect(() => {
     const fetchUserName = async () => {
       try {
-        const storedUserName = await AsyncStorage.getItem(STORAGE_KEYS.USER_NAME);
+        const storedUserName = await AsyncStorage.getItem(
+          STORAGE_KEYS.USER_NAME
+        );
         if (storedUserName) {
           setUserName(storedUserName);
         }
@@ -171,9 +170,34 @@ const Home20 = () => {
       }, 300);
     }
   };
-
   const handleGoBack = () => {
     navigation.goBack();
+  };
+  const handleResetChat = () => {
+    // Animazione di uscita per i messaggi
+    Animated.parallel([
+      Animated.timing(messagesOpacity, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(messagesSlideIn, {
+        toValue: -30, // Sposta leggermente verso l'alto mentre svanisce
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      // Reset dello stato dopo l'animazione
+      setMessages([]);
+      setMessage("");
+      setChatStarted(false);
+      setIsLoading(false);
+
+      // Reset delle animazioni per il prossimo utilizzo
+      messagesSlideIn.setValue(50);
+      messagesOpacity.setValue(1);
+      inputBottomPosition.setValue(0);
+    });
   };
 
   return (
@@ -183,16 +207,28 @@ const Home20 = () => {
       {/* Header con titolo principale */}
       <View style={styles.header}>
         <Text style={styles.mainTitle}>Mytaskly</Text>
-        <Badge />
+        <View style={styles.headerActions}>
+          {chatStarted && (
+            <TouchableOpacity
+              style={styles.resetButton}
+              onPress={handleResetChat}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="refresh-outline" size={24} color="#666666" />
+            </TouchableOpacity>
+          )}
+          <Badge />
+        </View>
       </View>
 
       <View style={styles.mainContent}>
         {/* Contenuto principale */}
         <View style={chatStarted ? styles.contentChatStarted : styles.content}>
-          {/* Saluto personalizzato - nascosto quando la chat inizia */}          {!chatStarted && (
+          {/* Saluto personalizzato - nascosto quando la chat inizia */}{" "}
+          {!chatStarted && (
             <View style={styles.greetingSection}>
               <Text style={styles.greetingText}>
-                Ciao {userName},{"\n"}che vuoi fare oggi?
+                Ciao {userName},{"\n"}cosa vuoi fare oggi?
               </Text>
 
               {/* Input area - sotto il saluto quando la chat non è iniziata */}
@@ -250,13 +286,12 @@ const Home20 = () => {
               </View>
             </View>
           )}
-
           {/* Lista dei messaggi - visibile quando la chat inizia */}
-          {chatStarted && (
-            <Animated.View
+          {chatStarted && (            <Animated.View
               style={[
                 styles.chatSection,
                 {
+                  opacity: messagesOpacity,
                   transform: [{ translateY: messagesSlideIn }],
                 },
               ]}
@@ -283,15 +318,15 @@ const Home20 = () => {
 
         {/* Input area in basso - visibile solo quando la chat è iniziata */}
         {chatStarted && (
-          <Animated.View 
+          <Animated.View
             style={[
               styles.inputSection,
-              { 
-                position: 'absolute',
+              {
+                position: "absolute",
                 bottom: inputBottomPosition,
                 left: 0,
                 right: 0,
-              }
+              },
             ]}
           >
             <View style={styles.inputContainer}>
@@ -359,7 +394,8 @@ const styles = StyleSheet.create({
   },
   mainContent: {
     flex: 1,
-  },  header: {
+  },
+  header: {
     paddingTop: 20,
     paddingHorizontal: 15,
     paddingBottom: 40,
@@ -367,6 +403,17 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     justifyContent: "space-between",
     position: "relative",
+  },
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 15,
+  },
+  resetButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: "transparent",
+    marginTop: 15,
   },
   backButton: {
     marginTop: 12,
