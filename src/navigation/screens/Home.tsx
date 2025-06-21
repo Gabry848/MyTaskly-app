@@ -21,15 +21,16 @@ import Badge from "../../../components/Badge";
 
 const Home20 = () => {
   const [message, setMessage] = useState("");
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([]);  const [isLoading, setIsLoading] = useState(false);
   const [chatStarted, setChatStarted] = useState(false);
   const [userName, setUserName] = useState("Utente");
+  const [displayedText, setDisplayedText] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
   const navigation = useNavigation();  // Animazioni
   const messagesSlideIn = useRef(new Animated.Value(50)).current;
   const messagesOpacity = useRef(new Animated.Value(1)).current;
   const inputBottomPosition = useRef(new Animated.Value(0)).current;
-
+  const cursorOpacity = useRef(new Animated.Value(1)).current;
   // Effetto per recuperare il nome dell'utente
   useEffect(() => {
     const fetchUserName = async () => {
@@ -48,6 +49,57 @@ const Home20 = () => {
 
     fetchUserName();
   }, []);
+  // Effetto per l'animazione di scrittura del testo di saluto
+  useEffect(() => {
+    if (userName && !chatStarted) {
+      const greetingText = `Ciao ${userName},\ncosa vuoi fare oggi?`;
+      let currentIndex = 0;
+      setDisplayedText("");
+      setIsTyping(true);
+
+      const typingInterval = setInterval(() => {
+        if (currentIndex <= greetingText.length) {
+          setDisplayedText(greetingText.slice(0, currentIndex));
+          currentIndex++;
+        } else {
+          clearInterval(typingInterval);
+          setIsTyping(false);
+        }
+      }, 50); // Velocità di scrittura: 50ms per carattere
+
+      return () => {
+        clearInterval(typingInterval);
+      };
+    }
+  }, [userName, chatStarted]);
+
+  // Effetto per l'animazione del cursore lampeggiante
+  useEffect(() => {
+    if (isTyping) {
+      const blinkAnimation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(cursorOpacity, {
+            toValue: 0,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(cursorOpacity, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      blinkAnimation.start();
+
+      return () => {
+        blinkAnimation.stop();
+      };
+    } else {
+      // Ferma l'animazione e nascondi il cursore quando la scrittura è finita
+      cursorOpacity.setValue(0);
+    }
+  }, [isTyping, cursorOpacity]);
 
   // Effetto per gestire la visualizzazione della tastiera
   useEffect(() => {
@@ -172,8 +224,7 @@ const Home20 = () => {
   };
   const handleGoBack = () => {
     navigation.goBack();
-  };
-  const handleResetChat = () => {
+  };  const handleResetChat = () => {
     // Animazione di uscita per i messaggi
     Animated.parallel([
       Animated.timing(messagesOpacity, {
@@ -192,11 +243,14 @@ const Home20 = () => {
       setMessage("");
       setChatStarted(false);
       setIsLoading(false);
+      setDisplayedText("");
+      setIsTyping(false);
 
       // Reset delle animazioni per il prossimo utilizzo
       messagesSlideIn.setValue(50);
       messagesOpacity.setValue(1);
       inputBottomPosition.setValue(0);
+      cursorOpacity.setValue(1);
     });
   };
 
@@ -223,13 +277,18 @@ const Home20 = () => {
 
       <View style={styles.mainContent}>
         {/* Contenuto principale */}
-        <View style={chatStarted ? styles.contentChatStarted : styles.content}>
-          {/* Saluto personalizzato - nascosto quando la chat inizia */}{" "}
-          {!chatStarted && (
+        <View style={chatStarted ? styles.contentChatStarted : styles.content}>          {/* Saluto personalizzato - nascosto quando la chat inizia */}{" "}          {!chatStarted && (
             <View style={styles.greetingSection}>
-              <Text style={styles.greetingText}>
-                Ciao {userName},{"\n"}cosa vuoi fare oggi?
-              </Text>
+              <View style={styles.greetingTextContainer}>
+                <Text style={styles.greetingText}>
+                  {displayedText}
+                  {isTyping && (
+                    <Animated.Text style={[styles.cursorText, { opacity: cursorOpacity }]}>
+                      |
+                    </Animated.Text>
+                  )}
+                </Text>
+              </View>
 
               {/* Input area - sotto il saluto quando la chat non è iniziata */}
               <View style={styles.inputSectionUnderGreeting}>
@@ -441,9 +500,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0, // Rimosso padding laterale per la chat
     paddingTop: 0, // Ancora più in alto per massimizzare lo spazio della chat
     paddingBottom: 80,
-  },
-  greetingSection: {
+  },  greetingSection: {
     marginBottom: 30,
+  },
+  greetingTextContainer: {
+    justifyContent: "center",
+    alignItems: "center",
+    minHeight: 90, // Altezza minima per evitare sfarfallii
+  },
+  cursorText: {
+    fontSize: 34,
+    fontWeight: "300",
+    color: "#000000",
+    fontFamily: "System",
+    letterSpacing: -0.8,
   },
   inputSectionUnderGreeting: {
     alignItems: "center",
