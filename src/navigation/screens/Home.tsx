@@ -18,15 +18,17 @@ import { ChatList, Message } from "../../../components/BotChat";
 import { sendMessageToBot } from "../../services/botservice";
 import { STORAGE_KEYS } from "../../constants/authConstants";
 import Badge from "../../../components/Badge";
+import VoiceChatModal from "../../../components/VoiceChatModal";
 
 const Home20 = () => {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);  const [isLoading, setIsLoading] = useState(false);
-  const [chatStarted, setChatStarted] = useState(false);
-  const [userName, setUserName] = useState("Utente");
+  const [chatStarted, setChatStarted] = useState(false);  const [userName, setUserName] = useState("Utente");
   const [displayedText, setDisplayedText] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-  const navigation = useNavigation();  // Animazioni
+  const [isVoiceChatVisible, setIsVoiceChatVisible] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const navigation = useNavigation();// Animazioni
   const messagesSlideIn = useRef(new Animated.Value(50)).current;
   const messagesOpacity = useRef(new Animated.Value(1)).current;
   const inputBottomPosition = useRef(new Animated.Value(0)).current;
@@ -152,10 +154,9 @@ const Home20 = () => {
   const generateMessageId = () => {
     return `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   };
-
   const handleVoicePress = () => {
-    // Gestione del pulsante microfono
-    console.log("Voice button pressed");
+    // Apri la modal della chat vocale
+    setIsVoiceChatVisible(true);
   };
 
   const handleSubmit = async () => {
@@ -251,6 +252,11 @@ const Home20 = () => {
       inputBottomPosition.setValue(0);
       cursorOpacity.setValue(1);
     });
+  };
+
+  const handleVoiceChatClose = () => {
+    setIsVoiceChatVisible(false);
+    setIsRecording(false);
   };
 
   return (
@@ -434,10 +440,16 @@ const Home20 = () => {
                   />
                 </TouchableOpacity>
               )}
-            </View>
-          </Animated.View>
+            </View>          </Animated.View>
         )}
       </View>
+
+      {/* Voice Chat Modal */}
+      <VoiceChatModal
+        visible={isVoiceChatVisible}
+        onClose={handleVoiceChatClose}
+        isRecording={isRecording}
+      />
     </SafeAreaView>
   );
 };
