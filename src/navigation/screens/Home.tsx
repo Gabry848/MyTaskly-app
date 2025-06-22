@@ -159,6 +159,17 @@ const Home20 = () => {
     setIsVoiceChatVisible(true);
   };
 
+  const handleSuggestedCommand = async (command: string) => {
+    if (isLoading) return;
+
+    setMessage(command);
+    
+    // Simula un breve delay per far vedere il testo nell'input
+    setTimeout(() => {
+      handleSubmit();
+    }, 200);
+  };
+
   const handleSubmit = async () => {
     const trimmedMessage = message.trim();
     if (!trimmedMessage || isLoading) return;
@@ -346,6 +357,26 @@ const Home20 = () => {
                       </TouchableOpacity>
                     )}
                   </View>
+                </View>
+
+                {/* Comando suggerito */}
+                <View style={styles.suggestedCommandsContainer}>
+                  <TouchableOpacity
+                    style={[
+                      styles.suggestedCommandButton,
+                      isLoading && styles.suggestedCommandButtonDisabled,
+                    ]}
+                    onPress={() => handleSuggestedCommand("Cosa puoi fare?")}
+                    activeOpacity={0.7}
+                    disabled={isLoading}
+                  >
+                    <Text style={[
+                      styles.suggestedCommandText,
+                      isLoading && styles.suggestedCommandTextDisabled,
+                    ]}>
+                      💡 Cosa puoi fare?
+                    </Text>
+                  </TouchableOpacity>
                 </View>
               </View>
             </View>
@@ -638,6 +669,39 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     backgroundColor: "#e8e8e8",
+  },
+  suggestedCommandsContainer: {
+    marginTop: 20,
+    alignItems: "center",
+  },
+  suggestedCommandButton: {
+    backgroundColor: "#f8f9fa",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 25,
+    borderWidth: 1,
+    borderColor: "#e1e5e9",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  suggestedCommandButtonDisabled: {
+    backgroundColor: "#f0f0f0",
+    borderColor: "#e8e8e8",
+  },
+  suggestedCommandText: {
+    fontSize: 16,
+    color: "#333333",
+    fontWeight: "500",
+    fontFamily: "System",
+  },
+  suggestedCommandTextDisabled: {
+    color: "#999999",
   },
 });
 
