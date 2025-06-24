@@ -19,7 +19,7 @@ export const DEFAULT_BASE_URL = "https://taskly-production.up.railway.app";
 
 // Endpoint API
 export const API_ENDPOINTS = {
-  SIGNIN: "/login",
-  SIGNUP: "/register",
-  REFRESH: "/refresh"
+  SIGNIN: "auth/login",
+  SIGNUP: "auth/register",
+  REFRESH: "auth/refresh"
 };
