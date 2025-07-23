@@ -32,10 +32,18 @@ function preparePreviousMessages(
   const recentMessages = messagesWithoutLast.slice(-maxMessages);
 
   // Formatta i messaggi nel formato richiesto dal server
-  const formattedMessages = recentMessages.map((msg) => ({
-    content: msg.text || msg.content || "",
-    role: msg.sender || msg.role || "user",
-  }));
+  const formattedMessages = recentMessages.map((msg) => {
+    const content = msg.text || msg.content || "";
+    // Aggiungi indicatore per messaggi già processati per evitare riesecuzioni
+    const processedContent = msg.role === "user" || msg.sender === "user" 
+      ? `${content} (già fatto)` 
+      : content;
+    
+    return {
+      content: processedContent,
+      role: msg.sender || msg.role || "user",
+    };
+  });
 
   // Calcola la lunghezza totale di tutti i messaggi
   let totalLength = 0;
@@ -53,6 +61,7 @@ function preparePreviousMessages(
 
 /**
  * Invia un messaggio testuale al bot e riceve una risposta
+ * Utilizza l'endpoint /chat/bot per la chat scritta
  * @param {string} userMessage - Il messaggio dell'utente da inviare al bot
  * @param {string} modelType - Il tipo di modello da utilizzare ('base' o 'advanced')
  * @param {Array} previousMessages - Gli ultimi messaggi scambiati tra utente e bot per il contesto
@@ -80,10 +89,8 @@ export async function sendMessageToBot(
       previous_messages: formattedPreviousMessages,
     };
     
-    console.log("📤 Invio messaggio al bot:", requestPayload);
-
-    // Invia la richiesta al server
-    const response = await axios.post("/chat_bot", requestPayload, {
+    console.log("📤 Invio messaggio al bot:", requestPayload);    // Invia la richiesta al server
+    const response = await axios.post("/chat/bot_mcp", requestPayload, {
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
@@ -213,5 +220,90 @@ export function extractStructuredData(response: string): any {
     return JSON.parse(response);
   } catch {
     return null;
+  }
+}
+
+/**
+ * Invia un messaggio vocale al bot e riceve una risposta
+ * @param {string} audioBase64 - L'audio codificato in base64
+ * @param {string} modelType - Il tipo di modello da utilizzare ('base' o 'advanced')
+ * @param {Array} previousMessages - Gli ultimi messaggi scambiati tra utente e bot per il contesto
+ * @returns {Promise<string>} - La risposta del bot
+ */
+export async function sendVoiceMessageToBot(
+  audioBase64: string,
+  modelType: "base" | "advanced" = "base",
+  previousMessages: Array<any> = []
+): Promise<string> {
+  try {
+    // Verifica che l'utente sia autenticato
+    const token = await getValidToken();
+    if (!token) {
+      return "Mi dispiace, sembra che tu non sia autenticato. Effettua il login per continuare.";
+    }
+
+    // Prepara i messaggi precedenti per fornire contesto al bot
+    const formattedPreviousMessages = preparePreviousMessages(previousMessages);
+    
+    // Costruisci il payload per la richiesta vocale
+    const requestPayload = {
+      audio: audioBase64,
+      model: modelType,
+      previous_messages: formattedPreviousMessages,
+    };
+    
+    console.log("🎤 Invio messaggio vocale al bot");
+
+    // Invia la richiesta al server per la chat vocale
+    const response = await axios.post("/chat/bot_voice", requestPayload, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    console.log("📥 Risposta vocale ricevuta dal server:", response.data);
+
+    // Elabora la risposta del server (stesso formato della chat testuale)
+    if (response.data && typeof response.data === "object") {
+      // Gestisci risposte con modalità speciali (normal/view)
+      if (response.data.message && response.data.mode) {
+        if (response.data.mode === "normal") {
+          return response.data.message;
+        } else if (response.data.mode === "view") {
+          return JSON.stringify(response.data);
+        }
+      }
+      
+      if (response.data.response) {
+        return response.data.response;
+      }
+      
+      if (response.data.message) {
+        return response.data.message;
+      }
+    }
+
+    return (
+      response.data || "Non ho capito la tua richiesta vocale. Potresti riprovare?"
+    );
+    
+  } catch (error: any) {
+    console.error("❌ Errore nella comunicazione vocale con il bot:", error);
+    
+    // Gestisci errori specifici
+    if (error.response?.status === 401) {
+      return "Sessione scaduta. Effettua nuovamente il login.";
+    }
+    
+    if (error.response?.status === 429) {
+      return "Troppe richieste. Riprova tra qualche secondo.";
+    }
+    
+    if (error.response?.status >= 500) {
+      return "Il servizio vocale è temporaneamente non disponibile. Riprova più tardi.";
+    }
+    
+    return "Mi dispiace, si è verificato un errore con il messaggio vocale. Riprova più tardi.";
   }
 }
