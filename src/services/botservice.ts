@@ -60,12 +60,12 @@ function preparePreviousMessages(
 }
 
 /**
- * Invia un messaggio testuale al bot e riceve una risposta
- * Utilizza l'endpoint /chat/bot per la chat scritta
+ * Invia un messaggio testuale al bot e riceve una risposta in streaming
+ * Utilizza l'endpoint /chat/text per la chat scritta con supporto streaming
  * @param {string} userMessage - Il messaggio dell'utente da inviare al bot
  * @param {string} modelType - Il tipo di modello da utilizzare ('base' o 'advanced')
  * @param {Array} previousMessages - Gli ultimi messaggi scambiati tra utente e bot per il contesto
- * @returns {Promise<string>} - La risposta del bot
+ * @returns {Promise<string>} - La risposta completa del bot
  */
 export async function sendMessageToBot(
   userMessage: string,
@@ -89,45 +89,60 @@ export async function sendMessageToBot(
       previous_messages: formattedPreviousMessages,
     };
     
-    console.log("📤 Invio messaggio al bot:", requestPayload);    // Invia la richiesta al server
-    const response = await axios.post("/chat/bot_mcp", requestPayload, {
+    console.log("📤 Invio messaggio al bot:", requestPayload);
+
+    // Invia la richiesta al server con supporto streaming
+    const response = await axios.post("/chat/text", requestPayload, {
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
+      responseType: "stream",
     });
 
-    console.log("📥 Risposta ricevuta dal server:", response.data);
+    console.log("📥 Stream iniziato dal server");
 
-    // Elabora la risposta del server
-    if (response.data && typeof response.data === "object") {
-      // Gestisci risposte con modalità speciali (normal/view)
-      if (response.data.message && response.data.mode) {
-        if (response.data.mode === "normal") {
-          // Modalità normale: restituisce solo il messaggio
-          return response.data.message;
-        } else if (response.data.mode === "view") {
-          // Modalità view: restituisce l'intero oggetto come JSON
-          // Questo viene gestito nel componente per visualizzare tabelle o contenuti speciali
-          return JSON.stringify(response.data);
+    // Processa la risposta in streaming
+    return new Promise((resolve, reject) => {
+      const stream = response.data;
+      let fullMessage = '';
+
+      stream.on("data", (data: any) => {
+        const text = data.toString('utf8');
+        
+        // Dividi il testo per linee per gestire più messaggi JSON
+        const lines = text.split('\n').filter((line: string) => line.trim());
+        
+        for (const line of lines) {
+          if (line.startsWith('data: {')) {
+            try {
+              const jsonStr = line.replace('data: ', '').trim();
+              const parsed = JSON.parse(jsonStr);
+              
+              if (parsed.type === 'content' && parsed.content) {
+                fullMessage += parsed.content;
+                console.log(parsed.content); // Log del contenuto in real-time
+              } else if (parsed.type === 'stream_start') {
+                console.log('--- Stream iniziato ---');
+              }
+            } catch (e: any) {
+              console.log("Errore parsing JSON per linea:", line);
+              console.log("Errore:", e.message);
+            }
+          }
         }
-      }
-      
-      // Se la risposta ha un campo 'response'
-      if (response.data.response) {
-        return response.data.response;
-      }
-      
-      // Se la risposta ha un campo 'message'
-      if (response.data.message) {
-        return response.data.message;
-      }
-    }
+      });
 
-    // Fallback: restituisci la risposta diretta o un messaggio predefinito
-    return (
-      response.data || "Non ho capito la tua richiesta. Potresti riprovare?"
-    );
+      stream.on("end", () => {
+        console.log("\n--- Stream completato ---");
+        resolve(fullMessage || "Nessuna risposta ricevuta dal bot.");
+      });
+
+      stream.on("error", (error: any) => {
+        console.error("❌ Errore nello stream:", error);
+        reject(error);
+      });
+    });
     
   } catch (error: any) {
     console.error("❌ Errore nella comunicazione con il bot:", error);
