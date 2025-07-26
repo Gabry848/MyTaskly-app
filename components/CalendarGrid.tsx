@@ -119,7 +119,8 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
   };
 
   return (
-    <>      {/* Intestazione del calendario con navigazione */}
+    <View>
+      {/* Intestazione del calendario con navigazione */}
       <View style={styles.calendarHeader}>
         <TouchableOpacity onPress={onPreviousMonth} style={{ padding: 8 }}>
           <Ionicons name="chevron-back" size={24} color="#000000" />
@@ -158,7 +159,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
           />
         ))}
       </View>
-    </>
+    </View>
   );
 };
 
