@@ -18,12 +18,24 @@ const CalendarView: React.FC = () => {
   // Funzione per caricare gli impegni
   const fetchTasks = useCallback(async () => {
     try {
+      console.log("[CALENDAR] Inizio caricamento task...");
       const tasksData = await getAllTasks();
+      console.log("[CALENDAR] Task ricevuti:", tasksData);
       if (Array.isArray(tasksData)) {
         setTasks(tasksData);
+        console.log("[CALENDAR] Task impostati correttamente:", tasksData.length, "task");
+      } else {
+        console.warn("[CALENDAR] I dati ricevuti non sono un array:", tasksData);
       }
     } catch (error) {
-      console.error("Errore nel recupero degli impegni:", error);
+      console.error("[CALENDAR] Errore nel recupero degli impegni:", error);
+      if (error.response) {
+        console.error("[CALENDAR] Dettagli errore:", {
+          status: error.response.status,
+          statusText: error.response.statusText,
+          data: error.response.data
+        });
+      }
     }
   }, []);
 

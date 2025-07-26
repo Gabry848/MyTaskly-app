@@ -25,8 +25,15 @@ const processQueue = (error: any, token: string | null = null) => {
  */
 axios.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
+    console.log('[AXIOS] Richiesta in uscita:', {
+      method: config.method,
+      url: config.url,
+      baseURL: config.baseURL,
+      fullURL: `${config.baseURL || ''}${config.url || ''}`
+    });
+    
     // Escludi le richieste di login, register e refresh dall'aggiunta automatica del token
-    const excludedPaths = ['/login', '/register', '/refresh'];
+    const excludedPaths = ['/auth/login', '/auth/register', '/auth/refresh', '/login', '/register', '/refresh'];
     const isExcluded = excludedPaths.some(path => config.url?.includes(path));
     
     if (!isExcluded) {
@@ -34,10 +41,15 @@ axios.interceptors.request.use(
         const token = await getValidToken();
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
+          console.log('[AXIOS] Token aggiunto alla richiesta:', config.url);
+        } else {
+          console.warn('[AXIOS] Nessun token disponibile per la richiesta:', config.url);
         }
       } catch (error) {
-        console.warn('Errore nel recupero del token per la richiesta:', error);
+        console.warn('[AXIOS] Errore nel recupero del token per la richiesta:', error);
       }
+    } else {
+      console.log('[AXIOS] Richiesta esclusa dall\'aggiunta automatica del token:', config.url);
     }
     
     return config;
@@ -58,6 +70,8 @@ axios.interceptors.response.use(
     const originalRequest = error.config;
     
     if (error.response?.status === 401 && !originalRequest._retry) {
+      console.log('Errore 401 ricevuto, tentativo di refresh del token per:', originalRequest.url);
+      
       // Evita richieste di refresh multiple contemporanee
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
@@ -77,10 +91,12 @@ axios.interceptors.response.use(
         const token = await getValidToken();
         
         if (token) {
+          console.log('Token refresh riuscito, ripetendo richiesta originale');
           processQueue(null, token);
           originalRequest.headers.Authorization = `Bearer ${token}`;
           return axios(originalRequest);
         } else {
+          console.log('Token refresh fallito, pulendo dati di autenticazione');
           processQueue(new Error('Token refresh fallito'), null);
           
           // Rimuovi tutti i dati di autenticazione se il refresh fallisce
@@ -99,6 +115,7 @@ axios.interceptors.response.use(
           return Promise.reject(error);
         }
       } catch (refreshError) {
+        console.error('Errore durante il refresh del token:', refreshError);
         processQueue(refreshError, null);
         return Promise.reject(refreshError);
       } finally {

@@ -1,5 +1,4 @@
 import axios from "./axiosInterceptor";
-import { getValidToken } from "./authService";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { STORAGE_KEYS } from "../constants/authConstants";
 
@@ -19,17 +18,11 @@ export interface Task {
 // Funzione per ottenere tutti gli impegni filtrandoli per categoria
 export async function getTasks(category_name?: string) {
   try {
-    const token = await getValidToken();
-    if (!token) {
-      return [];
-    }
-
     if (category_name) {
       // ogni spazio viene sostituito con %20
       category_name = category_name.replace(/ /g, "%20");
       const response = await axios.get(`/tasks/${category_name}`, {
         headers: {
-          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
       });
@@ -39,12 +32,12 @@ export async function getTasks(category_name?: string) {
 
     const response = await axios.get(`/tasks/`, {
       headers: {
-        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
     });
     return response.data;
   } catch (error) {
+    console.error("Errore nel recupero dei task:", error);
     return [];
   }
 }
@@ -52,19 +45,15 @@ export async function getTasks(category_name?: string) {
 // funzione che restistuise gli utimi impegni
 export async function getLastTask(last_n: number) {
   try {
-    const token = await getValidToken();
-    if (!token) {
+    // Usa getAllTasks che ora funziona correttamente
+    const allTasks = await getAllTasks();
+    
+    if (!Array.isArray(allTasks) || allTasks.length === 0) {
       return [];
     }
-    const response = await axios.get(`/tasks`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    });
-
+    
     // restituisce gli ultimi n impegni
-    let data = response.data.slice(-last_n);
+    let data = allTasks.slice(-last_n);
     // ordina gli impegni in base alla data di fine
     data.sort((a: Task, b: Task) => {
       return new Date(a.end_time).getTime() - new Date(b.end_time).getTime();
@@ -72,32 +61,46 @@ export async function getLastTask(last_n: number) {
     return data;
 
   } catch (error) {
-    console.log(error);
+    console.error("Errore nel recupero degli ultimi task:", error);
     return [];
   }
 }
 // funzione per ottenere tutti gli impegni
 export async function getAllTasks() {
   try {
-    const token = await getValidToken();
-    if (!token) {
-      return [];
+    // Prima otteniamo tutte le categorie
+    const categories = await getCategories();
+    let allTasks: Task[] = [];
+    
+    if (categories && Array.isArray(categories)) {
+      // Per ogni categoria, otteniamo i task
+      for (const category of categories) {
+        try {
+          const categoryTasks = await getTasks(category.name);
+          if (Array.isArray(categoryTasks)) {
+            allTasks = allTasks.concat(categoryTasks);
+          }
+        } catch (error) {
+          console.warn(`Errore nel recupero task per categoria ${category.name}:`, error);
+        }
+      }
     }
-    const response = await axios.get(`/tasks`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    });
-
-    let data = response.data;
-    data.sort((a: Task, b: Task) => {
+    
+    // Rimuovi duplicati basandosi sull'ID del task
+    const uniqueTasks = allTasks.filter((task, index, self) => 
+      index === self.findIndex((t) => t.task_id === task.task_id)
+    );
+    
+    // Ordina i task per data di fine
+    uniqueTasks.sort((a: Task, b: Task) => {
       return new Date(a.end_time).getTime() - new Date(b.end_time).getTime();
     });
-    return data;
+    
+    console.log("[getAllTasks] Task totali recuperati:", uniqueTasks.length);
+    return uniqueTasks;
 
   } catch (error) {
-    console.log(error);
+    console.error("Errore nel recupero di tutti i task:", error);
     return [];
   }
 }
@@ -108,10 +111,6 @@ export async function updateTask(
   updatedTask: Partial<Task>
 ) {
   try {
-    const token = await getValidToken();
-    if (!token) {
-      return null;
-    }
     const status = updatedTask.status;
     console.log(status)
     // Assicura che tutti i parametri richiesti siano inclusi
@@ -130,7 +129,6 @@ export async function updateTask(
 
     const response = await axios.put(`/tasks/${taskId}`, taskData, {
       headers: {
-        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
     });
@@ -189,13 +187,9 @@ export async function disCompleteTask(taskId: string | number) {
 export async function deleteTask(taskId: string | number) {
   try {
     console.log("Eliminazione dell'impegno con ID:", taskId);
-    const token = await getValidToken();
-    if (!token) {
-      return null;
-    }
     const response = await axios.delete(`/tasks/${taskId}`, {
       headers: {
-        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
       },
     });
     return response.data;
@@ -207,10 +201,6 @@ export async function deleteTask(taskId: string | number) {
 // Funzione per aggiungere un nuovo impegno
 export async function addTask(task: Task) {
   try {
-    const token = await getValidToken();
-    if (!token) {
-      return null;
-    }
     const username = await AsyncStorage.getItem(STORAGE_KEYS.USER_NAME);
 
     // converti la priorita` da numero a stringa (1: bassa, 2: media, 3: alta)
@@ -233,7 +223,6 @@ export async function addTask(task: Task) {
     console.log("data: ", data);
     const response = await axios.post("/tasks", data, {
       headers: {
-        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
     });
@@ -250,10 +239,6 @@ export async function addCategory(category: {
   description?: string;
 }) {
   try {
-    const token = await getValidToken();
-    if (!token) {
-      return null;
-    }
     // Estrai solo le proprietà rilevanti per l'API
     const categoryData = {
       name: category.name,
@@ -264,7 +249,6 @@ export async function addCategory(category: {
     
     const response = await axios.post("/categories", categoryData, {
       headers: {
-        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
     });
@@ -286,18 +270,14 @@ export async function addCategory(category: {
 // Funzione per ottenere tutte le categorie
 export async function getCategories() {
   try {
-    const token = await getValidToken();
-    if (!token) {
-      return null;
-    }
     const response = await axios.get(`/categories`, {
       headers: {
-        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
     });
     return response.data;
   } catch (error) {
+    console.error("Errore nel recupero delle categorie:", error);
     throw error;
   }
 }
@@ -305,19 +285,15 @@ export async function getCategories() {
 // Funzione per eliminare una categoria tramite il suo nome
 export async function deleteCategory(categoryName: string) {
   try {
-    const token = await getValidToken();
-    if (!token) {
-      return null;
-    }
     console.log(categoryName)
     const response = await axios.delete(`/categories/${categoryName}`, {
       headers: {
-        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
     });
     return response.data;
   } catch (error) {
+    console.error("Errore nell'eliminazione della categoria:", error);
     throw error;
   }
 }
@@ -331,18 +307,14 @@ export async function updateCategory(
   }
 ) {
   try {
-    const token = await getValidToken();
-    if (!token) {
-      return null;
-    }
     const response = await axios.put(`/categories/${originalName}`, updatedCategory, {
       headers: {
-        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
     });
     return response.data;
   } catch (error) {
+    console.error("Errore nell'aggiornamento della categoria:", error);
     throw error;
   }
 }
