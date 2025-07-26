@@ -9,7 +9,20 @@ interface TaskCardProps {
   onPress?: (task: Task) => void;
 }
 
-const TaskCard: React.FC<TaskCardProps> = ({ task, onPress }) => {  // Determina il colore in base alla priorità (gradiente di scurezza)
+const TaskCard: React.FC<TaskCardProps> = ({ task, onPress }) => {
+  
+  // Funzione per sanitizzare le stringhe
+  const sanitizeString = (value: any): string => {
+    if (typeof value === 'string') {
+      return value.trim();
+    }
+    if (value === null || value === undefined) {
+      return '';
+    }
+    return String(value).trim();
+  };
+
+  // Determina il colore in base alla priorità (gradiente di scurezza)
   const priorityColors: Record<string, string> = {
     'Alta': '#000000',     // Nero per alta priorità
     'Media': '#333333',    // Grigio scuro per media priorità
@@ -28,29 +41,36 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onPress }) => {  // Determina
     >
       <View style={styles.taskCardContent}>
         <Text style={styles.taskTitle} numberOfLines={1} ellipsizeMode="tail">
-          {task.title}
+          {sanitizeString(task.title)}
         </Text>
         
-        {task.description ? (
-          <Text style={styles.taskDescription} numberOfLines={2} ellipsizeMode="tail">
-            {task.description}
-          </Text>
-        ) : null}
+        {(() => {
+          const description = sanitizeString(task.description);
+          return description && description !== 'null' && description !== '' ? (
+            <Text style={styles.taskDescription} numberOfLines={2} ellipsizeMode="tail">
+              {description}
+            </Text>
+          ) : null;
+        })()}
         
         <View style={styles.taskMetadata}>
-          {task.category_name ? (
-            <View style={styles.taskCategory}>
-              <Text style={styles.taskCategoryText}>
-                {task.category_name}
-              </Text>
-            </View>
-          ) : null}
+          {(() => {
+            const categoryName = sanitizeString(task.category_name);
+            return categoryName && categoryName !== 'null' && categoryName !== '' ? (
+              <View style={styles.taskCategory}>
+                <Text style={styles.taskCategoryText}>
+                  {categoryName}
+                </Text>
+              </View>
+            ) : null;
+          })()}
           
-          <View style={styles.taskStatus}>            <Text style={[
+          <View style={styles.taskStatus}>
+            <Text style={[
               styles.taskStatusText, 
               { color: task.status === 'Completato' ? '#000000' : '#666666' }
             ]}>
-              {task.status}
+              {sanitizeString(task.status)}
             </Text>
           </View>
         </View>

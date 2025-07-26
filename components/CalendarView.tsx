@@ -21,6 +21,17 @@ const CalendarView: React.FC = () => {
   const fadeAnim2 = useRef(new Animated.Value(0.3)).current;
   const fadeAnim3 = useRef(new Animated.Value(0.3)).current;
 
+  // Funzione per sanitizzare le stringhe
+  const sanitizeString = (value: any): string => {
+    if (typeof value === 'string') {
+      return value.trim();
+    }
+    if (value === null || value === undefined) {
+      return '';
+    }
+    return String(value).trim();
+  };
+
   // Funzione per caricare gli impegni
   const fetchTasks = useCallback(async () => {
     try {
@@ -255,12 +266,13 @@ const CalendarView: React.FC = () => {
         {getTasksForSelectedDate().length > 0 ? (
           getTasksForSelectedDate().map((task) => (
             <TaskCard 
-              key={task.id || `task-${task.title}-${task.start_time}`} 
+              key={task.task_id || task.id || `task-${sanitizeString(task.title)}-${task.start_time || Date.now()}`} 
               task={task} 
               onPress={handleTaskPress}
             />
           ))
-        ) : (          <View style={styles.noTasksContainer}>
+        ) : (
+          <View style={styles.noTasksContainer}>
             <Ionicons name="calendar-outline" size={48} color="#cccccc" />
             <Text style={styles.noTasksText}>
               Nessun impegno per questa data

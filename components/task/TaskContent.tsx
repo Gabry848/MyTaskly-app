@@ -13,6 +13,19 @@ const TaskContent = ({
 }) => {
   if (!expanded) return null;
   
+  // Funzione per sanitizzare le stringhe
+  const sanitizeString = (value: any): string => {
+    if (typeof value === 'string') {
+      return value.trim();
+    }
+    if (value === null || value === undefined) {
+      return '';
+    }
+    return String(value).trim();
+  };
+  
+  const cleanDescription = sanitizeString(description);
+  
   return (
     <Animated.View
       ref={descriptionRef}
@@ -26,7 +39,7 @@ const TaskContent = ({
       ]}
     >
       <Text style={styles.description}>
-        {description || "Nessuna descrizione disponibile."}
+        {cleanDescription && cleanDescription !== 'null' && cleanDescription !== '' ? cleanDescription : "Nessuna descrizione disponibile."}
       </Text>
     </Animated.View>
   );
