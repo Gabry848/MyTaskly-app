@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import axios from "./axiosInterceptor";
+import axios from "./axiosInstance";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { STORAGE_KEYS, DEFAULT_BASE_URL, API_ENDPOINTS } from "../constants/authConstants";
 

@@ -293,7 +293,9 @@ const Home20 = () => {
 
       <View style={styles.mainContent}>
         {/* Contenuto principale */}
-        <View style={chatStarted ? styles.contentChatStarted : styles.content}>          {/* Saluto personalizzato - nascosto quando la chat inizia */}{" "}          {!chatStarted && (
+        <View style={chatStarted ? styles.contentChatStarted : styles.content}>
+          {/* Saluto personalizzato - nascosto quando la chat inizia */}
+          {!chatStarted && (
             <View style={styles.greetingSection}>
               <View style={styles.greetingTextContainer}>
                 <Text style={styles.greetingText}>

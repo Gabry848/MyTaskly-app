@@ -1,7 +1,8 @@
-import axios, { AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
+import { AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_KEYS } from '../constants/authConstants';
 import { getValidToken } from './authService';
+import axios from './axiosInstance';
 
 // Flag per evitare loop infiniti durante il refresh
 let isRefreshing = false;

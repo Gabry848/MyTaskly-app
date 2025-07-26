@@ -196,7 +196,7 @@ function AppStack() {
   const initialRoute = isAuthenticated ? "HomeTabs" : "Login";
   return (
     <>
-      <NavigationHandler />{" "}
+      <NavigationHandler />
       <Stack.Navigator id={undefined} initialRouteName={initialRoute}>
         <Stack.Screen
           name="Login"
