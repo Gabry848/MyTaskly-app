@@ -102,7 +102,8 @@ const CategoryList = forwardRef((props, ref) => {
   return (
     <View style={styles.container} key={refreshKey}>
       {/* Visualizzazione condizionale in base alla modalità selezionata */}
-      <View style={styles.contentContainer}>        {viewMode === 'categories' ? (
+      <View style={styles.contentContainer}>
+        {viewMode === 'categories' ? (
           <CategoryView 
             onCategoryAdded={handleCategoryAdded}
             onCategoryDeleted={handleCategoryDeleted}

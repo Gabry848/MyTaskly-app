@@ -30,7 +30,8 @@ const CategoryMenu: React.FC<CategoryMenuProps> = ({
         style={styles.modalOverlay} 
         activeOpacity={1} 
         onPress={onClose}
-      >        <View style={styles.menuContainer}>
+      >
+        <View style={styles.menuContainer}>
           <TouchableOpacity 
             style={styles.menuItem} 
             onPress={onEdit}

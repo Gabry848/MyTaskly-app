@@ -18,7 +18,8 @@ const ViewSelector: React.FC<ViewSelectorProps> = ({ viewMode, onViewModeChange 
           viewMode === 'categories' && styles.viewSelectorButtonActive
         ]}
         onPress={() => onViewModeChange('categories')}
-      >        <Ionicons 
+      >
+        <Ionicons 
           name="list" 
           size={20} 
           color={viewMode === 'categories' ? "#ffffff" : "#000000"} 
@@ -35,7 +36,8 @@ const ViewSelector: React.FC<ViewSelectorProps> = ({ viewMode, onViewModeChange 
           viewMode === 'calendar' && styles.viewSelectorButtonActive
         ]}
         onPress={() => onViewModeChange('calendar')}
-      >        <Ionicons 
+      >
+        <Ionicons 
           name="calendar" 
           size={20} 
           color={viewMode === 'calendar' ? "#ffffff" : "#000000"} 
