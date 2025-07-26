@@ -32,26 +32,26 @@ const LoginScreen = () => {
     message: "",
     isSuccess: true,
     onFinish: () => {},
-  });  // Effetto per navigare alla Home dopo un login riuscito
+  }); // Effetto per navigare alla Home dopo un login riuscito
   React.useEffect(() => {
     if (loginSuccess) {
       const timer = setTimeout(() => {
         navigation.navigate("HomeTabs");
         setLoginSuccess(false); // Reset dello stato
       }, 2000);
-      
+
       return () => clearTimeout(timer);
     }
   }, [loginSuccess, navigation]);
 
   // Funzione per validare l'input e verificare se contiene caratteri speciali
-  const containsSpecialChars = (text) => {
+  const containsSpecialChars = (text: string) => {
     const specialCharsRegex = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+/;
     return specialCharsRegex.test(text);
   };
 
   // Funzione per gestire il cambio di username con validazione
-  const handleUsernameChange = (text) => {
+  const handleUsernameChange = (text: string) => {
     if (containsSpecialChars(text)) {
       setNotification({
         isVisible: true,
@@ -71,7 +71,7 @@ const LoginScreen = () => {
   };
 
   // Funzione per gestire il cambio di password con validazione
-  const handlePasswordChange = (text) => {
+  const handlePasswordChange = (text: string) => {
     setPassword(text);
   };
 
@@ -93,8 +93,8 @@ const LoginScreen = () => {
           },
         });
         return;
-      }      const login_data = await authService.login(username, password);
-
+      }
+      const login_data = await authService.login(username, password);
       if (login_data.success) {
         setLoginSuccess(true); // Imposta il login come riuscito
         eventEmitter.emit("loginSuccess"); // Emetti evento per aggiornare lo stato di autenticazione
@@ -163,10 +163,16 @@ const LoginScreen = () => {
           source={require("../../../assets/circle-user.png")}
           style={styles.avatarImage}
         />
-      </View>      <View style={[styles.inputContainer, { width: width * 0.9 }]}>
-        <FontAwesome name="user" size={20} color="#666666" style={styles.icon} />
+      </View>
+      <View style={[styles.inputContainer, { width: width * 0.9 }]}>
+        <FontAwesome
+          name="user"
+          size={20}
+          color="#666666"
+          style={styles.icon}
+        />
         <TextInput
-          value={username}
+          value={username || ""}
           onChangeText={handleUsernameChange}
           placeholder="Username"
           placeholderTextColor="#999999"
@@ -174,13 +180,18 @@ const LoginScreen = () => {
         />
       </View>
       <View style={[styles.inputContainer, { width: width * 0.9 }]}>
-        <FontAwesome name="lock" size={20} color="#666666" style={styles.icon} />
+        <FontAwesome
+          name="lock"
+          size={20}
+          color="#666666"
+          style={styles.icon}
+        />
         <TextInput
           placeholder="Password"
           placeholderTextColor="#999999"
           style={[styles.input, { width: width * 0.65 }]}
           secureTextEntry={!showPassword}
-          value={password}
+          value={password || ""}
           onChangeText={handlePasswordChange}
         />
         <TouchableOpacity
@@ -221,7 +232,8 @@ const LoginScreen = () => {
       </TouchableOpacity>
       <NotificationSnackbar
         isVisible={notification.isVisible}
-        message={notification.message}        isSuccess={notification.isSuccess}
+        message={notification.message}
+        isSuccess={notification.isSuccess}
         onFinish={notification.onFinish}
       />
     </SafeAreaView>
@@ -235,7 +247,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#ffffff",
     width: "100%",
-  },  avatar: {
+  },
+  avatar: {
     width: 100,
     height: 100,
     borderRadius: 50,
