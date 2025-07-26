@@ -212,7 +212,8 @@ const AddTask: React.FC<AddTaskProps> = ({
       <View style={styles.modalOverlay}>
         <Animated.View style={[styles.formContainer, animatedStyle]}>
           <View style={styles.formHeader}>
-            <Text style={styles.formTitle}>Aggiungi Task</Text>            <TouchableOpacity onPress={handleCancel}>
+            <Text style={styles.formTitle}>Aggiungi Task</Text>
+            <TouchableOpacity onPress={handleCancel}>
               <Ionicons name="close" size={24} color="#666666" />
             </TouchableOpacity>
           </View>
@@ -397,7 +398,8 @@ const styles = StyleSheet.create({
     color: '#000000',
     fontFamily: 'System',
     letterSpacing: -0.5,
-  },  formContent: {
+  },
+  formContent: {
     padding: 24,
   },
   formFooter: {
@@ -424,7 +426,8 @@ const styles = StyleSheet.create({
     fontFamily: 'System',
     fontWeight: '400',
     color: '#000000',
-  },  textArea: {
+  },
+  textArea: {
     height: 120,
   },
   inputError: {
@@ -460,7 +463,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.04,
     shadowRadius: 4,
     elevation: 1,
-  },  dateButton: {
+  },
+  dateButton: {
     flex: 3,
     marginRight: 12,
   },
@@ -472,11 +476,13 @@ const styles = StyleSheet.create({
     color: '#000000',
     fontFamily: 'System',
     fontWeight: '400',
-  },  priorityContainer: {
+  },
+  priorityContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 32,
-  },  priorityButton: {
+  },
+  priorityButton: {
     flex: 1,
     padding: 16,
     borderRadius: 16,
