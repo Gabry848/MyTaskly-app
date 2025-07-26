@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, Animated } from 'react-native';
 import dayjs from 'dayjs';
 import { Task, getAllTasks, addTask } from '../src/services/taskService';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,10 +14,17 @@ const CalendarView: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<string>(dayjs().format('YYYY-MM-DD'));
   const [tasks, setTasks] = useState<Task[]>([]);
   const [showAddTask, setShowAddTask] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Animazioni per i punti di caricamento
+  const fadeAnim1 = useRef(new Animated.Value(0.3)).current;
+  const fadeAnim2 = useRef(new Animated.Value(0.3)).current;
+  const fadeAnim3 = useRef(new Animated.Value(0.3)).current;
 
   // Funzione per caricare gli impegni
   const fetchTasks = useCallback(async () => {
     try {
+      setIsLoading(true);
       console.log("[CALENDAR] Inizio caricamento task...");
       const tasksData = await getAllTasks();
       console.log("[CALENDAR] Task ricevuti:", tasksData);
@@ -36,6 +43,8 @@ const CalendarView: React.FC = () => {
           data: error.response.data
         });
       }
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 
@@ -136,7 +145,94 @@ const CalendarView: React.FC = () => {
       );
       setShowAddTask(false);
     }
-  };  return (
+  };
+
+  // Componente di caricamento
+  const LoadingComponent = () => {
+    // Avvia l'animazione dei punti quando il componente viene montato
+    useEffect(() => {
+      const animateSequence = () => {
+        const duration = 600;
+        const delay = 200;
+
+        const animate = (animValue: Animated.Value, startDelay: number) => {
+          Animated.loop(
+            Animated.sequence([
+              Animated.timing(animValue, {
+                toValue: 1,
+                duration: duration,
+                delay: startDelay,
+                useNativeDriver: true,
+              }),
+              Animated.timing(animValue, {
+                toValue: 0.3,
+                duration: duration,
+                useNativeDriver: true,
+              }),
+            ])
+          ).start();
+        };
+
+        animate(fadeAnim1, 0);
+        animate(fadeAnim2, delay);
+        animate(fadeAnim3, delay * 2);
+      };
+
+      animateSequence();
+    }, []);
+
+    return (
+      <View style={styles.loadingContainer}>
+        <View style={styles.loadingContent}>
+          <ActivityIndicator size="large" color="#000000" />
+          <Text style={styles.loadingText}>Caricamento impegni...</Text>
+          <View style={styles.loadingDots}>
+            <Animated.View style={[styles.dot, { opacity: fadeAnim1 }]} />
+            <Animated.View style={[styles.dot, { opacity: fadeAnim2 }]} />
+            <Animated.View style={[styles.dot, { opacity: fadeAnim3 }]} />
+          </View>
+        </View>
+      </View>
+    );
+  };
+
+  if (isLoading) {
+    return (
+      <View style={styles.calendarContainer}>
+        {/* Griglia del calendario (sempre visibile) */}
+        <CalendarGrid
+          selectedDate={selectedDate}
+          tasks={[]} // Lista vuota durante il caricamento
+          onSelectDate={selectDate}
+          onPreviousMonth={goToPreviousMonth}
+          onNextMonth={goToNextMonth}
+        />
+        
+        {/* Header con effetto di caricamento */}
+        <View style={styles.selectedDateHeader}>
+          <Text style={styles.selectedDateTitle}>
+            Impegni del {dayjs(selectedDate).format('DD MMMM YYYY')}
+          </Text>
+          <AddTaskButton onPress={handleAddTask} />
+        </View>
+        
+        {/* Componente di caricamento */}
+        <LoadingComponent />
+        
+        {/* Componente AddTask */}
+        <AddTask 
+          visible={showAddTask} 
+          onClose={handleCloseAddTask}
+          onSave={handleSaveTask}
+          allowCategorySelection={true}
+          categoryName="Calendario"
+          initialDate={selectedDate}
+        />
+      </View>
+    );
+  }
+
+  return (
     <View style={styles.calendarContainer}>
       {/* Griglia del calendario */}
       <CalendarGrid
@@ -194,7 +290,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
   },
   selectedDateHeader: {
-    marginTop: 20,
+    marginTop: 35,
     marginBottom: 15,
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -257,7 +353,37 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     fontSize: 15,
     fontFamily: "System",
-  }
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  loadingContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: "#666666",
+    marginTop: 20,
+    fontFamily: "System",
+    fontWeight: "300",
+    letterSpacing: -0.2,
+  },
+  loadingDots: {
+    flexDirection: 'row',
+    marginTop: 15,
+    alignItems: 'center',
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#000000",
+    marginHorizontal: 3,
+  },
 });
 
 export default CalendarView;
