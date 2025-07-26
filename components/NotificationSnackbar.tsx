@@ -56,7 +56,7 @@ export function NotificationSnackbar({
       style={[
         styles.container,
         animatedStyle,
-        { backgroundColor: isSuccess ? "#4CAF50" : "#F44336" },
+        { backgroundColor: isSuccess ? "#2C2C2C" : "#1A1A1A" },
       ]}
     >
       <Text style={styles.text}>{message}</Text>
@@ -73,9 +73,11 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 8,
     zIndex: 999,
+    borderWidth: 1,
+    borderColor: "#404040",
   },
   text: {
-    color: "#fff",
+    color: "#FFFFFF",
     textAlign: "center",
     fontWeight: "bold",
   },
