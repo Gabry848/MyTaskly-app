@@ -1,5 +1,6 @@
 import axios from "./axiosInterceptor";
 import { getValidToken } from "./authService";
+import { fetch } from 'expo/fetch';
 
 /**
  * Service per la gestione della comunicazione con il bot
@@ -91,24 +92,44 @@ export async function sendMessageToBot(
     
     console.log("📤 Invio messaggio al bot:", requestPayload);
 
-    // Invia la richiesta al server con supporto streaming
-    const response = await axios.post("/chat/text", requestPayload, {
+    // Invia la richiesta al server con supporto streaming usando expo fetch
+    const response = await fetch("https://taskly-production.up.railway.app/chat/text", {
+      method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
+        Accept: 'text/event-stream',
       },
-      responseType: "stream",
+      body: JSON.stringify(requestPayload),
     });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    if (!response.body) {
+      console.log(response)
+      throw new Error("Nessun body nella risposta");
+    }
 
     console.log("📥 Stream iniziato dal server");
 
-    // Processa la risposta in streaming
-    return new Promise((resolve, reject) => {
-      const stream = response.data;
-      let fullMessage = '';
+    // Processa la risposta in streaming usando ReadableStream con expo/fetch
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let fullMessage = '';
 
-      stream.on("data", (data: any) => {
-        const text = data.toString('utf8');
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        
+        if (done) {
+          console.log("\n--- Stream completato ---");
+          break;
+        }
+
+        // Decodifica ogni chunk immediatamente
+        const text = decoder.decode(value, { stream: true });
         
         // Dividi il testo per linee per gestire più messaggi JSON
         const lines = text.split('\n').filter((line: string) => line.trim());
@@ -131,32 +152,26 @@ export async function sendMessageToBot(
             }
           }
         }
-      });
+      }
+    } finally {
+      reader.releaseLock();
+    }
 
-      stream.on("end", () => {
-        console.log("\n--- Stream completato ---");
-        resolve(fullMessage || "Nessuna risposta ricevuta dal bot.");
-      });
-
-      stream.on("error", (error: any) => {
-        console.error("❌ Errore nello stream:", error);
-        reject(error);
-      });
-    });
+    return fullMessage || "Nessuna risposta ricevuta dal bot.";
     
   } catch (error: any) {
     console.error("❌ Errore nella comunicazione con il bot:", error);
     
-    // Gestisci errori specifici
-    if (error.response?.status === 401) {
+    // Gestisci errori specifici per fetch
+    if (error.message?.includes('status: 401')) {
       return "Sessione scaduta. Effettua nuovamente il login.";
     }
     
-    if (error.response?.status === 429) {
+    if (error.message?.includes('status: 429')) {
       return "Troppe richieste. Riprova tra qualche secondo.";
     }
     
-    if (error.response?.status >= 500) {
+    if (error.message?.includes('status: 5')) {
       return "Il servizio è temporaneamente non disponibile. Riprova più tardi.";
     }
     
