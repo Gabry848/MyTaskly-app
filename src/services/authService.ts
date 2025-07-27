@@ -141,11 +141,6 @@ async function login(username: any, password: any) {
       message: "Login effettuato con successo",
     };
   } catch (error: any) {
-    console.error("Errore durante il login:", error.message); // Log dell'
-    console.error(username, password)
-    if (error.response) {
-      console.error("Dati della risposta di errore:", error.response.data);
-    }
     return {
       success: false,
       message: error.response?.data?.message || "Errore durante il login",

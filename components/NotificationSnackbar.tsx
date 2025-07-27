@@ -67,7 +67,7 @@ export function NotificationSnackbar({
 const styles = StyleSheet.create({
   container: {
     position: "absolute",
-    top: 20,
+    top: 80,
     right: 20,
     left: 20,
     padding: 15,
