@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import { 
   View, 
   StyleSheet, 
@@ -8,14 +8,25 @@ import {
 } from 'react-native';
 import CategoryList from '../../../components/CategoryList';
 import AddCategoryButton from "../../../components/AddCategoryButton";
+import SearchTasksButton from "../../../components/SearchTasksButton";
+import GlobalTaskSearch from "../../../components/GlobalTaskSearch";
 
 export default function Categories() {
   const categoryListRef = useRef<{ reloadCategories: () => void } | null>(null);
+  const [searchModalVisible, setSearchModalVisible] = useState(false);
   
   const handleCategoryAdded = () => {
     if (categoryListRef.current) {
       categoryListRef.current.reloadCategories();
     }
+  };
+
+  const handleOpenSearch = () => {
+    setSearchModalVisible(true);
+  };
+
+  const handleCloseSearch = () => {
+    setSearchModalVisible(false);
   };
   
   return (
@@ -28,11 +39,17 @@ export default function Categories() {
       </View>
 
       <View style={styles.content}>
+        <SearchTasksButton onPress={handleOpenSearch} />
         <CategoryList />
         <View style={styles.addButtonContainer}>
           <AddCategoryButton onCategoryAdded={handleCategoryAdded} />
         </View>
       </View>
+
+      <GlobalTaskSearch 
+        visible={searchModalVisible}
+        onClose={handleCloseSearch}
+      />
     </SafeAreaView>
   );
 }
