@@ -210,24 +210,46 @@ export async function addTask(task: Task) {
       }
     }
     
+    // Assicurati che le date siano nel formato corretto
+    const startTime = task.start_time ? new Date(task.start_time) : new Date();
+    const endTime = task.end_time ? new Date(task.end_time) : null;
+    
+    // Validazione: end_time deve essere successiva a start_time
+    if (endTime && endTime <= startTime) {
+      console.warn("⚠️ ATTENZIONE: end_time è precedente o uguale a start_time");
+      console.warn("start_time:", startTime.toISOString());
+      console.warn("end_time:", endTime.toISOString());
+    }
+    
     const data = {
       title: task.title,
       description: task.description || "",
-      start_time: task.start_time || new Date().toISOString(), // Aggiunto con valore predefinito
-      end_time: task.end_time,
+      start_time: startTime.toISOString(),
+      end_time: endTime ? endTime.toISOString() : null,
       priority: task.priority,
       status: task.status || "In sospeso",
       category_name: task.category_name,
       user: task.user || username,
     };
     console.log("data: ", data);
+    console.log("Date formats - start_time:", data.start_time, "end_time:", data.end_time);
+    console.log("Sending POST request to /tasks with headers:", {
+      "Content-Type": "application/json",
+    });
     const response = await axios.post("/tasks", data, {
       headers: {
         "Content-Type": "application/json",
       },
     });
+    console.log("Task creation response:", response.data);
     return response.data;
   } catch (error) {
+    console.error("Errore durante l'aggiunta del task:", error);
+    if (error.response) {
+      console.error("Response status:", error.response.status);
+      console.error("Response data:", error.response.data);
+      console.error("Response headers:", error.response.headers);
+    }
     throw error;
   }
 }

@@ -6,7 +6,7 @@ export interface Message {
   id: string;
   text: string;
   sender: 'user' | 'bot';
-  createdAt: Date;
+  start_time: Date;
   modelType?: 'base' | 'advanced'; // Tipo di modello utilizzato per questo messaggio
   tasks?: TaskItem[]; // Array opzionale di attività
 }

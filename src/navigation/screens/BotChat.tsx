@@ -118,7 +118,7 @@ const BotChat: React.FC = () => {
         id: Math.random().toString(),
         text: `Modello cambiato a: ${modelName}`,
         sender: BOT,
-        createdAt: new Date(),
+        start_time: new Date(),
         modelType: newModelType
       }
     ]);
@@ -137,7 +137,7 @@ const BotChat: React.FC = () => {
       id: Math.random().toString(),
       text,
       sender: USER,
-      createdAt: new Date(),
+      start_time: new Date(),
     };
     
     // Aggiungiamo il messaggio dell'utente
@@ -156,7 +156,7 @@ const BotChat: React.FC = () => {
           id: tempId,
           text: "Sto pensando...",
           sender: BOT,
-          createdAt: new Date(),
+          start_time: new Date(),
         }
       ]);
       
@@ -172,7 +172,7 @@ const BotChat: React.FC = () => {
             id: Math.random().toString(),
             text: botResponseText,
             sender: BOT,
-            createdAt: new Date(),
+            start_time: new Date(),
             modelType: modelType  // Aggiungiamo l'informazione sul modello utilizzato
           }
         ];
@@ -187,7 +187,7 @@ const BotChat: React.FC = () => {
           id: Math.random().toString(),
           text: "Mi dispiace, si è verificato un errore. Riprova più tardi.",
           sender: BOT,
-          createdAt: new Date(),
+          start_time: new Date(),
         }
       ]);
     }  }, [modelType, messages]);

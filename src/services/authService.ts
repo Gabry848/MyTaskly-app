@@ -391,17 +391,9 @@ async function loadStoredData() {
  */
 async function logout() {
   try {
-    await AsyncStorage.removeItem(STORAGE_KEYS.BEARER_TOKEN);
-    await AsyncStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
-    await AsyncStorage.removeItem(STORAGE_KEYS.LOGIN_TIME);
-    await AsyncStorage.removeItem(STORAGE_KEYS.BEARER_DURATION);
-    await AsyncStorage.removeItem(STORAGE_KEYS.REFRESH_DURATION);
-    await AsyncStorage.removeItem(STORAGE_KEYS.USER_DATA);
-    await AsyncStorage.removeItem(STORAGE_KEYS.USER_NAME);
-    await AsyncStorage.removeItem(STORAGE_KEYS.USER_EMAIL);
-    await AsyncStorage.removeItem(STORAGE_KEYS.USER_ID);
-    await AsyncStorage.removeItem(STORAGE_KEYS.USER_PASSWORD);
-
+    for (const key in STORAGE_KEYS) {
+      await AsyncStorage.removeItem(STORAGE_KEYS[key]);
+    }
     return { success: true, message: "Logout effettuato con successo" };
   } catch (error) {
     console.error("Errore durante il logout:", error);

@@ -91,7 +91,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style }) => {
         styles.messageTime,
         isBot ? styles.botTime : styles.userTime
       ]}>
-        {formatTime(message.createdAt)}
+        {formatTime(message.start_time)}
       </Text>
     </Animated.View>
   );

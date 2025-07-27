@@ -178,7 +178,7 @@ const Home20 = () => {
       id: generateMessageId(),
       text: trimmedMessage,
       sender: "user",
-      createdAt: new Date(),
+      start_time: new Date(),
     };
 
     // Se è il primo messaggio, avvia l'animazione della chat
@@ -206,7 +206,7 @@ const Home20 = () => {
         id: generateMessageId(),
         text: botResponse,
         sender: "bot",
-        createdAt: new Date(),
+        start_time: new Date(),
         modelType: "advanced",
       };
 
@@ -223,7 +223,7 @@ const Home20 = () => {
         id: generateMessageId(),
         text: "Mi dispiace, si è verificato un errore. Riprova più tardi.",
         sender: "bot",
-        createdAt: new Date(),
+        start_time: new Date(),
         modelType: "base",
       };
 
