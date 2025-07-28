@@ -12,6 +12,7 @@ import { Ionicons } from "@expo/vector-icons";
 import LoginScreen from "./screens/Login";
 import RegisterScreen from "./screens/Register";
 import EmailVerificationScreen from "./screens/EmailVerification";
+import VerificationSuccessScreen from "./screens/VerificationSuccess";
 import HomeScreen from "./screens/Home";
 import TaskListScreen from "./screens/TaskList";
 import CategoriesScreen from "./screens/Categories";
@@ -27,8 +28,10 @@ import { check_login } from "../services/authService";
 export type RootStackParamList = {
   Login: undefined;
   Register: undefined;
-  EmailVerification: { email: string; username: string };
+  EmailVerification: { email: string; username: string; password: string };
+  VerificationSuccess: { email: string; username: string; password: string };
   HomeTabs: undefined; // Contiene il Tab Navigator
+  Home20: undefined; // Nuova schermata Home2.0
   TaskList: { category_name: number | string };
   Profile: undefined;
   Settings: undefined;
@@ -212,6 +215,11 @@ function AppStack() {
         <Stack.Screen
           name="EmailVerification"
           component={EmailVerificationScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="VerificationSuccess"
+          component={VerificationSuccessScreen}
           options={{ headerShown: false }}
         />
         <Stack.Screen

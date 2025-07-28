@@ -201,19 +201,6 @@ async function register(username: string, email: string, password: string) {
     // Estrai i dati dalla risposta
     const { user_id } = response.data;
 
-    // Invia automaticamente l'email di verifica dopo la registrazione
-    try {
-      const emailResult = await sendVerificationEmail(email, "email_verification");
-      
-      if (emailResult.success) {
-        console.log("✅ Email di verifica inviata con successo");
-      } else {
-        console.warn("⚠️ Registrazione riuscita ma errore nell'invio dell'email di verifica:", emailResult.message);
-      }
-    } catch (emailError) {
-      console.warn("⚠️ Registrazione riuscita ma errore nell'invio dell'email di verifica:", emailError);
-    }
-
     // Salva dati limitati dell'utente
     // await updateAuthData({
     //   username: username,

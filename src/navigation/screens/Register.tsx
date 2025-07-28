@@ -96,14 +96,11 @@ const RegisterScreen = () => {
         isVisible: true,
         message: result.message || "Registrazione effettuata con successo",
         isSuccess: true,
-        onFinish: () => {
-          setNotification((prev) => ({ ...prev, isVisible: false }));
-          // Naviga alla schermata di verifica email
-          navigation.navigate("EmailVerification", { 
-            email: email, 
-            username: username 
-          });
-        },
+      });
+      navigation.navigate("EmailVerification", { 
+        email: email, 
+        username: username,
+        password: password
       });
     } else {
       setNotification({
@@ -173,7 +170,7 @@ const RegisterScreen = () => {
         style={[styles.registerButton, { width: width * 0.9 }]}
         onPress={handleRegister}
       >
-        <Text style={styles.registerText}>Register Now</Text>
+        <Text style={styles.registerText}>Avanti</Text>
       </TouchableOpacity>
       <Text style={styles.loginText}>Already have an account?</Text>
       <TouchableOpacity 

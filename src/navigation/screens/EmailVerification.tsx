@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -7,35 +7,29 @@ import {
   Dimensions,
   StatusBar,
   SafeAreaView,
-  Image,
+  Animated,
   ActivityIndicator,
 } from "react-native";
-import { FontAwesome } from "@expo/vector-icons";
+import { FontAwesome, MaterialIcons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "../../types";
 import * as authService from "../../services/authService";
 import { NotificationSnackbar } from "../../../components/NotificationSnackbar";
 
-const { width } = Dimensions.get("window");
+const { width, height } = Dimensions.get("window");
 
-interface EmailVerificationProps {
-  route: {
-    params: {
-      email: string;
-      username: string;
-    };
-  };
+interface RouteParams {
+  email: string;
+  username: string;
+  password: string;
 }
 
 const EmailVerificationScreen = () => {
-  const route = useRoute();
-  const { email, username } = route.params as { email: string; username: string };
-  
-  const [isLoading, setIsLoading] = useState(false);
-  const [isChecking, setIsChecking] = useState(false);
-  const [isVerified, setIsVerified] = useState(false);
-  const [notification, setNotification] = useState<{
+  const [isEmailSent, setIsEmailSent] = React.useState(false);
+  const [isVerifying, setIsVerifying] = React.useState(false);
+  const [verificationStatus, setVerificationStatus] = React.useState<'pending' | 'verified' | 'failed'>('pending');
+  const [notification, setNotification] = React.useState<{
     isVisible: boolean;
     message: string;
     isSuccess: boolean;
@@ -45,145 +39,217 @@ const EmailVerificationScreen = () => {
     message: "",
     isSuccess: true,
   });
-  
+
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+  const route = useRoute();
+  const { email, username, password } = route.params as RouteParams;
+  
+  // Animazioni
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(50)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const showNotification = (message: string, isSuccess: boolean, onFinish?: () => void) => {
-    setNotification({
-      isVisible: true,
-      message,
-      isSuccess,
-      onFinish: () => {
-        setNotification((prev) => ({ ...prev, isVisible: false }));
-        if (onFinish) onFinish();
-      },
-    });
-  };
+  useEffect(() => {
+    // Animazione di entrata
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
 
-  // Funzione per controllare lo stato di verifica
-  const checkVerificationStatus = async (showLoadingState: boolean = true) => {
-    if (showLoadingState) setIsChecking(true);
-    
-    try {
-      const result = await authService.checkEmailVerificationStatus(email);
-      
-      if (result.success) {
-        setIsVerified(result.isVerified);
-        
-        if (result.isVerified) {
-          showNotification(
-            "Email verificata con successo! Ora puoi effettuare il login.",
-            true,
-            () => {
-              navigation.navigate("Login");
-            }
-          );
-        } else if (showLoadingState) {
-          showNotification("Email non ancora verificata. Controlla la tua casella di posta.", false);
+  useEffect(() => {
+    if (isVerifying) {
+      // Avvia il controllo periodico dello stato di verifica
+      intervalRef.current = setInterval(async () => {
+        try {
+          const result = await authService.checkEmailVerificationStatus(email);
+          if (result.success && result.isVerified) {
+            setVerificationStatus('verified');
+            clearInterval(intervalRef.current!);
+            
+            // Anima verso la schermata di congratulazioni
+            setTimeout(() => {
+              navigation.navigate("VerificationSuccess", {
+                email,
+                username,
+                password,
+              });
+            }, 1000);
+          }
+        } catch (error) {
+          console.error('Errore durante il controllo della verifica:', error);
         }
-      } else {
-        showNotification(result.message || "Errore durante il controllo della verifica", false);
-      }
-    } catch (error) {
-      showNotification("Errore di connessione durante il controllo", false);
-    } finally {
-      if (showLoadingState) setIsChecking(false);
+      }, 1000);
     }
-  };
 
-  // Funzione per inviare nuovamente l'email di verifica
-  const resendVerificationEmail = async () => {
-    setIsLoading(true);
-    
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [isVerifying, email, navigation, username, password]);
+
+  // Animazione di pulsazione per l'icona email
+  useEffect(() => {
+    if (isVerifying) {
+      const pulseAnimation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 1.2,
+            duration: 1000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 1000,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      pulseAnimation.start();
+      return () => pulseAnimation.stop();
+    }
+  }, [isVerifying, pulseAnim]);
+
+  const handleSendVerificationEmail = async () => {
     try {
       const result = await authService.sendVerificationEmail(email, "email_verification");
-      
       if (result.success) {
-        showNotification("Email di verifica inviata nuovamente. Controlla la tua casella di posta.", true);
+        setIsEmailSent(true);
+        setIsVerifying(true);
+        setNotification({
+          isVisible: true,
+          message: "Email di verifica inviata! Controlla la tua casella di posta.",
+          isSuccess: true,
+          onFinish: () => setNotification((prev) => ({ ...prev, isVisible: false })),
+        });
       } else {
-        showNotification(result.message || "Errore durante l'invio dell'email", false);
+        setNotification({
+          isVisible: true,
+          message: result.message || "Errore nell'invio dell'email di verifica",
+          isSuccess: false,
+          onFinish: () => setNotification((prev) => ({ ...prev, isVisible: false })),
+        });
       }
     } catch (error) {
-      showNotification("Errore di connessione durante l'invio", false);
-    } finally {
-      setIsLoading(false);
+      setNotification({
+        isVisible: true,
+        message: "Errore di connessione. Riprova più tardi.",
+        isSuccess: false,
+        onFinish: () => setNotification((prev) => ({ ...prev, isVisible: false })),
+      });
     }
   };
 
-  // Controllo automatico dello stato ogni 10 secondi
-  useEffect(() => {
-    checkVerificationStatus(false); // Controllo iniziale senza loading
-    
-    const interval = setInterval(() => {
-      if (!isVerified) {
-        checkVerificationStatus(false); // Controllo silenzioso
-      }
-    }, 10000); // Controlla ogni 10 secondi
-    
-    return () => clearInterval(interval);
-  }, [email, isVerified]);
+  const handleGoBack = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+    navigation.goBack();
+  };
+
+  const renderEmailIcon = () => (
+    <Animated.View 
+      style={[
+        styles.emailIconContainer,
+        {
+          transform: [{ scale: isVerifying ? pulseAnim : 1 }],
+        },
+      ]}
+    >
+      <MaterialIcons 
+        name="email" 
+        size={60} 
+        color={isVerifying ? "#4CAF50" : "#007AFF"} 
+      />
+      {isVerifying && (
+        <View style={styles.checkmarkContainer}>
+          <MaterialIcons name="check-circle" size={24} color="#4CAF50" />
+        </View>
+      )}
+    </Animated.View>
+  );
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
       
-      <View style={styles.iconContainer}>
-        <FontAwesome name="envelope-o" size={80} color="#4285F4" />
-      </View>
-      
-      <Text style={styles.title}>Verifica la tua email</Text>
-      
-      <Text style={styles.subtitle}>
-        Ciao {username}! Abbiamo inviato un'email di verifica a:
-      </Text>
-      
-      <Text style={styles.email}>{email}</Text>
-      
-      <Text style={styles.description}>
-        Clicca sul link nell'email per verificare il tuo account. 
-        Una volta verificato, potrai effettuare il login.
-      </Text>
-      
-      {isVerified && (
-        <View style={styles.successContainer}>
-          <FontAwesome name="check-circle" size={24} color="#4CAF50" />
-          <Text style={styles.successText}>Email verificata!</Text>
+      <Animated.View 
+        style={[
+          styles.content,
+          {
+            opacity: fadeAnim,
+            transform: [{ translateY: slideAnim }],
+          },
+        ]}
+      >
+        {renderEmailIcon()}
+        
+        <Text style={styles.title}>
+          {isEmailSent ? "Verifica la tua email" : "Conferma il tuo indirizzo email"}
+        </Text>
+        
+        <Text style={styles.emailText}>{email}</Text>
+        
+        {!isEmailSent ? (
+          <Text style={styles.description}>
+            Invieremo un'email di verifica al tuo indirizzo. Clicca sul link nell'email per completare la registrazione.
+          </Text>
+        ) : (
+          <Text style={styles.description}>
+            {isVerifying 
+              ? "Stiamo controllando se hai verificato la tua email. Controlla la tua casella di posta e clicca sul link di verifica."
+              : "Email inviata! Controlla la tua casella di posta."
+            }
+          </Text>
+        )}
+
+        {isVerifying && (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="small" color="#007AFF" />
+            <Text style={styles.loadingText}>Controllo in corso...</Text>
+          </View>
+        )}
+
+        {!isEmailSent ? (
+          <TouchableOpacity
+            style={[styles.primaryButton, { width: width * 0.9 }]}
+            onPress={handleSendVerificationEmail}
+          >
+            <MaterialIcons name="send" size={20} color="#ffffff" style={styles.buttonIcon} />
+            <Text style={styles.primaryButtonText}>Invia email di verifica</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={[styles.secondaryButton, { width: width * 0.9 }]}
+            onPress={handleSendVerificationEmail}
+          >
+            <MaterialIcons name="refresh" size={20} color="#007AFF" style={styles.buttonIcon} />
+            <Text style={styles.secondaryButtonText}>Invia di nuovo</Text>
+          </TouchableOpacity>
+        )}
+
+        <View style={styles.bottomSection}>
+          <Text style={styles.helpText}>Non hai ricevuto nessuna email?</Text>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={handleGoBack}
+          >
+            <FontAwesome name="arrow-left" size={16} color="#666666" style={styles.backIcon} />
+            <Text style={styles.backButtonText}>Torna indietro a modificarla</Text>
+          </TouchableOpacity>
         </View>
-      )}
-      
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity
-          style={[styles.checkButton, { width: width * 0.9 }]}
-          onPress={() => checkVerificationStatus(true)}
-          disabled={isChecking}
-        >
-          {isChecking ? (
-            <ActivityIndicator color="#ffffff" />
-          ) : (
-            <Text style={styles.checkButtonText}>Controlla verifica</Text>
-          )}
-        </TouchableOpacity>
-        
-        <TouchableOpacity
-          style={[styles.resendButton, { width: width * 0.9 }]}
-          onPress={resendVerificationEmail}
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <ActivityIndicator color="#4285F4" />
-          ) : (
-            <Text style={styles.resendButtonText}>Invia nuovamente email</Text>
-          )}
-        </TouchableOpacity>
-        
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.navigate("Login")}
-        >
-          <Text style={styles.backButtonText}>Torna al login</Text>
-        </TouchableOpacity>
-      </View>
-      
+      </Animated.View>
+
       <NotificationSnackbar
         isVisible={notification.isVisible}
         message={notification.message}
@@ -197,129 +263,148 @@ const EmailVerificationScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#ffffff",
+  },
+  content: {
+    flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#ffffff",
     paddingHorizontal: 20,
   },
-  iconContainer: {
-    marginBottom: 30,
-    padding: 20,
+  emailIconContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
     backgroundColor: "#f8f9fa",
-    borderRadius: 50,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 30,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 4,
     },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 4,
+    position: "relative",
+  },
+  checkmarkContainer: {
+    position: "absolute",
+    bottom: -5,
+    right: -5,
+    backgroundColor: "#ffffff",
+    borderRadius: 12,
+    padding: 2,
   },
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: "600",
     color: "#000000",
+    textAlign: "center",
     marginBottom: 16,
-    textAlign: "center",
     fontFamily: "System",
   },
-  subtitle: {
+  emailText: {
     fontSize: 16,
-    color: "#666666",
-    textAlign: "center",
-    marginBottom: 12,
-    fontFamily: "System",
-    lineHeight: 22,
-  },
-  email: {
-    fontSize: 18,
-    color: "#4285F4",
-    fontWeight: "500",
+    color: "#007AFF",
     textAlign: "center",
     marginBottom: 20,
+    fontWeight: "500",
     fontFamily: "System",
   },
   description: {
-    fontSize: 14,
-    color: "#888888",
+    fontSize: 16,
+    color: "#666666",
     textAlign: "center",
+    lineHeight: 24,
     marginBottom: 30,
-    lineHeight: 20,
+    paddingHorizontal: 20,
     fontFamily: "System",
   },
-  successContainer: {
+  loadingContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#E8F5E8",
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 12,
     marginBottom: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    backgroundColor: "#f8f9fa",
+    borderRadius: 12,
   },
-  successText: {
-    marginLeft: 8,
-    fontSize: 16,
-    color: "#4CAF50",
-    fontWeight: "500",
+  loadingText: {
+    marginLeft: 12,
+    fontSize: 14,
+    color: "#666666",
     fontFamily: "System",
   },
-  buttonContainer: {
-    width: "100%",
-    alignItems: "center",
-  },
-  checkButton: {
-    backgroundColor: "#4285F4",
+  primaryButton: {
+    backgroundColor: "#007AFF",
     paddingVertical: 16,
     borderRadius: 16,
     alignItems: "center",
     marginBottom: 16,
-    shadowColor: "#4285F4",
+    shadowColor: "#007AFF",
     shadowOffset: {
       width: 0,
-      height: 3,
+      height: 4,
     },
-    shadowOpacity: 0.12,
+    shadowOpacity: 0.3,
     shadowRadius: 8,
-    elevation: 3,
+    elevation: 4,
+    flexDirection: "row",
+    justifyContent: "center",
   },
-  checkButtonText: {
+  primaryButtonText: {
     color: "#ffffff",
     fontSize: 17,
-    fontWeight: "500",
+    fontWeight: "600",
     fontFamily: "System",
   },
-  resendButton: {
+  secondaryButton: {
     backgroundColor: "#ffffff",
     borderWidth: 2,
-    borderColor: "#4285F4",
+    borderColor: "#007AFF",
     paddingVertical: 14,
     borderRadius: 16,
     alignItems: "center",
-    marginBottom: 20,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 1,
+    marginBottom: 40,
+    flexDirection: "row",
+    justifyContent: "center",
   },
-  resendButtonText: {
-    color: "#4285F4",
+  secondaryButtonText: {
+    color: "#007AFF",
+    fontSize: 17,
+    fontWeight: "600",
+    fontFamily: "System",
+  },
+  buttonIcon: {
+    marginRight: 8,
+  },
+  bottomSection: {
+    alignItems: "center",
+    marginTop: 20,
+  },
+  helpText: {
+    color: "#666666",
     fontSize: 16,
-    fontWeight: "500",
+    marginBottom: 12,
     fontFamily: "System",
   },
   backButton: {
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: 12,
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    backgroundColor: "#f8f9fa",
+  },
+  backIcon: {
+    marginRight: 8,
   },
   backButtonText: {
-    color: "#888888",
+    color: "#666666",
     fontSize: 15,
-    fontWeight: "400",
+    fontWeight: "500",
     fontFamily: "System",
   },
 });
