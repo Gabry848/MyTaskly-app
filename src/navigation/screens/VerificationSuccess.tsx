@@ -148,7 +148,7 @@ const VerificationSuccessScreen = () => {
         },
       ]}
     >
-      <MaterialIcons name="check-circle" size={80} color="#4CAF50" />
+      <MaterialIcons name="check-circle" size={80} color="#000000" />
 
       {/* Effetto confetti/stelle */}
       <Animated.View
@@ -162,37 +162,37 @@ const VerificationSuccessScreen = () => {
         <FontAwesome
           name="star"
           size={20}
-          color="#FFD700"
+          color="#333333"
           style={[styles.star, styles.star1]}
         />
         <FontAwesome
           name="star"
           size={16}
-          color="#FF6B6B"
+          color="#666666"
           style={[styles.star, styles.star2]}
         />
         <FontAwesome
           name="star"
           size={18}
-          color="#4ECDC4"
+          color="#999999"
           style={[styles.star, styles.star3]}
         />
         <FontAwesome
           name="star"
           size={14}
-          color="#45B7D1"
+          color="#333333"
           style={[styles.star, styles.star4]}
         />
         <FontAwesome
           name="star"
           size={22}
-          color="#96CEB4"
+          color="#666666"
           style={[styles.star, styles.star5]}
         />
         <FontAwesome
           name="star"
           size={16}
-          color="#FFEAA7"
+          color="#999999"
           style={[styles.star, styles.star6]}
         />
       </Animated.View>
@@ -228,15 +228,15 @@ const VerificationSuccessScreen = () => {
 
         <View style={styles.featuresContainer}>
           <View style={styles.featureItem}>
-            <MaterialIcons name="task-alt" size={24} color="#4CAF50" />
+            <MaterialIcons name="task-alt" size={24} color="#000000" />
             <Text style={styles.featureText}>Gestisci le tue attività</Text>
           </View>
           <View style={styles.featureItem}>
-            <MaterialIcons name="schedule" size={24} color="#FF9800" />
+            <MaterialIcons name="schedule" size={24} color="#000000" />
             <Text style={styles.featureText}>Organizza il tuo tempo</Text>
           </View>
           <View style={styles.featureItem}>
-            <MaterialIcons name="trending-up" size={24} color="#2196F3" />
+            <MaterialIcons name="trending-up" size={24} color="#000000" />
             <Text style={styles.featureText}>Aumenta la produttività</Text>
           </View>
         </View>
@@ -315,18 +315,18 @@ const styles = StyleSheet.create({
     width: 140,
     height: 140,
     borderRadius: 70,
-    backgroundColor: "#E8F5E8",
+    backgroundColor: "#f8f9fa",
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 30,
-    shadowColor: "#4CAF50",
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 8,
     },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.08,
     shadowRadius: 20,
-    elevation: 8,
+    elevation: 3,
     position: "relative",
   },
   confettiContainer: {
@@ -380,7 +380,7 @@ const styles = StyleSheet.create({
     fontFamily: "System",
   },
   brandText: {
-    color: "#4CAF50",
+    color: "#000000",
     fontWeight: "700",
   },
   description: {
@@ -393,7 +393,7 @@ const styles = StyleSheet.create({
     fontFamily: "System",
   },
   emailText: {
-    color: "#2196F3",
+    color: "#000000",
     fontWeight: "600",
   },
   featuresContainer: {
@@ -413,19 +413,19 @@ const styles = StyleSheet.create({
     fontFamily: "System",
   },
   continueButton: {
-    backgroundColor: "#4CAF50",
+    backgroundColor: "#000000",
     paddingVertical: 18,
     borderRadius: 16,
     alignItems: "center",
     marginBottom: 20,
-    shadowColor: "#4CAF50",
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 6,
     },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.08,
     shadowRadius: 12,
-    elevation: 6,
+    elevation: 3,
     flexDirection: "row",
     justifyContent: "center",
   },
@@ -448,7 +448,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   manualLoginText: {
-    color: "#888888",
+    color: "#666666",
     fontSize: 15,
     fontWeight: "500",
     fontFamily: "System",

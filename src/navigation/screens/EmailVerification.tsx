@@ -169,11 +169,11 @@ const EmailVerificationScreen = () => {
       <MaterialIcons 
         name="email" 
         size={60} 
-        color={isVerifying ? "#4CAF50" : "#007AFF"} 
+        color={isVerifying ? "#000000" : "#666666"} 
       />
       {isVerifying && (
         <View style={styles.checkmarkContainer}>
-          <MaterialIcons name="check-circle" size={24} color="#4CAF50" />
+          <MaterialIcons name="check-circle" size={24} color="#000000" />
         </View>
       )}
     </Animated.View>
@@ -215,7 +215,7 @@ const EmailVerificationScreen = () => {
 
         {isVerifying && (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="small" color="#007AFF" />
+            <ActivityIndicator size="small" color="#000000" />
             <Text style={styles.loadingText}>Controllo in corso...</Text>
           </View>
         )}
@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
   },
   emailText: {
     fontSize: 16,
-    color: "#007AFF",
+    color: "#000000",
     textAlign: "center",
     marginBottom: 20,
     fontWeight: "500",
@@ -338,19 +338,19 @@ const styles = StyleSheet.create({
     fontFamily: "System",
   },
   primaryButton: {
-    backgroundColor: "#007AFF",
+    backgroundColor: "#000000",
     paddingVertical: 16,
     borderRadius: 16,
     alignItems: "center",
     marginBottom: 16,
-    shadowColor: "#007AFF",
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 4,
     },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
     flexDirection: "row",
     justifyContent: "center",
   },
@@ -362,8 +362,8 @@ const styles = StyleSheet.create({
   },
   secondaryButton: {
     backgroundColor: "#ffffff",
-    borderWidth: 2,
-    borderColor: "#007AFF",
+    borderWidth: 1.5,
+    borderColor: "#e1e5e9",
     paddingVertical: 14,
     borderRadius: 16,
     alignItems: "center",
@@ -372,7 +372,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   secondaryButtonText: {
-    color: "#007AFF",
+    color: "#000000",
     fontSize: 17,
     fontWeight: "600",
     fontFamily: "System",
