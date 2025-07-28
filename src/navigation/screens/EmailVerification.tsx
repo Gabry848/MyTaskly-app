@@ -96,7 +96,7 @@ const EmailVerificationScreen = () => {
     setIsLoading(true);
     
     try {
-      const result = await authService.sendVerificationEmail(email, "REGISTRATION");
+      const result = await authService.sendVerificationEmail(email, "email_verification");
       
       if (result.success) {
         showNotification("Email di verifica inviata nuovamente. Controlla la tua casella di posta.", true);

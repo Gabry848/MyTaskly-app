@@ -203,7 +203,7 @@ async function register(username: string, email: string, password: string) {
 
     // Invia automaticamente l'email di verifica dopo la registrazione
     try {
-      const emailResult = await sendVerificationEmail(email, "REGISTRATION");
+      const emailResult = await sendVerificationEmail(email, "email_verification");
       
       if (emailResult.success) {
         console.log("✅ Email di verifica inviata con successo");
@@ -529,10 +529,10 @@ async function checkAndRefreshAuth(): Promise<{
  * Invia un'email di verifica all'utente
  *
  * @param {string} email - L'email dell'utente da verificare
- * @param {string} emailType - Il tipo di email da inviare ("REGISTRATION" o "PASSWORD_RESET")
+ * @param {string} emailType - Il tipo di email da inviare ("email_verification", "welcome", "password_reset", etc.)
  * @returns {Promise<Object>} - Un oggetto che contiene lo stato dell'invio
  */
-async function sendVerificationEmail(email: string, emailType: string = "REGISTRATION") {
+async function sendVerificationEmail(email: string, emailType: string = "email_verification") {
   try {
     const response = await axios.post(
       API_ENDPOINTS.SEND_VERIFICATION,

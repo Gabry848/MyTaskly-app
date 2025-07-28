@@ -45,7 +45,7 @@ axios.interceptors.request.use(
     }
     
     // Escludi le richieste di login, register e refresh dall'aggiunta automatica del token
-    const excludedPaths = ['/auth/login', '/auth/register', '/auth/refresh', '/login', '/register', '/refresh', 'auth/login', 'auth/register', 'auth/refresh'];
+    const excludedPaths = ['/auth/login', '/auth/register', '/auth/refresh', '/login', '/register', '/refresh', 'auth/login', 'auth/register', 'auth/refresh', '/email/send-verification', '/email/verification-status'];
     const isExcluded = excludedPaths.some(path => config.url?.includes(path));
     
     if (!isExcluded) {
