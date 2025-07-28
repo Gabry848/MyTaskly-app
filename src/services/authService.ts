@@ -94,6 +94,10 @@ async function updateAuthData(data: any) {
  */
 async function login(username: any, password: any) {
   try {
+    // Prima controlla se l'email è verificata (assumendo che username sia l'email o che l'API accetti username)
+    // Se username non è email, dobbiamo fare una call separata o modificare l'API
+    // Per ora procediamo con il login normale e controlliamo dopo
+    
     // Esegui la richiesta di login e gestisci gli errori
     const response = await axios.post(
       API_ENDPOINTS.SIGNIN,
@@ -109,8 +113,28 @@ async function login(username: any, password: any) {
     );
 
     // Estrai i dati dalla risposta
-    const { bearer_token, refresh_token, bearer_duration, refresh_duration } =
+    const { bearer_token, refresh_token, bearer_duration, refresh_duration, email } =
       response.data;
+
+    // Se abbiamo l'email nella risposta, controlla lo stato di verifica
+    if (email) {
+      try {
+        const verificationResult = await checkEmailVerificationStatus(email);
+        
+        if (verificationResult.success && !verificationResult.isVerified) {
+          return {
+            success: false,
+            message: "Email non verificata. Verifica la tua email prima di effettuare il login.",
+            requiresEmailVerification: true,
+            email: email,
+            username: username,
+          };
+        }
+      } catch (verificationError) {
+        console.warn("⚠️ Errore nel controllo verifica email durante il login:", verificationError);
+        // Continua con il login normale se il controllo fallisce
+      }
+    }
 
     // Calcola le date di scadenza
     const currentTime = dayjs();
@@ -177,6 +201,19 @@ async function register(username: string, email: string, password: string) {
     // Estrai i dati dalla risposta
     const { user_id } = response.data;
 
+    // Invia automaticamente l'email di verifica dopo la registrazione
+    try {
+      const emailResult = await sendVerificationEmail(email, "REGISTRATION");
+      
+      if (emailResult.success) {
+        console.log("✅ Email di verifica inviata con successo");
+      } else {
+        console.warn("⚠️ Registrazione riuscita ma errore nell'invio dell'email di verifica:", emailResult.message);
+      }
+    } catch (emailError) {
+      console.warn("⚠️ Registrazione riuscita ma errore nell'invio dell'email di verifica:", emailError);
+    }
+
     // Salva dati limitati dell'utente
     // await updateAuthData({
     //   username: username,
@@ -187,8 +224,8 @@ async function register(username: string, email: string, password: string) {
     return {
       success: true,
       utente_id: user_id,
-      message:
-        "Registrazione effettuata con successo. Effettua il login per continuare.",
+      message: "Registrazione effettuata con successo. Ti abbiamo inviato un'email di verifica.",
+      emailSent: true,
     };
   } catch (error: any) {
     console.error("❌ Errore durante la registrazione:", error.message);
@@ -203,6 +240,7 @@ async function register(username: string, email: string, password: string) {
         error.response?.data?.message || "Errore durante la registrazione",
       statusCode: error.response?.status,
       error: error,
+      emailSent: false,
     };
   }
 }
@@ -487,6 +525,89 @@ async function checkAndRefreshAuth(): Promise<{
   }
 }
 
+/**
+ * Invia un'email di verifica all'utente
+ *
+ * @param {string} email - L'email dell'utente da verificare
+ * @param {string} emailType - Il tipo di email da inviare ("REGISTRATION" o "PASSWORD_RESET")
+ * @returns {Promise<Object>} - Un oggetto che contiene lo stato dell'invio
+ */
+async function sendVerificationEmail(email: string, emailType: string = "REGISTRATION") {
+  try {
+    const response = await axios.post(
+      API_ENDPOINTS.SEND_VERIFICATION,
+      {
+        recipient_email: email,
+        email_type: emailType,
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    return {
+      success: true,
+      message: "Email di verifica inviata con successo",
+      data: response.data,
+    };
+  } catch (error: any) {
+    console.error("❌ Errore durante l'invio dell'email di verifica:", error.message);
+    if (error.response) {
+      console.error("Dettagli errore:", error.response.data);
+      console.error("Status code:", error.response.status);
+    }
+
+    return {
+      success: false,
+      message: error.response?.data?.message || "Errore durante l'invio dell'email di verifica",
+      statusCode: error.response?.status,
+      error: error,
+    };
+  }
+}
+
+/**
+ * Verifica lo stato di verifica dell'email dell'utente
+ *
+ * @param {string} email - L'email dell'utente da verificare
+ * @returns {Promise<Object>} - Un oggetto che contiene lo stato della verifica
+ */
+async function checkEmailVerificationStatus(email: string) {
+  try {
+    const response = await axios.get(
+      `${API_ENDPOINTS.VERIFICATION_STATUS}?email=${encodeURIComponent(email)}`,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    return {
+      success: true,
+      isVerified: response.data.is_verified,
+      message: response.data.message || "Stato verifica recuperato con successo",
+      data: response.data,
+    };
+  } catch (error: any) {
+    console.error("❌ Errore durante il controllo dello stato di verifica:", error.message);
+    if (error.response) {
+      console.error("Dettagli errore:", error.response.data);
+      console.error("Status code:", error.response.status);
+    }
+
+    return {
+      success: false,
+      isVerified: false,
+      message: error.response?.data?.message || "Errore durante il controllo dello stato di verifica",
+      statusCode: error.response?.status,
+      error: error,
+    };
+  }
+}
+
 // Esporta le funzioni
 export {
   login,
@@ -497,4 +618,6 @@ export {
   logout,
   initializeAuth,
   checkAndRefreshAuth,
+  sendVerificationEmail,
+  checkEmailVerificationStatus,
 };

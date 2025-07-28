@@ -80,10 +80,17 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onPress }) => {
             <Ionicons name="time-outline" size={14} color="#666" />
             <Text style={styles.taskTimeText}>
               {task.start_time ? dayjs(task.start_time).format('HH:mm') : '--:--'}
-              {task.end_time ? ' - ' + dayjs(task.end_time).format('HH:mm') : null}
+              {task.end_time ? ' - ' + dayjs(task.end_time).format('HH:mm') : ' - Nessuna scadenza'}
             </Text>
           </View>
-        ) : null}
+        ) : (
+          <View style={styles.taskTimeInfo}>
+            <Ionicons name="calendar-clear-outline" size={14} color="#999" />
+            <Text style={[styles.taskTimeText, { color: '#999' }]}>
+              Nessuna scadenza
+            </Text>
+          </View>
+        )}
       </View>
     </TouchableOpacity>
   );

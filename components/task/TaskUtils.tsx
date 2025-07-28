@@ -4,6 +4,8 @@ export const { width } = Dimensions.get("window");
 
 // Funzioni di utility per date e priorità
 export const getDaysRemainingText = (endDate) => {
+  if (!endDate) return "Nessuna scadenza";
+  
   const today = new Date();
   const dueDate = new Date(endDate);
   const diffTime = dueDate.getTime() - today.getTime();
@@ -16,6 +18,8 @@ export const getDaysRemainingText = (endDate) => {
 };
 
 export const getDaysRemainingColor = (endDate) => {
+  if (!endDate) return "#999999"; // Grigio neutro per task senza scadenza
+  
   const today = new Date();
   const dueDate = new Date(endDate);
   const diffTime = dueDate.getTime() - today.getTime();

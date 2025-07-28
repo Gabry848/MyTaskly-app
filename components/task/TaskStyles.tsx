@@ -316,4 +316,17 @@ export const styles = StyleSheet.create({
     borderColor: '#e1e5e9',
     backgroundColor: '#ffffff',
   },
+  clearDateButton: {
+    alignSelf: 'center',
+    marginTop: -8,
+    marginBottom: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  clearDateText: {
+    color: '#FF5252',
+    fontSize: 14,
+    fontFamily: 'System',
+    textDecorationLine: 'underline',
+  },
 });

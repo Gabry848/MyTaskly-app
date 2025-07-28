@@ -125,10 +125,7 @@ const AddTask: React.FC<AddTaskProps> = ({
       hasError = true;
     }
 
-    if (!dueDate) {
-      setDateError("La data di scadenza è obbligatoria");
-      hasError = true;
-    }
+    // La data di scadenza è ora opzionale, non aggiungiamo più la validazione
 
     if (hasError) {
       return;
@@ -140,7 +137,7 @@ const AddTask: React.FC<AddTaskProps> = ({
       id: Date.now(),
       title: title.trim(),
       description: description.trim() || "", // Assicurarsi che description non sia mai null
-      end_time: dueDate,
+      end_time: dueDate || null, // Se non c'è una data di scadenza, imposta null
       start_time: new Date().toISOString(),
       priority: priorityString,
       status: "In sospeso", // Aggiornato per coerenza con altri componenti
@@ -262,14 +259,14 @@ const AddTask: React.FC<AddTaskProps> = ({
               onChangeText={setDescription}
             />
             
-            <Text style={styles.inputLabel}>Data e ora di scadenza</Text>
+            <Text style={styles.inputLabel}>Data e ora di scadenza (opzionale)</Text>
             <View style={styles.dateTimeContainer}>
               <TouchableOpacity
                 style={[styles.datePickerButton, styles.dateButton]}
                 onPress={showDatepicker}
               >
                 <Text style={styles.datePickerText}>
-                  {selectedDateTime ? selectedDateTime.toLocaleDateString('it-IT') : 'Seleziona data'}
+                  {selectedDateTime ? selectedDateTime.toLocaleDateString('it-IT') : 'Nessuna scadenza'}
                 </Text>
                 <Ionicons name="calendar-outline" size={20} color="#666" />
               </TouchableOpacity>
@@ -277,13 +274,27 @@ const AddTask: React.FC<AddTaskProps> = ({
               <TouchableOpacity
                 style={[styles.datePickerButton, styles.timeButton]}
                 onPress={showTimepicker}
+                disabled={!selectedDateTime}
               >
-                <Text style={styles.datePickerText}>
+                <Text style={[styles.datePickerText, !selectedDateTime && styles.disabledText]}>
                   {selectedDateTime ? selectedDateTime.toLocaleTimeString('it-IT', {hour: '2-digit', minute:'2-digit'}) : 'Seleziona ora'}
                 </Text>
-                <Ionicons name="time-outline" size={20} color="#666" />
+                <Ionicons name="time-outline" size={20} color={selectedDateTime ? "#666" : "#ccc"} />
               </TouchableOpacity>
             </View>
+            
+            {selectedDateTime && (
+              <TouchableOpacity
+                style={styles.clearDateButton}
+                onPress={() => {
+                  setSelectedDateTime(null);
+                  setDueDate("");
+                  setDateError("");
+                }}
+              >
+                <Text style={styles.clearDateText}>Rimuovi scadenza</Text>
+              </TouchableOpacity>
+            )}
             
             {dateError ? <Text style={styles.errorText}>{dateError}</Text> : null}
 
@@ -573,6 +584,22 @@ const styles = StyleSheet.create({
     fontSize: 17,
     color: '#666666',
     fontFamily: 'System',
+  },
+  disabledText: {
+    color: '#ccc',
+  },
+  clearDateButton: {
+    alignSelf: 'center',
+    marginTop: -12,
+    marginBottom: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  clearDateText: {
+    color: '#FF5252',
+    fontSize: 14,
+    fontFamily: 'System',
+    textDecorationLine: 'underline',
   },
 });
 

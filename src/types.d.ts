@@ -15,6 +15,7 @@ export interface TaskListRouteParams {
 export type RootStackParamList = {
   Login: undefined;
   Register: undefined;
+  EmailVerification: { email: string; username: string };
   HomeTabs: undefined;
   Home20: undefined; // Nuova schermata Home2.0
   TaskList: { categoryId: number | string; category_name: string };

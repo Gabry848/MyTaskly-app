@@ -16,6 +16,15 @@ export const Checkbox = ({ checked, onPress }) => (
 
 // Componente per visualizzare la data
 export const DateDisplay = ({ date }) => {
+  if (!date) {
+    return (
+      <View style={styles.dateContainer}>
+        <Ionicons name="calendar-clear-outline" size={14} color="#999999" />
+        <Text style={[styles.dateText, { color: '#999999' }]}>Nessuna scadenza</Text>
+      </View>
+    );
+  }
+  
   const formattedDate = new Date(date).toLocaleDateString("it-IT", {
     day: "2-digit",
     month: "2-digit",

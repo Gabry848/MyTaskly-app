@@ -11,6 +11,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Ionicons } from "@expo/vector-icons";
 import LoginScreen from "./screens/Login";
 import RegisterScreen from "./screens/Register";
+import EmailVerificationScreen from "./screens/EmailVerification";
 import HomeScreen from "./screens/Home";
 import TaskListScreen from "./screens/TaskList";
 import CategoriesScreen from "./screens/Categories";
@@ -26,6 +27,7 @@ import { check_login } from "../services/authService";
 export type RootStackParamList = {
   Login: undefined;
   Register: undefined;
+  EmailVerification: { email: string; username: string };
   HomeTabs: undefined; // Contiene il Tab Navigator
   TaskList: { category_name: number | string };
   Profile: undefined;
@@ -205,6 +207,11 @@ function AppStack() {
         <Stack.Screen
           name="Register"
           component={RegisterScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="EmailVerification"
+          component={EmailVerificationScreen}
           options={{ headerShown: false }}
         />
         <Stack.Screen

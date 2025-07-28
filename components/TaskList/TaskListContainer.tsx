@@ -152,6 +152,11 @@ export const TaskListContainer = ({
     
     // Infine ordina
     return filteredTasks.sort((a, b) => {
+      // I task senza scadenza vanno sempre in fondo
+      if (!a.end_time && !b.end_time) return 0;
+      if (!a.end_time) return 1;
+      if (!b.end_time) return -1;
+      
       if (ordineScadenza === "Recente") {
         return new Date(b.end_time).getTime() - new Date(a.end_time).getTime();
       } else {

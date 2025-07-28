@@ -94,11 +94,15 @@ const RegisterScreen = () => {
     if (result.success) {
       setNotification({
         isVisible: true,
-        message: "Registrazione effettuata con successo",
+        message: result.message || "Registrazione effettuata con successo",
         isSuccess: true,
         onFinish: () => {
           setNotification((prev) => ({ ...prev, isVisible: false }));
-          navigation.navigate("Login");
+          // Naviga alla schermata di verifica email
+          navigation.navigate("EmailVerification", { 
+            email: email, 
+            username: username 
+          });
         },
       });
     } else {

@@ -109,6 +109,20 @@ const LoginScreen = () => {
         setLoginSuccess(true); // Imposta il login come riuscito
         eventEmitter.emit("loginSuccess"); // Emetti evento per aggiornare lo stato di autenticazione
         showNotification("Login effettuato con successo", true);
+      } else if (login_data.requiresEmailVerification) {
+        // Email non verificata - naviga alla schermata di verifica
+        showNotification(
+          login_data.message || "Email non verificata. Verifica la tua email prima di effettuare il login.",
+          false
+        );
+        
+        // Naviga alla schermata di verifica email dopo un breve ritardo
+        setTimeout(() => {
+          navigation.navigate("EmailVerification", {
+            email: login_data.email || "",
+            username: login_data.username || username,
+          });
+        }, 2000);
       } else {
         // Incrementa i tentativi di login
         const newAttempts = loginAttempts + 1;
@@ -121,7 +135,7 @@ const LoginScreen = () => {
         } else {
           const remainingAttempts = 3 - newAttempts;
           showNotification(
-            `Username o password errati. ${remainingAttempts} tentativo${remainingAttempts > 1 ? 'i' : ''} rimasto${remainingAttempts > 1 ? '' : 'o'}.`,
+            login_data.message || `Username o password errati. ${remainingAttempts} tentativo${remainingAttempts > 1 ? 'i' : ''} rimasto${remainingAttempts > 1 ? '' : 'o'}.`,
             false
           );
         }

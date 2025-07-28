@@ -130,24 +130,33 @@ const TaskEditModal = ({
               placeholder="Seleziona data di inizio"
             />
             
-            <Text style={styles.inputLabel}>Data e ora di scadenza</Text>
+            <Text style={styles.inputLabel}>Data e ora di scadenza (opzionale)</Text>
             <View style={styles.dateTimeContainer}>
               <View style={styles.dateButton}>
                 <DatePickerButton 
                   value={editedTask.end_time}
                   onPress={() => openDatePicker('end')}
-                  placeholder="Seleziona data"
+                  placeholder="Nessuna scadenza"
                 />
               </View>
               
               <View style={styles.timeButton}>
                 <TimePickerButton 
                   value={editedTask.end_time}
-                  onPress={() => openTimePicker('end')}
+                  onPress={() => editedTask.end_time ? openTimePicker('end') : null}
                   placeholder="Seleziona ora"
                 />
               </View>
             </View>
+            
+            {editedTask.end_time && (
+              <TouchableOpacity
+                style={styles.clearDateButton}
+                onPress={() => setEditedTask({...editedTask, end_time: null})}
+              >
+                <Text style={styles.clearDateText}>Rimuovi scadenza</Text>
+              </TouchableOpacity>
+            )}
             
             {showDatePicker && (
               <DateTimePicker

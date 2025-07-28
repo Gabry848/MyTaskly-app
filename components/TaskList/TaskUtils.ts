@@ -21,6 +21,10 @@ export function filterTasksByDay(tasks: Task[], dayFilter: string): Task[] {
     return tasks;
   }
   
+  if (dayFilter === "Senza scadenza") {
+    return tasks.filter((task) => !task.end_time);
+  }
+  
   const today = new Date();
   let targetDate = new Date();
   let daysToAdd = 0;
@@ -51,6 +55,9 @@ export function filterTasksByDay(tasks: Task[], dayFilter: string): Task[] {
   const endOfDay = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), 23, 59, 59);
 
   return tasks.filter((task) => {
+    // Escludi task senza data di scadenza per i filtri specifici di data
+    if (!task.end_time) return false;
+    
     const dueDate = new Date(task.end_time);
     return dueDate >= startOfDay && dueDate <= endOfDay;
   });

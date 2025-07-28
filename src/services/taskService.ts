@@ -56,6 +56,11 @@ export async function getLastTask(last_n: number) {
     let data = allTasks.slice(-last_n);
     // ordina gli impegni in base alla data di fine
     data.sort((a: Task, b: Task) => {
+      // I task senza scadenza vanno in fondo
+      if (!a.end_time && !b.end_time) return 0;
+      if (!a.end_time) return 1;
+      if (!b.end_time) return -1;
+      
       return new Date(a.end_time).getTime() - new Date(b.end_time).getTime();
     });
     return data;
@@ -93,6 +98,11 @@ export async function getAllTasks() {
     
     // Ordina i task per data di fine
     uniqueTasks.sort((a: Task, b: Task) => {
+      // I task senza scadenza vanno in fondo
+      if (!a.end_time && !b.end_time) return 0;
+      if (!a.end_time) return 1;
+      if (!b.end_time) return -1;
+      
       return new Date(a.end_time).getTime() - new Date(b.end_time).getTime();
     });
     

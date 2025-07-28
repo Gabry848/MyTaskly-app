@@ -109,6 +109,12 @@ export const FilterModal = ({
                   isSelected={filtroScadenza === "Fra 7 giorni"}
                   onPress={() => setFiltroScadenza("Fra 7 giorni")}
                 />
+                <FilterChip
+                  label="Senza scadenza"
+                  isSelected={filtroScadenza === "Senza scadenza"}
+                  onPress={() => setFiltroScadenza("Senza scadenza")}
+                  color="#999999"
+                />
               </View>
             </View>
             
