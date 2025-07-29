@@ -1,6 +1,6 @@
 import { AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { STORAGE_KEYS } from '../constants/authConstants';
+import { STORAGE_KEYS, API_ENDPOINTS } from '../constants/authConstants';
 import { getValidToken, refreshToken } from './authService';
 import axios from './axiosInstance';
 
@@ -81,10 +81,76 @@ axios.interceptors.request.use(
 );
 
 /**
- * Interceptor per le risposte - gestisce automaticamente errori 401 (Unauthorized)
+ * Funzione per ottenere il timezone del dispositivo
+ */
+const getDeviceTimezone = (): string => {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone;
+  } catch (error) {
+    console.warn('[AXIOS] Errore nel recupero del timezone, utilizzo UTC come fallback:', error);
+    return 'UTC';
+  }
+};
+
+/**
+ * Funzione per inviare il timezone al server dopo il login
+ */
+const sendTimezoneToServer = async (bearerToken: string): Promise<void> => {
+  try {
+    const timezone = getDeviceTimezone();
+    console.log('[AXIOS] Invio timezone al server:', timezone);
+    
+    await axios.post(API_ENDPOINTS.TIMEZONE, 
+      { timezone }, 
+      {
+        headers: {
+          'Authorization': `Bearer ${bearerToken.startsWith('Bearer ') ? bearerToken.substring(7) : bearerToken}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    console.log('[AXIOS] Timezone inviato con successo al server');
+  } catch (error) {
+    console.error('[AXIOS] Errore nell\'invio del timezone al server:', error);
+    // Non blocchiamo il login se l'invio del timezone fallisce
+  }
+};
+
+/**
+ * Interceptor per le risposte - gestisce automaticamente errori 401 (Unauthorized) e login success
  */
 axios.interceptors.response.use(
-  (response: AxiosResponse) => {
+  async (response: AxiosResponse) => {
+    // Controlla se è una risposta di login riuscito
+    const isLoginRequest = response.config.url?.includes('/auth/login') || response.config.url?.includes('/login');
+    
+    if (isLoginRequest && response.status === 200 && response.data) {
+      console.log('[AXIOS] Login riuscito, controllo presenza bearer token per invio timezone...');
+      
+      // Cerca il bearer token nella risposta
+      let bearerToken = null;
+      
+      // Controlla se il token è nella risposta
+      if (response.data.bearerToken) {
+        bearerToken = response.data.bearerToken;
+      } else if (response.data.access_token) {
+        bearerToken = response.data.access_token;
+      } else if (response.data.token) {
+        bearerToken = response.data.token;
+      }
+      
+      // Se abbiamo un token, invia il timezone
+      if (bearerToken) {
+        console.log('[AXIOS] Bearer token trovato nella risposta, invio timezone...');
+        // Esegui l'invio del timezone in background senza bloccare la risposta del login
+        sendTimezoneToServer(bearerToken).catch(error => {
+          console.error('[AXIOS] Errore nell\'invio del timezone in background:', error);
+        });
+      } else {
+        console.warn('[AXIOS] Nessun bearer token trovato nella risposta del login');
+      }
+    }
+    
     return response;
   },
   async (error) => {
