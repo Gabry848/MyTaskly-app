@@ -45,7 +45,8 @@
           "color": "#ffffff",
           "sounds": []
         }
-      ]
+      ],
+      "expo-dev-client"
     ],
     "extra": {
       "eas": {

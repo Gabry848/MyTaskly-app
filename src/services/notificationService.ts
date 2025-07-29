@@ -5,6 +5,10 @@ import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import axiosInstance from './axiosInstance';
 
+// Controllo se siamo in Expo Go o Development Build
+const isExpoGo = Constants.appOwnership === 'expo';
+const isDevBuild = Constants.appOwnership === 'standalone' || Constants.executionEnvironment === 'standalone';
+
 // ⚙️ CONFIGURA COME GESTIRE LE NOTIFICHE
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -21,6 +25,13 @@ Notifications.setNotificationHandler({
  */
 export async function registerForPushNotificationsAsync(): Promise<string | undefined> {
   let token;
+
+  // ⚠️ Controllo compatibilità con Expo Go
+  if (isExpoGo) {
+    console.log('ℹ️ Modalità Expo Go: le notifiche push remote non sono supportate');
+    // Non mostriamo più l'Alert automatico per non disturbare l'utente
+    return;
+  }
 
   // 📱 Configura il canale Android (obbligatorio)
   if (Platform.OS === 'android') {
@@ -68,6 +79,12 @@ export async function registerForPushNotificationsAsync(): Promise<string | unde
       console.log('🎉 Token Expo ottenuto:', token);
     } catch (e) {
       console.error('❌ Errore nell\'ottenere il token:', e);
+      if (isExpoGo) {
+        Alert.alert(
+          'Errore Token Push',
+          'Impossibile ottenere il token push in Expo Go.\nUsa un development build per le notifiche push.'
+        );
+      }
     }
   } else {
     Alert.alert('Errore', 'Le notifiche funzionano solo su dispositivi fisici');
@@ -161,6 +178,37 @@ export async function getAllScheduledNotifications(): Promise<Notifications.Noti
  * Funzione per inviare una notifica di test
  */
 export async function sendTestNotification(): Promise<boolean> {
+  // Se siamo in Expo Go, mostra un modal invece di inviare notifica push
+  if (isExpoGo) {
+    console.log('📱 Simulazione notifica push (Expo Go mode)');
+    
+    // Simula il comportamento di una notifica push con un Alert
+    Alert.alert(
+      '🧪 Test Mytaskly',
+      'Notifica simulata funziona! 🎉\n\n📱 In Expo Go questa è una simulazione.\nIn un Development Build sarebbe una vera notifica push.',
+      [
+        {
+          text: 'Chiudi',
+          style: 'cancel'
+        },
+        {
+          text: 'Apri App',
+          onPress: () => {
+            console.log('📱 Utente ha premuto "Apri App" dalla notifica simulata');
+            // Qui potresti navigare a una schermata specifica
+          }
+        }
+      ],
+      { 
+        cancelable: true,
+        userInterfaceStyle: 'light'
+      }
+    );
+    
+    return true;
+  }
+
+  // Altrimenti invia una notifica push tramite backend
   try {
     const response = await axiosInstance.post('/notifications/test-notification', {
       title: '🧪 Test Mytaskly',
@@ -195,14 +243,17 @@ export function useNotifications() {
     registerForPushNotificationsAsync().then(token => {
       if (token) {
         setExpoPushToken(token);
-        // Invia il token al backend
+        // Invia il token al backend solo se abbiamo un token valido
         sendTokenToBackend(token).then(success => {
           if (success) {
-            Alert.alert('Successo', 'Notifiche attivate!');
+            Alert.alert('Successo', 'Notifiche push attivate!');
           } else {
-            Alert.alert('Errore', 'Impossibile attivare le notifiche');
+            Alert.alert('Errore', 'Impossibile attivare le notifiche push');
           }
         });
+      } else if (isExpoGo) {
+        // In Expo Go, modalità silenziosa
+        console.log('ℹ️ Modalità Expo Go attiva');
       }
     });
 
