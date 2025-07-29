@@ -1,0 +1,253 @@
+import { useState, useEffect, useRef } from 'react';
+import { Platform, Alert } from 'react-native';
+import * as Device from 'expo-device';
+import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
+import axiosInstance from './axiosInstance';
+
+// ⚙️ CONFIGURA COME GESTIRE LE NOTIFICHE
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,    // Mostra il popup quando l'app è aperta
+    shouldPlaySound: true,    // Riproduce il suono
+    shouldSetBadge: true,     // Aggiorna il badge dell'app
+    shouldShowBanner: true,   // Mostra il banner
+    shouldShowList: true,     // Mostra nella lista notifiche
+  }),
+});
+
+/**
+ * Funzione per ottenere i permessi e il token push
+ */
+export async function registerForPushNotificationsAsync(): Promise<string | undefined> {
+  let token;
+
+  // 📱 Configura il canale Android (obbligatorio)
+  if (Platform.OS === 'android') {
+    await Notifications.setNotificationChannelAsync('default', {
+      name: 'default',
+      importance: Notifications.AndroidImportance.MAX,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: '#FF231F7C',
+    });
+  }
+
+  // 📋 Controlla se è un dispositivo fisico
+  if (Device.isDevice) {
+    // Verifica permessi esistenti
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
+    
+    // Richiedi permessi se non li hai
+    if (existingStatus !== 'granted') {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
+    
+    // Se non hai i permessi, avvisa l'utente
+    if (finalStatus !== 'granted') {
+      Alert.alert(
+        'Permessi Notifiche', 
+        'Le notifiche sono necessarie per ricevere aggiornamenti sui tuoi task!'
+      );
+      return;
+    }
+    
+    // 🎯 OTTIENI IL TOKEN EXPO
+    const projectId = Constants?.expoConfig?.extra?.eas?.projectId 
+                   ?? Constants?.easConfig?.projectId;
+    
+    if (!projectId) {
+      Alert.alert('Errore', 'Project ID non trovato');
+      return;
+    }
+
+    try {
+      // Questo è il token che devi inviare al backend!
+      token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+      console.log('🎉 Token Expo ottenuto:', token);
+    } catch (e) {
+      console.error('❌ Errore nell\'ottenere il token:', e);
+    }
+  } else {
+    Alert.alert('Errore', 'Le notifiche funzionano solo su dispositivi fisici');
+  }
+
+  return token;
+}
+
+/**
+ * Funzione per inviare il token al backend
+ */
+export async function sendTokenToBackend(token: string): Promise<boolean> {
+  try {
+    const response = await axiosInstance.post('/notifications/token', {
+      token: token
+    });
+
+    if (response.status === 200) {
+      console.log('✅ Token inviato al backend con successo');
+      return true;
+    } else {
+      console.error('❌ Errore nell\'invio del token al backend');
+      return false;
+    }
+  } catch (error) {
+    console.error('❌ Errore nella richiesta:', error);
+    return false;
+  }
+}
+
+/**
+ * Funzione per programmare una notifica locale
+ */
+export async function scheduleLocalNotification(
+  title: string,
+  body: string,
+  triggerDate: Date,
+  data?: any
+): Promise<string | null> {
+  try {
+    const notificationId = await Notifications.scheduleNotificationAsync({
+      content: {
+        title,
+        body,
+        data: data || {},
+        sound: 'default',
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        date: triggerDate,
+      },
+    });
+    
+    console.log('📅 Notifica locale programmata:', notificationId);
+    return notificationId;
+  } catch (error) {
+    console.error('❌ Errore nella programmazione della notifica locale:', error);
+    return null;
+  }
+}
+
+/**
+ * Funzione per cancellare una notifica programmata
+ */
+export async function cancelLocalNotification(notificationId: string): Promise<boolean> {
+  try {
+    await Notifications.cancelScheduledNotificationAsync(notificationId);
+    console.log('🗑️ Notifica locale cancellata:', notificationId);
+    return true;
+  } catch (error) {
+    console.error('❌ Errore nella cancellazione della notifica:', error);
+    return false;
+  }
+}
+
+/**
+ * Funzione per ottenere tutte le notifiche programmate
+ */
+export async function getAllScheduledNotifications(): Promise<Notifications.NotificationRequest[]> {
+  try {
+    const notifications = await Notifications.getAllScheduledNotificationsAsync();
+    console.log('📋 Notifiche programmate:', notifications.length);
+    return notifications;
+  } catch (error) {
+    console.error('❌ Errore nel recupero delle notifiche programmate:', error);
+    return [];
+  }
+}
+
+/**
+ * Funzione per inviare una notifica di test
+ */
+export async function sendTestNotification(): Promise<boolean> {
+  try {
+    const response = await axiosInstance.post('/notifications/test-notification', {
+      title: '🧪 Test Mytaskly',
+      body: 'Notifica di test funziona! 🎉',
+      data: { test: true }
+    });
+
+    if (response.status === 200) {
+      console.log('✅ Notifica di test inviata');
+      return true;
+    } else {
+      console.error('❌ Errore nell\'invio della notifica di test');
+      return false;
+    }
+  } catch (error) {
+    console.error('❌ Errore nella richiesta di test:', error);
+    return false;
+  }
+}
+
+/**
+ * Hook personalizzato per gestire le notifiche
+ */
+export function useNotifications() {
+  const [expoPushToken, setExpoPushToken] = useState<string>('');
+  const [notification, setNotification] = useState<Notifications.Notification | null>(null);
+  const notificationListener = useRef<Notifications.EventSubscription | null>(null);
+  const responseListener = useRef<Notifications.EventSubscription | null>(null);
+
+  useEffect(() => {
+    // 🎯 REGISTRA PER LE NOTIFICHE ALL'AVVIO
+    registerForPushNotificationsAsync().then(token => {
+      if (token) {
+        setExpoPushToken(token);
+        // Invia il token al backend
+        sendTokenToBackend(token).then(success => {
+          if (success) {
+            Alert.alert('Successo', 'Notifiche attivate!');
+          } else {
+            Alert.alert('Errore', 'Impossibile attivare le notifiche');
+          }
+        });
+      }
+    });
+
+    // 📨 ASCOLTA NOTIFICHE RICEVUTE (quando l'app è aperta)
+    notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
+      console.log('📨 Notifica ricevuta:', notification);
+      setNotification(notification);
+      
+      // Puoi fare azioni specifiche qui
+      if (notification.request.content.data?.notification_type === 'task_due') {
+        Alert.alert(
+          '⏰ Task in Scadenza!', 
+          notification.request.content.body || 'Hai un task in scadenza'
+        );
+      }
+    });
+
+    // 👆 ASCOLTA QUANDO L'UTENTE TOCCA UNA NOTIFICA
+    responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
+      console.log('👆 Notifica toccata:', response);
+      
+      const notificationData = response.notification.request.content.data;
+      
+      // Se è una notifica di task, potresti voler navigare al task
+      if (notificationData?.action === 'open_task' && notificationData?.task_id) {
+        console.log(`📝 Apri task con ID: ${notificationData.task_id}`);
+        // Qui potresti implementare la navigazione al task specifico
+        // navigation.navigate('TaskDetail', { taskId: notificationData.task_id });
+      }
+    });
+
+    // 🧹 CLEANUP
+    return () => {
+      if (notificationListener.current) {
+        notificationListener.current.remove();
+      }
+      if (responseListener.current) {
+        responseListener.current.remove();
+      }
+    };
+  }, []);
+
+  return {
+    expoPushToken,
+    notification,
+    sendTestNotification: () => sendTestNotification(),
+  };
+}

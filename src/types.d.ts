@@ -22,6 +22,7 @@ export type RootStackParamList = {
   TaskList: { categoryId: number | string; category_name: string };
   Profile: undefined;
   Settings: undefined;
+  NotificationDebug: undefined;
   Statistics: undefined;
   Updates: undefined;
   NotFound: undefined;

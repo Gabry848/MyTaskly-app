@@ -1,15 +1,20 @@
 import { Text } from '@react-navigation/elements';
 import React from 'react';
-import { StyleSheet, View, TouchableOpacity, SafeAreaView, StatusBar } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, SafeAreaView, StatusBar, ScrollView } from 'react-native';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../types';
 import { Ionicons } from '@expo/vector-icons';
+import { NotificationManager } from '../../../components/NotificationManager';
 
 export default function Settings() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
 
   const handleNavigateToHome20 = () => {
     navigation.navigate('Home20');
+  };
+
+  const handleNavigateToNotificationDebug = () => {
+    navigation.navigate('NotificationDebug');
   };
 
   const handleGoBack = () => {
@@ -29,7 +34,7 @@ export default function Settings() {
       </View>
 
       {/* Content */}
-      <View style={styles.content}>
+      <ScrollView style={styles.content}>
         <TouchableOpacity 
           style={styles.menuItem} 
           onPress={handleNavigateToHome20}
@@ -40,7 +45,25 @@ export default function Settings() {
           </View>
           <Ionicons name="chevron-forward" size={20} color="#666666" />
         </TouchableOpacity>
-      </View>
+
+        <TouchableOpacity 
+          style={styles.menuItem} 
+          onPress={handleNavigateToNotificationDebug}
+        >
+          <View style={styles.menuItemContent}>
+            <Ionicons name="notifications-outline" size={24} color="#000000" />
+            <Text style={styles.menuItemText}>Debug Notifiche</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#666666" />
+        </TouchableOpacity>
+
+        {/* Sezione Notifiche */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>🔔 Gestione Notifiche</Text>
+        </View>
+        
+        <NotificationManager showDebugInfo={true} />
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -95,5 +118,16 @@ const styles = StyleSheet.create({
     fontFamily: 'System',
     fontWeight: '400',
     marginLeft: 15,
+  },
+  sectionHeader: {
+    paddingHorizontal: 20,
+    paddingTop: 30,
+    paddingBottom: 15,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#000000',
+    fontFamily: 'System',
   },
 });

@@ -20,9 +20,11 @@ import ProfileScreen from "./screens/Profile";
 import NotesScreen from "./screens/Notes";
 import BotChatScreen from "./screens/BotChat";
 import SettingsScreen from "./screens/Settings";
+import NotificationDebugScreen from "./screens/NotificationDebug";
 import { NotFound as NotFoundScreen } from "./screens/NotFound";
 import eventEmitter from "../utils/eventEmitter";
 import { check_login } from "../services/authService";
+import { useNotifications } from "../services/notificationService";
 
 // Definizione del tipo per le route dello Stack principale
 export type RootStackParamList = {
@@ -35,6 +37,7 @@ export type RootStackParamList = {
   TaskList: { category_name: number | string };
   Profile: undefined;
   Settings: undefined;
+  NotificationDebug: undefined;
   Statistics: undefined;
   Updates: undefined;
   NotFound: undefined;
@@ -148,6 +151,10 @@ function NavigationHandler() {
 function AppStack() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(true); // Controlla lo stato di autenticazione all'avvio
+  
+  // 🔔 Inizializza il sistema di notifiche quando l'utente è autenticato
+  const { expoPushToken, notification } = useNotifications();
+
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
@@ -192,6 +199,13 @@ function AppStack() {
     };
   }, []);
 
+  // Log delle notifiche ricevute per debug
+  useEffect(() => {
+    if (notification) {
+      console.log("🔔 Notifica ricevuta nell'app:", notification.request.content);
+    }
+  }, [notification]);
+
   // Mostra un loading screen mentre controlla l'autenticazione
   if (isLoading) {
     return null; // O un componente di loading se preferisci
@@ -230,6 +244,11 @@ function AppStack() {
         <Stack.Screen name="TaskList" component={TaskListScreen} />
         <Stack.Screen name="Profile" component={ProfileScreen} />
         <Stack.Screen name="Settings" component={SettingsScreen} />
+        <Stack.Screen 
+          name="NotificationDebug" 
+          component={NotificationDebugScreen}
+          options={{ title: 'Debug Notifiche' }}
+        />
         <Stack.Screen name="NotFound" component={NotFoundScreen} />
       </Stack.Navigator>
     </>
