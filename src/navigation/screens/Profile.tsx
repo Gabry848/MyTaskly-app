@@ -136,97 +136,106 @@ const ProfileScreen = () => {
                 />
               </View>
               <Text style={styles.username}>{userData.username}</Text>
+              <Text style={styles.userSubtitle}>Utente Mytaskly</Text>
             </View>
 
             <View style={styles.infoSection}>
+              <Text style={styles.sectionTitle}>Informazioni Account</Text>
+              
               <View style={styles.infoItem}>
                 <View style={styles.iconContainer}>
-                  <Ionicons name="mail-outline" size={20} color="#000000" />
+                  <Ionicons name="mail" size={22} color="#000000" />
                 </View>
-                <Text style={styles.infoText}>{userData.email}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.infoLabel}>Email</Text>
+                  <Text style={styles.infoText}>{userData.email}</Text>
+                </View>
               </View>
 
-              <View style={styles.infoItem}>
+              <View style={[styles.infoItem, styles.infoItemLast]}>
                 <View style={styles.iconContainer}>
-                  <Ionicons name="calendar-outline" size={20} color="#000000" />
+                  <Ionicons name="calendar" size={22} color="#000000" />
                 </View>
-                <Text style={styles.infoText}>
-                  Iscritto dal: {userData.joinDate}
-                </Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.infoLabel}>Membro dal</Text>
+                  <Text style={styles.infoText}>{userData.joinDate}</Text>
+                </View>
               </View>
             </View>
 
             <View style={styles.actionSection}>
               <TouchableOpacity
-                style={styles.actionButton}
-                onPress={handleEditProfile}
-                activeOpacity={0.7}
-              >
-                <View style={styles.buttonContent}>
-                  <Ionicons
-                    name="create-outline"
-                    size={18}
-                    color="#000000"
-                    style={styles.buttonIcon}
-                  />
-                  <Text style={styles.buttonText}>Modifica Profilo</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color="#666666" />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.actionButton}
+                style={[styles.actionButton, styles.primaryButton]}
                 onPress={() => navigation.goBack()}
-                activeOpacity={0.7}
+                activeOpacity={0.8}
               >
                 <View style={styles.buttonContent}>
                   <Ionicons
-                    name="checkmark-circle-outline"
-                    size={18}
-                    color="#000000"
+                    name="checkmark-circle"
+                    size={20}
+                    color="#ffffff"
                     style={styles.buttonIcon}
                   />
-                  <Text style={styles.buttonText}>Le mie Attività</Text>
+                  <Text style={[styles.buttonText, styles.primaryButtonText]}>
+                    Le mie Attività
+                  </Text>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color="#666666" />
+                <Ionicons 
+                  name="chevron-forward" 
+                  size={20} 
+                  color="#ffffff" 
+                  style={styles.chevronIcon}
+                />
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={styles.actionButton}
+                style={[styles.actionButton, styles.settingsButton]}
                 onPress={() => {
-                  // Implementazione impostazioni
+                  navigation.navigate("Settings")
                 }}
-                activeOpacity={0.7}
+                activeOpacity={0.8}
               >
                 <View style={styles.buttonContent}>
                   <Ionicons
-                    name="settings-outline"
-                    size={18}
+                    name="settings"
+                    size={20}
                     color="#000000"
                     style={styles.buttonIcon}
                   />
-                  <Text style={styles.buttonText}>Impostazioni</Text>
+                  <Text style={[styles.buttonText, styles.settingsButtonText]}>
+                    Impostazioni
+                  </Text>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color="#666666" />
+                <Ionicons 
+                  name="chevron-forward" 
+                  size={20} 
+                  color="#666666" 
+                  style={styles.chevronIcon}
+                />
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={[styles.actionButton, styles.logoutButton]}
                 onPress={handleLogout}
-                activeOpacity={0.7}
+                activeOpacity={0.8}
               >
                 <View style={styles.buttonContent}>
                   <Ionicons
-                    name="log-out-outline"
-                    size={18}
+                    name="log-out"
+                    size={20}
                     color="#FF3B30"
                     style={styles.buttonIcon}
                   />
                   <Text style={[styles.buttonText, styles.logoutText]}>
-                    Logout
+                    Esci dall'account
                   </Text>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color="#666666" />
+                <Ionicons 
+                  name="chevron-forward" 
+                  size={20} 
+                  color="#FF3B30" 
+                  style={styles.chevronIcon}
+                />
               </TouchableOpacity>
             </View>
           </Animated.View>
@@ -245,113 +254,103 @@ const ProfileScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#ffffff",
-  },
-  header: {
-    paddingTop: 20,
-    paddingHorizontal: 15,
-    paddingBottom: 20,
-    flexDirection: "row",
-    alignItems: "center",
-    borderBottomWidth: 1,
-    borderBottomColor: "#e1e5e9",
-  },
-  backButton: {
-    padding: 8,
-    marginRight: 15,
-  },
-  title: {
-    fontSize: 30,
-    fontWeight: "200",
-    color: "#000000",
-    fontFamily: "System",
-    letterSpacing: -1.5,
+    backgroundColor: "#f8f9fa",
   },
   scrollContainer: {
     flexGrow: 1,
+    paddingBottom: 20,
   },
   content: {
     flex: 1,
     alignItems: "center",
     width: "100%",
-    paddingVertical: 20,
   },
   headerSection: {
     alignItems: "center",
-    marginBottom: 30,
+    marginBottom: 32,
     marginTop: 20,
+    paddingHorizontal: 20,
   },
   avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
     backgroundColor: "#ffffff",
-    marginBottom: 15,
+    marginBottom: 20,
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 2,
-    borderColor: "#e1e5e9",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
+    borderWidth: 4,
+    borderColor: "#000000",
   },
   avatarImage: {
-    width: "90%",
-    height: "90%",
-    borderRadius: 45,
+    width: "85%",
+    height: "85%",
+    borderRadius: 50,
   },
   username: {
-    fontSize: 24,
-    fontWeight: "300",
-    color: "#000000",
+    fontSize: 28,
+    fontWeight: "600",
+    color: "#1a1a1a",
     fontFamily: "System",
-    letterSpacing: -0.5,
+    letterSpacing: -0.8,
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  userSubtitle: {
+    fontSize: 16,
+    fontWeight: "400",
+    color: "#666666",
+    fontFamily: "System",
+    textAlign: "center",
   },
   infoSection: {
     width: width * 0.9,
     backgroundColor: "#ffffff",
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 25,
-    borderWidth: 1,
-    borderColor: "#e1e5e9",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
+    borderRadius: 16,
+    padding: 24,
+    marginBottom: 28,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#1a1a1a",
+    fontFamily: "System",
+    marginBottom: 20,
+    letterSpacing: -0.3,
   },
   infoItem: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 15,
+    paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: "#f0f0f0",
-    paddingBottom: 15,
+  },
+  infoItemLast: {
+    borderBottomWidth: 0,
   },
   iconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "#f8f9fa",
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#f0f0f0",
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 15,
+    marginRight: 16,
   },
   infoText: {
-    color: "#000000",
+    color: "#1a1a1a",
     fontSize: 16,
     flex: 1,
     fontFamily: "System",
+    fontWeight: "500",
+    lineHeight: 24,
+  },
+  infoLabel: {
+    color: "#666666",
+    fontSize: 14,
+    fontFamily: "System",
     fontWeight: "400",
+    marginBottom: 4,
   },
   actionSection: {
     width: "100%",
@@ -362,24 +361,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: "#222222",
-    borderRadius: 12,
+    paddingVertical: 18,
+    backgroundColor: "#ffffff",
+    borderRadius: 16,
     marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "#e1e5e9",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+  },
+  primaryButton: {
+    backgroundColor: "#000000",
+  },
+  settingsButton: {
+    backgroundColor: "#ffffff",
   },
   logoutButton: {
-    borderColor: "#FFE5E5",
-    backgroundColor: "#000000",
+    backgroundColor: "#fff5f5",
+    borderWidth: 1,
+    borderColor: "#ffe5e5",
   },
   buttonContent: {
     flexDirection: "row",
@@ -387,16 +383,61 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   buttonIcon: {
-    marginRight: 12,
+    marginRight: 16,
   },
   buttonText: {
-    color: "#ffffff",
     fontSize: 16,
     fontFamily: "System",
-    fontWeight: "400",
+    fontWeight: "500",
+    letterSpacing: -0.2,
+  },
+  primaryButtonText: {
+    color: "#ffffff",
+  },
+  settingsButtonText: {
+    color: "#1a1a1a",
   },
   logoutText: {
     color: "#FF3B30",
+  },
+  chevronIcon: {
+    opacity: 0.6,
+  },
+  gradientOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 150,
+    backgroundColor: "transparent",
+  },
+  statsContainer: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    width: "100%",
+    paddingVertical: 20,
+    backgroundColor: "#ffffff",
+    borderRadius: 16,
+    marginTop: 16,
+  },
+  statItem: {
+    alignItems: "center",
+    flex: 1,
+  },
+  statNumber: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#000000",
+    fontFamily: "System",
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 12,
+    fontWeight: "500",
+    color: "#666666",
+    fontFamily: "System",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
 });
 

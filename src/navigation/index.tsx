@@ -20,6 +20,11 @@ import ProfileScreen from "./screens/Profile";
 import NotesScreen from "./screens/Notes";
 import BotChatScreen from "./screens/BotChat";
 import SettingsScreen from "./screens/Settings";
+import AccountSettingsScreen from "./screens/AccountSettings";
+import ChangePasswordScreen from "./screens/ChangePassword";
+import HelpScreen from "./screens/Help";
+import AboutScreen from "./screens/About";
+import LanguageScreen from "./screens/Language";
 import NotificationDebugScreen from "./screens/NotificationDebug";
 import { NotFound as NotFoundScreen } from "./screens/NotFound";
 import eventEmitter from "../utils/eventEmitter";
@@ -37,6 +42,11 @@ export type RootStackParamList = {
   TaskList: { category_name: number | string };
   Profile: undefined;
   Settings: undefined;
+  AccountSettings: undefined;
+  ChangePassword: undefined;
+  Help: undefined;
+  About: undefined;
+  Language: undefined;
   NotificationDebug: undefined;
   Statistics: undefined;
   Updates: undefined;
@@ -244,6 +254,31 @@ function AppStack() {
         <Stack.Screen name="TaskList" component={TaskListScreen} />
         <Stack.Screen name="Profile" component={ProfileScreen} />
         <Stack.Screen name="Settings" component={SettingsScreen} />
+        <Stack.Screen 
+          name="AccountSettings" 
+          component={AccountSettingsScreen}
+          options={{ title: 'Gestisci account' }}
+        />
+        <Stack.Screen 
+          name="ChangePassword" 
+          component={ChangePasswordScreen}
+          options={{ title: 'Cambia password' }}
+        />
+        <Stack.Screen 
+          name="Help" 
+          component={HelpScreen}
+          options={{ title: 'Aiuto' }}
+        />
+        <Stack.Screen 
+          name="About" 
+          component={AboutScreen}
+          options={{ title: 'Info' }}
+        />
+        <Stack.Screen 
+          name="Language" 
+          component={LanguageScreen}
+          options={{ title: 'Lingua' }}
+        />
         <Stack.Screen 
           name="NotificationDebug" 
           component={NotificationDebugScreen}

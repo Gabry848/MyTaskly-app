@@ -4,17 +4,28 @@ import { StyleSheet, View, TouchableOpacity, SafeAreaView, StatusBar, ScrollView
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../types';
 import { Ionicons } from '@expo/vector-icons';
-import { NotificationManager } from '../../../components/NotificationManager';
 
 export default function Settings() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
 
-  const handleNavigateToHome20 = () => {
-    navigation.navigate('Home20');
+  const handleNavigateToAccountSettings = () => {
+    navigation.navigate('AccountSettings');
   };
 
-  const handleNavigateToNotificationDebug = () => {
-    navigation.navigate('NotificationDebug');
+  const handleNavigateToChangePassword = () => {
+    navigation.navigate('ChangePassword');
+  };
+
+  const handleNavigateToHelp = () => {
+    navigation.navigate('Help');
+  };
+
+  const handleNavigateToAbout = () => {
+    navigation.navigate('About');
+  };
+
+  const handleNavigateToLanguage = () => {
+    navigation.navigate('Language');
   };
 
   const handleGoBack = () => {
@@ -25,44 +36,78 @@ export default function Settings() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
       
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
-          <Ionicons name="arrow-back" size={24} color="#000000" />
-        </TouchableOpacity>
-        <Text style={styles.title}>Impostazioni</Text>
-      </View>
 
       {/* Content */}
       <ScrollView style={styles.content}>
-        <TouchableOpacity 
-          style={styles.menuItem} 
-          onPress={handleNavigateToHome20}
-        >
-          <View style={styles.menuItemContent}>
-            <Ionicons name="home-outline" size={24} color="#000000" />
-            <Text style={styles.menuItemText}>Vai a Home 2.0</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color="#666666" />
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={styles.menuItem} 
-          onPress={handleNavigateToNotificationDebug}
-        >
-          <View style={styles.menuItemContent}>
-            <Ionicons name="notifications-outline" size={24} color="#000000" />
-            <Text style={styles.menuItemText}>Debug Notifiche</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color="#666666" />
-        </TouchableOpacity>
-
-        {/* Sezione Notifiche */}
+        {/* Account Section */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>🔔 Gestione Notifiche</Text>
+          <Text style={styles.sectionTitle}>Account</Text>
         </View>
         
-        <NotificationManager showDebugInfo={true} />
+        <TouchableOpacity 
+          style={styles.menuItem} 
+          onPress={handleNavigateToAccountSettings}
+        >
+          <View style={styles.menuItemContent}>
+            <Ionicons name="person-outline" size={24} color="#000000" />
+            <Text style={styles.menuItemText}>Gestisci account</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#666666" />
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.menuItem} 
+          onPress={handleNavigateToChangePassword}
+        >
+          <View style={styles.menuItemContent}>
+            <Ionicons name="key-outline" size={24} color="#000000" />
+            <Text style={styles.menuItemText}>Cambia password</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#666666" />
+        </TouchableOpacity>
+
+        {/* Support Section */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Supporto</Text>
+        </View>
+
+        <TouchableOpacity 
+          style={styles.menuItem} 
+          onPress={handleNavigateToHelp}
+        >
+          <View style={styles.menuItemContent}>
+            <Ionicons name="help-circle-outline" size={24} color="#000000" />
+            <Text style={styles.menuItemText}>Aiuto</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#666666" />
+        </TouchableOpacity>
+
+        {/* General Section */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Generale</Text>
+        </View>
+
+        <TouchableOpacity 
+          style={styles.menuItem} 
+          onPress={handleNavigateToLanguage}
+        >
+          <View style={styles.menuItemContent}>
+            <Ionicons name="language-outline" size={24} color="#000000" />
+            <Text style={styles.menuItemText}>Lingua</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#666666" />
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.menuItem} 
+          onPress={handleNavigateToAbout}
+        >
+          <View style={styles.menuItemContent}>
+            <Ionicons name="information-circle-outline" size={24} color="#000000" />
+            <Text style={styles.menuItemText}>Info</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#666666" />
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
