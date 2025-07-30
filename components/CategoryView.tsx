@@ -113,8 +113,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "flex-end", // Allinea il pulsante a destra
     alignItems: "center",
-    marginTop: 10,
-    marginBottom: 20,
+    marginTop: 5,
+    marginBottom: 5,
     paddingHorizontal: 5,
     minHeight: 44, // Altezza minima per evitare che vada a capo
     flexWrap: "nowrap", // Impedisce il wrapping
