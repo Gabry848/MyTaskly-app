@@ -318,7 +318,7 @@ const ProfileScreen = () => {
                     style={styles.buttonIcon}
                   />
                   <Text style={[styles.buttonText, styles.logoutText]}>
-                    Esci dall'account
+                    Esci dall&apos;account
                   </Text>
                 </View>
                 <Ionicons 

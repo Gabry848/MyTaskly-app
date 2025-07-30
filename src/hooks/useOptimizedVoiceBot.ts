@@ -35,7 +35,7 @@ export function useOptimizedVoiceBot() {
   const sendOptimizedVoiceMessage = useCallback(async (
     audioUri: string,
     modelType: "base" | "advanced" = "advanced",
-    previousMessages: Array<any> = [],
+    previousMessages: any[] = [],
     enableRealTimeUpdates: boolean = true
   ) => {
     if (processingRef.current) {
@@ -231,7 +231,7 @@ export function useOptimizedVoiceBot() {
   const sendSmartVoiceMessage = useCallback(async (
     audioUri: string,
     modelType: "base" | "advanced" = "advanced",
-    previousMessages: Array<any> = []
+    previousMessages: any[] = []
   ) => {
     if (processingRef.current) {
       console.warn('⚠️ Elaborazione già in corso, ignoro richiesta');
@@ -385,7 +385,7 @@ export function useSimpleVoiceBot() {
   const sendVoiceMessage = useCallback(async (
     audioUri: string,
     useStreaming: boolean = true,
-    previousMessages: Array<any> = []
+    previousMessages: any[] = []
   ) => {
     setIsLoading(true);
     setError(null);

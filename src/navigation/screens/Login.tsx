@@ -262,7 +262,7 @@ const LoginScreen = () => {
               <Text style={styles.modalTitle}>Troppi tentativi falliti</Text>
               <Text style={styles.modalMessage}>
                 Hai superato il limite di 3 tentativi di login.{'\n\n'}
-                Per riprovare, chiudi completamente l'app e riaprila.
+                Per riprovare, chiudi completamente l&apos;app e riaprila.
               </Text>
               <TouchableOpacity
                 style={styles.modalButton}

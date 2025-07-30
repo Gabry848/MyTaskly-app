@@ -112,7 +112,7 @@ export default function Language() {
             <Text style={styles.infoTitle}>Localizzazione in sviluppo</Text>
             <Text style={styles.infoDescription}>
               Stiamo lavorando per aggiungere il supporto a più lingue. 
-              Le nuove lingue saranno disponibili nei prossimi aggiornamenti dell'app.
+              Le nuove lingue saranno disponibili nei prossimi aggiornamenti dell&apos;app.
             </Text>
           </View>
         </View>

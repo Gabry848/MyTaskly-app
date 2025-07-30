@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../types';
 import { TaskListContainer, addTaskToList } from "../../../components/TaskList";

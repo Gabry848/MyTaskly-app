@@ -18,12 +18,12 @@ export default function Help() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Ionicons name="information-circle" size={28} color="#007AFF" />
-            <Text style={styles.sectionTitle}>Cos'è Mytaskly?</Text>
+            <Text style={styles.sectionTitle}>Cos&apos;è Mytaskly?</Text>
           </View>
           <Text style={styles.sectionText}>
             Mytaskly è la tua app personale per la gestione delle attività quotidiane. 
             Organizza le tue task, crea categorie personalizzate e mantieni tutto sotto controllo 
-            con un'interfaccia semplice e intuitiva.
+            con un&apos;interfaccia semplice e intuitiva.
           </Text>
         </View>
 
@@ -70,7 +70,7 @@ export default function Help() {
               <View style={styles.featureTextContainer}>
                 <Text style={styles.featureTitle}>Assistant AI</Text>
                 <Text style={styles.featureDescription}>
-                  Chatta con l'assistente AI per organizzare meglio le tue attività
+                  Chatta con l&apos;assistente AI per organizzare meglio le tue attività
                 </Text>
               </View>
             </View>
@@ -91,7 +91,7 @@ export default function Help() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Ionicons name="help-circle" size={28} color="#FF3B30" />
-            <Text style={styles.sectionTitle}>Come utilizzare l'app</Text>
+            <Text style={styles.sectionTitle}>Come utilizzare l&apos;app</Text>
           </View>
 
           <View style={styles.stepsList}>
@@ -136,9 +136,9 @@ export default function Help() {
                 <Text style={styles.stepNumberText}>4</Text>
               </View>
               <View style={styles.stepTextContainer}>
-                <Text style={styles.stepTitle}>Usa l'AI Assistant</Text>
+                <Text style={styles.stepTitle}>Usa l&apos;AI Assistant</Text>
                 <Text style={styles.stepDescription}>
-                  Chatta con l'assistente per ricevere suggerimenti e organizzare meglio il tuo tempo
+                  Chatta con l&apos;assistente per ricevere suggerimenti e organizzare meglio il tuo tempo
                 </Text>
               </View>
             </View>
@@ -170,7 +170,7 @@ export default function Help() {
             <View style={styles.tipItem}>
               <Ionicons name="sync" size={16} color="#666666" />
               <Text style={styles.tipText}>
-                Mantieni l'app sempre aggiornata per ricevere le ultime funzionalità
+                Mantieni l&apos;app sempre aggiornata per ricevere le ultime funzionalità
               </Text>
             </View>
           </View>

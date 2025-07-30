@@ -202,7 +202,7 @@ const EmailVerificationScreen = () => {
         
         {!isEmailSent ? (
           <Text style={styles.description}>
-            Invieremo un'email di verifica al tuo indirizzo. Clicca sul link nell'email per completare la registrazione.
+            Invieremo un&apos;email di verifica al tuo indirizzo. Clicca sul link nell&apos;email per completare la registrazione.
           </Text>
         ) : (
           <Text style={styles.description}>

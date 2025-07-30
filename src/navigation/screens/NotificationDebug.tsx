@@ -111,7 +111,7 @@ export default function NotificationDebugScreen() {
             {'\n\n'}
             🔧 <Text style={styles.bold}>Come testare:</Text>
             {'\n'}1. Verifica che il token Expo sia visualizzato qui sotto
-            {'\n'}2. Premi "Test Notifica" per inviare una notifica di prova
+            {'\n'}2. Premi &quot;Test Notifica&quot; per inviare una notifica di prova
             {'\n'}3. Controlla che la notifica arrivi correttamente
           </Text>
         </View>
@@ -154,16 +154,16 @@ export default function NotificationDebugScreen() {
           <Text style={styles.instructionText}>
             <Text style={styles.bold}>❌ Token non visualizzato:</Text>
             {'\n'}• Controlla i permessi notifiche nelle impostazioni del dispositivo
-            {'\n'}• Riavvia l'app
+            {'\n'}• Riavvia l&apos;app
             {'\n\n'}
             <Text style={styles.bold}>❌ Notifica non ricevuta:</Text>
             {'\n'}• Verifica la connessione al backend
-            {'\n'}• Controlla che il backend supporti l'endpoint /notifications/test-notification
+            {'\n'}• Controlla che il backend supporti l&apos;endpoint /notifications/test-notification
             {'\n'}• Assicurati di essere su un dispositivo fisico
             {'\n\n'}
             <Text style={styles.bold}>❌ Errore di invio:</Text>
             {'\n'}• Controlla i log della console per dettagli
-            {'\n'}• Verifica l'autenticazione con il backend
+            {'\n'}• Verifica l&apos;autenticazione con il backend
           </Text>
         </View>
       </ScrollView>

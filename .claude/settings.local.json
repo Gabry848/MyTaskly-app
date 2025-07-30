@@ -5,7 +5,11 @@
       "Bash(npx expo install:*)",
       "Bash(eas build:list:*)",
       "Bash(npx expo prebuild:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(npm run lint)",
+      "Bash(npx eslint:*)",
+      "Bash(rm:*)",
+      "Bash(find:*)"
     ],
     "deny": []
   }

@@ -27,16 +27,16 @@ export default function About() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Ionicons name="information-circle" size={24} color="#007AFF" />
-            <Text style={styles.sectionTitle}>Informazioni sull'app</Text>
+            <Text style={styles.sectionTitle}>Informazioni sull&apos;app</Text>
           </View>
           
           <Text style={styles.description}>
-            Mytaskly è un'applicazione per la gestione delle attività quotidiane, 
+            Mytaskly è un&apos;applicazione per la gestione delle attività quotidiane, 
             progettata per aiutarti a organizzare il tuo tempo e aumentare la tua produttività.
           </Text>
 
           <Text style={styles.description}>
-            L'app è attualmente in fase beta e viene costantemente migliorata 
+            L&apos;app è attualmente in fase beta e viene costantemente migliorata 
             con nuove funzionalità e aggiornamenti.
           </Text>
         </View>
@@ -59,7 +59,7 @@ export default function About() {
             
             <Text style={styles.developerDescription}>
               Mytaskly è sviluppata con passione da Gabry848 Studio, 
-              con l'obiettivo di creare strumenti semplici ed efficaci 
+              con l&apos;obiettivo di creare strumenti semplici ed efficaci 
               per la produttività personale.
             </Text>
           </View>
@@ -69,7 +69,7 @@ export default function About() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Ionicons name="construct" size={24} color="#FF3B30" />
-            <Text style={styles.sectionTitle}>Stato dell'app</Text>
+            <Text style={styles.sectionTitle}>Stato dell&apos;app</Text>
           </View>
           
           <View style={styles.statusCard}>
@@ -79,12 +79,12 @@ export default function About() {
             </View>
             
             <Text style={styles.betaDescription}>
-              Questa è una versione beta dell'applicazione. 
+              Questa è una versione beta dell&apos;applicazione. 
               Potrebbero essere presenti alcuni bug o funzionalità incomplete.
             </Text>
             
             <Text style={styles.betaNote}>
-              I tuoi feedback sono preziosi per migliorare l'app!
+              I tuoi feedback sono preziosi per migliorare l&apos;app!
             </Text>
           </View>
         </View>

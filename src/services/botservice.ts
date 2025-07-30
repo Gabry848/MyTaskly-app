@@ -19,10 +19,10 @@ const MAX_PREVIOUS_MESSAGES = 5; // Numero massimo di messaggi precedenti da inc
  * @returns {Array} - I messaggi formattati per l'invio al server
  */
 function preparePreviousMessages(
-  messages: Array<any>,
+  messages: any[],
   maxMessages: number = MAX_PREVIOUS_MESSAGES,
   maxTotalLength: number = MESSAGE_MAX_LENGTH
-): Array<{ content: string; role: string }> {
+): { content: string; role: string }[] {
   // Verifica input
   if (!messages || messages.length === 0) return [];
 
@@ -71,7 +71,7 @@ function preparePreviousMessages(
 export async function sendMessageToBot(
   userMessage: string,
   modelType: "base" | "advanced" = "base",
-  previousMessages: Array<any> = []
+  previousMessages: any[] = []
 ): Promise<string> {
   try {
     // Verifica che l'utente sia autenticato
@@ -184,7 +184,7 @@ export async function sendMessageToBot(
  * Crea una nuova chat vuota
  * @returns {Promise<Array>} - Array vuoto per inizializzare una nuova chat
  */
-export async function createNewChat(): Promise<Array<any>> {
+export async function createNewChat(): Promise<any[]> {
   // Restituisce un array vuoto - i messaggi di benvenuto possono essere gestiti dall'UI
   return [];
 }
@@ -263,7 +263,7 @@ export function extractStructuredData(response: string): any {
 export async function sendVoiceMessageToBot(
   audioBase64: string,
   modelType: "base" | "advanced" = "base",
-  previousMessages: Array<any> = []
+  previousMessages: any[] = []
 ): Promise<string> {
   try {
     // Verifica che l'utente sia autenticato

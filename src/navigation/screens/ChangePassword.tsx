@@ -26,7 +26,7 @@ export default function ChangePassword() {
           </Text>
           
           <Text style={styles.wipSubDescription}>
-            Questa funzione sarà disponibile nei prossimi aggiornamenti dell'app.
+            Questa funzione sarà disponibile nei prossimi aggiornamenti dell&apos;app.
           </Text>
 
           <View style={styles.featuresList}>
