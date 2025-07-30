@@ -1,6 +1,6 @@
 import { Text } from '@react-navigation/elements';
 import React, { useState } from 'react';
-import { StyleSheet, View, TouchableOpacity, SafeAreaView, StatusBar, ScrollView, TextInput, Alert, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, SafeAreaView, StatusBar, ScrollView, TextInput, Alert, ActivityIndicator, Platform } from 'react-native';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../types';
 import { Ionicons } from '@expo/vector-icons';
@@ -27,9 +27,16 @@ export default function BugReport() {
         return;
       }
 
-      const response = await axios.post('/bugs/report-bug', {
+      const response = await axios.post('/support/bug-report', {
         title: title.trim(),
         description: description.trim(),
+        severity: 'medium',
+        steps_to_reproduce: '',
+        expected_behavior: '',
+        actual_behavior: '',
+        device_info: {
+          platform: Platform.OS === 'ios' ? 'iPhone' : 'Android'
+        }
       }, {
         headers: {
           'Authorization': `Bearer ${token}`,
