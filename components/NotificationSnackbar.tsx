@@ -4,6 +4,7 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
+  runOnJS,
 } from "react-native-reanimated";
 
 const { width } = Dimensions.get("window");
@@ -30,7 +31,7 @@ export function NotificationSnackbar({
       const timer = setTimeout(() => {
         translateX.value = withTiming(-width, { duration: 300 }, (finished) => {
           if (finished && typeof onFinish === "function") {
-            onFinish();
+            runOnJS(onFinish)();
           }
         });
       }, 1500);
@@ -39,7 +40,7 @@ export function NotificationSnackbar({
     } else {
       translateX.value = withTiming(-width, { duration: 300 }, (finished) => {
         if (finished && typeof onFinish === "function") {
-          onFinish();
+          runOnJS(onFinish)();
         }
       });
     }

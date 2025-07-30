@@ -46,6 +46,8 @@
           "sounds": []
         }
       ],
+      "@react-native-firebase/app",
+      "@react-native-firebase/messaging",
       "expo-dev-client"
     ],
     "extra": {

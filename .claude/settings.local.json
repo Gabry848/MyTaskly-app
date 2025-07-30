@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(npx expo install:*)",
+      "Bash(eas build:list:*)",
+      "Bash(npx expo prebuild:*)",
+      "Bash(git add:*)"
+    ],
+    "deny": []
+  }
+}
