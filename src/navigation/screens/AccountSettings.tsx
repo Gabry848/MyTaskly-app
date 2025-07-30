@@ -1,13 +1,12 @@
 import { Text } from '@react-navigation/elements';
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, TouchableOpacity, SafeAreaView, StatusBar, ScrollView, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, SafeAreaView, StatusBar, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../types';
 import { Ionicons } from '@expo/vector-icons';
 import { getValidToken } from '../../services/authService';
 import axios from '../../services/axiosInstance';
 import { sendTestNotification } from '../../services/notificationService';
-import * as Notifications from 'expo-notifications';
 
 interface UserInfo {
   username: string;
@@ -76,33 +75,12 @@ export default function AccountSettings() {
     try {
       const success = await sendTestNotification();
       if (success) {
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: '✅ Successo',
-            body: 'Notifica di test inviata con successo!',
-            data: { type: 'test_success' },
-          },
-          trigger: null,
-        });
+        Alert.alert('✅ Successo', 'Notifica di test inviata con successo!');
       } else {
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: '❌ Errore',
-            body: 'Impossibile inviare la notifica di test. Controlla la connessione al server.',
-            data: { type: 'test_error' },
-          },
-          trigger: null,
-        });
+        Alert.alert('❌ Errore', 'Impossibile inviare la notifica di test. Controlla la connessione al server.');
       }
     } catch (error) {
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: '❌ Errore',
-          body: 'Si è verificato un errore durante l\'invio della notifica.',
-          data: { type: 'test_error' },
-        },
-        trigger: null,
-      });
+      Alert.alert('❌ Errore', 'Si è verificato un errore durante l\'invio della notifica.');
     } finally {
       setTestNotificationLoading(false);
     }

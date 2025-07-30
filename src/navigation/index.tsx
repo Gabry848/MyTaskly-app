@@ -26,6 +26,7 @@ import HelpScreen from "./screens/Help";
 import AboutScreen from "./screens/About";
 import LanguageScreen from "./screens/Language";
 import NotificationDebugScreen from "./screens/NotificationDebug";
+import BugReportScreen from "./screens/BugReport";
 import { NotFound as NotFoundScreen } from "./screens/NotFound";
 import eventEmitter from "../utils/eventEmitter";
 import { check_login } from "../services/authService";
@@ -48,6 +49,7 @@ export type RootStackParamList = {
   About: undefined;
   Language: undefined;
   NotificationDebug: undefined;
+  BugReport: undefined;
   Statistics: undefined;
   Updates: undefined;
   NotFound: undefined;
@@ -283,6 +285,11 @@ function AppStack() {
           name="NotificationDebug" 
           component={NotificationDebugScreen}
           options={{ title: 'Debug Notifiche' }}
+        />
+        <Stack.Screen 
+          name="BugReport" 
+          component={BugReportScreen}
+          options={{ title: 'Segnala Bug' }}
         />
         <Stack.Screen name="NotFound" component={NotFoundScreen} />
       </Stack.Navigator>

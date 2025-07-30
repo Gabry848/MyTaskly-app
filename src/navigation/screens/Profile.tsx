@@ -306,6 +306,32 @@ const ProfileScreen = () => {
               </TouchableOpacity>
 
               <TouchableOpacity
+                style={[styles.actionButton, styles.bugReportButton]}
+                onPress={() => {
+                  navigation.navigate("BugReport")
+                }}
+                activeOpacity={0.8}
+              >
+                <View style={styles.buttonContent}>
+                  <Ionicons
+                    name="bug-outline"
+                    size={20}
+                    color="#FF9500"
+                    style={styles.buttonIcon}
+                  />
+                  <Text style={[styles.buttonText, styles.bugReportButtonText]}>
+                    Segnala Bug
+                  </Text>
+                </View>
+                <Ionicons 
+                  name="chevron-forward" 
+                  size={20} 
+                  color="#666666" 
+                  style={styles.chevronIcon}
+                />
+              </TouchableOpacity>
+
+              <TouchableOpacity
                 style={[styles.actionButton, styles.logoutButton]}
                 onPress={handleLogout}
                 activeOpacity={0.8}
@@ -463,6 +489,9 @@ const styles = StyleSheet.create({
   settingsButton: {
     backgroundColor: "#ffffff",
   },
+  bugReportButton: {
+    backgroundColor: "#ffffff",
+  },
   logoutButton: {
     backgroundColor: "#fff5f5",
     borderWidth: 1,
@@ -486,6 +515,9 @@ const styles = StyleSheet.create({
     color: "#ffffff",
   },
   settingsButtonText: {
+    color: "#1a1a1a",
+  },
+  bugReportButtonText: {
     color: "#1a1a1a",
   },
   logoutText: {
