@@ -10,7 +10,6 @@ import {
   StatusBar,
   Animated,
   SafeAreaView,
-  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, NavigationProp } from "@react-navigation/native";

@@ -73,7 +73,7 @@ export default function BugReport() {
           <Ionicons name="bug-outline" size={48} color="#FF3B30" />
           <Text style={styles.headerTitle}>Segnala un Bug</Text>
           <Text style={styles.headerDescription}>
-            Aiutaci a migliorare l'app segnalando eventuali problemi che hai riscontrato.
+            Aiutaci a migliorare l&apos;app segnalando eventuali problemi che hai riscontrato.
           </Text>
         </View>
 
@@ -117,7 +117,7 @@ export default function BugReport() {
             <Text style={styles.tipsText}>
               • Sii specifico: descrivi esattamente cosa è successo{'\n'}
               • Includi i passi per riprodurre il problema{'\n'}
-              • Menciona su quale schermata si è verificato l'errore{'\n'}
+              • Menciona su quale schermata si è verificato l&apos;errore{'\n'}
               • Descrivi il comportamento atteso vs quello riscontrato
             </Text>
           </View>
