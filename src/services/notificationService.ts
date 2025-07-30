@@ -182,29 +182,6 @@ export async function sendTestNotification(): Promise<boolean> {
   if (isExpoGo) {
     console.log('📱 Simulazione notifica push (Expo Go mode)');
     
-    // Simula il comportamento di una notifica push con un Alert
-    Alert.alert(
-      '🧪 Test Mytaskly',
-      'Notifica simulata funziona! 🎉\n\n📱 In Expo Go questa è una simulazione.\nIn un Development Build sarebbe una vera notifica push.',
-      [
-        {
-          text: 'Chiudi',
-          style: 'cancel'
-        },
-        {
-          text: 'Apri App',
-          onPress: () => {
-            console.log('📱 Utente ha premuto "Apri App" dalla notifica simulata');
-            // Qui potresti navigare a una schermata specifica
-          }
-        }
-      ],
-      { 
-        cancelable: true,
-        userInterfaceStyle: 'light'
-      }
-    );
-    
     return true;
   }
 

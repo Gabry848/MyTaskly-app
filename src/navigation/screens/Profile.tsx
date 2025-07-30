@@ -10,6 +10,7 @@ import {
   StatusBar,
   Animated,
   SafeAreaView,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
@@ -18,6 +19,8 @@ import { NotificationSnackbar } from "../../../components/NotificationSnackbar";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { STORAGE_KEYS } from "../../constants/authConstants";
 import eventEmitter from "../../utils/eventEmitter";
+import { getValidToken } from "../../services/authService";
+import axios from "../../services/axiosInstance";
 
 const { width } = Dimensions.get("window");
 
@@ -32,36 +35,98 @@ const ProfileScreen = () => {
     username: "",
     email: "",
     joinDate: "",
+    created_at: "",
   });
+  const [infoLoading, setInfoLoading] = useState(true);
   const [logoutTrigger, setLogoutTrigger] = useState(false); // Stato per triggerare l'effetto di logout
   const fadeAnim = useState(new Animated.Value(0))[0];
+  const skeletonAnim = useState(new Animated.Value(0))[0];
 
   useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const username = await AsyncStorage.getItem(STORAGE_KEYS.USER_NAME);
-        const email = await AsyncStorage.getItem(STORAGE_KEYS.USER_EMAIL);
-        const joinDate = await AsyncStorage.getItem(STORAGE_KEYS.LOGIN_TIME);
-        setUserData({
-          username: username || "Username",
-          email: email || "email@example.com",
-          joinDate: joinDate
-            ? new Date(parseInt(joinDate)).toLocaleDateString()
-            : "01/01/2023",
-        });
+    const fetchInitialData = async () => {
+      // Prima carica i dati base da AsyncStorage per mostrare subito qualcosa
+      const username = await AsyncStorage.getItem(STORAGE_KEYS.USER_NAME);
+      setUserData(prev => ({
+        ...prev,
+        username: username || "Username",
+      }));
 
-        // Avvia l'animazione di fade-in
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 800,
-          useNativeDriver: true,
-        }).start();
+      // Avvia l'animazione di fade-in
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }).start();
+
+      // Avvia l'animazione skeleton
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(skeletonAnim, {
+            toValue: 1,
+            duration: 1000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(skeletonAnim, {
+            toValue: 0,
+            duration: 1000,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    };
+
+    const fetchUserInfo = async () => {
+      try {
+        setInfoLoading(true);
+        const token = await getValidToken();
+        if (token) {
+          const response = await axios.get('/auth/current_user_info', {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+          
+          const userInfo = response.data;
+          setUserData(prev => ({
+            ...prev,
+            username: userInfo.username || prev.username,
+            email: userInfo.email || "email@example.com",
+            created_at: userInfo.created_at || "",
+            joinDate: userInfo.created_at 
+              ? new Date(userInfo.created_at).toLocaleDateString('it-IT')
+              : "01/01/2023",
+          }));
+        } else {
+          // Fallback to AsyncStorage if no token
+          const email = await AsyncStorage.getItem(STORAGE_KEYS.USER_EMAIL);
+          const joinDate = await AsyncStorage.getItem(STORAGE_KEYS.LOGIN_TIME);
+          setUserData(prev => ({
+            ...prev,
+            email: email || "email@example.com",
+            created_at: "",
+            joinDate: joinDate
+              ? new Date(parseInt(joinDate)).toLocaleDateString()
+              : "01/01/2023",
+          }));
+        }
       } catch (error) {
         console.error("Errore nel recupero dei dati utente", error);
+        // Fallback in case of error
+        const email = await AsyncStorage.getItem(STORAGE_KEYS.USER_EMAIL);
+        setUserData(prev => ({
+          ...prev,
+          email: email || "email@example.com",
+          created_at: "",
+          joinDate: "01/01/2023",
+        }));
+      } finally {
+        setInfoLoading(false);
       }
     };
 
-    fetchUserData();
+    fetchInitialData();
+    fetchUserInfo();
   }, []);
 
   useEffect(() => {
@@ -142,25 +207,51 @@ const ProfileScreen = () => {
             <View style={styles.infoSection}>
               <Text style={styles.sectionTitle}>Informazioni Account</Text>
               
-              <View style={styles.infoItem}>
-                <View style={styles.iconContainer}>
-                  <Ionicons name="mail" size={22} color="#000000" />
+              {infoLoading ? (
+                <View style={styles.loadingContainer}>
+                  <Animated.View style={[styles.skeletonItem, { opacity: skeletonAnim }]}>
+                    <View style={styles.skeletonIconContainer}>
+                      <Animated.View style={[styles.skeletonIcon, { opacity: skeletonAnim }]} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Animated.View style={[styles.skeletonLabel, { opacity: skeletonAnim }]} />
+                      <Animated.View style={[styles.skeletonText, { opacity: skeletonAnim }]} />
+                    </View>
+                  </Animated.View>
+                  
+                  <Animated.View style={[styles.skeletonItem, styles.skeletonItemLast, { opacity: skeletonAnim }]}>
+                    <View style={styles.skeletonIconContainer}>
+                      <Animated.View style={[styles.skeletonIcon, { opacity: skeletonAnim }]} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Animated.View style={[styles.skeletonLabel, { opacity: skeletonAnim }]} />
+                      <Animated.View style={[styles.skeletonText, { opacity: skeletonAnim }]} />
+                    </View>
+                  </Animated.View>
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.infoLabel}>Email</Text>
-                  <Text style={styles.infoText}>{userData.email}</Text>
-                </View>
-              </View>
+              ) : (
+                <>
+                  <View style={styles.infoItem}>
+                    <View style={styles.iconContainer}>
+                      <Ionicons name="mail" size={22} color="#000000" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.infoLabel}>Email</Text>
+                      <Text style={styles.infoText}>{userData.email}</Text>
+                    </View>
+                  </View>
 
-              <View style={[styles.infoItem, styles.infoItemLast]}>
-                <View style={styles.iconContainer}>
-                  <Ionicons name="calendar" size={22} color="#000000" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.infoLabel}>Membro dal</Text>
-                  <Text style={styles.infoText}>{userData.joinDate}</Text>
-                </View>
-              </View>
+                  <View style={[styles.infoItem, styles.infoItemLast]}>
+                    <View style={styles.iconContainer}>
+                      <Ionicons name="calendar" size={22} color="#000000" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.infoLabel}>Membro dal</Text>
+                      <Text style={styles.infoText}>{userData.joinDate}</Text>
+                    </View>
+                  </View>
+                </>
+              )}
             </View>
 
             <View style={styles.actionSection}>
@@ -402,6 +493,53 @@ const styles = StyleSheet.create({
   },
   chevronIcon: {
     opacity: 0.6,
+  },
+  loadingContainer: {
+    paddingVertical: 0,
+  },
+  skeletonItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  skeletonItemLast: {
+    borderBottomWidth: 0,
+  },
+  skeletonIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  skeletonIcon: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#e0e0e0',
+  },
+  skeletonLabel: {
+    height: 14,
+    width: 60,
+    borderRadius: 7,
+    backgroundColor: '#e0e0e0',
+    marginBottom: 8,
+  },
+  skeletonText: {
+    height: 16,
+    width: '70%',
+    borderRadius: 8,
+    backgroundColor: '#e0e0e0',
+  },
+  loadingText: {
+    fontSize: 14,
+    color: '#666666',
+    marginLeft: 12,
+    fontFamily: 'System',
   },
   gradientOverlay: {
     position: "absolute",

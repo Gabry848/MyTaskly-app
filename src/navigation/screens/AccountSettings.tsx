@@ -6,6 +6,8 @@ import { RootStackParamList } from '../../types';
 import { Ionicons } from '@expo/vector-icons';
 import { getValidToken } from '../../services/authService';
 import axios from '../../services/axiosInstance';
+import { sendTestNotification } from '../../services/notificationService';
+import * as Notifications from 'expo-notifications';
 
 interface UserInfo {
   username: string;
@@ -19,6 +21,7 @@ export default function AccountSettings() {
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [testNotificationLoading, setTestNotificationLoading] = useState(false);
 
   useEffect(() => {
     fetchUserInfo();
@@ -41,7 +44,7 @@ export default function AccountSettings() {
           'Content-Type': 'application/json',
         },
       });
-
+      console.log('User Info Response:', response.data);
       setUserInfo(response.data);
     } catch (error: any) {
       console.error('Errore nel recupero delle informazioni utente:', error);
@@ -66,6 +69,43 @@ export default function AccountSettings() {
 
   const handleRefresh = () => {
     fetchUserInfo();
+  };
+
+  const handleTestNotification = async () => {
+    setTestNotificationLoading(true);
+    try {
+      const success = await sendTestNotification();
+      if (success) {
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: '✅ Successo',
+            body: 'Notifica di test inviata con successo!',
+            data: { type: 'test_success' },
+          },
+          trigger: null,
+        });
+      } else {
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: '❌ Errore',
+            body: 'Impossibile inviare la notifica di test. Controlla la connessione al server.',
+            data: { type: 'test_error' },
+          },
+          trigger: null,
+        });
+      }
+    } catch (error) {
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: '❌ Errore',
+          body: 'Si è verificato un errore durante l\'invio della notifica.',
+          data: { type: 'test_error' },
+        },
+        trigger: null,
+      });
+    } finally {
+      setTestNotificationLoading(false);
+    }
   };
 
   if (loading) {
@@ -153,6 +193,32 @@ export default function AccountSettings() {
                   </View>
                 </View>
               </View>
+            </View>
+
+            {/* Test Notifications Section */}
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Test notifiche</Text>
+            </View>
+            
+            <View style={styles.infoCard}>
+              <TouchableOpacity 
+                style={[styles.testNotificationButton, testNotificationLoading && styles.testNotificationButtonDisabled]} 
+                onPress={handleTestNotification}
+                disabled={testNotificationLoading}
+              >
+                <View style={styles.testNotificationContent}>
+                  <Ionicons name="notifications-outline" size={24} color="#007AFF" />
+                  <View style={styles.testNotificationTextContainer}>
+                    <Text style={styles.testNotificationTitle}>
+                      {testNotificationLoading ? 'Invio in corso...' : 'Invia notifica di test'}
+                    </Text>
+                    <Text style={styles.testNotificationDescription}>
+                      Verifica il funzionamento delle notifiche push
+                    </Text>
+                  </View>
+                  <Ionicons name="send-outline" size={20} color="#007AFF" />
+                </View>
+              </TouchableOpacity>
             </View>
 
             {/* Future Features Section */}
@@ -315,6 +381,33 @@ const styles = StyleSheet.create({
     color: '#666666',
     textAlign: 'center',
     lineHeight: 20,
+    fontFamily: 'System',
+  },
+  testNotificationButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  testNotificationButtonDisabled: {
+    opacity: 0.6,
+  },
+  testNotificationContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  testNotificationTextContainer: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  testNotificationTitle: {
+    fontSize: 16,
+    color: '#000000',
+    fontFamily: 'System',
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  testNotificationDescription: {
+    fontSize: 14,
+    color: '#666666',
     fontFamily: 'System',
   },
 });
