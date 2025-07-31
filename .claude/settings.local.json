@@ -9,7 +9,9 @@
       "Bash(npm run lint)",
       "Bash(npx eslint:*)",
       "Bash(rm:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(mkdir:*)",
+      "Bash(npx react-native log-android:*)"
     ],
     "deny": []
   }

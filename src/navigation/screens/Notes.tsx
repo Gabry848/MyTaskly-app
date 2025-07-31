@@ -3,27 +3,65 @@ import {
   View,
   StyleSheet,
   SafeAreaView,
-  Text,
+  TouchableOpacity,
+  Alert,
+  Platform,
 } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-// Importazioni temporaneamente commentate per disabilitare la pagina
-// import { NotesProvider } from '../../context/NotesContext';
-// import { ModernNotesCanvas } from '../../../components/Notes/ModernNotesCanvas';
-// import { ModernNoteInput } from '../../../components/Notes/ModernNoteInput';
-// import { NotesErrorBoundary } from '../../../components/Notes/NotesErrorBoundary';
-// import { useNotesState, useNotesActions } from '../../context/NotesContext';
-
-// PAGINA TEMPORANEAMENTE DISABILITATA
-// Componente semplificato che mostra un messaggio di disabilitazione
+import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
+import { NotesProvider, useNotesActions, useNotesState } from '../../context/NotesContext';
+import { NotesCanvas } from '../../components/Notes/NotesCanvas';
+import { Plus } from 'lucide-react-native';
 
 const NotesContent: React.FC = () => {
+  const { addNote } = useNotesActions();
+  const { isLoading } = useNotesState();
+  const scale = useSharedValue(1);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const handleAddNote = () => {
+    scale.value = withSpring(0.9, { duration: 100 }, () => {
+      scale.value = withSpring(1, { duration: 100 });
+    });
+    
+    if (Platform.OS === 'ios') {
+      Alert.prompt(
+        'Nuova Nota',
+        'Inserisci il testo della nota:',
+        [
+          { text: 'Annulla', style: 'cancel' },
+          { 
+            text: 'Crea', 
+            onPress: (text) => {
+              if (text && text.trim()) {
+                addNote(text.trim());
+              }
+            }
+          }
+        ],
+        'plain-text'
+      );
+    } else {
+      addNote('Nuova nota');
+    }
+  };
+
   return (
-    <View style={styles.disabledContainer}>
-      <Text style={styles.disabledTitle}>Note temporaneamente disabilitate</Text>
-      <Text style={styles.disabledMessage}>
-        La pagina delle note è temporaneamente non disponibile.
-        {'\n'}Tornerà presto!
-      </Text>
+    <View style={styles.container}>
+      <NotesCanvas />
+      
+      <Animated.View style={[styles.fabContainer, animatedStyle]}>
+        <TouchableOpacity 
+          style={[styles.fab, isLoading && styles.fabDisabled]} 
+          onPress={handleAddNote}
+          disabled={isLoading}
+        >
+          <Plus size={24} color="white" />
+        </TouchableOpacity>
+      </Animated.View>
     </View>
   );
 };
@@ -31,8 +69,10 @@ const NotesContent: React.FC = () => {
 export default function Notes() {
   return (
     <GestureHandlerRootView style={styles.root}>
-      <SafeAreaView style={styles.container}>
-        <NotesContent />
+      <SafeAreaView style={styles.root}>
+        <NotesProvider>
+          <NotesContent />
+        </NotesProvider>
       </SafeAreaView>
     </GestureHandlerRootView>
   );
@@ -44,41 +84,29 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: 'white',
   },
-  // Stili per la pagina disabilitata
-  disabledContainer: {
-    flex: 1,
+  fabContainer: {
+    position: 'absolute',
+    bottom: 30,
+    right: 30,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+  },
+  fab: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#007AFF',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    elevation: 8,
   },
-  disabledTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#666',
-    marginBottom: 16,
-    textAlign: 'center',
+  fabDisabled: {
+    backgroundColor: '#ccc',
+    elevation: 2,
   },
-  disabledMessage: {
-    fontSize: 16,
-    color: '#888',
-    textAlign: 'center',
-    lineHeight: 24,
-  },
-  // Stili originali commentati per riferimento futuro
-  // content: {
-  //   flex: 1,
-  // },
-  // canvasContainer: {
-  //   flex: 1,
-  // },
-  // inputContainer: {
-  //   position: 'absolute',
-  //   bottom: 0,
-  //   left: 0,
-  //   right: 0,
-  //   backgroundColor: 'transparent',
-  //   zIndex: 1000,
-  // },
 });

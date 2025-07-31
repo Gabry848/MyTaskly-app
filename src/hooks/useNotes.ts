@@ -56,11 +56,25 @@ export function useNotes(options: UseNotesOptions = {}): [NotesState, NotesActio
   const generateRandomPosition = useCallback(() => {
     const padding = 50;
     const noteWidth = 200;
-    const noteHeight = 120;
+    const noteHeight = 160;
+    
+    // Griglia 50x50 con punti ogni 40px = 2000x2000px totali
+    const GRID_SIZE = 40;
+    const GRID_POINTS = 50;
+    const CANVAS_SIZE = GRID_POINTS * GRID_SIZE;
+    
+    // Genera posizioni al centro della griglia (intorno al punto 25,25)
+    const centerArea = CANVAS_SIZE / 2;
+    const areaSize = Math.min(width, height); // Area del viewport
+    
+    const minX = centerArea - areaSize / 2 + padding;
+    const maxX = centerArea + areaSize / 2 - noteWidth - padding;
+    const minY = centerArea - areaSize / 2 + padding;
+    const maxY = centerArea + areaSize / 2 - noteHeight - padding;
     
     return {
-      x: Math.random() * (width - noteWidth - padding * 2) + padding,
-      y: Math.random() * (height - noteHeight - padding * 2) + padding,
+      x: Math.random() * (maxX - minX) + minX,
+      y: Math.random() * (maxY - minY) + minY,
     };
   }, [width, height]);
 
@@ -143,16 +157,23 @@ export function useNotes(options: UseNotesOptions = {}): [NotesState, NotesActio
     if (!text.trim()) return;
 
     const tempId = `temp-${Date.now()}`;
+    const position = generateRandomPosition();
+    const color = getRandomColor();
+    
+    console.log('addNoteAction - Creating note:', { tempId, text, position, color });
     
     // Usa setState con funzione per evitare dipendenze dallo state
     setState(prevState => {
       const newNote: Note = {
         id: tempId,
         text: text.trim(),
-        position: generateRandomPosition(),
-        color: getRandomColor(),
+        position,
+        color,
         zIndex: prevState.nextZIndex,
       };
+
+      console.log('addNoteAction - New note created:', newNote);
+      console.log('addNoteAction - Previous notes count:', prevState.notes.length);
 
       return {
         ...prevState,
