@@ -48,6 +48,13 @@ axios.interceptors.request.use(
     const excludedPaths = ['/auth/login', '/auth/register', '/auth/refresh', '/login', '/register', '/refresh', 'auth/login', 'auth/register', 'auth/refresh', '/email/send-verification', '/email/verification-status'];
     const isExcluded = excludedPaths.some(path => config.url?.includes(path));
     
+    // Per le richieste di login, assicurati che non ci siano token preesistenti
+    if (config.url?.includes('/auth/login') || config.url?.includes('/login')) {
+      delete config.headers.Authorization;
+      console.log('[AXIOS] Rimosso header Authorization per richiesta di login');
+      return config;
+    }
+    
     if (!isExcluded) {
       try {
         // Per l'interceptor, controlliamo prima se abbiamo un token valido salvato

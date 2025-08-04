@@ -94,6 +94,13 @@ async function updateAuthData(data: any) {
  */
 async function login(username: any, password: any) {
   try {
+    // Pulisci i token esistenti prima del nuovo login per evitare interferenze
+    await AsyncStorage.multiRemove([
+      STORAGE_KEYS.BEARER_TOKEN,
+      STORAGE_KEYS.REFRESH_TOKEN
+    ]);
+    console.log('🧹 Token precedenti rimossi prima del nuovo login');
+    
     // Prima controlla se l'email è verificata (assumendo che username sia l'email o che l'API accetti username)
     // Se username non è email, dobbiamo fare una call separata o modificare l'API
     // Per ora procediamo con il login normale e controlliamo dopo
