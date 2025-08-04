@@ -4,6 +4,7 @@ import { StyleSheet, View, TouchableOpacity, SafeAreaView, StatusBar, ScrollView
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../types';
 import { Ionicons } from '@expo/vector-icons';
+import axiosInstance from '../../services/axiosInstance';
 
 export default function Settings() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
@@ -26,6 +27,21 @@ export default function Settings() {
 
   const handleNavigateToLanguage = () => {
     navigation.navigate('Language');
+  };
+
+  const testNotification = async () => {
+    try {
+      const response = await axiosInstance.post('api/notifications/test-timer-notification', {
+        title: "Test Timer",
+        body: "Notifica di test in arrivo",
+        delay_seconds: 10
+      });
+
+      console.log('Timer avviato:', response.data.estimated_arrival);
+
+    } catch (error) {
+      console.error('Errore test:', error);
+    }
   };
 
   const handleGoBack = () => {
@@ -107,6 +123,21 @@ export default function Settings() {
             <Text style={styles.menuItemText}>Info</Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color="#666666" />
+        </TouchableOpacity>
+
+        {/* Development Section */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Development</Text>
+        </View>
+
+        <TouchableOpacity 
+          style={styles.menuItem} 
+          onPress={testNotification}
+        >
+          <View style={styles.menuItemContent}>
+            <Ionicons name="notifications-outline" size={24} color="#000000" />
+            <Text style={styles.menuItemText}>Test Notifiche (10s)</Text>
+          </View>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
