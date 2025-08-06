@@ -9,7 +9,7 @@ import {
   Alert,
   ScrollView,
 } from "react-native";
-import { Dropdown } from 'react-native-element-dropdown';
+import { Picker } from '@react-native-picker/picker';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { Ionicons } from "@expo/vector-icons";
 import Animated, {
@@ -219,20 +219,21 @@ const AddTask: React.FC<AddTaskProps> = ({
             {allowCategorySelection && (
               <>
                 <Text style={styles.inputLabel}>Categoria *</Text>
-                <Dropdown
-                  style={[styles.dropdown, categoryError ? styles.inputError : null]}
-                  data={categoriesOptions}
-                  labelField="label"
-                  valueField="value"
-                  placeholder="Seleziona categoria"
-                  value={localCategory}
-                  onChange={item => {
-                    setLocalCategory(item.value);
-                    if (item.value) setCategoryError("");
-                  }}
-                  selectedTextStyle={styles.dropdownText}
-                  placeholderStyle={styles.dropdownPlaceholder}
-                />
+                <View style={[styles.dropdown, categoryError ? styles.inputError : null]}>
+                  <Picker
+                    selectedValue={localCategory}
+                    onValueChange={(itemValue) => {
+                      setLocalCategory(itemValue as string);
+                      if (itemValue) setCategoryError("");
+                    }}
+                    style={styles.picker}
+                  >
+                    <Picker.Item label="Seleziona categoria" value="" />
+                    {categoriesOptions.map((option, index) => (
+                      <Picker.Item key={index} label={option.label} value={option.value} />
+                    ))}
+                  </Picker>
+                </View>
                 {categoryError ? <Text style={styles.errorText}>{categoryError}</Text> : null}
               </>
             )}
@@ -562,7 +563,6 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: '#e1e5e9',
     borderRadius: 16,
-    padding: 16,
     marginBottom: 20,
     backgroundColor: '#ffffff',
     shadowColor: "#000",
@@ -574,16 +574,9 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 1,
   },
-  dropdownText: {
-    fontSize: 17,
+  picker: {
+    height: 50,
     color: '#000000',
-    fontFamily: 'System',
-    fontWeight: '400',
-  },
-  dropdownPlaceholder: {
-    fontSize: 17,
-    color: '#666666',
-    fontFamily: 'System',
   },
   disabledText: {
     color: '#ccc',
