@@ -12,7 +12,8 @@
       "Bash(find:*)",
       "Bash(mkdir:*)",
       "Bash(npx react-native log-android:*)",
-      "Bash(npm view:*)"
+      "Bash(npm view:*)",
+      "Bash(echo $ANDROID_HOME)"
     ],
     "deny": []
   }
