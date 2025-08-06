@@ -11,7 +11,8 @@
       "Bash(rm:*)",
       "Bash(find:*)",
       "Bash(mkdir:*)",
-      "Bash(npx react-native log-android:*)"
+      "Bash(npx react-native log-android:*)",
+      "Bash(npm view:*)"
     ],
     "deny": []
   }
