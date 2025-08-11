@@ -29,6 +29,10 @@ export default function Settings() {
     navigation.navigate('Language');
   };
 
+  const handleNavigateToVoiceSettings = () => {
+    navigation.navigate('VoiceSettings');
+  };
+
   const testNotification = async () => {
     try {
       const response = await axiosInstance.post('api/notifications/test-timer-notification', {
@@ -42,10 +46,6 @@ export default function Settings() {
     } catch (error) {
       console.error('Errore test:', error);
     }
-  };
-
-  const handleGoBack = () => {
-    navigation.goBack();
   };
 
   return (
@@ -110,6 +110,17 @@ export default function Settings() {
           <View style={styles.menuItemContent}>
             <Ionicons name="language-outline" size={24} color="#000000" />
             <Text style={styles.menuItemText}>Lingua</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#666666" />
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.menuItem} 
+          onPress={handleNavigateToVoiceSettings}
+        >
+          <View style={styles.menuItemContent}>
+            <Ionicons name="mic-outline" size={24} color="#000000" />
+            <Text style={styles.menuItemText}>Impostazioni vocali</Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color="#666666" />
         </TouchableOpacity>

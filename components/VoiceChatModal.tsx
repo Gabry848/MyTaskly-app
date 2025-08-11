@@ -234,9 +234,7 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
       // Invia al backend
       const result = await sendVoiceMessageToBot(
         audioBlob,
-        "advanced", // Usa il modello avanzato per la chat vocale
-        "female",
-        "high"
+        "advanced" // Usa il modello avanzato per la chat vocale - altre impostazioni automatiche dal server
       );
       
       setIsProcessing(false);

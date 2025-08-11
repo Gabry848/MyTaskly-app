@@ -1,5 +1,6 @@
 import { getValidToken } from "./authService";
 import { fetch } from 'expo/fetch';
+import * as FileSystem from 'expo-file-system';
 
 /**
  * Service per la gestione della comunicazione con il bot
@@ -254,17 +255,14 @@ export function extractStructuredData(response: string): any {
 
 /**
  * Invia un file audio al bot vocale e riceve una risposta audio
+ * Utilizza automaticamente le impostazioni vocali salvate dell'utente
  * @param {File} audioFile - Il file audio da inviare
  * @param {string} modelType - Il tipo di modello da utilizzare ('base' o 'advanced')
- * @param {string} voiceGender - Il genere della voce ('female' o 'male')
- * @param {string} quality - La qualità dell'audio ('medium', 'high', 'ultra')
  * @returns {Promise<{success: boolean, audioUrl?: string, textResponse?: string, error?: string}>} - La risposta del bot
  */
 export async function sendVoiceMessageToBot(
   audioFile: File | Blob,
-  modelType: "base" | "advanced",
-  voiceGender: "female" | "male" = "female",
-  quality: "medium" | "high" | "ultra" = "high"
+  modelType: "base" | "advanced"
 ): Promise<{success: boolean, audioUrl?: string, textResponse?: string, error?: string}> {
   try {
     // Verifica che l'utente sia autenticato
@@ -280,12 +278,10 @@ export async function sendVoiceMessageToBot(
     const formData = new FormData();
     formData.append('audio_file', audioFile, 'recording.m4a');
     formData.append('model', modelType);
-    formData.append('voice_gender', voiceGender);
-    formData.append('quality', quality);
 
     console.log(modelType);
 
-    console.log("🎤 Invio file audio al bot vocale");
+    console.log("🎤 Invio file audio al bot vocale (impostazioni automatiche)");
 
     // Invia la richiesta al server per la chat vocale
     const response = await fetch("https://taskly-production.up.railway.app/chat/voice-bot", {
@@ -316,15 +312,25 @@ export async function sendVoiceMessageToBot(
     const contentType = response.headers.get('content-type') || '';
     
     if (contentType.includes('audio/')) {
-      // Risposta audio - crea un URL temporaneo per la riproduzione
-      const audioBlob = await response.blob();
-      const audioUrl = URL.createObjectURL(audioBlob);
+      // Risposta audio - salva il file temporaneamente usando FileSystem
+      const audioArrayBuffer = await response.arrayBuffer();
       
-      console.log("🔊 Audio ricevuto e pronto per la riproduzione");
+      // Converte ArrayBuffer a base64 per FileSystem
+      const base64Audio = btoa(
+        new Uint8Array(audioArrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+      );
+      
+      // Crea un file temporaneo per l'audio
+      const audioUri = `${FileSystem.cacheDirectory}temp_audio_${Date.now()}.mp3`;
+      await FileSystem.writeAsStringAsync(audioUri, base64Audio, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      
+      console.log("🔊 Audio ricevuto e salvato temporaneamente:", audioUri);
       
       return {
         success: true,
-        audioUrl: audioUrl
+        audioUrl: audioUri
       };
     } else if (contentType.includes('application/json')) {
       // Risposta JSON (errore TTS ma con testo)
