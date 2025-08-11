@@ -18,18 +18,17 @@ import TaskListScreen from "./screens/TaskList";
 import CategoriesScreen from "./screens/Categories";
 import ProfileScreen from "./screens/Profile";
 import NotesScreen from "./screens/Notes";
-import BotChatScreen from "./screens/BotChat";
 import SettingsScreen from "./screens/Settings";
 import AccountSettingsScreen from "./screens/AccountSettings";
 import ChangePasswordScreen from "./screens/ChangePassword";
 import HelpScreen from "./screens/Help";
 import AboutScreen from "./screens/About";
 import LanguageScreen from "./screens/Language";
+import VoiceSettingsScreen from "./screens/VoiceSettings";
 import NotificationDebugScreen from "./screens/NotificationDebug";
 import BugReportScreen from "./screens/BugReport";
 import { NotFound as NotFoundScreen } from "./screens/NotFound";
 import eventEmitter from "../utils/eventEmitter";
-import { check_login } from "../services/authService";
 import { useNotifications } from "../services/notificationService";
 
 // Definizione del tipo per le route dello Stack principale
@@ -48,6 +47,7 @@ export type RootStackParamList = {
   Help: undefined;
   About: undefined;
   Language: undefined;
+  VoiceSettings: undefined;
   NotificationDebug: undefined;
   BugReport: undefined;
   Statistics: undefined;
@@ -280,6 +280,11 @@ function AppStack() {
           name="Language" 
           component={LanguageScreen}
           options={{ title: 'Lingua' }}
+        />
+        <Stack.Screen 
+          name="VoiceSettings" 
+          component={VoiceSettingsScreen}
+          options={{ title: 'Impostazioni Vocali' }}
         />
         <Stack.Screen 
           name="NotificationDebug" 

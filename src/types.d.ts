@@ -27,6 +27,7 @@ export type RootStackParamList = {
   Help: undefined;
   About: undefined;
   Language: undefined;
+  VoiceSettings: undefined;
   NotificationDebug: undefined;
   Statistics: undefined;
   Updates: undefined;
