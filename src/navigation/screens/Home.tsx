@@ -270,6 +270,24 @@ const Home20 = () => {
     setIsRecording(false);
   };
 
+  const handleVoiceResponse = (response: string) => {
+    // Aggiungi la risposta vocale alla chat come messaggio del bot
+    const botMessage: Message = {
+      id: generateMessageId(),
+      text: response,
+      sender: "bot",
+      start_time: new Date(),
+      modelType: "advanced",
+    };
+
+    // Se è il primo messaggio, avvia l'animazione della chat
+    if (!chatStarted) {
+      startChatAnimation();
+    }
+
+    setMessages((prev) => [...prev, botMessage]);
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
@@ -482,6 +500,7 @@ const Home20 = () => {
         visible={isVoiceChatVisible}
         onClose={handleVoiceChatClose}
         isRecording={isRecording}
+        onVoiceResponse={handleVoiceResponse}
       />
     </SafeAreaView>
   );

@@ -1,4 +1,3 @@
-import axios from "./axiosInterceptor";
 import { getValidToken } from "./authService";
 import { fetch } from 'expo/fetch';
 
@@ -254,86 +253,124 @@ export function extractStructuredData(response: string): any {
 }
 
 /**
- * Invia un messaggio vocale al bot e riceve una risposta
- * @param {string} audioBase64 - L'audio codificato in base64
+ * Invia un file audio al bot vocale e riceve una risposta audio
+ * @param {File} audioFile - Il file audio da inviare
  * @param {string} modelType - Il tipo di modello da utilizzare ('base' o 'advanced')
- * @param {Array} previousMessages - Gli ultimi messaggi scambiati tra utente e bot per il contesto
- * @returns {Promise<string>} - La risposta del bot
+ * @param {string} voiceGender - Il genere della voce ('female' o 'male')
+ * @param {string} quality - La qualità dell'audio ('medium', 'high', 'ultra')
+ * @returns {Promise<{success: boolean, audioUrl?: string, textResponse?: string, error?: string}>} - La risposta del bot
  */
 export async function sendVoiceMessageToBot(
-  audioBase64: string,
-  modelType: "base" | "advanced" = "base",
-  previousMessages: any[] = []
-): Promise<string> {
+  audioFile: File | Blob,
+  modelType: "base" | "advanced",
+  voiceGender: "female" | "male" = "female",
+  quality: "medium" | "high" | "ultra" = "high"
+): Promise<{success: boolean, audioUrl?: string, textResponse?: string, error?: string}> {
   try {
     // Verifica che l'utente sia autenticato
     const token = await getValidToken();
     if (!token) {
-      return "Mi dispiace, sembra che tu non sia autenticato. Effettua il login per continuare.";
+      return {
+        success: false,
+        error: "Mi dispiace, sembra che tu non sia autenticato. Effettua il login per continuare."
+      };
     }
 
-    // Prepara i messaggi precedenti per fornire contesto al bot
-    const formattedPreviousMessages = preparePreviousMessages(previousMessages);
-    
-    // Costruisci il payload per la richiesta vocale
-    const requestPayload = {
-      audio: audioBase64,
-      model: modelType,
-      previous_messages: formattedPreviousMessages,
-    };
-    
-    console.log("🎤 Invio messaggio vocale al bot");
+    // Crea FormData per l'invio del file audio
+    const formData = new FormData();
+    formData.append('audio_file', audioFile, 'recording.m4a');
+    formData.append('model', modelType);
+    formData.append('voice_gender', voiceGender);
+    formData.append('quality', quality);
+
+    console.log(modelType);
+
+    console.log("🎤 Invio file audio al bot vocale");
 
     // Invia la richiesta al server per la chat vocale
-    const response = await axios.post("/chat/bot_voice", requestPayload, {
+    const response = await fetch("https://taskly-production.up.railway.app/chat/voice-bot", {
+      method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
       },
+      body: formData,
     });
 
-    console.log("📥 Risposta vocale ricevuta dal server:", response.data);
+    console.log("📥 Risposta vocale ricevuta dal server, status:", response.status);
 
-    // Elabora la risposta del server (stesso formato della chat testuale)
-    if (response.data && typeof response.data === "object") {
-      // Gestisci risposte con modalità speciali (normal/view)
-      if (response.data.message && response.data.mode) {
-        if (response.data.mode === "normal") {
-          return response.data.message;
-        } else if (response.data.mode === "view") {
-          return JSON.stringify(response.data);
-        }
+    if (!response.ok) {
+      // Se il server restituisce un errore JSON invece di audio
+      if (response.headers.get('content-type')?.includes('application/json')) {
+        const errorData = await response.json();
+        return {
+          success: false,
+          textResponse: errorData.text_response || errorData.message,
+          error: errorData.error || `Errore HTTP ${response.status}`
+        };
       }
       
-      if (response.data.response) {
-        return response.data.response;
-      }
-      
-      if (response.data.message) {
-        return response.data.message;
-      }
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    return (
-      response.data || "Non ho capito la tua richiesta vocale. Potresti riprovare?"
-    );
+    // Controlla se la risposta è audio o JSON (in caso di errore TTS)
+    const contentType = response.headers.get('content-type') || '';
+    
+    if (contentType.includes('audio/')) {
+      // Risposta audio - crea un URL temporaneo per la riproduzione
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+      
+      console.log("🔊 Audio ricevuto e pronto per la riproduzione");
+      
+      return {
+        success: true,
+        audioUrl: audioUrl
+      };
+    } else if (contentType.includes('application/json')) {
+      // Risposta JSON (errore TTS ma con testo)
+      const jsonResponse = await response.json();
+      
+      return {
+        success: true,
+        textResponse: jsonResponse.text_response || jsonResponse.message,
+        error: jsonResponse.error
+      };
+    } else {
+      // Tipo di risposta non riconosciuto
+      return {
+        success: false,
+        error: "Formato di risposta non riconosciuto dal server"
+      };
+    }
     
   } catch (error: any) {
     console.error("❌ Errore nella comunicazione vocale con il bot:", error);
     
     // Gestisci errori specifici
-    if (error.response?.status === 401) {
-      return "Sessione scaduta. Effettua nuovamente il login.";
+    if (error.message?.includes('status: 401')) {
+      return {
+        success: false,
+        error: "Sessione scaduta. Effettua nuovamente il login."
+      };
     }
     
-    if (error.response?.status === 429) {
-      return "Troppe richieste. Riprova tra qualche secondo.";
+    if (error.message?.includes('status: 429')) {
+      return {
+        success: false,
+        error: "Troppe richieste. Riprova tra qualche secondo."
+      };
     }
     
-    if (error.response?.status >= 500) {
-      return "Il servizio vocale è temporaneamente non disponibile. Riprova più tardi.";
+    if (error.message?.includes('status: 5')) {
+      return {
+        success: false,
+        error: "Il servizio vocale è temporaneamente non disponibile. Riprova più tardi."
+      };
     }
     
-    return "Mi dispiace, si è verificato un errore con il messaggio vocale. Riprova più tardi.";
+    return {
+      success: false,
+      error: "Mi dispiace, si è verificato un errore con il messaggio vocale. Riprova più tardi."
+    };
   }
 }
