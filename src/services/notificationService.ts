@@ -7,7 +7,7 @@ import axiosInstance from './axiosInstance';
 
 // Controllo se siamo in Expo Go o Development Build
 const isExpoGo = Constants.appOwnership === 'expo';
-const isDevBuild = Constants.appOwnership === 'standalone' || Constants.executionEnvironment === 'standalone';
+const isDevBuild = Constants.executionEnvironment === 'standalone';
 
 // ⚙️ CONFIGURA COME GESTIRE LE NOTIFICHE
 Notifications.setNotificationHandler({
@@ -26,6 +26,11 @@ Notifications.setNotificationHandler({
 export async function registerForPushNotificationsAsync(): Promise<string | undefined> {
   let token;
 
+  console.log('🔍 Inizio registrazione notifiche push...');
+  console.log('📱 Device.isDevice:', Device.isDevice);
+  console.log('📱 Constants.appOwnership:', Constants.appOwnership);
+  console.log('📱 Constants.executionEnvironment:', Constants.executionEnvironment);
+
   // ⚠️ Controllo compatibilità con Expo Go
   if (isExpoGo) {
     console.log('ℹ️ Modalità Expo Go: le notifiche push remote non sono supportate');
@@ -35,28 +40,37 @@ export async function registerForPushNotificationsAsync(): Promise<string | unde
 
   // 📱 Configura il canale Android (obbligatorio)
   if (Platform.OS === 'android') {
+    console.log('📱 Configurazione canale Android...');
     await Notifications.setNotificationChannelAsync('default', {
       name: 'default',
       importance: Notifications.AndroidImportance.MAX,
       vibrationPattern: [0, 250, 250, 250],
       lightColor: '#FF231F7C',
     });
+    console.log('✅ Canale Android configurato');
   }
 
   // 📋 Controlla se è un dispositivo fisico
   if (Device.isDevice) {
+    console.log('📋 Dispositivo fisico rilevato');
+    
     // Verifica permessi esistenti
+    console.log('📋 Controllo permessi esistenti...');
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    console.log('📋 Status permessi esistenti:', existingStatus);
     let finalStatus = existingStatus;
     
     // Richiedi permessi se non li hai
     if (existingStatus !== 'granted') {
+      console.log('📋 Richiesta permessi...');
       const { status } = await Notifications.requestPermissionsAsync();
       finalStatus = status;
+      console.log('📋 Nuovo status permessi:', finalStatus);
     }
     
     // Se non hai i permessi, avvisa l'utente
     if (finalStatus !== 'granted') {
+      console.log('❌ Permessi notifiche non concessi');
       Alert.alert(
         'Permessi Notifiche', 
         'Le notifiche sono necessarie per ricevere aggiornamenti sui tuoi task!'
@@ -64,32 +78,47 @@ export async function registerForPushNotificationsAsync(): Promise<string | unde
       return;
     }
     
+    console.log('✅ Permessi notifiche concessi');
+    
     // 🎯 OTTIENI IL TOKEN EXPO
     const projectId = Constants?.expoConfig?.extra?.eas?.projectId 
                    ?? Constants?.easConfig?.projectId;
     
+    console.log('🎯 Project ID trovato:', projectId);
+    
     if (!projectId) {
+      console.log('❌ Project ID non trovato');
       Alert.alert('Errore', 'Project ID non trovato');
       return;
     }
 
     try {
+      console.log('🎯 Richiesta token Expo Push...');
       // Questo è il token che devi inviare al backend!
-      token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+      const tokenResult = await Notifications.getExpoPushTokenAsync({ projectId });
+      token = tokenResult.data;
       console.log('🎉 Token Expo ottenuto:', token);
     } catch (e) {
       console.error('❌ Errore nell\'ottenere il token:', e);
+      console.error('❌ Stack trace:', e instanceof Error ? e.stack : 'No stack trace');
       if (isExpoGo) {
         Alert.alert(
           'Errore Token Push',
           'Impossibile ottenere il token push in Expo Go.\nUsa un development build per le notifiche push.'
         );
+      } else {
+        Alert.alert(
+          'Errore Token Push',
+          `Impossibile ottenere il token push.\nErrore: ${e instanceof Error ? e.message : e}`
+        );
       }
     }
   } else {
+    console.log('❌ Non è un dispositivo fisico');
     Alert.alert('Errore', 'Le notifiche funzionano solo su dispositivi fisici');
   }
 
+  console.log('🔍 Fine registrazione notifiche push, token:', token ? 'OTTENUTO' : 'NON OTTENUTO');
   return token;
 }
 
