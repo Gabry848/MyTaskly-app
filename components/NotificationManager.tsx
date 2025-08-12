@@ -1,6 +1,9 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import { useNotifications } from '../src/services/notificationService';
+import * as Device from 'expo-device';
+import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
+import { useNotifications, registerForPushNotificationsAsync } from '../src/services/notificationService';
 
 interface NotificationManagerProps {
   showDebugInfo?: boolean;
@@ -10,6 +13,28 @@ export const NotificationManager: React.FC<NotificationManagerProps> = ({
   showDebugInfo = false 
 }) => {
   const { expoPushToken, notification, sendTestNotification } = useNotifications();
+  const [debugInfo, setDebugInfo] = useState<any>({});
+
+  useEffect(() => {
+    const getDebugInfo = async () => {
+      const permissions = await Notifications.getPermissionsAsync();
+      const isExpoGo = Constants.appOwnership === 'expo';
+      const projectId = Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
+      
+      setDebugInfo({
+        isDevice: Device.isDevice,
+        permissions: permissions.status,
+        isExpoGo,
+        projectId: projectId ? 'Presente' : 'Mancante',
+        appOwnership: Constants.appOwnership,
+        executionEnvironment: Constants.executionEnvironment
+      });
+    };
+    
+    if (showDebugInfo) {
+      getDebugInfo();
+    }
+  }, [showDebugInfo]);
 
   const handleTestNotification = async () => {
     const success = await sendTestNotification();
@@ -17,6 +42,19 @@ export const NotificationManager: React.FC<NotificationManagerProps> = ({
       Alert.alert('✅ Successo', 'Notifica di test inviata!');
     } else {
       Alert.alert('❌ Errore', 'Impossibile inviare la notifica di test');
+    }
+  };
+
+  const handleManualTokenRequest = async () => {
+    try {
+      const token = await registerForPushNotificationsAsync();
+      if (token) {
+        Alert.alert('Token Ottenuto!', `Token: ${token.substring(0, 50)}...`);
+      } else {
+        Alert.alert('Errore', 'Token non ottenuto. Controlla i permessi e la configurazione.');
+      }
+    } catch (error) {
+      Alert.alert('Errore', `Errore: ${error}`);
     }
   };
 
@@ -28,15 +66,39 @@ export const NotificationManager: React.FC<NotificationManagerProps> = ({
     <View style={styles.container}>
       <Text style={styles.title}>📱 Gestione Notifiche</Text>
       
-      {/* Mostra il token solo in modalità debug */}
-      {expoPushToken && (
-        <View style={styles.tokenContainer}>
-          <Text style={styles.tokenLabel}>Expo Push Token:</Text>
-          <Text style={styles.tokenText} numberOfLines={3}>
-            {expoPushToken}
-          </Text>
+      {/* Informazioni di debug */}
+      {showDebugInfo && (
+        <View style={styles.debugContainer}>
+          <Text style={styles.debugTitle}>🔍 Info Sistema:</Text>
+          <Text style={styles.debugText}>• Device fisico: {debugInfo.isDevice ? '✅' : '❌'}</Text>
+          <Text style={styles.debugText}>• Expo Go: {debugInfo.isExpoGo ? '✅' : '❌'}</Text>
+          <Text style={styles.debugText}>• Permessi: {debugInfo.permissions || 'N/A'}</Text>
+          <Text style={styles.debugText}>• Project ID: {debugInfo.projectId || 'N/A'}</Text>
+          <Text style={styles.debugText}>• App Owner: {debugInfo.appOwnership || 'N/A'}</Text>
         </View>
       )}
+      
+      {/* Mostra il token */}
+      <View style={styles.tokenContainer}>
+        <Text style={styles.tokenLabel}>🎯 Expo Push Token:</Text>
+        {expoPushToken ? (
+          <Text style={styles.tokenText} numberOfLines={3}>
+            ✅ {expoPushToken}
+          </Text>
+        ) : (
+          <View>
+            <Text style={styles.noTokenText}>❌ Token non disponibile</Text>
+            {showDebugInfo && (
+              <TouchableOpacity 
+                style={styles.retryButton} 
+                onPress={handleManualTokenRequest}
+              >
+                <Text style={styles.retryButtonText}>🔄 Riprova Ottenere Token</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+      </View>
 
       {/* Mostra l'ultima notifica ricevuta */}
       {notification && (
@@ -77,6 +139,25 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     textAlign: 'center',
   },
+  debugContainer: {
+    backgroundColor: '#e8f4fd',
+    padding: 12,
+    marginBottom: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#b3d9ff',
+  },
+  debugTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    color: '#0066cc',
+  },
+  debugText: {
+    fontSize: 12,
+    color: '#0066cc',
+    marginBottom: 2,
+  },
   tokenContainer: {
     backgroundColor: '#f0f0f0',
     padding: 12,
@@ -91,6 +172,24 @@ const styles = StyleSheet.create({
   tokenText: {
     fontSize: 10,
     fontFamily: 'monospace',
+    color: '#00aa00',
+  },
+  noTokenText: {
+    fontSize: 12,
+    color: '#cc0000',
+    fontWeight: 'bold',
+  },
+  retryButton: {
+    backgroundColor: '#ff9800',
+    padding: 8,
+    borderRadius: 6,
+    marginTop: 8,
+    alignItems: 'center',
+  },
+  retryButtonText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   notificationContainer: {
     backgroundColor: '#e6f3ff',
