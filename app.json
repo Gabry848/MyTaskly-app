@@ -43,7 +43,8 @@
         {
           "icon": "./assets/icon.png",
           "color": "#ffffff",
-          "sounds": []
+          "sounds": [],
+          "mode": "expo"
         }
       ],
       "expo-dev-client"
