@@ -1,8 +1,7 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { StyleSheet, View, TextInput, TouchableOpacity, Platform, Keyboard, Dimensions, Alert } from 'react-native';
+import React, { useState, useRef, useCallback } from 'react';
+import { StyleSheet, View, TextInput, TouchableOpacity, Platform, Dimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { ChatInputProps } from './types';
-import { useVoiceRecording } from './hooks/useVoiceRecording';
 import VoiceRecordButton from './VoiceRecordButton';
 
 interface ExtendedChatInputProps extends ChatInputProps {
@@ -14,19 +13,12 @@ const ChatInput: React.FC<ExtendedChatInputProps> = ({
   onSendVoiceMessage, 
   style, 
   modelType = 'base' 
-}) => {  const [inputText, setInputText] = useState('');
+}) => {
+  const [inputText, setInputText] = useState('');
   const [inputHeight, setInputHeight] = useState(44);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
   const inputRef = useRef<TextInput>(null);
-  
-  // Hook per la registrazione vocale
-  const {
-    isRecording,
-    recordingDuration,
-    isProcessing,
-    startRecording,
-    stopRecording,
-    requestPermissions,
-  } = useVoiceRecording();
 
   // Helper per determinare il tipo di dispositivo
   const getDeviceType = () => {
@@ -56,32 +48,35 @@ const ChatInput: React.FC<ExtendedChatInputProps> = ({
     setInputHeight(height);
   }, []);
 
-  // Gestione della registrazione vocale
-  const handleStartRecording = useCallback(async () => {
-    try {
-      await startRecording();
-    } catch (error) {
-      console.error('Errore durante l\'avvio della registrazione:', error);
-      Alert.alert('Errore', 'Impossibile avviare la registrazione vocale.');
-    }
-  }, [startRecording]);  const handleStopRecording = useCallback(async () => {
-    try {
-      // Il nuovo hook gestisce internamente l'invio al backend e restituisce messaggio utente e risposta bot
-      const result = await stopRecording(modelType);
-      
-      if (result && result.userMessage && result.userMessage.trim()) {
-        // Invia il messaggio trascritto dell'utente come messaggio normale
-        onSendMessage(result.userMessage);
-        
-        // TODO: In futuro, se volessi mostrare anche la risposta del bot automaticamente,
-        // potresti anche gestire result.botResponse qui
-        console.log("Risposta bot disponibile:", result.botResponse);
-      }
-    } catch (error) {
-      console.error('Errore durante l\'arresto della registrazione:', error);
-      Alert.alert('Errore', 'Impossibile processare il messaggio vocale.');
-    }
-  }, [stopRecording, modelType, onSendMessage]);return (
+  // Gestione simulata della registrazione vocale (solo UI)
+  const handleStartRecording = useCallback(() => {
+    setIsRecording(true);
+    setRecordingDuration(0);
+    
+    // Simula un timer di registrazione
+    const timer = setInterval(() => {
+      setRecordingDuration(prev => prev + 1);
+    }, 1000);
+    
+    // Auto-stop dopo 30 secondi per demo
+    setTimeout(() => {
+      clearInterval(timer);
+      setIsRecording(false);
+      setRecordingDuration(0);
+      // Simula l'invio di un messaggio vocale trascritto
+      const simulatedTranscription = "Messaggio vocale simulato";
+      onSendMessage(simulatedTranscription);
+    }, 30000);
+  }, [onSendMessage]);
+
+  const handleStopRecording = useCallback(() => {
+    setIsRecording(false);
+    setRecordingDuration(0);
+    
+    // Simula l'invio di un messaggio vocale trascritto
+    const simulatedTranscription = "Messaggio vocale simulato";
+    onSendMessage(simulatedTranscription);
+  }, [onSendMessage]);return (
     <View style={[
       styles.inputContainer, 
       style,
@@ -92,7 +87,8 @@ const ChatInput: React.FC<ExtendedChatInputProps> = ({
         ref={inputRef}
         style={[styles.input, { height: inputHeight }]}
         value={inputText}
-        onChangeText={setInputText}        placeholder={isProcessing ? "Elaborazione in corso..." : "Scrivi un messaggio..."}
+        onChangeText={setInputText}
+        placeholder="Scrivi un messaggio..."
         placeholderTextColor="#999"
         onSubmitEditing={handleSend}
         returnKeyType="send"
@@ -106,25 +102,25 @@ const ChatInput: React.FC<ExtendedChatInputProps> = ({
         onContentSizeChange={handleContentSizeChange}
         blurOnSubmit={false}
         textAlignVertical="top"
-        editable={!isRecording && !isProcessing}      />
+        editable={!isRecording}      />
       
       <View style={styles.buttonContainer}>        <VoiceRecordButton
           isRecording={isRecording}
           recordingDuration={recordingDuration}
           onStartRecording={handleStartRecording}
           onStopRecording={handleStopRecording}
-          disabled={isProcessing}
+          disabled={false}
         />
         
         <TouchableOpacity 
           style={[styles.sendButton, { height: inputHeight }]} 
           onPress={handleSend}
-          disabled={inputText.trim() === '' || isRecording || isProcessing}
+          disabled={inputText.trim() === '' || isRecording}
         >
           <MaterialIcons 
             name="send" 
             size={24} 
-            color={(inputText.trim() === '' || isRecording || isProcessing) ? '#CCC' : '#007bff'} 
+            color={(inputText.trim() === '' || isRecording) ? '#CCC' : '#007bff'} 
           />
         </TouchableOpacity>
       </View>

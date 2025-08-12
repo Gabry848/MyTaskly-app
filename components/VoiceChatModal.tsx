@@ -8,11 +8,8 @@ import {
   Animated,
   Dimensions,
   StatusBar,
-  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { Audio } from 'expo-av';
-import { sendVoiceMessageToBot } from '../src/services/botservice';
 
 interface VoiceChatModalProps {
   visible: boolean;
@@ -30,10 +27,7 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
   onVoiceResponse,
 }) => {
   const [isRecording, setIsRecording] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
   const [statusText, setStatusText] = useState("");
-  const [recording, setRecording] = useState<Audio.Recording | null>(null);
-  const [sound, setSound] = useState<Audio.Sound | null>(null);
   // Animazioni
   const pulseScale = useRef(new Animated.Value(1)).current;
   const pulseOpacity = useRef(new Animated.Value(0.3)).current;
@@ -61,6 +55,14 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
           useNativeDriver: true,
         }),
       ]).start();
+    }
+  }, [visible, slideIn, fadeIn]);
+
+  // Reset stato quando il modal si chiude
+  useEffect(() => {
+    if (!visible) {
+      setIsRecording(false);
+      setStatusText("");
     }
   }, [visible]);
 
@@ -102,30 +104,11 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
     return () => {
       pulseAnimation.stop();
     };
-  }, [visible]);
-
-  // Inizializza i permessi audio
-  useEffect(() => {
-    const setupAudio = async () => {
-      try {
-        await Audio.requestPermissionsAsync();
-        await Audio.setAudioModeAsync({
-          allowsRecordingIOS: true,
-          playsInSilentModeIOS: true,
-        });
-      } catch (error) {
-        console.error('Errore nella configurazione audio:', error);
-      }
-    };
-
-    if (visible) {
-      setupAudio();
-    }
-  }, [visible]);
+  }, [visible, pulseScale, pulseOpacity]);
 
   // Animazione durante la registrazione
   useEffect(() => {
-    if (isRecording || isProcessing) {
+    if (isRecording) {
       const recordingAnimation = Animated.loop(
         Animated.sequence([
           Animated.timing(recordingScale, {
@@ -148,22 +131,7 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
     } else {
       recordingScale.setValue(1);
     }
-  }, [isRecording, isProcessing]);
-
-  // Cleanup dell'audio quando il modal si chiude
-  useEffect(() => {
-    if (!visible) {
-      // Ferma la registrazione se in corso
-      if (recording) {
-        stopRecording();
-      }
-      // Ferma la riproduzione se in corso
-      if (sound) {
-        sound.unloadAsync();
-        setSound(null);
-      }
-    }
-  }, [visible]);
+  }, [isRecording, recordingScale]);
 
   const handleClose = () => {
     // Animazione di uscita
@@ -183,132 +151,14 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
     });
   };
 
-  const startRecording = async () => {
-    try {
-      setIsRecording(true);
-      setStatusText("Registrazione in corso...");
-      
-      const { recording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
-      );
-      setRecording(recording);
-      
-      console.log('🎤 Registrazione avviata');
-    } catch (error) {
-      console.error('Errore durante l\'avvio della registrazione:', error);
-      Alert.alert('Errore', 'Impossibile avviare la registrazione');
-      setIsRecording(false);
-      setStatusText("");
-    }
-  };
-
-  const stopRecording = async () => {
-    try {
-      if (!recording) return;
-      
-      setIsRecording(false);
-      setIsProcessing(true);
-      setStatusText("Elaborazione in corso...");
-      
-      await recording.stopAndUnloadAsync();
-      const uri = recording.getURI();
-      setRecording(null);
-      
-      if (uri) {
-        console.log('🎤 Registrazione completata:', uri);
-        await sendAudioToServer(uri);
-      }
-    } catch (error) {
-      console.error('Errore durante l\'arresto della registrazione:', error);
-      setIsProcessing(false);
-      setStatusText("");
-    }
-  };
-
-  const sendAudioToServer = async (audioUri: string) => {
-    try {
-      // Converti l'URI in un file
-      const response = await fetch(audioUri);
-      const audioBlob = await response.blob();
-      
-      // Invia al backend
-      const result = await sendVoiceMessageToBot(
-        audioBlob,
-        "advanced" // Usa il modello avanzato per la chat vocale - altre impostazioni automatiche dal server
-      );
-      
-      setIsProcessing(false);
-      
-      if (result.success) {
-        if (result.audioUrl) {
-          // Riproduci la risposta audio
-          setStatusText("Riproduzione risposta...");
-          await playAudioResponse(result.audioUrl);
-        } else if (result.textResponse) {
-          // Mostra la risposta testuale
-          setStatusText("Risposta ricevuta");
-          if (onVoiceResponse) {
-            onVoiceResponse(result.textResponse);
-          }
-          Alert.alert('Risposta', result.textResponse);
-        }
-      } else {
-        // Gestisci errore
-        setStatusText("");
-        Alert.alert('Errore', result.error || 'Errore sconosciuto');
-      }
-      
-      // Reset dopo un breve delay
-      setTimeout(() => {
-        setStatusText("");
-      }, 2000);
-      
-    } catch (error) {
-      console.error('Errore nell\'invio dell\'audio:', error);
-      setIsProcessing(false);
-      setStatusText("");
-      Alert.alert('Errore', 'Impossibile inviare il messaggio vocale');
-    }
-  };
-
-  const playAudioResponse = async (audioUrl: string) => {
-    try {
-      // Ferma il suono precedente se presente
-      if (sound) {
-        await sound.unloadAsync();
-      }
-      
-      // Carica e riproduci il nuovo audio
-      const { sound: newSound } = await Audio.Sound.createAsync(
-        { uri: audioUrl },
-        { shouldPlay: true }
-      );
-      
-      setSound(newSound);
-      
-      // Gestisci la fine della riproduzione
-      newSound.setOnPlaybackStatusUpdate((status) => {
-        if (status.isLoaded && status.didJustFinish) {
-          setStatusText("");
-          newSound.unloadAsync();
-          setSound(null);
-        }
-      });
-      
-    } catch (error) {
-      console.error('Errore nella riproduzione audio:', error);
-      setStatusText("");
-      Alert.alert('Errore', 'Impossibile riprodurre la risposta audio');
-    }
-  };
-
   const handleMicPress = () => {
-    if (isProcessing) return;
+    // Simula il toggle della registrazione solo per l'UI
+    setIsRecording(!isRecording);
     
-    if (isRecording) {
-      stopRecording();
+    if (!isRecording) {
+      setStatusText("Registrazione simulata...");
     } else {
-      startRecording();
+      setStatusText("");
     }
   };
 
@@ -347,7 +197,7 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
           {/* Titolo */}
           <Text style={styles.title}>Chat Vocale</Text>
           <Text style={styles.subtitle}>
-            {isProcessing ? "Elaborazione..." : isRecording ? "Sto ascoltando..." : "Tocca per parlare"}
+            {isRecording ? "Sto ascoltando..." : "Tocca per parlare"}
           </Text>
 
           {/* Cerchio animato centrale */}
@@ -378,8 +228,7 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
             <Animated.View
               style={[
                 styles.microphoneCircle,
-                (isRecording || isProcessing) && styles.microphoneCircleRecording,
-                isProcessing && styles.microphoneCircleProcessing,
+                isRecording && styles.microphoneCircleRecording,
                 {
                   transform: [{ scale: recordingScale }],
                 },
@@ -391,7 +240,7 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
                 activeOpacity={0.8}
               >
                 <Ionicons
-                  name={isProcessing ? "hourglass" : isRecording ? "stop" : "mic"}
+                  name={isRecording ? "stop" : "mic"}
                   size={48}
                   color="#ffffff"
                 />
@@ -403,11 +252,9 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
           <View style={styles.statusContainer}>
             <Text style={styles.statusText}>
               {statusText || 
-                (isProcessing 
-                  ? "Elaborazione in corso..." 
-                  : isRecording 
-                    ? "Registrazione in corso..."
-                    : "Premi il microfono per iniziare"
+                (isRecording 
+                  ? "Registrazione in corso..."
+                  : "Premi il microfono per iniziare"
                 )
               }
             </Text>
