@@ -22,8 +22,7 @@
       "package": "com.anonymous.myapptodolist",
       "permissions": [
         "android.permission.RECORD_AUDIO"
-      ],
-      "googleServicesFile": "./google-services.json"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -47,15 +46,6 @@
           "sounds": []
         }
       ],
-      [
-        "@react-native-firebase/app",
-        {
-          "android": {
-            "googleServicesFile": "./google-services.json"
-          }
-        }
-      ],
-      "@react-native-firebase/messaging",
       "expo-dev-client"
     ],
     "extra": {
