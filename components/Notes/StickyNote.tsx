@@ -16,8 +16,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { X, Palette } from 'lucide-react-native';
-import { Note } from '../../services/noteService';
-import { useNotesActions } from '../../context/NotesContext';
+import { Note } from '../../src/services/noteService';
+import { useNotesActions } from '../../src/context/NotesContext';
 import { NotesFocusContext } from './NotesCanvas';
 
 const NOTE_WIDTH = 200;
