@@ -16,7 +16,7 @@ export default function ChangePassword() {
       <ScrollView style={styles.content}>
         <View style={styles.wipContainer}>
           <View style={styles.wipIcon}>
-            <Ionicons name="construct" size={64} color="#FF9500" />
+            <Ionicons name="construct" size={64} color="#000000" />
           </View>
           
           <Text style={styles.wipTitle}>Work in Progress</Text>
@@ -31,17 +31,17 @@ export default function ChangePassword() {
 
           <View style={styles.featuresList}>
             <View style={styles.featureItem}>
-              <Ionicons name="checkmark-circle-outline" size={20} color="#34C759" />
+              <Ionicons name="checkmark-circle-outline" size={20} color="#000000" />
               <Text style={styles.featureText}>Validazione password sicura</Text>
             </View>
             
             <View style={styles.featureItem}>
-              <Ionicons name="checkmark-circle-outline" size={20} color="#34C759" />
+              <Ionicons name="checkmark-circle-outline" size={20} color="#000000" />
               <Text style={styles.featureText}>Verifica password attuale</Text>
             </View>
             
             <View style={styles.featureItem}>
-              <Ionicons name="checkmark-circle-outline" size={20} color="#34C759" />
+              <Ionicons name="checkmark-circle-outline" size={20} color="#000000" />
               <Text style={styles.featureText}>Notifica email di conferma</Text>
             </View>
           </View>
@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
   },
   wipDescription: {
     fontSize: 18,
-    color: '#666666',
+    color: '#000000',
     textAlign: 'center',
     lineHeight: 24,
     marginBottom: 12,
@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
   },
   wipSubDescription: {
     fontSize: 16,
-    color: '#999999',
+    color: '#000000',
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: 40,
@@ -106,18 +106,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     paddingHorizontal: 16,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#ffffff',
     borderRadius: 8,
     marginBottom: 8,
   },
   featureText: {
     fontSize: 16,
-    color: '#333333',
+    color: '#000000',
     marginLeft: 12,
     fontFamily: 'System',
   },
   statusBadge: {
-    backgroundColor: '#FF9500',
+    backgroundColor: '#000000',
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 20,

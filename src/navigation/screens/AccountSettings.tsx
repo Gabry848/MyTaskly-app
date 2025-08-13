@@ -92,7 +92,7 @@ export default function AccountSettings() {
         <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
         
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
+          <ActivityIndicator size="large" color="#000000" />
           <Text style={styles.loadingText}>Caricamento...</Text>
         </View>
       </SafeAreaView>
@@ -107,7 +107,7 @@ export default function AccountSettings() {
       <ScrollView style={styles.content}>
         {error ? (
           <View style={styles.errorContainer}>
-            <Ionicons name="alert-circle-outline" size={48} color="#FF3B30" />
+            <Ionicons name="alert-circle-outline" size={48} color="#000000" />
             <Text style={styles.errorText}>{error}</Text>
             <TouchableOpacity style={styles.retryButton} onPress={handleRefresh}>
               <Text style={styles.retryButtonText}>Riprova</Text>
@@ -123,7 +123,7 @@ export default function AccountSettings() {
             <View style={styles.infoCard}>
               <View style={styles.infoItem}>
                 <View style={styles.infoItemContent}>
-                  <Ionicons name="person-outline" size={24} color="#666666" />
+                  <Ionicons name="person-outline" size={24} color="#000000" />
                   <View style={styles.infoTextContainer}>
                     <Text style={styles.infoLabel}>Username</Text>
                     <Text style={styles.infoValue}>{userInfo.username}</Text>
@@ -135,7 +135,7 @@ export default function AccountSettings() {
 
               <View style={styles.infoItem}>
                 <View style={styles.infoItemContent}>
-                  <Ionicons name="mail-outline" size={24} color="#666666" />
+                  <Ionicons name="mail-outline" size={24} color="#000000" />
                   <View style={styles.infoTextContainer}>
                     <Text style={styles.infoLabel}>Email</Text>
                     <Text style={styles.infoValue}>{userInfo.email}</Text>
@@ -147,7 +147,7 @@ export default function AccountSettings() {
 
               <View style={styles.infoItem}>
                 <View style={styles.infoItemContent}>
-                  <Ionicons name="calendar-outline" size={24} color="#666666" />
+                  <Ionicons name="calendar-outline" size={24} color="#000000" />
                   <View style={styles.infoTextContainer}>
                     <Text style={styles.infoLabel}>Data iscrizione</Text>
                     <Text style={styles.infoValue}>{formatDate(userInfo.registration_date)}</Text>
@@ -159,7 +159,7 @@ export default function AccountSettings() {
 
               <View style={styles.infoItem}>
                 <View style={styles.infoItemContent}>
-                  <Ionicons name="shield-outline" size={24} color="#666666" />
+                  <Ionicons name="shield-outline" size={24} color="#000000" />
                   <View style={styles.infoTextContainer}>
                     <Text style={styles.infoLabel}>Autenticazione a due fattori</Text>
                     <View style={styles.statusContainer}>
@@ -185,7 +185,7 @@ export default function AccountSettings() {
                 disabled={testNotificationLoading}
               >
                 <View style={styles.testNotificationContent}>
-                  <Ionicons name="notifications-outline" size={24} color="#007AFF" />
+                  <Ionicons name="notifications-outline" size={24} color="#000000" />
                   <View style={styles.testNotificationTextContainer}>
                     <Text style={styles.testNotificationTitle}>
                       {testNotificationLoading ? 'Invio in corso...' : 'Invia notifica di test'}
@@ -194,7 +194,7 @@ export default function AccountSettings() {
                       Verifica il funzionamento delle notifiche push
                     </Text>
                   </View>
-                  <Ionicons name="send-outline" size={20} color="#007AFF" />
+                  <Ionicons name="send-outline" size={20} color="#000000" />
                 </View>
               </TouchableOpacity>
             </View>
@@ -206,7 +206,7 @@ export default function AccountSettings() {
             
             <View style={styles.futureCard}>
               <View style={styles.futureContent}>
-                <Ionicons name="time-outline" size={32} color="#FF9500" />
+                <Ionicons name="time-outline" size={32} color="#000000" />
                 <Text style={styles.futureTitle}>Altre impostazioni in arrivo</Text>
                 <Text style={styles.futureDescription}>
                   Stiamo lavorando per aggiungere nuove funzionalità di gestione account.
@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 16,
-    color: '#666666',
+    color: '#000000',
     marginTop: 16,
     fontFamily: 'System',
   },
@@ -249,14 +249,14 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 16,
-    color: '#FF3B30',
+    color: '#000000',
     textAlign: 'center',
     marginTop: 16,
     marginBottom: 24,
     fontFamily: 'System',
   },
   retryButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#000000',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
@@ -283,7 +283,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e1e5e9',
+    borderColor: '#000000',
     overflow: 'hidden',
   },
   infoItem: {
@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 14,
-    color: '#666666',
+    color: '#000000',
     fontFamily: 'System',
     marginBottom: 4,
   },
@@ -321,7 +321,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   workInProgressBadge: {
-    backgroundColor: '#FF9500',
+    backgroundColor: '#000000',
   },
   statusBadgeText: {
     fontSize: 12,
@@ -331,17 +331,17 @@ const styles = StyleSheet.create({
   },
   separator: {
     height: 1,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#000000',
     marginHorizontal: 16,
   },
   futureCard: {
     marginHorizontal: 20,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#ffffff',
     borderRadius: 12,
     padding: 24,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#e1e5e9',
+    borderColor: '#000000',
   },
   futureContent: {
     alignItems: 'center',
@@ -356,7 +356,7 @@ const styles = StyleSheet.create({
   },
   futureDescription: {
     fontSize: 14,
-    color: '#666666',
+    color: '#000000',
     textAlign: 'center',
     lineHeight: 20,
     fontFamily: 'System',
@@ -385,7 +385,7 @@ const styles = StyleSheet.create({
   },
   testNotificationDescription: {
     fontSize: 14,
-    color: '#666666',
+    color: '#000000',
     fontFamily: 'System',
   },
 });
