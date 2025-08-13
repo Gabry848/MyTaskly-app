@@ -4,7 +4,6 @@ import {
   StyleSheet,
   Dimensions,
   PanResponder,
-  GestureResponderEvent,
   ActivityIndicator,
   Text,
 } from 'react-native';
@@ -13,10 +12,9 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
-  runOnJS,
 } from 'react-native-reanimated';
 import Svg, { Defs, Pattern, Rect, Circle } from 'react-native-svg';
-import { useNotesState, useNotesActions } from '../../context/NotesContext';
+import { useNotesState } from '../../src/context/NotesContext';
 import { StickyNote } from './StickyNote';
 
 // Context per gestire il focus globale delle note
@@ -29,26 +27,16 @@ export const NotesFocusContext = React.createContext<{
 
 
 const GRID_POINTS = 50;
-const GRID_SIZE = 40;
-const CANVAS_SIZE = GRID_POINTS * GRID_SIZE; // 50 * 40 = 2000px
-const MIN_ZOOM = 0.3;
+const GRID_SIZE = 30;
+const CANVAS_SIZE = GRID_POINTS * GRID_SIZE; // 50 * 30 = 1500px
+const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 2.5;
 
-interface NotesCanvasProps {}
-
-export const NotesCanvas: React.FC<NotesCanvasProps> = () => {
+export const NotesCanvas: React.FC = () => {
   const { notes, isLoading } = useNotesState();
-  const { addNote } = useNotesActions();
-  const noteRefs = useRef<{ [key: string]: { clearFocus: () => void } }>({});
 
   console.log('NotesCanvas - Notes count:', notes.length);
   console.log('NotesCanvas - Notes data:', notes);
-
-  const clearAllFocus = () => {
-    Object.values(noteRefs.current).forEach(noteRef => {
-      noteRef.clearFocus?.();
-    });
-  };
 
   // Inizia al centro della griglia 300x300
   const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -129,20 +117,11 @@ export const NotesCanvas: React.FC<NotesCanvasProps> = () => {
 
   const canvasAnimatedStyle = useAnimatedStyle(() => ({
     transform: [
-      { translateX: translateX.value },
-      { translateY: translateY.value },
-      { scale: scale.value },
-    ],
+      { translateX: translateX.value as number },
+      { translateY: translateY.value as number },
+      { scale: scale.value as number },
+    ] as const,
   }));
-
-  const handleDoublePress = (event: GestureResponderEvent) => {
-    const { locationX, locationY } = event.nativeEvent;
-    
-    const canvasX = (locationX - translateX.value) / scale.value;
-    const canvasY = (locationY - translateY.value) / scale.value;
-    
-    runOnJS(addNote)('Nuova nota');
-  };
 
   const GridBackground: React.FC = () => (
     <Svg
@@ -161,7 +140,7 @@ export const NotesCanvas: React.FC<NotesCanvasProps> = () => {
             cx={GRID_SIZE / 2}
             cy={GRID_SIZE / 2}
             r={1.5}
-            fill="#C0C0C0"
+            fill="#000000ff"
             opacity={0.8}
           />
         </Pattern>
