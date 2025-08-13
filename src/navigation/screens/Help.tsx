@@ -17,7 +17,7 @@ export default function Help() {
         {/* App Overview */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="information-circle" size={28} color="#007AFF" />
+            <Ionicons name="information-circle" size={28} color="#000000" />
             <Text style={styles.sectionTitle}>Cos&apos;è Mytaskly?</Text>
           </View>
           <Text style={styles.sectionText}>
@@ -30,13 +30,13 @@ export default function Help() {
         {/* Features Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="star" size={28} color="#FF9500" />
+            <Ionicons name="star" size={28} color="#000000" />
             <Text style={styles.sectionTitle}>Funzionalità principali</Text>
           </View>
           
           <View style={styles.featuresList}>
             <View style={styles.featureItem}>
-              <Ionicons name="checkmark-circle" size={20} color="#34C759" />
+              <Ionicons name="checkmark-circle" size={20} color="#000000" />
               <View style={styles.featureTextContainer}>
                 <Text style={styles.featureTitle}>Gestione Task</Text>
                 <Text style={styles.featureDescription}>
@@ -46,7 +46,7 @@ export default function Help() {
             </View>
 
             <View style={styles.featureItem}>
-              <Ionicons name="folder" size={20} color="#34C759" />
+              <Ionicons name="folder" size={20} color="#000000" />
               <View style={styles.featureTextContainer}>
                 <Text style={styles.featureTitle}>Categorie</Text>
                 <Text style={styles.featureDescription}>
@@ -56,7 +56,7 @@ export default function Help() {
             </View>
 
             <View style={styles.featureItem}>
-              <Ionicons name="document-text" size={20} color="#34C759" />
+              <Ionicons name="document-text" size={20} color="#000000" />
               <View style={styles.featureTextContainer}>
                 <Text style={styles.featureTitle}>Note</Text>
                 <Text style={styles.featureDescription}>
@@ -66,7 +66,7 @@ export default function Help() {
             </View>
 
             <View style={styles.featureItem}>
-              <Ionicons name="chatbubbles" size={20} color="#34C759" />
+              <Ionicons name="chatbubbles" size={20} color="#000000" />
               <View style={styles.featureTextContainer}>
                 <Text style={styles.featureTitle}>Assistant AI</Text>
                 <Text style={styles.featureDescription}>
@@ -76,7 +76,7 @@ export default function Help() {
             </View>
 
             <View style={styles.featureItem}>
-              <Ionicons name="notifications" size={20} color="#34C759" />
+              <Ionicons name="notifications" size={20} color="#000000" />
               <View style={styles.featureTextContainer}>
                 <Text style={styles.featureTitle}>Notifiche</Text>
                 <Text style={styles.featureDescription}>
@@ -90,7 +90,7 @@ export default function Help() {
         {/* How to Use Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="help-circle" size={28} color="#FF3B30" />
+            <Ionicons name="help-circle" size={28} color="#000000" />
             <Text style={styles.sectionTitle}>Come utilizzare l&apos;app</Text>
           </View>
 
@@ -148,27 +148,27 @@ export default function Help() {
         {/* Tips Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="bulb" size={28} color="#FF9500" />
+            <Ionicons name="bulb" size={28} color="#000000" />
             <Text style={styles.sectionTitle}>Suggerimenti</Text>
           </View>
           
           <View style={styles.tipsList}>
             <View style={styles.tipItem}>
-              <Ionicons name="time" size={16} color="#666666" />
+              <Ionicons name="time" size={16} color="#000000" />
               <Text style={styles.tipText}>
                 Imposta delle priorità per le tue task più importanti
               </Text>
             </View>
 
             <View style={styles.tipItem}>
-              <Ionicons name="calendar" size={16} color="#666666" />
+              <Ionicons name="calendar" size={16} color="#000000" />
               <Text style={styles.tipText}>
                 Utilizza le date di scadenza per non perdere appuntamenti importanti
               </Text>
             </View>
 
             <View style={styles.tipItem}>
-              <Ionicons name="sync" size={16} color="#666666" />
+              <Ionicons name="sync" size={16} color="#000000" />
               <Text style={styles.tipText}>
                 Mantieni l&apos;app sempre aggiornata per ricevere le ultime funzionalità
               </Text>
@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 24,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: '#000000',
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -208,7 +208,7 @@ const styles = StyleSheet.create({
   },
   sectionText: {
     fontSize: 16,
-    color: '#666666',
+    color: '#000000',
     lineHeight: 24,
     fontFamily: 'System',
   },
@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
   },
   featureDescription: {
     fontSize: 14,
-    color: '#666666',
+    color: '#000000',
     lineHeight: 20,
     fontFamily: 'System',
   },
@@ -249,7 +249,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#000000',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -272,7 +272,7 @@ const styles = StyleSheet.create({
   },
   stepDescription: {
     fontSize: 14,
-    color: '#666666',
+    color: '#000000',
     lineHeight: 20,
     fontFamily: 'System',
   },
@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
   },
   tipText: {
     fontSize: 14,
-    color: '#666666',
+    color: '#000000',
     lineHeight: 20,
     fontFamily: 'System',
     marginLeft: 8,
