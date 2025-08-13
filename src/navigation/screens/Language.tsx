@@ -22,7 +22,7 @@ export default function Language() {
         {/* Current Language Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="globe" size={24} color="#007AFF" />
+            <Ionicons name="globe" size={24} color="#000000" />
             <Text style={styles.sectionTitle}>Lingua attuale</Text>
           </View>
           
@@ -40,7 +40,7 @@ export default function Language() {
               </View>
             </View>
             <View style={styles.selectedIndicator}>
-              <Ionicons name="checkmark-circle" size={24} color="#34C759" />
+              <Ionicons name="checkmark-circle" size={24} color="#000000" />
             </View>
           </TouchableOpacity>
         </View>
@@ -48,7 +48,7 @@ export default function Language() {
         {/* Available Languages Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="list" size={24} color="#666666" />
+            <Ionicons name="list" size={24} color="#000000" />
             <Text style={styles.sectionTitle}>Lingue disponibili</Text>
           </View>
           
@@ -108,7 +108,7 @@ export default function Language() {
         {/* Info Section */}
         <View style={styles.infoSection}>
           <View style={styles.infoCard}>
-            <Ionicons name="information-circle" size={32} color="#007AFF" />
+            <Ionicons name="information-circle" size={32} color="#000000" />
             <Text style={styles.infoTitle}>Localizzazione in sviluppo</Text>
             <Text style={styles.infoDescription}>
               Stiamo lavorando per aggiungere il supporto a più lingue. 
@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
   },
   sectionSubtitle: {
     fontSize: 14,
-    color: '#666666',
+    color: '#000000',
     fontFamily: 'System',
     marginBottom: 20,
   },
@@ -160,12 +160,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e1e5e9',
+    borderColor: '#000000',
     marginBottom: 8,
   },
   selectedLanguageItem: {
-    borderColor: '#34C759',
-    backgroundColor: '#f0fff4',
+    borderColor: '#000000',
+    backgroundColor: '#ffffff',
   },
   languageContent: {
     flexDirection: 'row',
@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#ffffff',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
   },
   languageNative: {
     fontSize: 14,
-    color: '#666666',
+    color: '#000000',
     fontFamily: 'System',
   },
   selectedIndicator: {
@@ -211,18 +211,18 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 16,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#ffffff',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e1e5e9',
+    borderColor: '#000000',
     marginBottom: 8,
     opacity: 0.6,
   },
   disabledText: {
-    color: '#999999',
+    color: '#000000',
   },
   comingSoonBadge: {
-    backgroundColor: '#FF9500',
+    backgroundColor: '#000000',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
@@ -238,12 +238,12 @@ const styles = StyleSheet.create({
     paddingVertical: 24,
   },
   infoCard: {
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#ffffff',
     borderRadius: 12,
     padding: 24,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#e1e5e9',
+    borderColor: '#000000',
   },
   infoTitle: {
     fontSize: 18,
@@ -256,7 +256,7 @@ const styles = StyleSheet.create({
   },
   infoDescription: {
     fontSize: 14,
-    color: '#666666',
+    color: '#000000',
     textAlign: 'center',
     lineHeight: 20,
     fontFamily: 'System',

@@ -17,7 +17,7 @@ export default function About() {
         {/* App Logo/Icon Section */}
         <View style={styles.logoSection}>
           <View style={styles.logoContainer}>
-            <Ionicons name="checkmark-done-circle" size={80} color="#007AFF" />
+            <Ionicons name="checkmark-done-circle" size={80} color="#000000" />
           </View>
           <Text style={styles.appName}>Mytaskly</Text>
           <Text style={styles.version}>Versione 1.0.0 Beta</Text>
@@ -26,7 +26,7 @@ export default function About() {
         {/* App Info Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="information-circle" size={24} color="#007AFF" />
+            <Ionicons name="information-circle" size={24} color="#000000" />
             <Text style={styles.sectionTitle}>Informazioni sull&apos;app</Text>
           </View>
           
@@ -44,13 +44,13 @@ export default function About() {
         {/* Developer Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="code-slash" size={24} color="#FF9500" />
+            <Ionicons name="code-slash" size={24} color="#000000" />
             <Text style={styles.sectionTitle}>Sviluppatore</Text>
           </View>
           
           <View style={styles.developerCard}>
             <View style={styles.developerInfo}>
-              <Ionicons name="person-circle" size={48} color="#666666" />
+              <Ionicons name="person-circle" size={48} color="#000000" />
               <View style={styles.developerText}>
                 <Text style={styles.developerName}>Gabry848 Studio</Text>
                 <Text style={styles.developerRole}>Sviluppatore & Designer</Text>
@@ -68,7 +68,7 @@ export default function About() {
         {/* Status Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="construct" size={24} color="#FF3B30" />
+            <Ionicons name="construct" size={24} color="#000000" />
             <Text style={styles.sectionTitle}>Stato dell&apos;app</Text>
           </View>
           
@@ -92,28 +92,28 @@ export default function About() {
         {/* Features in Development */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="time" size={24} color="#34C759" />
+            <Ionicons name="time" size={24} color="#000000" />
             <Text style={styles.sectionTitle}>In sviluppo</Text>
           </View>
           
           <View style={styles.featuresList}>
             <View style={styles.featureItem}>
-              <Ionicons name="ellipse-outline" size={16} color="#FF9500" />
+              <Ionicons name="ellipse-outline" size={16} color="#000000" />
               <Text style={styles.featureText}>Sincronizzazione cloud</Text>
             </View>
             
             <View style={styles.featureItem}>
-              <Ionicons name="ellipse-outline" size={16} color="#FF9500" />
+              <Ionicons name="ellipse-outline" size={16} color="#000000" />
               <Text style={styles.featureText}>Notifiche avanzate</Text>
             </View>
             
             <View style={styles.featureItem}>
-              <Ionicons name="ellipse-outline" size={16} color="#FF9500" />
+              <Ionicons name="ellipse-outline" size={16} color="#000000" />
               <Text style={styles.featureText}>Temi personalizzati</Text>
             </View>
             
             <View style={styles.featureItem}>
-              <Ionicons name="ellipse-outline" size={16} color="#FF9500" />
+              <Ionicons name="ellipse-outline" size={16} color="#000000" />
               <Text style={styles.featureText}>Statistiche avanzate</Text>
             </View>
           </View>
@@ -160,14 +160,14 @@ const styles = StyleSheet.create({
   },
   version: {
     fontSize: 16,
-    color: '#666666',
+    color: '#000000',
     fontFamily: 'System',
   },
   section: {
     paddingHorizontal: 20,
     paddingVertical: 24,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: '#000000',
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -183,17 +183,17 @@ const styles = StyleSheet.create({
   },
   description: {
     fontSize: 16,
-    color: '#666666',
+    color: '#000000',
     lineHeight: 24,
     fontFamily: 'System',
     marginBottom: 16,
   },
   developerCard: {
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#ffffff',
     borderRadius: 12,
     padding: 20,
     borderWidth: 1,
-    borderColor: '#e1e5e9',
+    borderColor: '#000000',
   },
   developerInfo: {
     flexDirection: 'row',
@@ -212,26 +212,26 @@ const styles = StyleSheet.create({
   },
   developerRole: {
     fontSize: 14,
-    color: '#666666',
+    color: '#000000',
     fontFamily: 'System',
   },
   developerDescription: {
     fontSize: 14,
-    color: '#666666',
+    color: '#000000',
     lineHeight: 20,
     fontFamily: 'System',
   },
   statusCard: {
-    backgroundColor: '#fff3e0',
+    backgroundColor: '#ffffff',
     borderRadius: 12,
     padding: 20,
     borderWidth: 1,
-    borderColor: '#ffcc80',
+    borderColor: '#000000',
   },
   betaBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FF9500',
+    backgroundColor: '#000000',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
@@ -247,14 +247,14 @@ const styles = StyleSheet.create({
   },
   betaDescription: {
     fontSize: 14,
-    color: '#e65100',
+    color: '#000000',
     lineHeight: 20,
     fontFamily: 'System',
     marginBottom: 12,
   },
   betaNote: {
     fontSize: 14,
-    color: '#f57c00',
+    color: '#000000',
     fontWeight: '500',
     fontFamily: 'System',
   },
@@ -268,7 +268,7 @@ const styles = StyleSheet.create({
   },
   featureText: {
     fontSize: 14,
-    color: '#666666',
+    color: '#000000',
     fontFamily: 'System',
     marginLeft: 12,
   },
@@ -279,13 +279,13 @@ const styles = StyleSheet.create({
   },
   copyrightText: {
     fontSize: 14,
-    color: '#999999',
+    color: '#000000',
     fontFamily: 'System',
     marginBottom: 4,
   },
   copyrightSubtext: {
     fontSize: 12,
-    color: '#cccccc',
+    color: '#000000',
     fontFamily: 'System',
   },
 });
