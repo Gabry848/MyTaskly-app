@@ -21,7 +21,8 @@
       },
       "package": "com.anonymous.myapptodolist",
       "permissions": [
-        "android.permission.RECORD_AUDIO"
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
       ],
       "googleServicesFile": "./google-services.json"
     },
@@ -57,6 +58,7 @@
       "eas": {
         "projectId": "f4113004-d801-41e9-825e-4f9c5af2efd5"
       }
-    }
+    },
+    "owner": "gabry848"
   }
 }
