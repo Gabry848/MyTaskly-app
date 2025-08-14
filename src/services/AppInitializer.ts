@@ -39,19 +39,28 @@ class AppInitializer {
       const hasCachedData = await cacheService.hasCachedData();
       
       if (!hasCachedData) {
-        console.log('[APP_INIT] Nessun dato in cache, caricamento iniziale...');
-        await this.performInitialDataLoad();
+        console.log('[APP_INIT] Nessun dato in cache, caricamento immediato...');
+        // Avvia caricamento sincrono senza aspettare per non bloccare l'inizializzazione
+        this.dataLoadPromise = this.loadDataSynchronously();
+        this.dataLoadPromise.catch(error => 
+          console.error('[APP_INIT] Errore caricamento dati:', error)
+        );
       } else {
-        console.log('[APP_INIT] Dati in cache presenti');
+        console.log('[APP_INIT] Dati in cache presenti, verifica aggiornamento...');
+        // I dati sono già disponibili dalla cache
+        this.isDataLoaded = true;
         
         // Verifica se la cache è obsoleta
         const isCacheStale = await cacheService.isCacheStale();
         if (isCacheStale) {
-          console.log('[APP_INIT] Cache obsoleta, avvio sync in background');
-          // Non aspettare la sincronizzazione per non bloccare l'UI
-          syncManager.startSync().catch(error => 
-            console.error('[APP_INIT] Errore sync background:', error)
+          console.log('[APP_INIT] Cache obsoleta, aggiornamento sincrono in background');
+          // Avvia sync sincrono per aggiornare i dati
+          this.dataLoadPromise = this.loadDataSynchronously();
+          this.dataLoadPromise.catch(error => 
+            console.error('[APP_INIT] Errore aggiornamento dati:', error)
           );
+        } else {
+          console.log('[APP_INIT] Cache ancora valida, dati già disponibili');
         }
       }
 
@@ -77,26 +86,71 @@ class AppInitializer {
     }
   }
 
-  private async performInitialDataLoad(): Promise<void> {
+
+  private async loadDataSynchronously(): Promise<void> {
     try {
-      console.log('[APP_INIT] Caricamento dati iniziale...');
+      console.log('[APP_INIT] Inizio caricamento sincrono dati...');
       
-      // Carica dati dal server
+      // Carica dati dal server in maniera sincrona
       const [tasks, categories] = await Promise.all([
         getAllTasks(false), // Non usare cache per caricamento iniziale
         getCategories(false)
       ]);
 
-      // Salva nella cache
+      // Salva nella cache immediatamente
       const cacheService = TaskCacheService.getInstance();
       await cacheService.saveTasks(tasks || [], categories || []);
       
-      console.log(`[APP_INIT] Caricati ${(tasks || []).length} task e ${(categories || []).length} categorie`);
+      console.log(`[APP_INIT] Caricamento sincrono completato: ${(tasks || []).length} task e ${(categories || []).length} categorie`);
+      
+      // Notifica che i dati sono stati caricati
+      this.notifyDataLoaded(tasks || [], categories || []);
       
     } catch (error) {
-      console.error('[APP_INIT] Errore nel caricamento dati iniziale:', error);
-      // L'app può funzionare offline anche senza dati iniziali
+      console.error('[APP_INIT] Errore nel caricamento sincrono:', error);
+      // In caso di errore, l'app continua a funzionare con dati vuoti o cached
+      this.notifyDataLoaded([], []);
     }
+  }
+
+  private dataLoadPromise: Promise<void> | null = null;
+  private isDataLoaded = false;
+
+  private notifyDataLoaded(tasks: any[], categories: any[]): void {
+    console.log('[APP_INIT] Dati caricati e disponibili per l\'app');
+    this.isDataLoaded = true;
+    // Qui potresti emettere un evento o chiamare callback se necessario
+  }
+
+  // Metodo per aspettare il caricamento dei dati se necessario
+  async waitForDataLoad(timeout: number = 10000): Promise<boolean> {
+    if (this.isDataLoaded) {
+      return true;
+    }
+
+    if (!this.dataLoadPromise) {
+      // Se non c'è un caricamento in corso, avvialo
+      this.dataLoadPromise = this.loadDataSynchronously();
+    }
+
+    try {
+      // Aspetta il caricamento con timeout
+      await Promise.race([
+        this.dataLoadPromise,
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout')), timeout)
+        )
+      ]);
+      return this.isDataLoaded;
+    } catch (error) {
+      console.warn('[APP_INIT] Timeout o errore nell\'attesa dati:', error);
+      return false;
+    }
+  }
+
+  // Verifica se i dati sono stati caricati
+  isDataReady(): boolean {
+    return this.isDataLoaded;
   }
 
   private setupPeriodicMaintenance(): void {
