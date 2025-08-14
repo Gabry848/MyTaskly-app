@@ -45,7 +45,12 @@ const CacheDebugPanel: React.FC<CacheDebugPanelProps> = ({ visible, onClose }) =
       setIsRefreshing(true);
       const appInitializer = AppInitializer.getInstance();
       const status = await appInitializer.getInitializationStatus();
-      setAppStatus(status);
+      // Aggiungi informazioni sul caricamento dati sincrono
+      const statusWithDataLoad = {
+        ...status,
+        dataLoaded: appInitializer.isDataReady()
+      };
+      setAppStatus(statusWithDataLoad as any);
     } catch (error) {
       console.error('[DEBUG_PANEL] Errore refresh status:', error);
       Alert.alert('Errore', 'Impossibile aggiornare lo stato');
@@ -178,6 +183,16 @@ const CacheDebugPanel: React.FC<CacheDebugPanelProps> = ({ visible, onClose }) =
                 />
                 <Text style={styles.statusText}>
                   {appStatus.initialized ? 'Inizializzata' : 'Non inizializzata'}
+                </Text>
+              </View>
+              <View style={styles.statusRow}>
+                <Ionicons 
+                  name={(appStatus as any).dataLoaded ? "download" : "hourglass"} 
+                  size={20} 
+                  color={(appStatus as any).dataLoaded ? "#4caf50" : "#ff9800"} 
+                />
+                <Text style={styles.statusText}>
+                  Dati: {(appStatus as any).dataLoaded ? 'Caricati' : 'In caricamento'}
                 </Text>
               </View>
             </View>
