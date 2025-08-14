@@ -11,8 +11,8 @@ import {
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import SearchBar from "./SearchBar";
-import { getAllTasks, Task } from "../src/services/taskService";
-import TaskCard from "./TaskCard";
+import { getAllTasks, Task as TaskType } from "../src/services/taskService";
+import Task from "./Task";
 
 interface GlobalTaskSearchProps {
   visible: boolean;
@@ -24,7 +24,7 @@ const GlobalTaskSearch: React.FC<GlobalTaskSearchProps> = ({
   onClose,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [allTasks, setAllTasks] = useState<Task[]>([]);
+  const [allTasks, setAllTasks] = useState<TaskType[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false);
 
@@ -65,7 +65,7 @@ const GlobalTaskSearch: React.FC<GlobalTaskSearchProps> = ({
     );
   }, [allTasks, searchQuery]);
 
-  const handleTaskPress = (task: Task) => {
+  const handleTaskPress = (task: TaskType) => {
     // Puoi personalizzare questa funzione per aprire i dettagli del task
     Alert.alert(
       task.title,
@@ -78,19 +78,32 @@ const GlobalTaskSearch: React.FC<GlobalTaskSearchProps> = ({
     loadAllTasks();
   };
 
-  const renderTaskItem = ({ item }: { item: Task }) => (
-    <View style={styles.taskItemContainer}>
-      <TaskCard 
-        task={item} 
-        onPress={() => handleTaskPress(item)}
-      />
-      <View style={styles.taskMetadata}>
-        <Text style={styles.categoryText}>📂 {item.category_name}</Text>
-        <Text style={styles.statusText}>
-          {item.status === "Completato" ? "✅" : "⏳"} {item.status}
-        </Text>
-      </View>
-    </View>
+  const renderTaskItem = ({ item }: { item: TaskType }) => (
+    <Task 
+      task={item} 
+      onTaskComplete={(taskId) => {
+        // Aggiorna lo stato locale
+        setAllTasks(prev => prev.map(task => 
+          task.id === taskId ? { ...task, status: "Completato", completed: true } : task
+        ));
+      }}
+      onTaskUncomplete={(taskId) => {
+        // Aggiorna lo stato locale
+        setAllTasks(prev => prev.map(task => 
+          task.id === taskId ? { ...task, status: "In sospeso", completed: false } : task
+        ));
+      }}
+      onTaskEdit={(taskId, updatedTask) => {
+        // Aggiorna lo stato locale
+        setAllTasks(prev => prev.map(task => 
+          task.id === taskId ? updatedTask : task
+        ));
+      }}
+      onTaskDelete={(taskId) => {
+        // Rimuovi il task dallo stato locale
+        setAllTasks(prev => prev.filter(task => task.id !== taskId));
+      }}
+    />
   );
 
   const renderEmptyState = () => {
@@ -251,26 +264,6 @@ const styles = StyleSheet.create({
   },
   listContent: {
     padding: 16,
-  },
-  taskItemContainer: {
-    marginBottom: 12,
-  },
-  taskMetadata: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 4,
-  },
-  categoryText: {
-    fontSize: 12,
-    color: "#666666",
-    fontFamily: "System",
-  },
-  statusText: {
-    fontSize: 12,
-    color: "#666666",
-    fontFamily: "System",
   },
   centerContainer: {
     flex: 1,

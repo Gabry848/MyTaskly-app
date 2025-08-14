@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { TouchableOpacity, Animated, Alert, LayoutAnimation, Platform, UIManager, Dimensions } from "react-native";
-import { Easing } from "react-native";
+import { TouchableOpacity, Animated, Alert, LayoutAnimation, Platform, UIManager, Easing } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { completeTask, disCompleteTask } from "../src/services/taskService";
 
@@ -23,16 +22,7 @@ if (Platform.OS === 'android') {
 
 // Componente principale per il task
 const Task = ({
-  task = {
-    id: 1,
-    title: "Complete Project Proposal",
-    description: "Finish the draft and send it to the client for review",
-    priority: "Bassa",
-    end_time: "2025-03-25",
-    completed: false,
-    start_time: "2025-03-20",
-    status: "In sospeso",
-  },
+  task,
   onTaskComplete,
   onTaskDelete,
   onTaskEdit,
