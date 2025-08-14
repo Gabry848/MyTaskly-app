@@ -281,12 +281,12 @@ class StorageManager {
       totalKeys: number;
       usage: string;
     };
-    breakdown: Array<{
+    breakdown: {
       key: string;
       size: string;
       isSystem: boolean;
       isEssential: boolean;
-    }>;
+    }[];
   }> {
     try {
       const info = await this.getStorageInfo();

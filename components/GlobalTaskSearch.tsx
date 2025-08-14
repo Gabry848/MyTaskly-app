@@ -34,7 +34,7 @@ const GlobalTaskSearch: React.FC<GlobalTaskSearchProps> = ({
     if (visible && !hasLoaded) {
       loadAllTasks();
     }
-  }, [visible]);
+  }, [hasLoaded, visible]);
 
   // Setup listeners per aggiornamenti task in tempo reale
   useEffect(() => {
@@ -124,13 +124,6 @@ const GlobalTaskSearch: React.FC<GlobalTaskSearchProps> = ({
     );
   }, [allTasks, searchQuery]);
 
-  const handleTaskPress = (task: TaskType) => {
-    // Puoi personalizzare questa funzione per aprire i dettagli del task
-    Alert.alert(
-      task.title,
-      `Categoria: ${task.category_name}\nStato: ${task.status}\nPriorità: ${task.priority}\nDescrizione: ${task.description || "Nessuna descrizione"}`
-    );
-  };
 
   const handleRefresh = () => {
     setHasLoaded(false);
@@ -189,7 +182,7 @@ const GlobalTaskSearch: React.FC<GlobalTaskSearchProps> = ({
         <View style={styles.centerContainer}>
           <MaterialIcons name="search-off" size={48} color="#cccccc" />
           <Text style={styles.emptyText}>
-            Nessun task trovato per "{searchQuery}"
+            Nessun task trovato per &quot;{searchQuery}&quot;
           </Text>
         </View>
       );

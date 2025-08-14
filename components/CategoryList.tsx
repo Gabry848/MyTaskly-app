@@ -7,8 +7,7 @@ import React, {
 import { View, StyleSheet, SafeAreaView, Platform } from "react-native";
 import dayjs from "dayjs";
 import "dayjs/locale/it"; // Importa la locale italiana per dayjs
-import { ViewModeType } from "./ViewSelector";
-import ViewSelector from "./ViewSelector";
+import ViewSelector, { ViewModeType } from "./ViewSelector";
 import CategoryView from "./CategoryView";
 import CalendarView from "./CalendarView";
 import globalEventEmitter, { EVENTS } from "../src/utils/eventEmitter";
@@ -125,6 +124,8 @@ const CategoryList = forwardRef((props, ref) => {
     </View>
   );
 });
+
+CategoryList.displayName = 'CategoryList';
 
 const styles = StyleSheet.create({
   container: {
