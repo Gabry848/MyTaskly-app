@@ -30,6 +30,7 @@ import BugReportScreen from "./screens/BugReport";
 import { NotFound as NotFoundScreen } from "./screens/NotFound";
 import eventEmitter from "../utils/eventEmitter";
 import { useNotifications } from "../services/notificationService";
+import AppInitializer from "../services/AppInitializer";
 
 // Definizione del tipo per le route dello Stack principale
 export type RootStackParamList = {
@@ -170,6 +171,10 @@ function AppStack() {
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
+        // Inizializza l'app prima di tutto
+        const appInitializer = AppInitializer.getInstance();
+        await appInitializer.initialize();
+        
         // Importa la funzione di controllo e refresh automatico
         const { checkAndRefreshAuth } = await import("../services/authService");
         const authResult = await checkAndRefreshAuth();

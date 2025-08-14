@@ -14,7 +14,11 @@
       "Bash(npx react-native log-android:*)",
       "Bash(npm view:*)",
       "Bash(echo $ANDROID_HOME)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(npx expo start:*)",
+      "Bash(taskkill:*)",
+      "Bash(cmd /c:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"
