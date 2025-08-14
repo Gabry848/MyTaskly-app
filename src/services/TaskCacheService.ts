@@ -65,6 +65,12 @@ class TaskCacheService {
       }
 
       console.log(`[CACHE] Caricati ${cache.tasks.length} task dalla cache`);
+      
+      // Log dettagliato di ogni task in cache per debug
+      cache.tasks.forEach((task, index) => {
+        console.log(`[CACHE] Task ${index + 1}: titolo="${task.title}", categoria="${task.category_name}", status="${task.status}"`);
+      });
+      
       return cache.tasks || [];
     } catch (error) {
       console.error('[CACHE] Errore nel caricamento dalla cache:', error);
@@ -92,6 +98,16 @@ class TaskCacheService {
   // Salva i task nella cache
   async saveTasks(tasks: Task[], categories: Category[] = []): Promise<void> {
     try {
+      console.log(`[CACHE] Salvando ${tasks.length} task in cache...`);
+      
+      // Log di ogni task prima del salvataggio
+      tasks.forEach((task, index) => {
+        console.log(`[CACHE] Salvando Task ${index + 1}: titolo="${task.title}", categoria="${task.category_name}", status="${task.status}"`);
+        if (task.category_name === undefined || task.category_name === "undefined") {
+          console.warn(`[CACHE] ⚠️ ATTENZIONE: Task "${task.title}" ha category_name undefined!`);
+        }
+      });
+      
       const cache: TasksCache = {
         tasks,
         categories,
@@ -111,6 +127,13 @@ class TaskCacheService {
   // Salva singolo task nella cache (per aggiornamenti)
   async updateTaskInCache(updatedTask: Task): Promise<void> {
     try {
+      console.log(`[CACHE] Aggiornando task in cache: "${updatedTask.title}", categoria="${updatedTask.category_name}"`);
+      
+      // Warn se il task ha category_name undefined
+      if (!updatedTask.category_name || updatedTask.category_name === 'undefined') {
+        console.warn(`[CACHE] ⚠️ ATTENZIONE: Tentativo di salvare task "${updatedTask.title}" con category_name undefined!`);
+      }
+      
       const cachedTasks = await this.getCachedTasks();
       const taskIndex = cachedTasks.findIndex(task => 
         task.task_id === updatedTask.task_id || task.id === updatedTask.id
@@ -118,8 +141,10 @@ class TaskCacheService {
 
       if (taskIndex !== -1) {
         cachedTasks[taskIndex] = updatedTask;
+        console.log(`[CACHE] Task esistente aggiornato all'indice ${taskIndex}`);
       } else {
         cachedTasks.push(updatedTask);
+        console.log(`[CACHE] Nuovo task aggiunto alla cache`);
       }
 
       const categories = await this.getCachedCategories();
@@ -212,6 +237,26 @@ class TaskCacheService {
       console.log('[CACHE] Cache completamente pulita');
     } catch (error) {
       console.error('[CACHE] Errore nella pulizia cache:', error);
+    }
+  }
+
+  // Controlla e pulisce la cache se i task hanno category_name corrotti
+  async checkAndFixCorruptedCache(): Promise<boolean> {
+    try {
+      const cachedTasks = await this.getCachedTasks();
+      const corruptedTasks = cachedTasks.filter(task => 
+        !task.category_name || task.category_name === 'undefined'
+      );
+      
+      if (corruptedTasks.length > 0) {
+        console.log(`[CACHE] 🔧 Trovati ${corruptedTasks.length} task con category_name corrotto, pulizia cache...`);
+        await this.clearCache();
+        return true; // Indica che la cache è stata pulita
+      }
+      return false; // Indica che la cache è ok
+    } catch (error) {
+      console.error('[CACHE] Errore nel controllo della cache corrotta:', error);
+      return false;
     }
   }
 

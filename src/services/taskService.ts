@@ -37,15 +37,52 @@ export async function getTasks(category_name?: string, useCache: boolean = true)
     // Se richiesto, prova prima dalla cache
     if (useCache) {
       const { cacheService } = getServices();
+      
+      // Controlla e pulisce cache corrotta prima di usarla
+      const cacheWasCleaned = await cacheService.checkAndFixCorruptedCache();
+      if (cacheWasCleaned) {
+        console.log('[TASK_SERVICE] Cache corrotta pulita, ricaricamento dall\'API...');
+        // Forza il caricamento dall'API dopo aver pulito la cache
+        return getTasks(category_name, false);
+      }
+      
       const cachedTasks = await getServices().cacheService.getCachedTasks();
       if (cachedTasks.length > 0) {
         console.log('[TASK_SERVICE] Usando dati dalla cache');
         
         // Filtra per categoria se specificata
         if (category_name) {
-          const filteredTasks = cachedTasks.filter(task => 
-            task.category_name === category_name
-          );
+          console.log(`[TASK_SERVICE] Filtraggio cache per categoria: "${category_name}"`);
+          console.log(`[TASK_SERVICE] Lunghezza nome categoria: ${category_name.length} caratteri`);
+          console.log(`[TASK_SERVICE] Codici caratteri categoria:`, category_name.split('').map(c => c.charCodeAt(0)));
+          console.log(`[TASK_SERVICE] Task totali in cache:`, cachedTasks.length);
+          
+          // Log di tutti i task prima del filtraggio
+          cachedTasks.forEach((task, index) => {
+            console.log(`[TASK_SERVICE] Task ${index + 1}: titolo="${task.title}", categoria="${task.category_name}", status="${task.status}"`);
+            if (task.category_name) {
+              console.log(`[TASK_SERVICE] Task ${index + 1} categoria codici:`, task.category_name.split('').map(c => c.charCodeAt(0)));
+            }
+          });
+          
+          const filteredTasks = cachedTasks.filter(task => {
+            const taskCategoryName = task.category_name;
+            const exactMatch = taskCategoryName === category_name;
+            
+            // Prova anche un confronto normalizzato
+            const normalizedTaskCategory = taskCategoryName?.trim().toLowerCase();
+            const normalizedSearchCategory = category_name?.trim().toLowerCase();
+            const normalizedMatch = normalizedTaskCategory === normalizedSearchCategory;
+            
+            const matches = exactMatch || normalizedMatch;
+            console.log(`[TASK_SERVICE] Confronto: "${taskCategoryName}" === "${category_name}" = ${exactMatch} (normalizzato: ${normalizedMatch})`);
+            return matches;
+          });
+          
+          console.log(`[TASK_SERVICE] Task filtrati dalla cache per "${category_name}":`, filteredTasks.length);
+          filteredTasks.forEach((task, index) => {
+            console.log(`[TASK_SERVICE] Task filtrato ${index + 1}: titolo="${task.title}", status="${task.status}"`);
+          });
           
           // Avvia sync in background
           getServices().syncManager.addSyncOperation('GET_TASKS', { category_name });
@@ -64,14 +101,16 @@ export async function getTasks(category_name?: string, useCache: boolean = true)
     console.log('[TASK_SERVICE] Caricamento dalla API (cache vuota o disabilitata)');
     
     if (category_name) {
+      console.log(`[TASK_SERVICE] Richiesta API per categoria: "${category_name}"`);
       // ogni spazio viene sostituito con %20
-      category_name = category_name.replace(/ /g, "%20");
-      const response = await axios.get(`/tasks/${category_name}`, {
+      const encodedCategoryName = category_name.replace(/ /g, "%20");
+      console.log(`[TASK_SERVICE] Nome categoria codificato: "${encodedCategoryName}"`);
+      const response = await axios.get(`/tasks/${encodedCategoryName}`, {
         headers: {
           "Content-Type": "application/json",
         },
       });
-      console.log(response.data);
+      console.log(`[TASK_SERVICE] Risposta API per categoria "${category_name}":`, response.data);
       return response.data;
     }
 
@@ -89,7 +128,17 @@ export async function getTasks(category_name?: string, useCache: boolean = true)
       console.log('[TASK_SERVICE] Errore API, tentativo fallback cache');
       const cachedTasks = await getServices().cacheService.getCachedTasks();
       if (category_name) {
-        return cachedTasks.filter(task => task.category_name === category_name);
+        console.log(`[TASK_SERVICE] Fallback cache per categoria: "${category_name}"`);
+        const filteredTasks = cachedTasks.filter(task => {
+          const taskCategoryName = task.category_name;
+          const exactMatch = taskCategoryName === category_name;
+          const normalizedTaskCategory = taskCategoryName?.trim().toLowerCase();
+          const normalizedSearchCategory = category_name?.trim().toLowerCase();
+          const normalizedMatch = normalizedTaskCategory === normalizedSearchCategory;
+          return exactMatch || normalizedMatch;
+        });
+        console.log(`[TASK_SERVICE] Task fallback per "${category_name}":`, filteredTasks.length);
+        return filteredTasks;
       }
       return cachedTasks;
     }
@@ -154,9 +203,26 @@ export async function getAllTasks(useCache: boolean = true) {
       // Per ogni categoria, otteniamo i task
       for (const category of categories) {
         try {
+          console.log(`[getAllTasks] Recuperando task per categoria: "${category.name}"`);
           const categoryTasks = await getTasks(category.name, false); // Non usare cache per singole categorie
+          console.log(`[getAllTasks] Task ricevuti per "${category.name}":`, categoryTasks);
+          
           if (Array.isArray(categoryTasks)) {
-            allTasks = allTasks.concat(categoryTasks);
+            // Correggi i task che hanno category_name undefined o mancante
+            const correctedTasks = categoryTasks.map(task => {
+              if (!task.category_name || task.category_name === 'undefined') {
+                console.log(`[getAllTasks] 🔧 Correggendo category_name per task "${task.title}" da undefined a "${category.name}"`);
+                return { ...task, category_name: category.name };
+              }
+              return task;
+            });
+            
+            // Log di ogni task ricevuto per questa categoria
+            correctedTasks.forEach((task, index) => {
+              console.log(`[getAllTasks] Task ${index + 1} da "${category.name}": titolo="${task.title}", categoria="${task.category_name}", status="${task.status}"`);
+            });
+            
+            allTasks = allTasks.concat(correctedTasks);
           }
         } catch (error) {
           console.warn(`Errore nel recupero task per categoria ${category.name}:`, error);
