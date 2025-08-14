@@ -354,6 +354,7 @@ const Task = ({
           onTaskPress={toggleExpand}
           onPressIn={handlePressIn}
           onPressOut={handlePressOut}
+          isOptimistic={task.isOptimistic || false}
         />
 
         {/* Area descrizione espandibile */}

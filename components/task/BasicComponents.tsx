@@ -1,16 +1,25 @@
 import React from "react";
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
 import { MaterialIcons, Ionicons } from "@expo/vector-icons";
 import { styles } from "./TaskStyles";
 import { getDaysRemainingText, getDaysRemainingColor, getPriorityTextColor } from "./TaskUtils";
 
 // Componente Checkbox riutilizzabile
-export const Checkbox = ({ checked, onPress }) => (
+export const Checkbox = ({ checked, onPress, isOptimistic = false }) => (
   <TouchableOpacity
-    style={[styles.checkbox, checked && styles.checkedBox]}
+    style={[
+      styles.checkbox, 
+      checked && styles.checkedBox,
+      isOptimistic && styles.optimisticBox
+    ]}
     onPress={onPress}
+    disabled={isOptimistic}
   >
-    {checked && <MaterialIcons name="check" size={16} color="#fff" />}
+    {isOptimistic ? (
+      <ActivityIndicator size="small" color="#fff" />
+    ) : (
+      checked && <MaterialIcons name="check" size={16} color="#fff" />
+    )}
   </TouchableOpacity>
 );
 

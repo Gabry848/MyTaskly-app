@@ -11,12 +11,17 @@ const TaskHeader = ({
   onCheckboxPress,
   onTaskPress,
   onPressIn,
-  onPressOut
+  onPressOut,
+  isOptimistic = false
 }) => {
   return (
     <View style={styles.topRow}>
       {/* Checkbox */}
-      <Checkbox checked={isCompleted} onPress={onCheckboxPress} />
+      <Checkbox 
+        checked={isCompleted} 
+        onPress={onCheckboxPress} 
+        isOptimistic={isOptimistic}
+      />
 
       {/* Task Info */}
       <Pressable 
