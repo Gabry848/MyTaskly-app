@@ -5,8 +5,8 @@ import CategoryCard from './CategoryCard';
 import CategoryMenu from './CategoryMenu';
 import EditCategoryModal from './EditCategoryModal';
 import AddTask from "./AddTask";
-import { emitCategoryDeleted, emitCategoryUpdated, emitTaskAdded } from '../src/utils/eventEmitter';
-import eventEmitter, { EVENTS } from '../src/utils/eventEmitter';
+import eventEmitter, { emitCategoryDeleted, emitCategoryUpdated, emitTaskAdded , EVENTS } from '../src/utils/eventEmitter';
+
 
 interface CategoryProps {
   title: string;

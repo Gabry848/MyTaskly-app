@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { Text, TouchableOpacity, StyleSheet, View } from "react-native";
-import { useNavigation, NavigationProp } from "@react-navigation/native";
+import { useNavigation, NavigationProp , useFocusEffect } from "@react-navigation/native";
 import { RootStackParamList } from "../src/types";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { STORAGE_KEYS } from "../src/constants/authConstants";
-import { useFocusEffect } from '@react-navigation/native';
+
 
 export default function Badge() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
