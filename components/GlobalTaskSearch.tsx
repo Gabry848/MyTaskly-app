@@ -13,6 +13,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import SearchBar from "./SearchBar";
 import { getAllTasks, Task as TaskType } from "../src/services/taskService";
 import Task from "./Task";
+import eventEmitter, { EVENTS } from '../src/utils/eventEmitter';
 
 interface GlobalTaskSearchProps {
   visible: boolean;
@@ -33,6 +34,64 @@ const GlobalTaskSearch: React.FC<GlobalTaskSearchProps> = ({
     if (visible && !hasLoaded) {
       loadAllTasks();
     }
+  }, [visible]);
+
+  // Setup listeners per aggiornamenti task in tempo reale
+  useEffect(() => {
+    const handleTaskAdded = (newTask: TaskType) => {
+      console.log('[GLOBAL_SEARCH] Task added event received:', newTask.title);
+      setAllTasks(prevTasks => {
+        // Evita duplicati
+        if (prevTasks.some(task => 
+          (task.id === newTask.id) || 
+          (task.task_id === newTask.task_id) ||
+          (newTask.id && task.task_id === newTask.id) ||
+          (newTask.task_id && task.id === newTask.task_id)
+        )) {
+          return prevTasks;
+        }
+        return [...prevTasks, newTask];
+      });
+    };
+
+    const handleTaskUpdated = (updatedTask: TaskType) => {
+      console.log('[GLOBAL_SEARCH] Task updated event received:', updatedTask.title);
+      setAllTasks(prevTasks => 
+        prevTasks.map(task => {
+          const isMatch = (task.id === updatedTask.id) || 
+                         (task.task_id === updatedTask.task_id) ||
+                         (updatedTask.id && task.task_id === updatedTask.id) ||
+                         (updatedTask.task_id && task.id === updatedTask.task_id);
+          
+          if (isMatch) {
+            return { ...task, ...updatedTask };
+          }
+          return task;
+        })
+      );
+    };
+
+    const handleTaskDeleted = (taskId: string | number) => {
+      console.log('[GLOBAL_SEARCH] Task deleted event received:', taskId);
+      setAllTasks(prevTasks => 
+        prevTasks.filter(task => 
+          task.id !== taskId && task.task_id !== taskId
+        )
+      );
+    };
+
+    // Solo registra listeners se il modal è visibile
+    if (visible) {
+      eventEmitter.on(EVENTS.TASK_ADDED, handleTaskAdded);
+      eventEmitter.on(EVENTS.TASK_UPDATED, handleTaskUpdated);
+      eventEmitter.on(EVENTS.TASK_DELETED, handleTaskDeleted);
+    }
+
+    return () => {
+      eventEmitter.off(EVENTS.TASK_ADDED, handleTaskAdded);
+      eventEmitter.off(EVENTS.TASK_UPDATED, handleTaskUpdated);
+      eventEmitter.off(EVENTS.TASK_DELETED, handleTaskDeleted);
+    };
   }, [visible]);
 
   const loadAllTasks = async () => {

@@ -3,6 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { STORAGE_KEYS } from "../constants/authConstants";
 import TaskCacheService from './TaskCacheService';
 import SyncManager from './SyncManager';
+import { emitTaskAdded, emitTaskUpdated, emitTaskDeleted } from '../utils/eventEmitter';
 
 // Lazy initialization dei servizi per evitare problemi di caricamento
 let cacheService: TaskCacheService | null = null;
@@ -300,6 +301,11 @@ export async function updateTask(
           "Content-Type": "application/json",
         },
       });
+      
+      // Emetti evento per aggiornamento UI
+      console.log('[TASK_SERVICE] Emitting TASK_UPDATED event for:', response.data.title || taskData.title);
+      emitTaskUpdated({ ...taskData, id: taskId, task_id: taskId, ...response.data });
+      
       return response.data;
     } catch (networkError) {
       console.log('[TASK_SERVICE] Errore di rete, salvataggio offline per updateTask');
@@ -310,6 +316,10 @@ export async function updateTask(
         task_id: taskId,
         ...taskData
       });
+      
+      // Emetti evento anche per task offline
+      console.log('[TASK_SERVICE] Emitting TASK_UPDATED event for offline task:', fullUpdatedTask.title);
+      emitTaskUpdated(fullUpdatedTask);
       
       // Restituisci i dati locali (la cache è già aggiornata)
       return fullUpdatedTask;
@@ -379,6 +389,11 @@ export async function deleteTask(taskId: string | number) {
           "Content-Type": "application/json",
         },
       });
+      
+      // Emetti evento per aggiornamento UI
+      console.log('[TASK_SERVICE] Emitting TASK_DELETED event for taskId:', taskId);
+      emitTaskDeleted(taskId);
+      
       return response.data;
     } catch (networkError) {
       console.log('[TASK_SERVICE] Errore di rete, salvataggio offline per deleteTask');
@@ -388,6 +403,10 @@ export async function deleteTask(taskId: string | number) {
         id: taskId,
         task_id: taskId
       });
+      
+      // Emetti evento anche per eliminazione offline
+      console.log('[TASK_SERVICE] Emitting TASK_DELETED event for offline deletion:', taskId);
+      emitTaskDeleted(taskId);
       
       // Restituisci successo (la cache è già aggiornata)
       return { success: true, offline: true };
@@ -459,6 +478,10 @@ export async function addTask(task: Task) {
         const serverTask = { ...data, ...response.data };
         await getServices().cacheService.removeTaskFromCache(tempId); // Rimuovi il task temporaneo
         await getServices().cacheService.updateTaskInCache(serverTask); // Aggiungi quello con ID reale
+        
+        // Emetti evento per aggiornamento UI
+        console.log('[TASK_SERVICE] Emitting TASK_ADDED event for:', serverTask.title);
+        emitTaskAdded(serverTask);
       }
       
       return response.data;
@@ -467,6 +490,10 @@ export async function addTask(task: Task) {
       
       // Salva l'aggiunta offline
       await getServices().syncManager.saveOfflineChange('CREATE', 'TASK', data);
+      
+      // Emetti evento anche per task offline
+      console.log('[TASK_SERVICE] Emitting TASK_ADDED event for offline task:', tempTask.title);
+      emitTaskAdded(tempTask);
       
       // Restituisci il task temporaneo (già in cache)
       return tempTask;

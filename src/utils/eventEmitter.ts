@@ -55,6 +55,7 @@ export const EVENTS = {
   TASK_ADDED: 'TASK_ADDED',
   TASK_UPDATED: 'TASK_UPDATED',
   TASK_DELETED: 'TASK_DELETED',
+  TASKS_SYNCED: 'TASKS_SYNCED',
 };
 
 // Funzioni helper per emettere eventi
@@ -80,6 +81,10 @@ export const emitTaskUpdated = (task) => {
 
 export const emitTaskDeleted = (taskId) => {
   globalEventEmitter.emit(EVENTS.TASK_DELETED, taskId);
+};
+
+export const emitTasksSynced = (tasks, categories) => {
+  globalEventEmitter.emit(EVENTS.TASKS_SYNCED, { tasks, categories });
 };
 
 // Esporto l'emitter per poter aggiungere listener in vari componenti
