@@ -269,9 +269,9 @@ export function useNotifications() {
       setNotification(notification);
       
       // Puoi fare azioni specifiche qui
-      if (notification.request.content.data?.notification_type === 'task_due') {
+      if (notification.request.content.data?.notification_type === 'task_due_reminder') {
         Alert.alert(
-          '⏰ Task in Scadenza!', 
+          notification.request.content.title || 'Task in Scadenza!', 
           notification.request.content.body || 'Hai un task in scadenza'
         );
       }

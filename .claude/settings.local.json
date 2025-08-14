@@ -16,6 +16,7 @@
       "Bash(echo $ANDROID_HOME)",
       "Bash(npx tsc:*)"
     ],
-    "deny": []
+    "deny": [],
+    "defaultMode": "acceptEdits"
   }
 }
