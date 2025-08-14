@@ -5,6 +5,7 @@ import { Task as TaskType, getAllTasks, addTask, deleteTask, updateTask, complet
 import TaskCacheService from '../src/services/TaskCacheService';
 import SyncManager, { SyncStatus } from '../src/services/SyncManager';
 import AppInitializer from '../src/services/AppInitializer';
+import eventEmitter, { EVENTS } from '../src/utils/eventEmitter';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import CalendarGrid from './CalendarGrid';
@@ -128,6 +129,64 @@ const CalendarView: React.FC = () => {
       syncManager.removeSyncListener(handleSyncStatus);
     };
   }, [syncManager]);
+
+  // Setup listeners per eventi task in tempo reale
+  useEffect(() => {
+    const handleTaskAdded = (newTask: TaskType) => {
+      console.log('[CALENDAR] Task added event received:', newTask.title);
+      setTasks(prevTasks => {
+        // Evita duplicati
+        if (prevTasks.some(task => 
+          (task.id === newTask.id) || 
+          (task.task_id === newTask.task_id) ||
+          (newTask.id && task.task_id === newTask.id) ||
+          (newTask.task_id && task.id === newTask.task_id)
+        )) {
+          return prevTasks;
+        }
+        return [...prevTasks, newTask];
+      });
+    };
+
+    const handleTaskUpdated = (updatedTask: TaskType) => {
+      console.log('[CALENDAR] Task updated event received:', updatedTask.title);
+      setTasks(prevTasks => 
+        prevTasks.map(task => {
+          // Trova il task by ID o task_id
+          const isMatch = (task.id === updatedTask.id) || 
+                         (task.task_id === updatedTask.task_id) ||
+                         (updatedTask.id && task.task_id === updatedTask.id) ||
+                         (updatedTask.task_id && task.id === updatedTask.task_id);
+          
+          if (isMatch) {
+            return { ...task, ...updatedTask };
+          }
+          return task;
+        })
+      );
+    };
+
+    const handleTaskDeleted = (taskId: string | number) => {
+      console.log('[CALENDAR] Task deleted event received:', taskId);
+      setTasks(prevTasks => 
+        prevTasks.filter(task => 
+          task.id !== taskId && task.task_id !== taskId
+        )
+      );
+    };
+
+    // Registra i listeners
+    eventEmitter.on(EVENTS.TASK_ADDED, handleTaskAdded);
+    eventEmitter.on(EVENTS.TASK_UPDATED, handleTaskUpdated);
+    eventEmitter.on(EVENTS.TASK_DELETED, handleTaskDeleted);
+
+    return () => {
+      // Rimuovi i listeners
+      eventEmitter.off(EVENTS.TASK_ADDED, handleTaskAdded);
+      eventEmitter.off(EVENTS.TASK_UPDATED, handleTaskUpdated);
+      eventEmitter.off(EVENTS.TASK_DELETED, handleTaskDeleted);
+    };
+  }, []);
 
   // Carica gli impegni quando il componente si monta
   useEffect(() => {

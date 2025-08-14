@@ -6,6 +6,7 @@ import CategoryMenu from './CategoryMenu';
 import EditCategoryModal from './EditCategoryModal';
 import AddTask from "./AddTask";
 import { emitCategoryDeleted, emitCategoryUpdated, emitTaskAdded } from '../src/utils/eventEmitter';
+import eventEmitter, { EVENTS } from '../src/utils/eventEmitter';
 
 interface CategoryProps {
   title: string;
@@ -75,6 +76,39 @@ const Category: React.FC<CategoryProps> = ({
   // Carica il conteggio dei task all'inizializzazione del componente
   useEffect(() => {
     fetchTaskCount();
+  }, [title]);
+
+  // Setup listeners per aggiornamenti task count in tempo reale
+  useEffect(() => {
+    const handleTaskAdded = (newTask: Task) => {
+      // Solo aggiorna se il task appartiene a questa categoria
+      if (newTask.category_name === title) {
+        console.log('[CATEGORY] Task added event received for category:', title, newTask.title);
+        setActualTaskCount(prevCount => prevCount + 1);
+      }
+    };
+
+    const handleTaskUpdated = (updatedTask: Task) => {
+      // Ricarica il count per gestire cambi di categoria
+      fetchTaskCount();
+    };
+
+    const handleTaskDeleted = (taskId: string | number) => {
+      // Ricarica il count dopo eliminazione
+      fetchTaskCount();
+    };
+
+    // Registra i listeners
+    eventEmitter.on(EVENTS.TASK_ADDED, handleTaskAdded);
+    eventEmitter.on(EVENTS.TASK_UPDATED, handleTaskUpdated);
+    eventEmitter.on(EVENTS.TASK_DELETED, handleTaskDeleted);
+
+    return () => {
+      // Rimuovi i listeners
+      eventEmitter.off(EVENTS.TASK_ADDED, handleTaskAdded);
+      eventEmitter.off(EVENTS.TASK_UPDATED, handleTaskUpdated);
+      eventEmitter.off(EVENTS.TASK_DELETED, handleTaskDeleted);
+    };
   }, [title]);
 
   const handleLongPress = () => {

@@ -3,6 +3,7 @@ import { View, ScrollView, ActivityIndicator, Alert, Animated, Easing } from 're
 import { styles } from './styles';
 import { Task as TaskType, globalTasksRef } from './types';
 import { TaskListHeader } from './TaskListHeader';
+import eventEmitter, { EVENTS } from '../../src/utils/eventEmitter';
 import { ActiveFilters } from './ActiveFilters';
 import { FilterModal } from './FilterModal';
 import { TaskSection } from './TaskSection';
@@ -122,6 +123,77 @@ export const TaskListContainer = ({
   useEffect(() => {
     globalTasksRef.tasks[categoryName] = tasks;
   }, [tasks, categoryName]);
+
+  // Setup listeners per aggiornamenti task in tempo reale
+  useEffect(() => {
+    const handleTaskAdded = (newTask: TaskType) => {
+      // Solo aggiorna se il task appartiene a questa categoria
+      if (newTask.category_name === categoryName || newTask.category_name === categoryId) {
+        console.log('[TASK_LIST_CONTAINER] Task added event received for category:', categoryName, newTask.title);
+        setTasks(prevTasks => {
+          // Evita duplicati
+          if (prevTasks.some(task => 
+            (task.id === newTask.id) || 
+            (task.task_id === newTask.task_id) ||
+            (newTask.id && task.task_id === newTask.id) ||
+            (newTask.task_id && task.id === newTask.task_id)
+          )) {
+            return prevTasks;
+          }
+          return [...prevTasks, newTask];
+        });
+      }
+    };
+
+    const handleTaskUpdated = (updatedTask: TaskType) => {
+      console.log('[TASK_LIST_CONTAINER] Task updated event received for category:', categoryName, updatedTask.title);
+      setTasks(prevTasks => {
+        const newTasks = prevTasks.map(task => {
+          const isMatch = (task.id === updatedTask.id) || 
+                         (task.task_id === updatedTask.task_id) ||
+                         (updatedTask.id && task.task_id === updatedTask.id) ||
+                         (updatedTask.task_id && task.id === updatedTask.task_id);
+          
+          if (isMatch) {
+            return { ...task, ...updatedTask };
+          }
+          return task;
+        });
+        
+        // Se il task è stato spostato fuori da questa categoria, rimuovilo
+        if (updatedTask.category_name && 
+            updatedTask.category_name !== categoryName && 
+            updatedTask.category_name !== categoryId) {
+          return newTasks.filter(task => 
+            task.id !== updatedTask.id && task.task_id !== updatedTask.task_id
+          );
+        }
+        
+        return newTasks;
+      });
+    };
+
+    const handleTaskDeleted = (taskId: string | number) => {
+      console.log('[TASK_LIST_CONTAINER] Task deleted event received for category:', categoryName, taskId);
+      setTasks(prevTasks => 
+        prevTasks.filter(task => 
+          task.id !== taskId && task.task_id !== taskId
+        )
+      );
+    };
+
+    // Registra i listeners
+    eventEmitter.on(EVENTS.TASK_ADDED, handleTaskAdded);
+    eventEmitter.on(EVENTS.TASK_UPDATED, handleTaskUpdated);
+    eventEmitter.on(EVENTS.TASK_DELETED, handleTaskDeleted);
+
+    return () => {
+      // Rimuovi i listeners
+      eventEmitter.off(EVENTS.TASK_ADDED, handleTaskAdded);
+      eventEmitter.off(EVENTS.TASK_UPDATED, handleTaskUpdated);
+      eventEmitter.off(EVENTS.TASK_DELETED, handleTaskDeleted);
+    };
+  }, [categoryName, categoryId]);
 
   // Separiamo i task in completati e non completati
   const completedTasks = useMemo(() => {
