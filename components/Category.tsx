@@ -38,16 +38,35 @@ const Category: React.FC<CategoryProps> = ({
   const fetchTaskCount = async () => {
     try {
       setIsLoading(true);
+      console.log(`[CATEGORY] Caricamento task per categoria: "${title}"`);
+      
       const tasksData = await getTasks(title);
+      console.log(`[CATEGORY] Task ricevuti per "${title}":`, tasksData);
       
-      // Filtrare i task per quelli non completati
-      const incompleteTasks = tasksData.filter((task: Task) => 
-        task.status !== "Completato" && task.status !== "Completed"
-      );
+      if (!Array.isArray(tasksData)) {
+        console.warn(`[CATEGORY] I dati ricevuti per "${title}" non sono un array:`, tasksData);
+        setActualTaskCount(0);
+        return;
+      }
       
+      // Log di tutti i task ricevuti
+      tasksData.forEach((task: Task, index: number) => {
+        console.log(`[CATEGORY] Task ricevuto ${index + 1} per "${title}": titolo="${task.title}", status="${task.status}"`);
+      });
+      
+      // Filtrare i task per quelli non completati (status più permissivo)
+      const incompleteTasks = tasksData.filter((task: Task) => {
+        const status = task.status?.toLowerCase() || '';
+        const isIncomplete = status !== "completato" && status !== "completed" && status !== "archiviato" && status !== "archived";
+        console.log(`[CATEGORY] Filtro task "${task.title}": status="${status}", incluso=${isIncomplete}`);
+        return isIncomplete;
+      });
+      
+      console.log(`[CATEGORY] Task non completati per "${title}":`, incompleteTasks.length, 'di', tasksData.length);
       setActualTaskCount(incompleteTasks.length);
     } catch (error) {
-      console.error("Errore durante il recupero dei task:", error);
+      console.error(`[CATEGORY] Errore durante il recupero dei task per "${title}":`, error);
+      setActualTaskCount(0);
     } finally {
       setIsLoading(false);
     }
