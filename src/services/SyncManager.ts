@@ -2,6 +2,7 @@ import TaskCacheService, { OfflineChange } from './TaskCacheService';
 import StorageManager from './StorageManager';
 import NetworkService, { NetworkState } from './NetworkService';
 import { Task, getAllTasks as getTasksFromAPI, getCategories as getCategoriesFromAPI, addTask as addTaskToAPI, updateTask as updateTaskToAPI, deleteTask as deleteTaskFromAPI } from './taskService';
+import { emitTaskAdded, emitTaskUpdated, emitTaskDeleted, emitTasksSynced } from '../utils/eventEmitter';
 
 export interface SyncStatus {
   isOnline: boolean;
@@ -221,6 +222,10 @@ class SyncManager {
       await this.cacheService!.saveTasks(tasks || [], categories || []);
       
       console.log(`[SYNC] Aggiornati ${(tasks || []).length} task e ${(categories || []).length} categorie`);
+      
+      // Emetti evento di sincronizzazione completata
+      console.log('[SYNC] Emitting TASKS_SYNCED event');
+      emitTasksSynced(tasks || [], categories || []);
     } catch (error) {
       console.error('[SYNC] Errore nell\'aggiornamento dati dal server:', error);
       throw error;
