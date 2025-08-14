@@ -77,6 +77,10 @@ export const styles = StyleSheet.create({
     backgroundColor: "#000000",
     borderColor: "#000000",
   },
+  optimisticBox: {
+    backgroundColor: "#ff9800",
+    borderColor: "#ff9800",
+  },
     // Data e giorni rimanenti
   dateContainer: {
     flexDirection: "row",
