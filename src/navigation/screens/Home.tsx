@@ -9,6 +9,7 @@ import {
   SafeAreaView,
   Animated,
   Keyboard,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
@@ -16,6 +17,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ChatList, Message } from "../../../components/BotChat";
 import { sendMessageToBot } from "../../services/botservice";
 import { STORAGE_KEYS } from "../../constants/authConstants";
+import TaskCacheService from '../../services/TaskCacheService';
+import SyncManager, { SyncStatus } from '../../services/SyncManager';
 import Badge from "../../../components/Badge";
 import VoiceChatModal from "../../../components/VoiceChatModal";
 
@@ -27,29 +30,61 @@ const Home20 = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [isVoiceChatVisible, setIsVoiceChatVisible] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
-  const navigation = useNavigation();// Animazioni
+  const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null);
+  const navigation = useNavigation();
+  
+  // Servizi
+  const cacheService = useRef(TaskCacheService.getInstance()).current;
+  const syncManager = useRef(SyncManager.getInstance()).current;
+  
+  // Animazioni
   const messagesSlideIn = useRef(new Animated.Value(50)).current;
   const messagesOpacity = useRef(new Animated.Value(1)).current;
   const inputBottomPosition = useRef(new Animated.Value(0)).current;
   const cursorOpacity = useRef(new Animated.Value(1)).current;
-  // Effetto per recuperare il nome dell'utente
+  // Setup sync status listener
   useEffect(() => {
-    const fetchUserName = async () => {
+    const handleSyncStatus = (status: SyncStatus) => {
+      setSyncStatus(status);
+    };
+    
+    syncManager.addSyncListener(handleSyncStatus);
+    
+    // Ottieni stato iniziale
+    syncManager.getSyncStatus().then(setSyncStatus);
+    
+    return () => {
+      syncManager.removeSyncListener(handleSyncStatus);
+    };
+  }, [syncManager]);
+  
+  // Effetto per recuperare il nome dell'utente e inizializzare cache
+  useEffect(() => {
+    const initialize = async () => {
       try {
+        // Recupera nome utente
         const storedUserName = await AsyncStorage.getItem(
           STORAGE_KEYS.USER_NAME
         );
         if (storedUserName) {
           setUserName(storedUserName);
         }
+        
+        // Inizializza cache in background
+        const hasCachedData = await cacheService.hasCachedData();
+        if (!hasCachedData) {
+          console.log('[HOME] Nessun dato in cache, avvio sync iniziale');
+          syncManager.startSync();
+        } else {
+          console.log('[HOME] Dati in cache presenti');
+        }
       } catch (error) {
-        console.error("Errore nel recupero del nome utente:", error);
-        // Mantieni il valore di default "Utente" in caso di errore
+        console.error("Errore nell'inizializzazione:", error);
       }
     };
 
-    fetchUserName();
-  }, []);
+    initialize();
+  }, [cacheService, syncManager]);
   // Effetto per l'animazione di scrittura del testo di saluto
   useEffect(() => {
     if (userName && !chatStarted) {
@@ -291,9 +326,36 @@ const Home20 = () => {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
 
-      {/* Header con titolo principale */}
+      {/* Header con titolo principale e indicatori sync */}
       <View style={styles.header}>
-        <Text style={styles.mainTitle}>Mytaskly</Text>
+        <View style={styles.titleSection}>
+          <Text style={styles.mainTitle}>Mytaskly</Text>
+          {syncStatus && (
+            <View style={styles.syncIndicatorHome}>
+              {syncStatus.isSyncing ? (
+                <View style={styles.syncingContainer}>
+                  <ActivityIndicator size="small" color="#666666" />
+                  <Text style={styles.syncText}>Sincronizzando...</Text>
+                </View>
+              ) : !syncStatus.isOnline ? (
+                <View style={styles.offlineContainer}>
+                  <Ionicons name="cloud-offline-outline" size={16} color="#ff6b6b" />
+                  <Text style={styles.offlineText}>Modalità offline</Text>
+                </View>
+              ) : syncStatus.pendingChanges > 0 ? (
+                <View style={styles.pendingContainer}>
+                  <Ionicons name="sync-outline" size={16} color="#ffa726" />
+                  <Text style={styles.pendingText}>{syncStatus.pendingChanges} modifiche da sincronizzare</Text>
+                </View>
+              ) : (
+                <View style={styles.onlineContainer}>
+                  <Ionicons name="checkmark-circle-outline" size={16} color="#4caf50" />
+                  <Text style={styles.onlineText}>Sincronizzato</Text>
+                </View>
+              )}
+            </View>
+          )}
+        </View>
         <View style={styles.headerActions}>
           {chatStarted && (
             <TouchableOpacity
@@ -525,10 +587,80 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     position: "relative",
   },
+  titleSection: {
+    flex: 1,
+    flexDirection: "column",
+    alignItems: "flex-start",
+  },
   headerActions: {
     flexDirection: "row",
     alignItems: "center",
     gap: 15,
+  },
+  syncIndicatorHome: {
+    marginTop: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  syncingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f0f0f0',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 15,
+  },
+  syncText: {
+    fontSize: 13,
+    color: '#666666',
+    marginLeft: 6,
+    fontFamily: 'System',
+    fontWeight: '300',
+  },
+  offlineContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffebee',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 15,
+  },
+  offlineText: {
+    fontSize: 13,
+    color: '#ff6b6b',
+    marginLeft: 6,
+    fontFamily: 'System',
+    fontWeight: '300',
+  },
+  pendingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff3e0',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 15,
+  },
+  pendingText: {
+    fontSize: 13,
+    color: '#ffa726',
+    marginLeft: 6,
+    fontFamily: 'System',
+    fontWeight: '300',
+  },
+  onlineContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#e8f5e8',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 15,
+  },
+  onlineText: {
+    fontSize: 13,
+    color: '#4caf50',
+    marginLeft: 6,
+    fontFamily: 'System',
+    fontWeight: '300',
   },
   resetButton: {
     padding: 8,

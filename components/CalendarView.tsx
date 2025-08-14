@@ -1,20 +1,27 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, Animated } from 'react-native';
 import dayjs from 'dayjs';
-import { Task, getAllTasks, addTask } from '../src/services/taskService';
+import { Task as TaskType, getAllTasks, addTask, deleteTask, updateTask, completeTask, disCompleteTask } from '../src/services/taskService';
+import TaskCacheService from '../src/services/TaskCacheService';
+import SyncManager, { SyncStatus } from '../src/services/SyncManager';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import CalendarGrid from './CalendarGrid';
-import TaskCard from './TaskCard';
+import Task from './Task';
 import AddTask from './AddTask';
 import AddTaskButton from './AddTaskButton';
 import { addTaskToList } from './TaskList/types';
 
 const CalendarView: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<string>(dayjs().format('YYYY-MM-DD'));
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [tasks, setTasks] = useState<TaskType[]>([]);
   const [showAddTask, setShowAddTask] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null);
+  
+  // Servizi
+  const cacheService = useRef(TaskCacheService.getInstance()).current;
+  const syncManager = useRef(SyncManager.getInstance()).current;
   
   // Animazioni per i punti di caricamento
   const fadeAnim1 = useRef(new Animated.Value(0.3)).current;
@@ -32,12 +39,22 @@ const CalendarView: React.FC = () => {
     return String(value).trim();
   };
 
-  // Funzione per caricare gli impegni
+  // Funzione per caricare gli impegni (con cache)
   const fetchTasks = useCallback(async () => {
     try {
       setIsLoading(true);
       console.log("[CALENDAR] Inizio caricamento task...");
-      const tasksData = await getAllTasks();
+      
+      // Prima carica dalla cache per UI immediata
+      const cachedTasks = await cacheService.getCachedTasks();
+      if (cachedTasks.length > 0) {
+        console.log("[CALENDAR] Task dalla cache:", cachedTasks.length);
+        setTasks(cachedTasks);
+        setIsLoading(false); // UI immediatamente reattiva
+      }
+      
+      // Poi carica dal server/cache con sync in background
+      const tasksData = await getAllTasks(true); // usa cache con sync background
       console.log("[CALENDAR] Task ricevuti:", tasksData);
       if (Array.isArray(tasksData)) {
         setTasks(tasksData);
@@ -54,10 +71,33 @@ const CalendarView: React.FC = () => {
           data: error.response.data
         });
       }
+      
+      // In caso di errore, usa solo la cache se disponibile
+      const cachedTasks = await cacheService.getCachedTasks();
+      if (cachedTasks.length > 0) {
+        setTasks(cachedTasks);
+        console.log("[CALENDAR] Utilizzando cache come fallback:", cachedTasks.length, "task");
+      }
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [cacheService]);
+
+  // Setup listener per stato sync
+  useEffect(() => {
+    const handleSyncStatus = (status: SyncStatus) => {
+      setSyncStatus(status);
+    };
+    
+    syncManager.addSyncListener(handleSyncStatus);
+    
+    // Ottieni stato iniziale
+    syncManager.getSyncStatus().then(setSyncStatus);
+    
+    return () => {
+      syncManager.removeSyncListener(handleSyncStatus);
+    };
+  }, [syncManager]);
 
   // Carica gli impegni quando il componente si monta
   useEffect(() => {
@@ -93,16 +133,80 @@ const CalendarView: React.FC = () => {
   // Ottieni gli impegni per la data selezionata
   const getTasksForSelectedDate = () => {
     return tasks.filter(task => {
-      const taskDate = task.end_time ? 
-        dayjs(task.end_time).format('YYYY-MM-DD') : null;
+      // Escludi i task senza data di scadenza
+      if (!task.end_time) {
+        return false;
+      }
+      
+      const taskDate = dayjs(task.end_time).format('YYYY-MM-DD');
       return taskDate === selectedDate;
     });
   };
 
   // Gestisce il click su una task
-  const handleTaskPress = (task: Task) => {
+  const handleTaskPress = (task: TaskType) => {
     console.log("Task selezionato:", task);
     // Qui puoi implementare la navigazione ai dettagli della task
+  };
+
+  // Gestisce il completamento di un task
+  const handleTaskComplete = async (taskId: number | string) => {
+    try {
+      await completeTask(taskId);
+      setTasks(prev => prev.map(task => 
+        (task.id === taskId || task.task_id === taskId) 
+          ? { ...task, status: "Completato", completed: true } 
+          : task
+      ));
+    } catch (error) {
+      console.error("Errore nel completamento del task:", error);
+      Alert.alert("Errore", "Impossibile completare il task. Riprova.");
+    }
+  };
+
+  // Gestisce l'annullamento del completamento di un task
+  const handleTaskUncomplete = async (taskId: number | string) => {
+    try {
+      await disCompleteTask(taskId);
+      setTasks(prev => prev.map(task => 
+        (task.id === taskId || task.task_id === taskId) 
+          ? { ...task, status: "In sospeso", completed: false } 
+          : task
+      ));
+    } catch (error) {
+      console.error("Errore nell'annullamento del completamento del task:", error);
+      Alert.alert("Errore", "Impossibile riaprire il task. Riprova.");
+    }
+  };
+
+  // Gestisce la modifica di un task
+  const handleTaskEdit = async (taskId: number | string, updatedTask: TaskType) => {
+    try {
+      await updateTask(taskId, updatedTask);
+      setTasks(prev => prev.map(task => 
+        (task.id === taskId || task.task_id === taskId) 
+          ? updatedTask 
+          : task
+      ));
+      // Ricarica i task per aggiornare il calendario
+      fetchTasks();
+    } catch (error) {
+      console.error("Errore nella modifica del task:", error);
+      Alert.alert("Errore", "Impossibile modificare il task. Riprova.");
+    }
+  };
+
+  // Gestisce l'eliminazione di un task
+  const handleTaskDelete = async (taskId: number | string) => {
+    try {
+      await deleteTask(taskId);
+      setTasks(prev => prev.filter(task => 
+        task.id !== taskId && task.task_id !== taskId
+      ));
+    } catch (error) {
+      console.error("Errore nell'eliminazione del task:", error);
+      Alert.alert("Errore", "Impossibile eliminare il task. Riprova.");
+    }
   };
 
   // Gestisce l'apertura del form per aggiungere un task
@@ -219,11 +323,33 @@ const CalendarView: React.FC = () => {
           onNextMonth={goToNextMonth}
         />
         
-        {/* Header con effetto di caricamento */}
+        {/* Header con effetto di caricamento e indicatore sync */}
         <View style={styles.selectedDateHeader}>
-          <Text style={styles.selectedDateTitle}>
-            Impegni del {dayjs(selectedDate).format('DD MMMM YYYY')}
-          </Text>
+          <View style={styles.titleContainer}>
+            <Text style={styles.selectedDateTitle}>
+              Impegni del {dayjs(selectedDate).format('DD MMMM YYYY')}
+            </Text>
+            {syncStatus && (
+              <View style={styles.syncIndicator}>
+                {syncStatus.isSyncing ? (
+                  <View style={styles.syncingContainer}>
+                    <ActivityIndicator size="small" color="#666666" />
+                    <Text style={styles.syncText}>Sync...</Text>
+                  </View>
+                ) : !syncStatus.isOnline ? (
+                  <View style={styles.offlineContainer}>
+                    <Ionicons name="cloud-offline-outline" size={16} color="#ff6b6b" />
+                    <Text style={styles.offlineText}>Offline</Text>
+                  </View>
+                ) : syncStatus.pendingChanges > 0 ? (
+                  <View style={styles.pendingContainer}>
+                    <Ionicons name="sync-outline" size={16} color="#ffa726" />
+                    <Text style={styles.pendingText}>{syncStatus.pendingChanges}</Text>
+                  </View>
+                ) : null}
+              </View>
+            )}
+          </View>
           <AddTaskButton onPress={handleAddTask} />
         </View>
         
@@ -254,21 +380,46 @@ const CalendarView: React.FC = () => {
         onNextMonth={goToNextMonth}
       />
       
-      {/* Intestazione con titolo e pulsante per aggiungere task */}
+      {/* Intestazione con titolo, indicatori sync e pulsante per aggiungere task */}
       <View style={styles.selectedDateHeader}>
-        <Text style={styles.selectedDateTitle}>
-          Impegni del {dayjs(selectedDate).format('DD MMMM YYYY')}
-        </Text>
+        <View style={styles.titleContainer}>
+          <Text style={styles.selectedDateTitle}>
+            Impegni del {dayjs(selectedDate).format('DD MMMM YYYY')}
+          </Text>
+          {syncStatus && (
+            <View style={styles.syncIndicator}>
+              {syncStatus.isSyncing ? (
+                <View style={styles.syncingContainer}>
+                  <ActivityIndicator size="small" color="#666666" />
+                  <Text style={styles.syncText}>Sync...</Text>
+                </View>
+              ) : !syncStatus.isOnline ? (
+                <View style={styles.offlineContainer}>
+                  <Ionicons name="cloud-offline-outline" size={16} color="#ff6b6b" />
+                  <Text style={styles.offlineText}>Offline</Text>
+                </View>
+              ) : syncStatus.pendingChanges > 0 ? (
+                <View style={styles.pendingContainer}>
+                  <Ionicons name="sync-outline" size={16} color="#ffa726" />
+                  <Text style={styles.pendingText}>{syncStatus.pendingChanges}</Text>
+                </View>
+              ) : null}
+            </View>
+          )}
+        </View>
         <AddTaskButton onPress={handleAddTask} />
       </View>
       
       <ScrollView style={styles.taskList}>
         {getTasksForSelectedDate().length > 0 ? (
           getTasksForSelectedDate().map((task) => (
-            <TaskCard 
+            <Task 
               key={task.task_id || task.id || `task-${sanitizeString(task.title)}-${task.start_time || Date.now()}`} 
               task={task} 
-              onPress={handleTaskPress}
+              onTaskComplete={handleTaskComplete}
+              onTaskUncomplete={handleTaskUncomplete}
+              onTaskEdit={handleTaskEdit}
+              onTaskDelete={handleTaskDelete}
             />
           ))
         ) : (
@@ -309,12 +460,64 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 5,
   },
+  titleContainer: {
+    flex: 1,
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+  },
   selectedDateTitle: {
     fontSize: 18,
     fontWeight: "300",
     color: "#000000",
     fontFamily: "System",
     letterSpacing: -0.5,
+  },
+  syncIndicator: {
+    marginTop: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  syncingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f0f0f0',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  syncText: {
+    fontSize: 12,
+    color: '#666666',
+    marginLeft: 4,
+    fontFamily: 'System',
+  },
+  offlineContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffebee',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  offlineText: {
+    fontSize: 12,
+    color: '#ff6b6b',
+    marginLeft: 4,
+    fontFamily: 'System',
+  },
+  pendingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff3e0',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  pendingText: {
+    fontSize: 12,
+    color: '#ffa726',
+    marginLeft: 4,
+    fontFamily: 'System',
   },
   taskList: {
     flex: 1,

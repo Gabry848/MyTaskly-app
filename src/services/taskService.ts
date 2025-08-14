@@ -1,6 +1,22 @@
 import axios from "./axiosInterceptor";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { STORAGE_KEYS } from "../constants/authConstants";
+import TaskCacheService from './TaskCacheService';
+import SyncManager from './SyncManager';
+
+// Lazy initialization dei servizi per evitare problemi di caricamento
+let cacheService: TaskCacheService | null = null;
+let syncManager: SyncManager | null = null;
+
+function getServices() {
+  if (!cacheService) {
+    cacheService = TaskCacheService.getInstance();
+  }
+  if (!syncManager) {
+    syncManager = SyncManager.getInstance();
+  }
+  return { cacheService, syncManager };
+}
 
 // Definizione dell'interfaccia Task
 export interface Task {
@@ -15,9 +31,38 @@ export interface Task {
   [key: string]: any; // per proprietà aggiuntive
 }
 
-// Funzione per ottenere tutti gli impegni filtrandoli per categoria
-export async function getTasks(category_name?: string) {
+// Funzione per ottenere tutti gli impegni filtrandoli per categoria (con cache)
+export async function getTasks(category_name?: string, useCache: boolean = true) {
   try {
+    // Se richiesto, prova prima dalla cache
+    if (useCache) {
+      const { cacheService } = getServices();
+      const cachedTasks = await getServices().cacheService.getCachedTasks();
+      if (cachedTasks.length > 0) {
+        console.log('[TASK_SERVICE] Usando dati dalla cache');
+        
+        // Filtra per categoria se specificata
+        if (category_name) {
+          const filteredTasks = cachedTasks.filter(task => 
+            task.category_name === category_name
+          );
+          
+          // Avvia sync in background
+          getServices().syncManager.addSyncOperation('GET_TASKS', { category_name });
+          
+          return filteredTasks;
+        }
+        
+        // Avvia sync in background
+        getServices().syncManager.addSyncOperation('GET_TASKS', {});
+        
+        return cachedTasks;
+      }
+    }
+    
+    // Fallback alla chiamata API diretta
+    console.log('[TASK_SERVICE] Caricamento dalla API (cache vuota o disabilitata)');
+    
     if (category_name) {
       // ogni spazio viene sostituito con %20
       category_name = category_name.replace(/ /g, "%20");
@@ -38,15 +83,26 @@ export async function getTasks(category_name?: string) {
     return response.data;
   } catch (error) {
     console.error("Errore nel recupero dei task:", error);
+    
+    // In caso di errore, prova a restituire i dati cached come fallback
+    if (useCache) {
+      console.log('[TASK_SERVICE] Errore API, tentativo fallback cache');
+      const cachedTasks = await getServices().cacheService.getCachedTasks();
+      if (category_name) {
+        return cachedTasks.filter(task => task.category_name === category_name);
+      }
+      return cachedTasks;
+    }
+    
     return [];
   }
 }
 
-// funzione che restistuise gli utimi impegni
-export async function getLastTask(last_n: number) {
+// funzione che restistuise gli utimi impegni (con cache)
+export async function getLastTask(last_n: number, useCache: boolean = true) {
   try {
-    // Usa getAllTasks che ora funziona correttamente
-    const allTasks = await getAllTasks();
+    // Usa getAllTasks che ora funziona correttamente con cache
+    const allTasks = await getAllTasks(useCache);
     
     if (!Array.isArray(allTasks) || allTasks.length === 0) {
       return [];
@@ -70,18 +126,35 @@ export async function getLastTask(last_n: number) {
     return [];
   }
 }
-// funzione per ottenere tutti gli impegni
-export async function getAllTasks() {
+// funzione per ottenere tutti gli impegni (con cache)
+export async function getAllTasks(useCache: boolean = true) {
   try {
+    // Prova prima dalla cache se abilitata
+    if (useCache) {
+      const { cacheService } = getServices();
+      const cachedTasks = await getServices().cacheService.getCachedTasks();
+      if (cachedTasks.length > 0) {
+        console.log('[TASK_SERVICE] getAllTasks: usando dati dalla cache');
+        
+        // Avvia sync in background
+        getServices().syncManager.addSyncOperation('GET_TASKS', {});
+        
+        return cachedTasks;
+      }
+    }
+    
+    // Fallback alla logica originale
+    console.log('[TASK_SERVICE] getAllTasks: caricamento dalla API');
+    
     // Prima otteniamo tutte le categorie
-    const categories = await getCategories();
+    const categories = await getCategories(false); // Non usare cache per categorie in questo caso
     let allTasks: Task[] = [];
     
     if (categories && Array.isArray(categories)) {
       // Per ogni categoria, otteniamo i task
       for (const category of categories) {
         try {
-          const categoryTasks = await getTasks(category.name);
+          const categoryTasks = await getTasks(category.name, false); // Non usare cache per singole categorie
           if (Array.isArray(categoryTasks)) {
             allTasks = allTasks.concat(categoryTasks);
           }
@@ -106,16 +179,29 @@ export async function getAllTasks() {
       return new Date(a.end_time).getTime() - new Date(b.end_time).getTime();
     });
     
+    // Salva nella cache se abbiamo ottenuto dati validi
+    if (useCache && uniqueTasks.length > 0) {
+      await getServices().cacheService.saveTasks(uniqueTasks, categories);
+    }
+    
     console.log("[getAllTasks] Task totali recuperati:", uniqueTasks.length);
     return uniqueTasks;
 
   } catch (error) {
     console.error("Errore nel recupero di tutti i task:", error);
+    
+    // Fallback alla cache in caso di errore
+    if (useCache) {
+      console.log('[TASK_SERVICE] Errore API, tentativo fallback cache in getAllTasks');
+      const cachedTasks = await getServices().cacheService.getCachedTasks();
+      return cachedTasks;
+    }
+    
     return [];
   }
 }
 
-// Funzione per aggiornare un impegno esistente
+// Funzione per aggiornare un impegno esistente (con cache e offline)
 export async function updateTask(
   taskId: string | number,
   updatedTask: Partial<Task>
@@ -137,12 +223,31 @@ export async function updateTask(
 
     console.log("Updating task with data:", taskData); // Log per debug
 
-    const response = await axios.put(`/tasks/${taskId}`, taskData, {
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-    return response.data;
+    // Aggiorna immediatamente la cache locale per UI reattiva
+    const fullUpdatedTask = { ...updatedTask, id: taskId, task_id: taskId } as Task;
+    await getServices().cacheService.updateTaskInCache(fullUpdatedTask);
+
+    try {
+      // Prova a inviare al server
+      const response = await axios.put(`/tasks/${taskId}`, taskData, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      return response.data;
+    } catch (networkError) {
+      console.log('[TASK_SERVICE] Errore di rete, salvataggio offline per updateTask');
+      
+      // Salva la modifica offline
+      await getServices().syncManager.saveOfflineChange('UPDATE', 'TASK', {
+        id: taskId,
+        task_id: taskId,
+        ...taskData
+      });
+      
+      // Restituisci i dati locali (la cache è già aggiornata)
+      return fullUpdatedTask;
+    }
   } catch (error) {
     console.error("Error updating task:", error.response?.data || error.message); // Log dettagliato dell'errore
     throw error;
@@ -193,22 +298,40 @@ export async function disCompleteTask(taskId: string | number) {
   }
 }
 
-// Funzione per eliminare un impegno
+// Funzione per eliminare un impegno (con cache e offline)
 export async function deleteTask(taskId: string | number) {
   try {
     console.log("Eliminazione dell'impegno con ID:", taskId);
-    const response = await axios.delete(`/tasks/${taskId}`, {
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-    return response.data;
+    
+    // Rimuovi immediatamente dalla cache locale per UI reattiva
+    await getServices().cacheService.removeTaskFromCache(taskId);
+    
+    try {
+      // Prova a eliminare dal server
+      const response = await axios.delete(`/tasks/${taskId}`, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      return response.data;
+    } catch (networkError) {
+      console.log('[TASK_SERVICE] Errore di rete, salvataggio offline per deleteTask');
+      
+      // Salva l'eliminazione offline
+      await getServices().syncManager.saveOfflineChange('DELETE', 'TASK', {
+        id: taskId,
+        task_id: taskId
+      });
+      
+      // Restituisci successo (la cache è già aggiornata)
+      return { success: true, offline: true };
+    }
   } catch (error) {
     throw error;
   }
 }
 
-// Funzione per aggiungere un nuovo impegno
+// Funzione per aggiungere un nuovo impegno (con cache e offline)
 export async function addTask(task: Task) {
   try {
     const username = await AsyncStorage.getItem(STORAGE_KEYS.USER_NAME);
@@ -241,18 +364,47 @@ export async function addTask(task: Task) {
       category_name: task.category_name,
       user: task.user || username,
     };
+    
+    // Genera un ID temporaneo per il task locale
+    const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const tempTask = { ...data, id: tempId, task_id: tempId };
+    
+    // Aggiungi immediatamente alla cache locale per UI reattiva
+    await getServices().cacheService.updateTaskInCache(tempTask);
+    
     console.log("data: ", data);
     console.log("Date formats - start_time:", data.start_time, "end_time:", data.end_time);
     console.log("Sending POST request to /tasks with headers:", {
       "Content-Type": "application/json",
     });
-    const response = await axios.post("/tasks", data, {
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-    console.log("Task creation response:", response.data);
-    return response.data;
+    
+    try {
+      // Prova a inviare al server
+      const response = await axios.post("/tasks", data, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      
+      console.log("Task creation response:", response.data);
+      
+      // Aggiorna la cache con l'ID reale del server
+      if (response.data && response.data.task_id) {
+        const serverTask = { ...data, ...response.data };
+        await getServices().cacheService.removeTaskFromCache(tempId); // Rimuovi il task temporaneo
+        await getServices().cacheService.updateTaskInCache(serverTask); // Aggiungi quello con ID reale
+      }
+      
+      return response.data;
+    } catch (networkError) {
+      console.log('[TASK_SERVICE] Errore di rete, salvataggio offline per addTask');
+      
+      // Salva l'aggiunta offline
+      await getServices().syncManager.saveOfflineChange('CREATE', 'TASK', data);
+      
+      // Restituisci il task temporaneo (già in cache)
+      return tempTask;
+    }
   } catch (error) {
     console.error("Errore durante l'aggiunta del task:", error);
     if (error.response) {
@@ -299,17 +451,41 @@ export async function addCategory(category: {
   }
 }
 
-// Funzione per ottenere tutte le categorie
-export async function getCategories() {
+// Funzione per ottenere tutte le categorie (con cache)
+export async function getCategories(useCache: boolean = true) {
   try {
+    // Prova prima dalla cache se abilitata
+    if (useCache) {
+      const cachedCategories = await getServices().cacheService.getCachedCategories();
+      if (cachedCategories.length > 0) {
+        console.log('[TASK_SERVICE] Usando categorie dalla cache');
+        
+        // Avvia sync in background
+        getServices().syncManager.addSyncOperation('GET_TASKS', {});
+        
+        return cachedCategories;
+      }
+    }
+    
+    // Fallback alla chiamata API diretta
+    console.log('[TASK_SERVICE] Caricamento categorie dalla API');
     const response = await axios.get(`/categories`, {
       headers: {
         "Content-Type": "application/json",
       },
     });
+    
     return response.data;
   } catch (error) {
     console.error("Errore nel recupero delle categorie:", error);
+    
+    // In caso di errore, prova a restituire le categorie cached come fallback
+    if (useCache) {
+      console.log('[TASK_SERVICE] Errore API categorie, tentativo fallback cache');
+      const cachedCategories = await getServices().cacheService.getCachedCategories();
+      return cachedCategories;
+    }
+    
     throw error;
   }
 }
