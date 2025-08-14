@@ -11,6 +11,8 @@ export interface Task {
   completed?: boolean;
   status_code?: number;
   task_id?: number;
+  category_name?: string;
+  isOptimistic?: boolean;
 }
 
 // Riferimento globale per i task condivisi tra componenti

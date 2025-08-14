@@ -29,6 +29,7 @@ export interface Task {
   priority?: string;
   category_name?: string;
   user?: string;
+  isOptimistic?: boolean; // Per indicare se il task è in stato ottimistico (in attesa di conferma server)
   [key: string]: any; // per proprietà aggiuntive
 }
 
@@ -330,46 +331,154 @@ export async function updateTask(
   }
 }
 
-// Funzione per segnare un task come completato
+// Funzione per segnare un task come completato (con optimistic update)
 export async function completeTask(taskId: string | number) {
   try {
-    // Recupera il task esistente per ottenere i dati attuali
-    // Nota: questo richiede un endpoint GET /tasks/{taskId} che potrebbe non esistere.
-    // Se non esiste, potresti dover passare tutti i dati necessari o modificare l'API.
-    // Alternativamente, si può passare solo lo stato.
-    // Qui assumiamo che l'API permetta di aggiornare solo lo stato.
-    const updatedTaskData = {
-      status: "Completato",
-    };
-
-    // Utilizza la funzione updateTask esistente
-    const updatedTask = await updateTask(taskId, updatedTaskData);
-    console.log("Task completato:", updatedTask);
-    return updatedTask;
+    console.log("[TASK_SERVICE] Completamento task con optimistic update:", taskId);
+    
+    // 1. OPTIMISTIC UPDATE: Aggiorna immediatamente la cache locale e l'UI
+    const { cacheService } = getServices();
+    const cachedTasks = await cacheService.getCachedTasks();
+    const taskToUpdate = cachedTasks.find(task => 
+      task.id === taskId || task.task_id === taskId
+    );
+    
+    if (!taskToUpdate) {
+      throw new Error("Task non trovato nella cache per completamento optimistic");
+    }
+    
+    // Salva lo stato precedente per eventuale rollback
+    const previousStatus = taskToUpdate.status;
+    console.log("[TASK_SERVICE] Stato precedente task:", previousStatus, "-> Completato");
+    
+    // Aggiorna immediatamente la cache locale con flag optimistic
+    const optimisticTask = { ...taskToUpdate, status: "Completato", isOptimistic: true };
+    await cacheService.updateTaskInCache(optimisticTask);
+    
+    // Emetti immediatamente l'evento per aggiornare l'UI
+    console.log("[TASK_SERVICE] Emitting optimistic TASK_UPDATED event for completion");
+    emitTaskUpdated(optimisticTask);
+    
+    // 2. CONFERMA DAL SERVER: Prova a confermare con il server
+    try {
+      console.log("[TASK_SERVICE] Confermando completamento con il server...");
+      
+      const response = await axios.put(`/tasks/${taskId}`, {
+        status: "Completato"
+      }, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      
+      console.log("[TASK_SERVICE] ✅ Completamento confermato dal server:", response.data);
+      
+      // Aggiorna con i dati definitivi dal server, rimuovendo il flag optimistic
+      const finalTask = { ...optimisticTask, ...response.data, isOptimistic: false };
+      await cacheService.updateTaskInCache(finalTask);
+      emitTaskUpdated(finalTask);
+      
+      return response.data || optimisticTask;
+      
+    } catch (serverError) {
+      console.error("[TASK_SERVICE] ❌ Errore server nel completamento, rollback:", serverError);
+      
+      // 3. ROLLBACK: Ripristina lo stato precedente
+      const rollbackTask = { ...optimisticTask, status: previousStatus };
+      await cacheService.updateTaskInCache(rollbackTask);
+      emitTaskUpdated(rollbackTask);
+      
+      // Salva come modifica offline per retry successivo
+      await getServices().syncManager.saveOfflineChange('UPDATE', 'TASK', {
+        id: taskId,
+        task_id: taskId,
+        status: "Completato"
+      });
+      
+      console.log("[TASK_SERVICE] Rollback completato, operazione salvata per sync offline");
+      
+      // Non lanciare errore perché l'operazione è comunque salvata offline
+      return rollbackTask;
+    }
+    
   } catch (error) {
-    console.error("Errore nel completare il task:", error);
+    console.error("Errore critico nel completare il task:", error);
     throw error;
   }
 }
 
-//funzione per discompletare un task
+// Funzione per riaprire un task completato (con optimistic update)
 export async function disCompleteTask(taskId: string | number) {
   try {
-    // Recupera il task esistente per ottenere i dati attuali
-    // Nota: questo richiede un endpoint GET /tasks/{taskId} che potrebbe non esistere.
-    // Se non esiste, potresti dover passare tutti i dati necessari o modificare l'API.
-    // Alternativamente, si può passare solo lo stato.
-    // Qui assumiamo che l'API permetta di aggiornare solo lo stato.
-    const updatedTaskData = {
-      status: "In sospeso",
-    };
-
-    // Utilizza la funzione updateTask esistente
-    const updatedTask = await updateTask(taskId, updatedTaskData);
-    console.log("Task discompletato:", updatedTask);
-    return updatedTask;
+    console.log("[TASK_SERVICE] Riapertura task con optimistic update:", taskId);
+    
+    // 1. OPTIMISTIC UPDATE: Aggiorna immediatamente la cache locale e l'UI
+    const { cacheService } = getServices();
+    const cachedTasks = await cacheService.getCachedTasks();
+    const taskToUpdate = cachedTasks.find(task => 
+      task.id === taskId || task.task_id === taskId
+    );
+    
+    if (!taskToUpdate) {
+      throw new Error("Task non trovato nella cache per riapertura optimistic");
+    }
+    
+    // Salva lo stato precedente per eventuale rollback
+    const previousStatus = taskToUpdate.status;
+    console.log("[TASK_SERVICE] Stato precedente task:", previousStatus, "-> In sospeso");
+    
+    // Aggiorna immediatamente la cache locale con flag optimistic
+    const optimisticTask = { ...taskToUpdate, status: "In sospeso", isOptimistic: true };
+    await cacheService.updateTaskInCache(optimisticTask);
+    
+    // Emetti immediatamente l'evento per aggiornare l'UI
+    console.log("[TASK_SERVICE] Emitting optimistic TASK_UPDATED event for reopening");
+    emitTaskUpdated(optimisticTask);
+    
+    // 2. CONFERMA DAL SERVER: Prova a confermare con il server
+    try {
+      console.log("[TASK_SERVICE] Confermando riapertura con il server...");
+      
+      const response = await axios.put(`/tasks/${taskId}`, {
+        status: "In sospeso"
+      }, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      
+      console.log("[TASK_SERVICE] ✅ Riapertura confermata dal server:", response.data);
+      
+      // Aggiorna con i dati definitivi dal server, rimuovendo il flag optimistic
+      const finalTask = { ...optimisticTask, ...response.data, isOptimistic: false };
+      await cacheService.updateTaskInCache(finalTask);
+      emitTaskUpdated(finalTask);
+      
+      return response.data || optimisticTask;
+      
+    } catch (serverError) {
+      console.error("[TASK_SERVICE] ❌ Errore server nella riapertura, rollback:", serverError);
+      
+      // 3. ROLLBACK: Ripristina lo stato precedente
+      const rollbackTask = { ...optimisticTask, status: previousStatus };
+      await cacheService.updateTaskInCache(rollbackTask);
+      emitTaskUpdated(rollbackTask);
+      
+      // Salva come modifica offline per retry successivo
+      await getServices().syncManager.saveOfflineChange('UPDATE', 'TASK', {
+        id: taskId,
+        task_id: taskId,
+        status: "In sospeso"
+      });
+      
+      console.log("[TASK_SERVICE] Rollback completato, operazione salvata per sync offline");
+      
+      // Non lanciare errore perché l'operazione è comunque salvata offline
+      return rollbackTask;
+    }
+    
   } catch (error) {
-    console.error("Errore nel discompletare il task:", error);
+    console.error("Errore critico nel riaprire il task:", error);
     throw error;
   }
 }
