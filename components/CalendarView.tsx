@@ -4,6 +4,7 @@ import dayjs from 'dayjs';
 import { Task as TaskType, getAllTasks, addTask, deleteTask, updateTask, completeTask, disCompleteTask } from '../src/services/taskService';
 import TaskCacheService from '../src/services/TaskCacheService';
 import SyncManager, { SyncStatus } from '../src/services/SyncManager';
+import AppInitializer from '../src/services/AppInitializer';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import CalendarGrid from './CalendarGrid';
@@ -22,6 +23,7 @@ const CalendarView: React.FC = () => {
   // Servizi
   const cacheService = useRef(TaskCacheService.getInstance()).current;
   const syncManager = useRef(SyncManager.getInstance()).current;
+  const appInitializer = useRef(AppInitializer.getInstance()).current;
   
   // Animazioni per i punti di caricamento
   const fadeAnim1 = useRef(new Animated.Value(0.3)).current;
@@ -39,11 +41,39 @@ const CalendarView: React.FC = () => {
     return String(value).trim();
   };
 
-  // Funzione per caricare gli impegni (con cache)
+  // Funzione per caricare gli impegni (con cache e supporto caricamento sincrono)
   const fetchTasks = useCallback(async () => {
     try {
       setIsLoading(true);
       console.log("[CALENDAR] Inizio caricamento task...");
+      
+      // Controlla se AppInitializer ha già i dati pronti
+      if (appInitializer.isDataReady()) {
+        console.log("[CALENDAR] Dati già caricati da AppInitializer");
+        const cachedTasks = await cacheService.getCachedTasks();
+        if (cachedTasks.length > 0) {
+          console.log("[CALENDAR] Task dalla cache AppInitializer:", cachedTasks.length);
+          setTasks(cachedTasks);
+          setIsLoading(false);
+          return;
+        }
+      }
+      
+      // Se AppInitializer sta ancora caricando, aspetta con timeout breve
+      const dataReady = await appInitializer.waitForDataLoad(3000); // 3 secondi max
+      if (dataReady) {
+        console.log("[CALENDAR] Dati pronti dopo attesa AppInitializer");
+        const cachedTasks = await cacheService.getCachedTasks();
+        if (cachedTasks.length > 0) {
+          console.log("[CALENDAR] Task dalla cache (post-wait):", cachedTasks.length);
+          setTasks(cachedTasks);
+          setIsLoading(false);
+          return;
+        }
+      }
+      
+      // Fallback al comportamento originale se AppInitializer non è pronto
+      console.log("[CALENDAR] Fallback al caricamento cache/API diretto");
       
       // Prima carica dalla cache per UI immediata
       const cachedTasks = await cacheService.getCachedTasks();
@@ -81,7 +111,7 @@ const CalendarView: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [cacheService]);
+  }, [cacheService, appInitializer]);
 
   // Setup listener per stato sync
   useEffect(() => {
