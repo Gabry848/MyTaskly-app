@@ -42,6 +42,16 @@ const CalendarView: React.FC = () => {
     return String(value).trim();
   };
 
+  // Funzione per filtrare task completati (coerente con Category.tsx)
+  const filterIncompleteTasks = useCallback((tasks: TaskType[]) => {
+    return tasks.filter(task => {
+      const status = task.status?.toLowerCase() || '';
+      const isIncomplete = status !== "completato" && status !== "completed" && status !== "archiviato" && status !== "archived";
+      console.log(`[CALENDAR] Filtro task "${task.title}": status="${status}", incluso=${isIncomplete}`);
+      return isIncomplete;
+    });
+  }, []);
+
   // Funzione per caricare gli impegni (con cache e supporto caricamento sincrono)
   const fetchTasks = useCallback(async () => {
     try {
@@ -54,7 +64,9 @@ const CalendarView: React.FC = () => {
         const cachedTasks = await cacheService.getCachedTasks();
         if (cachedTasks.length > 0) {
           console.log("[CALENDAR] Task dalla cache AppInitializer:", cachedTasks.length);
-          setTasks(cachedTasks);
+          const filteredTasks = filterIncompleteTasks(cachedTasks);
+          console.log("[CALENDAR] Task non completati:", filteredTasks.length, "di", cachedTasks.length);
+          setTasks(filteredTasks);
           setIsLoading(false);
           return;
         }
@@ -67,7 +79,9 @@ const CalendarView: React.FC = () => {
         const cachedTasks = await cacheService.getCachedTasks();
         if (cachedTasks.length > 0) {
           console.log("[CALENDAR] Task dalla cache (post-wait):", cachedTasks.length);
-          setTasks(cachedTasks);
+          const filteredTasks = filterIncompleteTasks(cachedTasks);
+          console.log("[CALENDAR] Task non completati:", filteredTasks.length, "di", cachedTasks.length);
+          setTasks(filteredTasks);
           setIsLoading(false);
           return;
         }
@@ -80,7 +94,9 @@ const CalendarView: React.FC = () => {
       const cachedTasks = await cacheService.getCachedTasks();
       if (cachedTasks.length > 0) {
         console.log("[CALENDAR] Task dalla cache:", cachedTasks.length);
-        setTasks(cachedTasks);
+        const filteredCachedTasks = filterIncompleteTasks(cachedTasks);
+        console.log("[CALENDAR] Task non completati dalla cache:", filteredCachedTasks.length, "di", cachedTasks.length);
+        setTasks(filteredCachedTasks);
         setIsLoading(false); // UI immediatamente reattiva
       }
       
@@ -88,8 +104,10 @@ const CalendarView: React.FC = () => {
       const tasksData = await getAllTasks(true); // usa cache con sync background
       console.log("[CALENDAR] Task ricevuti:", tasksData);
       if (Array.isArray(tasksData)) {
-        setTasks(tasksData);
-        console.log("[CALENDAR] Task impostati correttamente:", tasksData.length, "task");
+        const filteredTasksData = filterIncompleteTasks(tasksData);
+        console.log("[CALENDAR] Task non completati ricevuti:", filteredTasksData.length, "di", tasksData.length);
+        setTasks(filteredTasksData);
+        console.log("[CALENDAR] Task impostati correttamente:", filteredTasksData.length, "task non completati");
       } else {
         console.warn("[CALENDAR] I dati ricevuti non sono un array:", tasksData);
       }
@@ -106,13 +124,14 @@ const CalendarView: React.FC = () => {
       // In caso di errore, usa solo la cache se disponibile
       const cachedTasks = await cacheService.getCachedTasks();
       if (cachedTasks.length > 0) {
-        setTasks(cachedTasks);
-        console.log("[CALENDAR] Utilizzando cache come fallback:", cachedTasks.length, "task");
+        const filteredFallbackTasks = filterIncompleteTasks(cachedTasks);
+        console.log("[CALENDAR] Utilizzando cache come fallback:", filteredFallbackTasks.length, "task non completati di", cachedTasks.length);
+        setTasks(filteredFallbackTasks);
       }
     } finally {
       setIsLoading(false);
     }
-  }, [cacheService, appInitializer]);
+  }, [cacheService, appInitializer, filterIncompleteTasks]);
 
   // Setup listener per stato sync
   useEffect(() => {
@@ -134,6 +153,13 @@ const CalendarView: React.FC = () => {
   useEffect(() => {
     const handleTaskAdded = (newTask: TaskType) => {
       console.log('[CALENDAR] Task added event received:', newTask.title);
+      // Solo aggiungi task non completati
+      const isIncompleteTask = filterIncompleteTasks([newTask]).length > 0;
+      if (!isIncompleteTask) {
+        console.log('[CALENDAR] Task completato ignorato:', newTask.title);
+        return;
+      }
+      
       setTasks(prevTasks => {
         // Evita duplicati
         if (prevTasks.some(task => 
@@ -150,8 +176,11 @@ const CalendarView: React.FC = () => {
 
     const handleTaskUpdated = (updatedTask: TaskType) => {
       console.log('[CALENDAR] Task updated event received:', updatedTask.title);
-      setTasks(prevTasks => 
-        prevTasks.map(task => {
+      // Controlla se il task aggiornato è completato
+      const isIncompleteTask = filterIncompleteTasks([updatedTask]).length > 0;
+      
+      setTasks(prevTasks => {
+        const updatedTasks = prevTasks.map(task => {
           // Trova il task by ID o task_id
           const isMatch = (task.id === updatedTask.id) || 
                          (task.task_id === updatedTask.task_id) ||
@@ -162,8 +191,19 @@ const CalendarView: React.FC = () => {
             return { ...task, ...updatedTask };
           }
           return task;
-        })
-      );
+        });
+        
+        // Filtra i task per rimuovere quelli completati
+        const filteredTasks = updatedTasks.filter(task => {
+          const keepTask = filterIncompleteTasks([task]).length > 0;
+          if (!keepTask) {
+            console.log('[CALENDAR] Rimuovendo task completato dalla vista:', task.title);
+          }
+          return keepTask;
+        });
+        
+        return filteredTasks;
+      });
     };
 
     const handleTaskDeleted = (taskId: string | number) => {
@@ -186,7 +226,7 @@ const CalendarView: React.FC = () => {
       eventEmitter.off(EVENTS.TASK_UPDATED, handleTaskUpdated);
       eventEmitter.off(EVENTS.TASK_DELETED, handleTaskDeleted);
     };
-  }, []);
+  }, [filterIncompleteTasks]);
 
   // Carica gli impegni quando il componente si monta
   useEffect(() => {

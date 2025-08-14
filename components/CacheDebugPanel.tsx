@@ -151,6 +151,58 @@ const CacheDebugPanel: React.FC<CacheDebugPanelProps> = ({ visible, onClose }) =
     }
   };
 
+  const handleDebugListTasks = async () => {
+    setIsLoading(true);
+    try {
+      const cacheService = TaskCacheService.getInstance();
+      await cacheService.debugListCachedTasks();
+      Alert.alert('Debug Completato', 'Controlla i log della console per vedere tutti i task in cache');
+    } catch (error) {
+      console.error('[DEBUG_PANEL] Errore debug list tasks:', error);
+      Alert.alert('Errore', 'Errore durante il debug');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRemoveGhostTask = async () => {
+    Alert.prompt(
+      'Rimuovi Task Fantasma',
+      'Inserisci il titolo o ID del task da rimuovere:',
+      [
+        { text: 'Annulla', style: 'cancel' },
+        {
+          text: 'Rimuovi',
+          style: 'destructive',
+          onPress: async (taskIdentifier) => {
+            if (!taskIdentifier) return;
+            
+            setIsLoading(true);
+            try {
+              const cacheService = TaskCacheService.getInstance();
+              const removed = await cacheService.forceRemoveTaskFromCache(taskIdentifier.trim());
+              
+              if (removed) {
+                await refreshStatus();
+                Alert.alert('Successo', `Task "${taskIdentifier}" rimosso dalla cache`);
+              } else {
+                Alert.alert('Info', `Task "${taskIdentifier}" non trovato in cache`);
+              }
+            } catch (error) {
+              console.error('[DEBUG_PANEL] Errore rimozione task fantasma:', error);
+              Alert.alert('Errore', 'Errore durante la rimozione del task');
+            } finally {
+              setIsLoading(false);
+            }
+          }
+        }
+      ],
+      'plain-text',
+      '',
+      'default'
+    );
+  };
+
   if (!visible) {
     return null;
   }
@@ -281,6 +333,24 @@ const CacheDebugPanel: React.FC<CacheDebugPanelProps> = ({ visible, onClose }) =
               >
                 <Ionicons name="refresh-outline" size={20} color="#f44336" />
                 <Text style={styles.actionText}>Pulisci Cache</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={handleDebugListTasks}
+                disabled={isLoading}
+              >
+                <Ionicons name="list" size={20} color="#4CAF50" />
+                <Text style={styles.actionText}>Debug Lista Task</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={handleRemoveGhostTask}
+                disabled={isLoading}
+              >
+                <Ionicons name="remove-circle-outline" size={20} color="#9C27B0" />
+                <Text style={styles.actionText}>Rimuovi Task Fantasma</Text>
               </TouchableOpacity>
 
               <TouchableOpacity

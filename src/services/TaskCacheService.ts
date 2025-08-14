@@ -100,6 +100,26 @@ class TaskCacheService {
     try {
       console.log(`[CACHE] Salvando ${tasks.length} task in cache...`);
       
+      // Carica i task attuali dalla cache per confronto
+      const currentTasks = await this.getCachedTasks();
+      
+      // Identifica task rimossi (presenti in cache ma non nei nuovi dati)
+      const newTaskIds = new Set(tasks.map(task => task.task_id || task.id));
+      const removedTasks = currentTasks.filter(task => 
+        !newTaskIds.has(task.task_id) && !newTaskIds.has(task.id)
+      );
+      
+      if (removedTasks.length > 0) {
+        console.log(`[CACHE] 🗑️ RIMOZIONE TASK FANTASMA: ${removedTasks.length} task rimossi dal server`);
+        removedTasks.forEach(removedTask => {
+          console.log(`[CACHE] ❌ Task rimosso: "${removedTask.title}" (ID: ${removedTask.task_id || removedTask.id})`);
+          // Emetti evento per notificare la rimozione del task fantasma
+          import('../utils/eventEmitter').then(({ emitTaskDeleted }) => {
+            emitTaskDeleted(removedTask.task_id || removedTask.id);
+          });
+        });
+      }
+      
       // Log di ogni task prima del salvataggio
       tasks.forEach((task, index) => {
         console.log(`[CACHE] Salvando Task ${index + 1}: titolo="${task.title}", categoria="${task.category_name}", status="${task.status}"`);
@@ -118,7 +138,10 @@ class TaskCacheService {
       await AsyncStorage.setItem(CACHE_KEYS.TASKS_CACHE, JSON.stringify(cache));
       await AsyncStorage.setItem(CACHE_KEYS.LAST_SYNC_TIMESTAMP, cache.lastSync.toString());
       
-      console.log(`[CACHE] Salvati ${tasks.length} task e ${categories.length} categorie in cache`);
+      console.log(`[CACHE] ✅ Salvati ${tasks.length} task e ${categories.length} categorie in cache`);
+      if (removedTasks.length > 0) {
+        console.log(`[CACHE] 🧹 Cache pulita: ${removedTasks.length} task fantasma rimossi`);
+      }
     } catch (error) {
       console.error('[CACHE] Errore nel salvataggio in cache:', error);
     }
@@ -302,6 +325,63 @@ class TaskCacheService {
     const lastSync = await this.getLastSyncTimestamp();
     const now = Date.now();
     return (now - lastSync) > maxAge;
+  }
+
+  // Forza la rimozione di un task specifico dalla cache (per debug/pulizia)
+  async forceRemoveTaskFromCache(taskIdentifier: string | number): Promise<boolean> {
+    try {
+      console.log(`[CACHE] 🧹 Forzando rimozione task dalla cache: ${taskIdentifier}`);
+      
+      const cachedTasks = await this.getCachedTasks();
+      const initialCount = cachedTasks.length;
+      
+      const filteredTasks = cachedTasks.filter(task => {
+        const taskId = task.task_id || task.id;
+        const matches = taskId == taskIdentifier || task.title === taskIdentifier;
+        if (matches) {
+          console.log(`[CACHE] ❌ Rimosso task forzatamente: "${task.title}" (ID: ${taskId})`);
+        }
+        return !matches;
+      });
+
+      if (filteredTasks.length < initialCount) {
+        const categories = await this.getCachedCategories();
+        await this.saveTasks(filteredTasks, categories);
+        
+        // Emetti evento per aggiornare UI
+        import('../utils/eventEmitter').then(({ emitTaskDeleted }) => {
+          emitTaskDeleted(taskIdentifier);
+        });
+        
+        console.log(`[CACHE] ✅ Rimozione forzata completata: ${initialCount - filteredTasks.length} task rimossi`);
+        return true;
+      } else {
+        console.log(`[CACHE] ⚠️ Task con identificatore "${taskIdentifier}" non trovato in cache`);
+        return false;
+      }
+    } catch (error) {
+      console.error('[CACHE] Errore nella rimozione forzata:', error);
+      return false;
+    }
+  }
+
+  // Debug: Lista tutti i task in cache con dettagli
+  async debugListCachedTasks(): Promise<void> {
+    try {
+      const cachedTasks = await this.getCachedTasks();
+      console.log(`[CACHE DEBUG] 📋 Task totali in cache: ${cachedTasks.length}`);
+      
+      cachedTasks.forEach((task, index) => {
+        const taskId = task.task_id || task.id;
+        console.log(`[CACHE DEBUG] ${index + 1}. "${task.title}" (ID: ${taskId}) - Status: ${task.status} - Categoria: ${task.category_name}`);
+      });
+      
+      const lastSync = await this.getLastSyncTimestamp();
+      const lastSyncDate = lastSync ? new Date(lastSync).toISOString() : 'Mai';
+      console.log(`[CACHE DEBUG] 🕒 Ultimo sync: ${lastSyncDate}`);
+    } catch (error) {
+      console.error('[CACHE DEBUG] Errore nel debug listing:', error);
+    }
   }
 }
 

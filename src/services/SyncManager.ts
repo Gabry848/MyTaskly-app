@@ -210,7 +210,11 @@ class SyncManager {
   // Sincronizza i dati dal server
   private async syncDataFromServer(): Promise<void> {
     try {
-      console.log('[SYNC] Aggiornamento dati dal server...');
+      console.log('[SYNC] 🔄 Aggiornamento dati dal server...');
+      
+      // Prima ottieni la situazione attuale della cache per confronto
+      const currentCachedTasks = await this.cacheService!.getCachedTasks();
+      console.log(`[SYNC] 📋 Task attualmente in cache: ${currentCachedTasks.length}`);
       
       // Carica tasks e categorie dal server
       const [tasks, categories] = await Promise.all([
@@ -218,16 +222,27 @@ class SyncManager {
         getCategoriesFromAPI()
       ]);
 
-      // Salva nella cache
+      console.log(`[SYNC] 📡 Ricevuti dal server: ${(tasks || []).length} task, ${(categories || []).length} categorie`);
+      
+      // Log dei task ricevuti dal server
+      if (tasks && tasks.length > 0) {
+        console.log('[SYNC] 📝 Task dal server:');
+        tasks.forEach((task, index) => {
+          const taskId = task.task_id || task.id;
+          console.log(`[SYNC]   ${index + 1}. "${task.title}" (ID: ${taskId}) - Status: ${task.status}`);
+        });
+      }
+
+      // Salva nella cache (questo triggerà anche la rimozione dei task fantasma)
       await this.cacheService!.saveTasks(tasks || [], categories || []);
       
-      console.log(`[SYNC] Aggiornati ${(tasks || []).length} task e ${(categories || []).length} categorie`);
+      console.log(`[SYNC] ✅ Sincronizzazione completata: ${(tasks || []).length} task e ${(categories || []).length} categorie`);
       
       // Emetti evento di sincronizzazione completata
-      console.log('[SYNC] Emitting TASKS_SYNCED event');
+      console.log('[SYNC] 📢 Emitting TASKS_SYNCED event');
       emitTasksSynced(tasks || [], categories || []);
     } catch (error) {
-      console.error('[SYNC] Errore nell\'aggiornamento dati dal server:', error);
+      console.error('[SYNC] ❌ Errore nell\'aggiornamento dati dal server:', error);
       throw error;
     }
   }
