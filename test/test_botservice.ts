@@ -91,7 +91,7 @@ async function testPerformance(): Promise<void> {
   console.log("\n🧪 Test performance (più messaggi consecutivi)");
   console.log("=".repeat(50));
   
-  const performanceData: Array<{ message: string; time: number; success: boolean }> = [];
+  const performanceData: { message: string; time: number; success: boolean }[] = [];
   
   for (let i = 0; i < testMessages.length; i++) {
     const message = testMessages[i];

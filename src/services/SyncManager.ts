@@ -29,7 +29,7 @@ class SyncManager {
   private isSyncing = false;
   private isOnline = false;
   private retryDelays = [1000, 5000, 15000, 60000]; // Exponential backoff
-  private syncListeners: Array<(status: SyncStatus) => void> = [];
+  private syncListeners: ((status: SyncStatus) => void)[] = [];
   private networkListener: (() => void) | null = null;
   private syncInterval: NodeJS.Timeout | null = null;
   private initialized = false;

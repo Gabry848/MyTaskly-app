@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, Image, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
-import { useNavigation, NavigationProp } from '@react-navigation/native';
+import { useNavigation, NavigationProp , useFocusEffect } from '@react-navigation/native';
 import { RootStackParamList } from '../src/types';
-import { useFocusEffect } from '@react-navigation/native';
+
 import { getCategories } from '../src/services/taskService';
 import Category from './Category';
 import AddCategoryButton from './AddCategoryButton';

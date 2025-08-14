@@ -1,6 +1,7 @@
 import axios from "./axiosInterceptor";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { STORAGE_KEYS } from "../constants/authConstants";
+// eslint-disable-next-line import/no-named-as-default
 import TaskCacheService from './TaskCacheService';
 import SyncManager from './SyncManager';
 import { emitTaskAdded, emitTaskUpdated, emitTaskDeleted } from '../utils/eventEmitter';
@@ -182,7 +183,6 @@ export async function getAllTasks(useCache: boolean = true) {
   try {
     // Prova prima dalla cache se abilitata
     if (useCache) {
-      const { cacheService } = getServices();
       const cachedTasks = await getServices().cacheService.getCachedTasks();
       if (cachedTasks.length > 0) {
         console.log('[TASK_SERVICE] getAllTasks: usando dati dalla cache');
@@ -309,7 +309,7 @@ export async function updateTask(
       
       return response.data;
     } catch (networkError) {
-      console.log('[TASK_SERVICE] Errore di rete, salvataggio offline per updateTask');
+      console.log('[TASK_SERVICE] Errore di rete, salvataggio offline per updateTask', networkError);
       
       // Salva la modifica offline
       await getServices().syncManager.saveOfflineChange('UPDATE', 'TASK', {
@@ -505,8 +505,8 @@ export async function deleteTask(taskId: string | number) {
       
       return response.data;
     } catch (networkError) {
-      console.log('[TASK_SERVICE] Errore di rete, salvataggio offline per deleteTask');
-      
+      console.log('[TASK_SERVICE] Errore di rete, salvataggio offline per deleteTask', networkError);
+
       // Salva l'eliminazione offline
       await getServices().syncManager.saveOfflineChange('DELETE', 'TASK', {
         id: taskId,
@@ -595,8 +595,8 @@ export async function addTask(task: Task) {
       
       return response.data;
     } catch (networkError) {
-      console.log('[TASK_SERVICE] Errore di rete, salvataggio offline per addTask');
-      
+      console.log('[TASK_SERVICE] Errore di rete, salvataggio offline per addTask', networkError);
+
       // Salva l'aggiunta offline
       await getServices().syncManager.saveOfflineChange('CREATE', 'TASK', data);
       
