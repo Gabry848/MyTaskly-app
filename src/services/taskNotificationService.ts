@@ -34,8 +34,8 @@ export function useTaskNotifications() {
       }
 
       const notificationId = await scheduleLocalNotification(
-        '⏰ Task in Scadenza!',
-        `Il task "${task.title}" scade tra 1 ora`,
+        task.title,
+        task.description || 'Ricordati di completare questo task',
         notificationTime,
         {
           action: 'open_task',
