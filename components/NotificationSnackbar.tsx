@@ -1,5 +1,5 @@
-import React, { useRef, useEffect } from "react";
-import { View, Text, StyleSheet, Dimensions } from "react-native";
+import React, { useEffect } from "react";
+import { Text, StyleSheet, Dimensions } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -44,7 +44,7 @@ export function NotificationSnackbar({
         }
       });
     }
-  }, [isVisible]);
+  }, [isVisible, onFinish, translateX]);
 
   const animatedStyle = useAnimatedStyle(() => {
     return {

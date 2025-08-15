@@ -22,7 +22,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style }) => {
         useNativeDriver: true,
       }),
     ]).start();
-  }, []);
+  }, [fadeAnim, slideAnim]);
   
   // Formatta la data per la visualizzazione
   const formatTime = (date: Date) => {
@@ -51,7 +51,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style }) => {
           return <TaskTableBubble message={legacyMessage} style={style} />;
         }
       }
-    } catch (e) {
+    } catch {
       // Se non è un JSON valido, continua con il rendering normale
     }
   }

@@ -1,4 +1,4 @@
-import React, { useState, useRef, forwardRef, useImperativeHandle, useContext } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -18,7 +18,6 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { X, Palette } from 'lucide-react-native';
 import { Note } from '../../src/services/noteService';
 import { useNotesActions } from '../../src/context/NotesContext';
-import { NotesFocusContext } from './NotesCanvas';
 
 const NOTE_WIDTH = 200;
 const NOTE_HEIGHT = 160;
@@ -67,7 +66,6 @@ export const StickyNote: React.FC<StickyNoteProps> = ({ note, canvasScale }) => 
   const lastScale = useSharedValue(1);
 
   const isPressed = useSharedValue(false);
-  const pressTimer = useRef<NodeJS.Timeout>();
 
   const panGesture = Gesture.Pan()
     .minDistance(10)
@@ -160,7 +158,7 @@ export const StickyNote: React.FC<StickyNoteProps> = ({ note, canvasScale }) => 
       { translateY: translateY.value },
       { scale: scale.value },
       { rotate: `${rotation.value}deg` },
-    ],
+    ] as any,
     opacity: opacity.value,
     zIndex: isPressed.value ? 1000 : note.zIndex || 1,
   }));
