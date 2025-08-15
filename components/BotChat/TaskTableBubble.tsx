@@ -20,7 +20,7 @@ const TaskTableBubble: React.FC<TaskTableBubbleProps> = ({ message, style }) => 
         useNativeDriver: true,
       }),
     ]).start();
-  }, []);
+  }, [fadeAnim, slideAnim]);
 
   // Funzione per estrarre il JSON dal messaggio
   const extractTasksFromMessage = (text: string): TaskItem[] => {

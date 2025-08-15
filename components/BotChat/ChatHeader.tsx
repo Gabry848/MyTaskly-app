@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Platform, StatusBar } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, StatusBar } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { ChatHeaderProps } from './types';
 

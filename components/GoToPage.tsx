@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import { StyleSheet, View, Text, TouchableOpacity, Dimensions } from "react-native";
 import Icon from "react-native-vector-icons/Entypo";
 
@@ -8,11 +8,9 @@ type Props = {
 };
 
 function GoToPage({ text, onPress }: Props) {
-  const [windowWidth, setWindowWidth] = useState(Dimensions.get("window").width);
-
   useEffect(() => {
     const handleResize = () => {
-      setWindowWidth(Dimensions.get("window").width);
+      // Funzione per gestire il resize se necessario
     };
 
     const subscription = Dimensions.addEventListener("change", handleResize);

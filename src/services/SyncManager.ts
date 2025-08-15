@@ -1,8 +1,8 @@
 import TaskCacheService, { OfflineChange } from './TaskCacheService';
 import StorageManager from './StorageManager';
 import NetworkService, { NetworkState } from './NetworkService';
-import { Task, getAllTasks as getTasksFromAPI, getCategories as getCategoriesFromAPI, addTask as addTaskToAPI, updateTask as updateTaskToAPI, deleteTask as deleteTaskFromAPI } from './taskService';
-import { emitTaskAdded, emitTaskUpdated, emitTaskDeleted, emitTasksSynced } from '../utils/eventEmitter';
+import { getAllTasks as getTasksFromAPI, getCategories as getCategoriesFromAPI, addTask as addTaskToAPI, updateTask as updateTaskToAPI, deleteTask as deleteTaskFromAPI } from './taskService';
+import { emitTasksSynced } from '../utils/eventEmitter';
 
 export interface SyncStatus {
   isOnline: boolean;
@@ -39,10 +39,6 @@ class SyncManager {
       SyncManager.instance = new SyncManager();
     }
     return SyncManager.instance;
-  }
-
-  constructor() {
-    // Lazy initialization - services will be initialized when first used
   }
 
   private ensureInitialized(): void {

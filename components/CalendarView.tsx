@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, Animated } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Alert, ActivityIndicator, Animated } from 'react-native';
 import dayjs from 'dayjs';
 import { Task as TaskType, getAllTasks, addTask, deleteTask, updateTask, completeTask, disCompleteTask } from '../src/services/taskService';
 import TaskCacheService from '../src/services/TaskCacheService';
@@ -176,8 +176,6 @@ const CalendarView: React.FC = () => {
 
     const handleTaskUpdated = (updatedTask: TaskType) => {
       console.log('[CALENDAR] Task updated event received:', updatedTask.title);
-      // Controlla se il task aggiornato è completato
-      const isIncompleteTask = filterIncompleteTasks([updatedTask]).length > 0;
       
       setTasks(prevTasks => {
         const updatedTasks = prevTasks.map(task => {
@@ -270,12 +268,6 @@ const CalendarView: React.FC = () => {
       const taskDate = dayjs(task.end_time).format('YYYY-MM-DD');
       return taskDate === selectedDate;
     });
-  };
-
-  // Gestisce il click su una task
-  const handleTaskPress = (task: TaskType) => {
-    console.log("Task selezionato:", task);
-    // Qui puoi implementare la navigazione ai dettagli della task
   };
 
   // Gestisce il completamento di un task

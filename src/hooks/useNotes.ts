@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Alert, Dimensions } from 'react-native';
+import { Dimensions } from 'react-native';
 import { Note, addNote, deleteNote, getNotes, updateNote, updateNotePosition } from '../services/noteService';
 import { useFocusEffect } from '@react-navigation/native';
 

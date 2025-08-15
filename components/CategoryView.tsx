@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, Image, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import { useNavigation, NavigationProp , useFocusEffect } from '@react-navigation/native';
 import { RootStackParamList } from '../src/types';
 
 import { getCategories } from '../src/services/taskService';
 import Category from './Category';
-import AddCategoryButton from './AddCategoryButton';
 
 interface CategoryType {
   id: string | number;
