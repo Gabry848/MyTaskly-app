@@ -17,7 +17,7 @@ import type { RootStackParamList } from "../../types";
 import * as authService from "../../services/authService";
 import { NotificationSnackbar } from "../../../components/NotificationSnackbar";
 
-const { width, height } = Dimensions.get("window");
+const { width } = Dimensions.get("window");
 
 interface RouteParams {
   email: string;
@@ -28,7 +28,6 @@ interface RouteParams {
 const EmailVerificationScreen = () => {
   const [isEmailSent, setIsEmailSent] = React.useState(false);
   const [isVerifying, setIsVerifying] = React.useState(false);
-  const [verificationStatus, setVerificationStatus] = React.useState<'pending' | 'verified' | 'failed'>('pending');
   const [notification, setNotification] = React.useState<{
     isVisible: boolean;
     message: string;
@@ -64,7 +63,7 @@ const EmailVerificationScreen = () => {
         useNativeDriver: true,
       }),
     ]).start();
-  }, []);
+  }, [fadeAnim, slideAnim]);
 
   useEffect(() => {
     if (isVerifying) {
@@ -73,7 +72,6 @@ const EmailVerificationScreen = () => {
         try {
           const result = await authService.checkEmailVerificationStatus(email);
           if (result.success && result.isVerified) {
-            setVerificationStatus('verified');
             clearInterval(intervalRef.current!);
             
             // Anima verso la schermata di congratulazioni
@@ -140,7 +138,7 @@ const EmailVerificationScreen = () => {
           onFinish: () => setNotification((prev) => ({ ...prev, isVisible: false })),
         });
       }
-    } catch (error) {
+    } catch {
       setNotification({
         isVisible: true,
         message: "Errore di connessione. Riprova più tardi.",

@@ -1,4 +1,4 @@
-import TaskCacheService, { OfflineChange } from './TaskCacheService';
+import { TaskCacheService, OfflineChange } from './TaskCacheService';
 import StorageManager from './StorageManager';
 import NetworkService, { NetworkState } from './NetworkService';
 import { getAllTasks as getTasksFromAPI, getCategories as getCategoriesFromAPI, addTask as addTaskToAPI, updateTask as updateTaskToAPI, deleteTask as deleteTaskFromAPI } from './taskService';

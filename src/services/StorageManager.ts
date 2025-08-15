@@ -135,7 +135,7 @@ class StorageManager {
           } else if (data && data.lastSync && (now - data.lastSync) > maxAge) {
             keysToRemove.push(key);
           }
-        } catch (error) {
+        } catch {
           // Se non riesce a parsare, considera la chiave per la rimozione
           console.warn(`[STORAGE] Chiave ${key} non parsabile, marcata per rimozione`);
           if (!this.isSystemKey(key)) {

@@ -12,12 +12,11 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ChatList, Message } from "../../../components/BotChat";
 import { sendMessageToBot } from "../../services/botservice";
 import { STORAGE_KEYS } from "../../constants/authConstants";
-import TaskCacheService from '../../services/TaskCacheService';
+import { TaskCacheService } from '../../services/TaskCacheService';
 import SyncManager, { SyncStatus } from '../../services/SyncManager';
 import Badge from "../../../components/Badge";
 import VoiceChatModal from "../../../components/VoiceChatModal";
@@ -31,7 +30,6 @@ const Home20 = () => {
   const [isVoiceChatVisible, setIsVoiceChatVisible] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null);
-  const navigation = useNavigation();
   
   // Servizi
   const cacheService = useRef(TaskCacheService.getInstance()).current;
@@ -267,9 +265,8 @@ const Home20 = () => {
       }, 300);
     }
   };
-  const handleGoBack = () => {
-    navigation.goBack();
-  };  const handleResetChat = () => {
+
+  const handleResetChat = () => {
     // Animazione di uscita per i messaggi
     Animated.parallel([
       Animated.timing(messagesOpacity, {

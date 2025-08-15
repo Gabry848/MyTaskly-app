@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { Task } from './taskService';
 import { 
   scheduleLocalNotification, 

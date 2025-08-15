@@ -1,8 +1,6 @@
 import { Text } from '@react-navigation/elements';
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, TouchableOpacity, SafeAreaView, StatusBar, ScrollView, ActivityIndicator, Alert } from 'react-native';
-import { useNavigation, NavigationProp } from '@react-navigation/native';
-import { RootStackParamList } from '../../types';
 import { Ionicons } from '@expo/vector-icons';
 import { getValidToken } from '../../services/authService';
 import axios from '../../services/axiosInstance';
@@ -16,7 +14,6 @@ interface UserInfo {
 }
 
 export default function AccountSettings() {
-  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -79,7 +76,7 @@ export default function AccountSettings() {
       } else {
         Alert.alert('❌ Errore', 'Impossibile inviare la notifica di test. Controlla la connessione al server.');
       }
-    } catch (error) {
+    } catch {
       Alert.alert('❌ Errore', 'Si è verificato un errore durante l\'invio della notifica.');
     } finally {
       setTestNotificationLoading(false);
