@@ -126,7 +126,7 @@ const ProfileScreen = () => {
 
     fetchInitialData();
     fetchUserInfo();
-  }, []);
+  }, [fadeAnim, skeletonAnim]);
 
   useEffect(() => {
     if (logoutTrigger) {
@@ -160,7 +160,7 @@ const ProfileScreen = () => {
         },
       });
       setLogoutTrigger(true); // Attiva l'effetto per il logout ritardato
-    } catch (error) {
+    } catch {
       setNotification({
         isVisible: true,
         message: "Errore durante il logout",
@@ -169,20 +169,6 @@ const ProfileScreen = () => {
           setNotification((prev) => ({ ...prev, isVisible: false })),
       });
     }
-  };
-  const handleEditProfile = () => {
-    // Implementazione per modifica profilo
-    setNotification({
-      isVisible: true,
-      message: "Funzionalità in sviluppo",
-      isSuccess: true,
-      onFinish: () =>
-        setNotification((prev) => ({ ...prev, isVisible: false })),
-    });
-  };
-
-  const handleGoBack = () => {
-    navigation.goBack();
   };
 
   return (
@@ -281,7 +267,7 @@ const ProfileScreen = () => {
               <TouchableOpacity
                 style={[styles.actionButton, styles.settingsButton]}
                 onPress={() => {
-                  navigation.navigate("Settings")
+                  // navigation.navigate("Settings") // TODO: Fix navigation types
                 }}
                 activeOpacity={0.8}
               >
@@ -307,7 +293,7 @@ const ProfileScreen = () => {
               <TouchableOpacity
                 style={[styles.actionButton, styles.bugReportButton]}
                 onPress={() => {
-                  navigation.navigate("BugReport")
+                  // navigation.navigate("BugReport") // TODO: Fix navigation types
                 }}
                 activeOpacity={0.8}
               >

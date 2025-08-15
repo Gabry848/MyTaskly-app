@@ -19,7 +19,7 @@ export default function NotificationDebugScreen() {
   const navigation = useNavigation();
   const [isLoading, setIsLoading] = useState(false);
   const [scheduledCount, setScheduledCount] = useState(0);
-  const { getTaskNotificationStats, scheduleTaskNotification } = useTaskNotifications();
+  const { scheduleTaskNotification } = useTaskNotifications();
 
   const handleGoBack = () => {
     navigation.goBack();
@@ -34,7 +34,7 @@ export default function NotificationDebugScreen() {
       } else {
         Alert.alert('❌ Errore', 'Impossibile inviare la notifica di test. Controlla la connessione al server.');
       }
-    } catch (error) {
+    } catch {
       Alert.alert('❌ Errore', 'Si è verificato un errore durante l\'invio della notifica.');
     } finally {
       setIsLoading(false);
@@ -63,7 +63,7 @@ export default function NotificationDebugScreen() {
       } else {
         Alert.alert('❌ Errore', 'Impossibile programmare la notifica di test.');
       }
-    } catch (error) {
+    } catch {
       Alert.alert('❌ Errore', 'Si è verificato un errore durante la programmazione della notifica.');
     } finally {
       setIsLoading(false);

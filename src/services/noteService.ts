@@ -1,7 +1,7 @@
 import axios from "./axiosInterceptor";
 import { getValidToken } from "./authService";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { STORAGE_KEYS } from "../constants/authConstants";
+// import AsyncStorage from "@react-native-async-storage/async-storage"; // Non utilizzato
+// import { STORAGE_KEYS } from "../constants/authConstants"; // Non utilizzato
 
 // Interfaccia per i dati restituiti dal server
 interface ServerNote {
@@ -78,16 +78,16 @@ const mapServerNoteToClientNote = (serverNote: ServerNote): Note => {
 };
 
 // Funzione per convertire dal formato interno dell'app al formato del server
-const mapClientNoteToServerNote = (clientNote: Note): Partial<ServerNote> => {
-  return {
-    note_id: clientNote.id,
-    title: clientNote.text,
-    position_x: clientNote.position.x,
-    position_y: clientNote.position.y,
-    color: clientNote.color
-    // zIndex non viene inviato al server
-  };
-};
+// const mapClientNoteToServerNote = (clientNote: Note): Partial<ServerNote> => {
+//   return {
+//     note_id: clientNote.id,
+//     title: clientNote.text,
+//     position_x: clientNote.position.x,
+//     position_y: clientNote.position.y,
+//     color: clientNote.color
+//     // zIndex non viene inviato al server
+//   };
+// };
 
 // Funzione per ottenere tutte le note dell'utente
 export async function getNotes(): Promise<Note[]> {
@@ -154,7 +154,7 @@ export async function addNote(note: Note): Promise<Note | null> {
     if (!token) {
       return null;
     }
-    const username = await AsyncStorage.getItem(STORAGE_KEYS.USER_NAME);
+    // const username = await AsyncStorage.getItem(STORAGE_KEYS.USER_NAME); // Non utilizzato
     
     // Convertiamo la nota nel formato atteso dal server
     const serverNote = {

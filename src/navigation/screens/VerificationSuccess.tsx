@@ -16,7 +16,7 @@ import type { RootStackParamList } from "../../types";
 import * as authService from "../../services/authService";
 import { NotificationSnackbar } from "../../../components/NotificationSnackbar";
 
-const { width, height } = Dimensions.get("window");
+const { width } = Dimensions.get("window");
 
 interface RouteParams {
   email: string;
@@ -75,7 +75,7 @@ const VerificationSuccessScreen = () => {
         useNativeDriver: true,
       }),
     ]).start();
-  }, []);
+  }, [confettiAnim, fadeAnim, scaleAnim, slideAnim]);
 
   useEffect(() => {
     if (isLoggingIn) {
@@ -123,7 +123,7 @@ const VerificationSuccessScreen = () => {
           },
         });
       }
-    } catch (error) {
+    } catch {
       setNotification({
         isVisible: true,
         message: "Errore di connessione. Verrai reindirizzato al login.",

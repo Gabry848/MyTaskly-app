@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { View, ScrollView, ActivityIndicator, Alert, Animated, Easing } from 'react-native';
 import { styles } from './styles';
 import { Task as TaskType, globalTasksRef } from './types';
@@ -101,7 +101,7 @@ export const TaskListContainer = ({
     }
   };
 
-  const fetchTasks = async () => {
+  const fetchTasks = useCallback(async () => {
     try {
       const data = await taskService.getTasks(categoryId);
       setTasks(data);
@@ -113,11 +113,11 @@ export const TaskListContainer = ({
       console.error("Error fetching tasks:", error);
       setIsLoading(false);
     }
-  };
+  }, [categoryId, categoryName, taskService]);
 
   useEffect(() => {
     fetchTasks();
-  }, [categoryId]);
+  }, [categoryId, fetchTasks]);
 
   // Update global reference when tasks state changes
   useEffect(() => {

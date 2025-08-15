@@ -5,8 +5,8 @@ import { STORAGE_KEYS, DEFAULT_BASE_URL, API_ENDPOINTS } from "../constants/auth
 
 // Inizializzazione dell'app
 async function initializeAuth() {
-  // Carica la baseURL per axios
-  const baseUrl = await AsyncStorage.getItem(STORAGE_KEYS.BASE_URL);
+  // Carica la baseURL per axios (attualmente non utilizzata)
+  // const baseUrl = await AsyncStorage.getItem(STORAGE_KEYS.BASE_URL);
 
   // Valore predefinito se non trovato
   await AsyncStorage.setItem(STORAGE_KEYS.BASE_URL, DEFAULT_BASE_URL);
@@ -310,7 +310,7 @@ async function check_login() {
       loginTime: loginTimeObj.format(),
       currentTime: currentTime.format(),
     };
-  } catch (error) {
+  } catch {
     return {
       isAuthenticated: false,
       canRefresh: false,
@@ -412,8 +412,7 @@ async function loadStoredData() {
     // Verificare se ci sono dati di autenticazione salvati
     const userData = await getUserData();
     return userData !== null;
-  } catch (error) {
-
+  } catch {
     return false;
   }
 }
@@ -450,8 +449,7 @@ export async function getValidToken(): Promise<string | null> {
       return null;
     }
     return bearerToken;
-  } catch (error) {
-
+  } catch {
     return null;
   }
 }

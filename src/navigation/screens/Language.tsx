@@ -1,16 +1,12 @@
 import { Text } from '@react-navigation/elements';
-import React, { useState } from 'react';
+import React from 'react';
 import { StyleSheet, View, TouchableOpacity, SafeAreaView, StatusBar, ScrollView } from 'react-native';
-import { useNavigation, NavigationProp } from '@react-navigation/native';
-import { RootStackParamList } from '../../types';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function Language() {
-  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
-  const [selectedLanguage, setSelectedLanguage] = useState('it');
-
   const handleLanguageSelect = (languageCode: string) => {
-    setSelectedLanguage(languageCode);
+    // Placeholder per future implementazioni
+    console.log('Language selected:', languageCode);
   };
 
   return (
