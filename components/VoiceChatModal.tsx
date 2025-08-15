@@ -8,8 +8,12 @@ import {
   Animated,
   Dimensions,
   StatusBar,
+  ActivityIndicator,
+  Alert
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { useVoiceChat, VoiceChatState } from '../src/hooks/useVoiceChat';
+import { formatDuration } from '../src/utils/audioUtils';
 
 interface VoiceChatModalProps {
   visible: boolean;
@@ -26,9 +30,30 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
   isRecording: externalIsRecording = false,
   onVoiceResponse,
 }) => {
-  const [isRecording, setIsRecording] = useState(false);
-  const [statusText, setStatusText] = useState("");
-  // Animazioni
+  // Hook personalizzato per gestire la chat vocale
+  const {
+    state,
+    error,
+    serverStatus,
+    recordingDuration,
+    hasPermissions,
+    isConnected,
+    isRecording,
+    isProcessing,
+    isSpeaking,
+    canRecord,
+    canStop,
+    connect,
+    disconnect,
+    startRecording,
+    stopRecording,
+    cancelRecording,
+    stopPlayback,
+    sendControl,
+    requestPermissions
+  } = useVoiceChat();
+
+  // Animazioni esistenti
   const pulseScale = useRef(new Animated.Value(1)).current;
   const pulseOpacity = useRef(new Animated.Value(0.3)).current;
   const slideIn = useRef(new Animated.Value(height)).current;
@@ -58,11 +83,23 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
     }
   }, [visible, slideIn, fadeIn]);
 
-  // Reset stato quando il modal si chiude
+  // Auto-connessione quando il modal si apre
+  useEffect(() => {
+    if (visible && state === 'idle') {
+      handleConnect();
+    }
+  }, [visible]);
+
+  // Cleanup quando il modal si chiude
   useEffect(() => {
     if (!visible) {
-      setIsRecording(false);
-      setStatusText("");
+      if (isRecording) {
+        cancelRecording();
+      }
+      if (isSpeaking) {
+        stopPlayback();
+      }
+      disconnect();
     }
   }, [visible]);
 
@@ -133,7 +170,42 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
     }
   }, [isRecording, recordingScale]);
 
+  // Gestione connessione
+  const handleConnect = async () => {
+    if (!hasPermissions) {
+      const granted = await requestPermissions();
+      if (!granted) {
+        Alert.alert(
+          'Permessi Richiesti',
+          'La chat vocale richiede l\'accesso al microfono per funzionare.',
+          [{ text: 'OK', style: 'default' }]
+        );
+        return;
+      }
+    }
+    
+    await connect();
+  };
+
+  // Gestione registrazione
+  const handleRecordToggle = async () => {
+    if (isRecording) {
+      await stopRecording();
+    } else if (canRecord) {
+      await startRecording();
+    }
+  };
+
   const handleClose = () => {
+    // Cleanup prima della chiusura
+    if (isRecording) {
+      cancelRecording();
+    }
+    if (isSpeaking) {
+      stopPlayback();
+    }
+    disconnect();
+
     // Animazione di uscita
     Animated.parallel([
       Animated.timing(slideIn, {
@@ -151,15 +223,179 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
     });
   };
 
-  const handleMicPress = () => {
-    // Simula il toggle della registrazione solo per l'UI
-    setIsRecording(!isRecording);
-    
-    if (!isRecording) {
-      setStatusText("Registrazione simulata...");
-    } else {
-      setStatusText("");
+  // Gestione errori
+  const handleErrorDismiss = () => {
+    if (state === 'error') {
+      handleConnect();
     }
+  };
+
+  // Render dello stato
+  const renderStateIndicator = () => {
+    const getStateInfo = (currentState: VoiceChatState) => {
+      switch (currentState) {
+        case 'idle':
+          return { icon: 'mic-off', color: '#666', text: 'Inattivo' };
+        case 'connecting':
+          return { icon: 'wifi', color: '#FFA500', text: 'Connessione...' };
+        case 'connected':
+          return { icon: 'mic', color: '#4CAF50', text: 'Pronto' };
+        case 'recording':
+          return { icon: 'fiber-manual-record', color: '#F44336', text: 'Registrando...' };
+        case 'processing':
+          return { icon: 'sync', color: '#2196F3', text: 'Elaborazione...' };
+        case 'speaking':
+          return { icon: 'volume-up', color: '#9C27B0', text: 'Parlando...' };
+        case 'error':
+          return { icon: 'error', color: '#F44336', text: 'Errore' };
+        case 'disconnected':
+          return { icon: 'wifi-off', color: '#666', text: 'Disconnesso' };
+        default:
+          return { icon: 'help', color: '#666', text: 'Sconosciuto' };
+      }
+    };
+
+    const { icon, color, text } = getStateInfo(state);
+
+    return (
+      <View style={styles.stateContainer}>
+        <MaterialIcons name={icon as any} size={18} color={color} />
+        <Text style={[styles.stateText, { color }]}>{text}</Text>
+      </View>
+    );
+  };
+
+  // Render del pulsante principale
+  const renderMainButton = () => {
+    if (state === 'connecting' || isProcessing) {
+      return (
+        <Animated.View style={[
+          styles.microphoneCircle,
+          styles.microphoneCircleProcessing,
+          { transform: [{ scale: recordingScale }] }
+        ]}>
+          <ActivityIndicator size="large" color="#fff" />
+        </Animated.View>
+      );
+    }
+
+    if (!isConnected && state !== 'error') {
+      return (
+        <Animated.View style={[
+          styles.microphoneCircle,
+          { transform: [{ scale: recordingScale }] }
+        ]}>
+          <TouchableOpacity
+            style={styles.microphoneButton}
+            onPress={handleConnect}
+            activeOpacity={0.8}
+          >
+            <MaterialIcons name="wifi" size={48} color="#ffffff" />
+          </TouchableOpacity>
+        </Animated.View>
+      );
+    }
+
+    if (state === 'error') {
+      return (
+        <Animated.View style={[
+          styles.microphoneCircle,
+          styles.microphoneCircleRecording,
+          { transform: [{ scale: recordingScale }] }
+        ]}>
+          <TouchableOpacity
+            style={styles.microphoneButton}
+            onPress={handleErrorDismiss}
+            activeOpacity={0.8}
+          >
+            <MaterialIcons name="refresh" size={48} color="#ffffff" />
+          </TouchableOpacity>
+        </Animated.View>
+      );
+    }
+
+    return (
+      <Animated.View style={[
+        styles.microphoneCircle,
+        isRecording && styles.microphoneCircleRecording,
+        isProcessing && styles.microphoneCircleProcessing,
+        { transform: [{ scale: recordingScale }] }
+      ]}>
+        <TouchableOpacity
+          style={styles.microphoneButton}
+          onPress={handleRecordToggle}
+          activeOpacity={0.8}
+          disabled={!canRecord && !canStop}
+        >
+          <Ionicons
+            name={isRecording ? "stop" : "mic"}
+            size={48}
+            color="#ffffff"
+          />
+        </TouchableOpacity>
+      </Animated.View>
+    );
+  };
+
+  // Render dei controlli aggiuntivi
+  const renderControls = () => {
+    if (!isConnected || state === 'error') {
+      return null;
+    }
+
+    return (
+      <View style={styles.controlsContainer}>
+        {isSpeaking && (
+          <TouchableOpacity
+            style={styles.controlButton}
+            onPress={stopPlayback}
+          >
+            <MaterialIcons name="stop" size={24} color="#666" />
+            <Text style={styles.controlText}>Stop</Text>
+          </TouchableOpacity>
+        )}
+        
+        {(isProcessing || isSpeaking) && (
+          <TouchableOpacity
+            style={styles.controlButton}
+            onPress={() => sendControl('cancel')}
+          >
+            <MaterialIcons name="cancel" size={24} color="#666" />
+            <Text style={styles.controlText}>Annulla</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  };
+
+  // Render informazioni server
+  const renderServerStatus = () => {
+    if (!serverStatus) return null;
+
+    return (
+      <View style={styles.serverStatusContainer}>
+        <Text style={styles.serverStatusPhase}>
+          {serverStatus.phase.replace('_', ' ').toUpperCase()}
+        </Text>
+        <Text style={styles.serverStatusMessage}>
+          {serverStatus.message}
+        </Text>
+      </View>
+    );
+  };
+
+  // Render durata registrazione
+  const renderRecordingDuration = () => {
+    if (!isRecording || recordingDuration === 0) return null;
+
+    return (
+      <View style={styles.durationContainer}>
+        <MaterialIcons name="access-time" size={16} color="#F44336" />
+        <Text style={styles.durationText}>
+          {formatDuration(recordingDuration)}
+        </Text>
+      </View>
+    );
   };
 
   return (
@@ -196,9 +432,12 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
         <View style={styles.content}>
           {/* Titolo */}
           <Text style={styles.title}>Chat Vocale</Text>
-          <Text style={styles.subtitle}>
-            {isRecording ? "Sto ascoltando..." : "Tocca per parlare"}
-          </Text>
+          
+          {/* Stato e sottotitolo dinamici */}
+          {renderStateIndicator()}
+          
+          {/* Stato del server */}
+          {renderServerStatus()}
 
           {/* Cerchio animato centrale */}
           <View style={styles.microphoneContainer}>
@@ -224,41 +463,23 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
               ]}
             />
 
-            {/* Cerchio principale del microfono */}
-            <Animated.View
-              style={[
-                styles.microphoneCircle,
-                isRecording && styles.microphoneCircleRecording,
-                {
-                  transform: [{ scale: recordingScale }],
-                },
-              ]}
-            >
-              <TouchableOpacity
-                style={styles.microphoneButton}
-                onPress={handleMicPress}
-                activeOpacity={0.8}
-              >
-                <Ionicons
-                  name={isRecording ? "stop" : "mic"}
-                  size={48}
-                  color="#ffffff"
-                />
-              </TouchableOpacity>
-            </Animated.View>
+            {/* Pulsante principale */}
+            {renderMainButton()}
           </View>
 
-          {/* Testo di stato */}
-          <View style={styles.statusContainer}>
-            <Text style={styles.statusText}>
-              {statusText || 
-                (isRecording 
-                  ? "Registrazione in corso..."
-                  : "Premi il microfono per iniziare"
-                )
-              }
-            </Text>
-          </View>
+          {/* Durata registrazione */}
+          {renderRecordingDuration()}
+          
+          {/* Controlli aggiuntivi */}
+          {renderControls()}
+
+          {/* Messaggio di errore */}
+          {error && (
+            <View style={styles.errorContainer}>
+              <MaterialIcons name="error-outline" size={20} color="#F44336" />
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+          )}
         </View>
 
         {/* Footer con istruzioni */}
@@ -385,6 +606,99 @@ const styles = StyleSheet.create({
     fontWeight: "400",
     color: "#888888",
     textAlign: "center",
+    fontFamily: "System",
+  },
+  // Nuovi stili per i componenti aggiunti
+  stateContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    borderRadius: 20,
+  },
+  stateText: {
+    marginLeft: 6,
+    fontSize: 14,
+    fontWeight: "500",
+    fontFamily: "System",
+  },
+  serverStatusContainer: {
+    alignItems: "center",
+    marginBottom: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: "rgba(33, 150, 243, 0.2)",
+    borderRadius: 12,
+    minHeight: 40,
+    justifyContent: "center",
+  },
+  serverStatusPhase: {
+    fontSize: 12,
+    fontWeight: "bold",
+    color: "#87CEEB",
+    marginBottom: 2,
+    fontFamily: "System",
+  },
+  serverStatusMessage: {
+    fontSize: 10,
+    color: "#cccccc",
+    textAlign: "center",
+    fontFamily: "System",
+  },
+  durationContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    backgroundColor: "rgba(244, 67, 54, 0.2)",
+    borderRadius: 16,
+  },
+  durationText: {
+    marginLeft: 4,
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#FF6B6B",
+    fontFamily: "monospace",
+  },
+  controlsContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginBottom: 16,
+  },
+  controlButton: {
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginHorizontal: 8,
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    borderRadius: 12,
+    minWidth: 60,
+  },
+  controlText: {
+    marginTop: 4,
+    fontSize: 11,
+    color: "#cccccc",
+    fontWeight: "500",
+    fontFamily: "System",
+  },
+  errorContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(244, 67, 54, 0.2)",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginBottom: 16,
+    maxWidth: "90%",
+  },
+  errorText: {
+    marginLeft: 8,
+    color: "#FF6B6B",
+    fontSize: 12,
+    flex: 1,
     fontFamily: "System",
   },
 });

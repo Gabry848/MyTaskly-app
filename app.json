@@ -11,8 +11,10 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSMicrophoneUsageDescription": "Questa app richiede l'accesso al microfono per registrare messaggi vocali."
-      }
+        "NSMicrophoneUsageDescription": "Questa app richiede l'accesso al microfono per registrare messaggi vocali.",
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "bundleIdentifier": "com.anonymous.myapptodolist"
     },
     "android": {
       "adaptiveIcon": {
