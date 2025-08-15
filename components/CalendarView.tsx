@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, ScrollView, StyleSheet, Alert, ActivityIndicator, Animated } from 'react-native';
 import dayjs from 'dayjs';
 import { Task as TaskType, getAllTasks, addTask, deleteTask, updateTask, completeTask, disCompleteTask } from '../src/services/taskService';
-import TaskCacheService from '../src/services/TaskCacheService';
+import { TaskCacheService } from '../src/services/TaskCacheService';
 import SyncManager, { SyncStatus } from '../src/services/SyncManager';
 import AppInitializer from '../src/services/AppInitializer';
 import eventEmitter, { EVENTS } from '../src/utils/eventEmitter';

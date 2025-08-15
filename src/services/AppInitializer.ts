@@ -1,4 +1,4 @@
-import TaskCacheService from './TaskCacheService';
+import { TaskCacheService } from './TaskCacheService';
 import SyncManager from './SyncManager';
 import StorageManager from './StorageManager';
 import { getAllTasks, getCategories } from './taskService';

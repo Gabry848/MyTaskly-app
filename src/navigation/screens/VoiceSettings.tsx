@@ -10,7 +10,6 @@ import {
   Alert,
   ActivityIndicator
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { 
   getVoiceSettings, 
@@ -20,7 +19,6 @@ import {
 } from '../../services/voiceSettingsService';
 
 export default function VoiceSettingsScreen() {
-  const navigation = useNavigation();
   const [settings, setSettings] = useState<VoiceSettings>({
     voice_model: 'base',
     voice_gender: 'female',

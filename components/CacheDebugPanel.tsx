@@ -1,3 +1,5 @@
+
+
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -11,7 +13,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import AppInitializer from '../src/services/AppInitializer';
 import SyncManager from '../src/services/SyncManager';
-import TaskCacheService from '../src/services/TaskCacheService';
+import { TaskCacheService } from '../src/services/TaskCacheService';
 import StorageManager from '../src/services/StorageManager';
 
 interface CacheDebugPanelProps {

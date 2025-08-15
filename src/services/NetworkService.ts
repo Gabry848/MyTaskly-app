@@ -50,7 +50,7 @@ class NetworkService {
       });
       
       return this.currentState;
-    } catch (error) {
+    } catch {
       // Fallback: assume offline
       this.updateNetworkState({
         isConnected: false,
@@ -88,7 +88,7 @@ class NetworkService {
 
       clearTimeout(timeoutId);
       return true;
-    } catch (error) {
+    } catch {
       return false;
     }
   }
@@ -155,7 +155,7 @@ class NetworkService {
 
       clearTimeout(timeoutId);
       return response.ok;
-    } catch (error) {
+    } catch {
       return false;
     }
   }

@@ -1,13 +1,12 @@
-import { AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
+import { AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_KEYS, API_ENDPOINTS } from '../constants/authConstants';
-import { getValidToken, refreshToken } from './authService';
+import { refreshToken } from './authService';
 import axios from './axiosInstance';
 
 // Flag per evitare loop infiniti durante il refresh
 let isRefreshing = false;
 let failedQueue: any[] = [];
-let refreshAttempts = 0;
 const MAX_REFRESH_ATTEMPTS = 2;
 
 const processQueue = (error: any, token: string | null = null) => {

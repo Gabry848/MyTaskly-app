@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Task, getAllTasks } from '../services/taskService';
-import TaskCacheService from '../services/TaskCacheService';
+import { TaskCacheService } from '../services/TaskCacheService';
 import SyncManager, { SyncStatus } from '../services/SyncManager';
 
 interface UseTaskCacheReturn {

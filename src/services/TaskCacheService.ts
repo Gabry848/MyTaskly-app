@@ -337,7 +337,7 @@ class TaskCacheService {
       
       const filteredTasks = cachedTasks.filter(task => {
         const taskId = task.task_id || task.id;
-        const matches = taskId == taskIdentifier || task.title === taskIdentifier;
+        const matches = taskId === taskIdentifier || task.title === taskIdentifier;
         if (matches) {
           console.log(`[CACHE] ❌ Rimosso task forzatamente: "${task.title}" (ID: ${taskId})`);
         }

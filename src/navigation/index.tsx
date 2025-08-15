@@ -166,7 +166,7 @@ function AppStack() {
   const [isLoading, setIsLoading] = useState(true); // Controlla lo stato di autenticazione all'avvio
   
   // 🔔 Inizializza il sistema di notifiche quando l'utente è autenticato
-  const { expoPushToken, notification } = useNotifications();
+  const { notification } = useNotifications();
 
   useEffect(() => {
     const checkAuthStatus = async () => {
