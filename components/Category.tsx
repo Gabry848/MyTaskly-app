@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Alert } from "react-native";
 import { getTasks, Task, addTask, deleteCategory, updateCategory } from '../src/services/taskService';
 import CategoryCard from './CategoryCard';
@@ -36,7 +36,7 @@ const Category: React.FC<CategoryProps> = ({
   const [showAddTask, setShowAddTask] = useState(false);
   
   // Funzione per recuperare il conteggio dei task
-  const fetchTaskCount = async () => {
+  const fetchTaskCount = useCallback(async () => {
     try {
       setIsLoading(true);
       console.log(`[CATEGORY] Caricamento task per categoria: "${title}"`);
@@ -71,12 +71,12 @@ const Category: React.FC<CategoryProps> = ({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [title]);
 
   // Carica il conteggio dei task all'inizializzazione del componente
   useEffect(() => {
     fetchTaskCount();
-  }, [title]);
+  }, [title, fetchTaskCount]);
 
   // Setup listeners per aggiornamenti task count in tempo reale
   useEffect(() => {
@@ -109,7 +109,7 @@ const Category: React.FC<CategoryProps> = ({
       eventEmitter.off(EVENTS.TASK_UPDATED, handleTaskUpdated);
       eventEmitter.off(EVENTS.TASK_DELETED, handleTaskDeleted);
     };
-  }, [title]);
+  }, [title, fetchTaskCount]);
 
   const handleLongPress = () => {
     setShowMenu(true);
@@ -183,7 +183,7 @@ const Category: React.FC<CategoryProps> = ({
 
     setIsEditing(true);
     try {
-      const updatedCategory = await updateCategory(title, {
+      await updateCategory(title, {
         name: editName.trim(),
         description: editDescription.trim()
       });

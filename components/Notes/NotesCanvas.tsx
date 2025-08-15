@@ -140,7 +140,7 @@ export const NotesCanvas: React.FC = () => {
             cx={GRID_SIZE / 2}
             cy={GRID_SIZE / 2}
             r={1.5}
-            fill="#000000ff"
+            fill="#8b8585ff"
             opacity={0.8}
           />
         </Pattern>
@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: 'center',
     elevation: 8,
-    shadowColor: '#000',
+    shadowColor: '#000000ff',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 8,

@@ -7,7 +7,6 @@ import axiosInstance from './axiosInstance';
 
 // Controllo se siamo in Expo Go o Development Build
 const isExpoGo = Constants.appOwnership === 'expo';
-const isDevBuild = Constants.executionEnvironment === 'standalone';
 
 // ⚙️ CONFIGURA COME GESTIRE LE NOTIFICHE
 Notifications.setNotificationHandler({
@@ -252,9 +251,9 @@ export function useNotifications() {
         // Invia il token al backend solo se abbiamo un token valido
         sendTokenToBackend(token).then(success => {
           if (success) {
-            Alert.alert('Successo', 'Notifiche push attivate!');
+            console.log('✅ Token inviato al backend con successo');
           } else {
-            Alert.alert('Errore', 'Impossibile attivare le notifiche push');
+            console.error('❌ Errore nell\'invio del token al backend');
           }
         });
       } else if (isExpoGo) {

@@ -71,7 +71,7 @@ const AddTask: React.FC<AddTaskProps> = ({
     } else {
       animationValue.value = withSpring(0, { damping: 12 });
     }
-  }, [visible, initialDate]);
+  }, [visible, initialDate, animationValue]);
 
   // Carica le categorie se necessario
   useEffect(() => {
