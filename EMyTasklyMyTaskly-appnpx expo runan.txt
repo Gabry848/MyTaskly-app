@@ -1,0 +1,147 @@
+E:\MyTaskly\MyTaskly-app>npx expo run:android
+› Opening emulator Medium_Phone_API_35
+› Building app...
+Configuration on demand is an incubating feature.
+
+> Configure project :
+[ExpoRootProject] Using the following versions:
+  - buildTools:  35.0.0
+  - minSdk:      24
+  - compileSdk:  35
+  - targetSdk:   35
+  - ndk:         27.1.12297006
+  - kotlin:      2.0.21
+  - ksp:         2.0.21-1.0.28
+
+> Configure project :app
+ ??  Applying gradle plugin 'expo-dev-launcher-gradle-plugin'
+Checking the license for package NDK (Side by side) 27.1.12297006 in C:\Users\User\AppData\Local\Android\Sdk\licenses
+License for package NDK (Side by side) 27.1.12297006 accepted.
+Preparing "Install NDK (Side by side) 27.1.12297006 v.27.1.12297006".
+"Install NDK (Side by side) 27.1.12297006 v.27.1.12297006" ready.
+Installing NDK (Side by side) 27.1.12297006 in C:\Users\User\AppData\Local\Android\Sdk\ndk\27.1.12297006
+"Install NDK (Side by side) 27.1.12297006 v.27.1.12297006" complete.
+"Install NDK (Side by side) 27.1.12297006 v.27.1.12297006" finished.
+
+> Configure project :expo
+
+Using expo modules
+  - expo-constants (17.1.7)
+  - expo-dev-client (5.2.4)
+  - expo-dev-launcher (5.1.16)G [6m]
+  - expo-dev-menu (6.1.14)
+  - expo-dev-menu-interface (1.10.0)1s]
+  - expo-json-utils (0.15.0)
+  - expo-manifests (0.16.6)
+  - expo-modules-core (2.5.0)
+  - expo-updates-interface (1.1.0)m 4s]
+  - [?] expo-application (6.1.5)
+  - [?] expo-asset (11.1.7)
+  - [?] expo-av (15.1.7)
+  - [?] expo-blur (14.1.5)
+  - [?] expo-crypto (14.1.5)
+  - [?] expo-device (7.1.4)
+  - [?] expo-file-system (18.1.11)
+  - [?] expo-font (13.3.2)
+  - [?] expo-haptics (14.1.4)
+  - [?] expo-keep-awake (14.1.4)
+  - [?] expo-linear-gradient (14.1.5)
+  - [?] expo-linking (7.1.7)
+  - [?] expo-notifications (0.31.4)
+  - [?] expo-speech (13.1.7)
+  - [?] expo-splash-screen (0.30.10)
+  - [?] expo-system-ui (5.0.10)
+  - [?] expo-web-browser (14.2.0)
+
+
+> Configure project :react-native-reanimated
+Android gradle plugin: 8.8.2
+Gradle: 8.13
+
+> Task :expo-modules-core:processDebugManifest
+E:\MyTaskly\MyTaskly-app\node_modules\expo-modules-core\android\src\main\AndroidManifest.xml:8:9-11:45 Warning:
+        meta-data#com.facebook.soloader.enabled@android:value was tagged at AndroidManifest.xml:8 to replace other declarations but no other declaration present
+
+> Task :react-native-blob-util:processDebugManifest
+package="com.ReactNativeBlobUtil" found in source AndroidManifest.xml: E:\MyTaskly\MyTaskly-app\node_modules\react-native-blob-util\android\src\main\AndroidManifest.xml.
+Setting the namespace via the package attribute in the source AndroidManifest.xml is no longer supported, and the value is ignored.
+Recommendation: remove package="com.ReactNativeBlobUtil" from the source AndroidManifest.xml: E:\MyTaskly\MyTaskly-app\node_modules\react-native-blob-util\android\src\main\AndroidManifest.xml.
+
+> Task :react-native-async-storage_async-storage:processDebugManifest
+package="com.reactnativecommunity.asyncstorage" found in source AndroidManifest.xml: E:\MyTaskly\MyTaskly-app\node_modules\@react-native-async-storage\async-storage\android\src\main\AndroidManifest.xml.
+Setting the namespace via the package attribute in the source AndroidManifest.xml is no longer supported, and the value is ignored.
+Recommendation: remove package="com.reactnativecommunity.asyncstorage" from the source AndroidManifest.xml: E:\MyTaskly\MyTaskly-app\node_modules\@react-native-async-storage\async-storage\android\src\main\AndroidManifest.xml.
+
+> Task :react-native-google-signin_google-signin:processDebugManifest
+package="com.reactnativegooglesignin" found in source AndroidManifest.xml: E:\MyTaskly\MyTaskly-app\node_modules\@react-native-google-signin\google-signin\android\src\main\AndroidManifest.xml.
+Setting the namespace via the package attribute in the source AndroidManifest.xml is no longer supported, and the value is ignored.                                                                                                                                          
+Recommendation: remove package="com.reactnativegooglesignin" from the source AndroidManifest.xml: E:\MyTaskly\MyTaskly-app\node_modules\@react-native-google-signin\google-signin\android\src\main\AndroidManifest.xml.
+
+> Task :react-native-picker_picker:processDebugManifest                                                                                                                                                                                                                      
+package="com.reactnativecommunity.picker" found in source AndroidManifest.xml: E:\MyTaskly\MyTaskly-app\node_modules\@react-native-picker\picker\android\src\main\AndroidManifest.xml.
+Setting the namespace via the package attribute in the source AndroidManifest.xml is no longer supported, and the value is ignored.
+Recommendation: remove package="com.reactnativecommunity.picker" from the source AndroidManifest.xml: E:\MyTaskly\MyTaskly-app\node_modules\@react-native-picker\picker\android\src\main\AndroidManifest.xml.
+
+> Task :react-native-safe-area-context:processDebugManifest
+package="com.th3rdwave.safeareacontext" found in source AndroidManifest.xml: E:\MyTaskly\MyTaskly-app\node_modules\react-native-safe-area-context\android\src\main\AndroidManifest.xml.
+Setting the namespace via the package attribute in the source AndroidManifest.xml is no longer supported, and the value is ignored.
+Recommendation: remove package="com.th3rdwave.safeareacontext" from the source AndroidManifest.xml: E:\MyTaskly\MyTaskly-app\node_modules\react-native-safe-area-context\android\src\main\AndroidManifest.xml.
+
+> Task :react-native-vector-icons:processDebugManifest
+package="com.oblador.vectoricons" found in source AndroidManifest.xml: E:\MyTaskly\MyTaskly-app\node_modules\react-native-vector-icons\android\src\main\AndroidManifest.xml.
+Setting the namespace via the package attribute in the source AndroidManifest.xml is no longer supported, and the value is ignored.
+Recommendation: remove package="com.oblador.vectoricons" from the source AndroidManifest.xml: E:\MyTaskly\MyTaskly-app\node_modules\react-native-vector-icons\android\src\main\AndroidManifest.xml.
+
+> Task :react-native-voice_voice:processDebugManifest
+package="com.wenkesj.voice" found in source AndroidManifest.xml: E:\MyTaskly\MyTaskly-app\node_modules\@react-native-voice\voice\android\src\main\AndroidManifest.xml.
+Setting the namespace via the package attribute in the source AndroidManifest.xml is no longer supported, and the value is ignored.
+Recommendation: remove package="com.wenkesj.voice" from the source AndroidManifest.xml: E:\MyTaskly\MyTaskly-app\node_modules\@react-native-voice\voice\android\src\main\AndroidManifest.xml.
+
+> Task :app:processDebugMainManifest FAILED
+[com.android.support:animated-vector-drawable:28.0.0] C:\Users\User\.gradle\caches\8.13\transforms\3bbc2430f7587adcd85be309d83ba1cf\transformed\animated-vector-drawable-28.0.0\AndroidManifest.xml Warning:
+        Namespace 'android.support.graphics.drawable' is used in multiple modules and/or libraries: com.android.support:animated-vector-drawable:28.0.0, com.android.support:support-vector-drawable:28.0.0. Please ensure that all modules and libraries have a unique namespace. For more information, See https://developer.android.com/studio/build/configure-app-module#set-namespace
+[androidx.versionedparcelable:versionedparcelable:1.1.1] C:\Users\User\.gradle\caches\8.13\transforms\0e46f645dab24076e9faaca7bbf3eaa1\transformed\versionedparcelable-1.1.1\AndroidManifest.xml Warning:
+        Namespace 'androidx.versionedparcelable' is used in multiple modules and/or libraries: androidx.versionedparcelable:versionedparcelable:1.1.1, com.android.support:versionedparcelable:28.0.0. Please ensure that all modules and libraries have a unique namespace. For more information, See https://developer.android.com/studio/build/configure-app-module#set-namespace                                                                                                                                                                      
+E:\MyTaskly\MyTaskly-app\android\app\src\debug\AndroidManifest.xml:28:18-86 Error:
+        Attribute application@appComponentFactory value=(androidx.core.app.CoreComponentFactory) from [androidx.core:core:1.13.1] AndroidManifest.xml:28:18-86
+        is also present at [com.android.support:support-compat:28.0.0] AndroidManifest.xml:22:18-91 value=(android.support.v4.app.CoreComponentFactory).
+        Suggestion: add 'tools:replace="android:appComponentFactory"' to <application> element at AndroidManifest.xml:6:5-162 to override.
+
+See https://developer.android.com/r/studio-ui/build/manifest-merger for more information about the manifest merger.
+
+
+[Incubating] Problems report is available at: file:///E:/MyTaskly/MyTaskly-app/android/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:processDebugMainManifest'.
+> Manifest merger failed with multiple errors, see logs
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/8.13/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD FAILED in 14m 19s
+231 actionable tasks: 137 executed, 65 from cache, 29 up-to-date
+Error: E:\MyTaskly\MyTaskly-app\android\gradlew.bat app:assembleDebug -x lint -x test --configure-on-demand --build-cache -PreactNativeDevServerPort=8081 -PreactNativeArchitectures=x86_64,arm64-v8a exited with non-zero code: 1
+Error: E:\MyTaskly\MyTaskly-app\android\gradlew.bat app:assembleDebug -x lint -x test --configure-on-demand --build-cache -PreactNativeDevServerPort=8081 -PreactNativeArchitectures=x86_64,arm64-v8a exited with non-zero code: 1
+    at ChildProcess.completionListener (E:\MyTaskly\MyTaskly-app\node_modules\@expo\spawn-async\src\spawnAsync.ts:67:13)
+    at Object.onceWrapper (node:events:629:26)
+    at ChildProcess.emit (node:events:514:28)
+    at ChildProcess.cp.emit (E:\MyTaskly\MyTaskly-app\node_modules\cross-spawn\lib\enoent.js:34:29)
+    at maybeClose (node:internal/child_process:1105:16)
+    at Process.ChildProcess._handle.onexit (node:internal/child_process:305:5)
+    ...
+    at spawnAsync (E:\MyTaskly\MyTaskly-app\node_modules\@expo\spawn-async\src\spawnAsync.ts:28:21)
+    at spawnGradleAsync (E:\MyTaskly\MyTaskly-app\node_modules\@expo\cli\src\start\platforms\android\gradle.ts:134:28)
+    at assembleAsync (E:\MyTaskly\MyTaskly-app\node_modules\@expo\cli\src\start\platforms\android\gradle.ts:83:16)
+    at runAndroidAsync (E:\MyTaskly\MyTaskly-app\node_modules\@expo\cli\src\run\android\runAndroidAsync.ts:62:24)

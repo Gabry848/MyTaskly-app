@@ -54,6 +54,19 @@
       [
         "@react-native-google-signin/google-signin"
       ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "permissions": ["android.permission.RECORD_AUDIO"]
+          },
+          "ios": {
+            "infoPlist": {
+              "NSMicrophoneUsageDescription": "Questa app usa il microfono per il riconoscimento vocale"
+            }
+          }
+        }
+      ],
       "expo-dev-client"
     ],
     "extra": {
