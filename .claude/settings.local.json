@@ -19,7 +19,10 @@
       "Bash(npx expo start:*)",
       "Bash(taskkill:*)",
       "Bash(cmd /c:*)",
-      "WebFetch(domain:medium.com)"
+      "WebFetch(domain:medium.com)",
+      "Bash(npx expo run:android:*)",
+      "Bash(adb:*)",
+      "Bash(./gradlew:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"

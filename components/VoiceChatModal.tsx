@@ -35,7 +35,6 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({ visible, onClose }) => 
     }
   };
 
-
   const convertAudioToBase64 = async (uri: string): Promise<string> => {
     try {
       const response = await fetch(uri);

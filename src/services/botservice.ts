@@ -247,4 +247,6 @@ export function extractStructuredData(response: string): any {
 
 // ============= VOICE CHAT WEBSOCKET =============
 
-  
+export function stremingAudioToServer(){
+
+}

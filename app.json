@@ -59,7 +59,9 @@
         {
           "android": {
             "permissions": ["android.permission.RECORD_AUDIO"],
-            "minSdkVersion": 24
+            "minSdkVersion": 24,
+            "enableJetifier": true,
+            "useAndroidX": true
           },
           "ios": {
             "infoPlist": {
