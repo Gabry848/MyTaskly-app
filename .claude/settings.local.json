@@ -22,7 +22,8 @@
       "WebFetch(domain:medium.com)",
       "Bash(npx expo run:android:*)",
       "Bash(adb:*)",
-      "Bash(./gradlew:*)"
+      "Bash(./gradlew:*)",
+      "Bash(npm run lint:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"
