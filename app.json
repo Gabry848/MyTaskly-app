@@ -52,13 +52,14 @@
         }
       ],
       [
-        "@react-native-google-signin/google-signin"
+        "@react-native-google-signin/google-signin"  // TODO: implementa login con Google
       ],
       [
         "expo-build-properties",
         {
           "android": {
-            "permissions": ["android.permission.RECORD_AUDIO"]
+            "permissions": ["android.permission.RECORD_AUDIO"],
+            "minSdkVersion": 24
           },
           "ios": {
             "infoPlist": {

@@ -1,990 +1,388 @@
-import React, { useRef, useEffect, useState, useCallback } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  Modal,
-  TouchableOpacity,
-  Animated,
-  Dimensions,
-  StatusBar,
-  ActivityIndicator,
-  Alert
-} from "react-native";
-import { Ionicons, MaterialIcons } from "@expo/vector-icons";
-import useVoiceInput from '../src/hooks/useVoiceInput';
-import { formatDuration, checkAudioPermissions } from '../src/utils/audioUtils';
-import Voice from '@react-native-voice/voice';
+import React, { useEffect, useState } from 'react';
+import { Modal, View, StyleSheet, Text, TouchableOpacity, Platform, Alert } from 'react-native';
+import { Audio } from 'expo-av';
+import RNSoundLevel from 'react-native-sound-level';
 
-interface VoiceChatModalProps {
+type VoiceChatModalProps = {
   visible: boolean;
   onClose: () => void;
-  isRecording?: boolean;
-  onVoiceResponse?: (response: string) => void;
+};
+
+class ActionProvider {
+  public data: any = { 
+    count: 0,
+    recording: false,
+    speaking: false,
+    recordingData: null
+  };
 }
 
-type VoiceChatState = 'idle' | 'connecting' | 'connected' | 'recording' | 'processing' | 'speaking' | 'error' | 'disconnected';
+const actionProvider = new ActionProvider();
 
-const { height } = Dimensions.get("window");
+const VoiceChatModal: React.FC<VoiceChatModalProps> = ({ visible, onClose }) => {
+  const [isRecording, setIsRecording] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [activeSession, setActiveSession] = useState(false);
 
-const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
-  visible,
-  onClose,
-  isRecording: externalIsRecording = false,
-  onVoiceResponse,
-}) => {
-  // Hook personalizzato per gestire la chat vocale
-  const { text, isListening, start, stop } = useVoiceInput();
-  
-  // Stati locali
-  const [state, setState] = useState<VoiceChatState>('idle');
-  const [error, setError] = useState<string>('');
-  const [recordingDuration, setRecordingDuration] = useState(0);
-  const [hasPermissions, setHasPermissions] = useState(false);
-  const [serverStatus, setServerStatus] = useState<{phase: string, message: string} | null>(null);
-  const [voiceInitialized, setVoiceInitialized] = useState(false);
-  const [internalIsListening, setIsListening] = useState(false);
-  
-  // Stati derivati
-  const isRecording = isListening || internalIsListening || externalIsRecording;
-  const isConnected = state === 'connected' || state === 'recording' || state === 'processing' || state === 'speaking';
-  const isProcessing = state === 'processing';
-  const isSpeaking = state === 'speaking';
-  const canRecord = isConnected && !isRecording && !isProcessing && !isSpeaking;
-  const canStop = isRecording;
-
-  // Animazioni esistenti
-  const pulseScale = useRef(new Animated.Value(1)).current;
-  const pulseOpacity = useRef(new Animated.Value(0.3)).current;
-  const slideIn = useRef(new Animated.Value(height)).current;
-  const fadeIn = useRef(new Animated.Value(0)).current;
-  const recordingScale = useRef(new Animated.Value(1)).current;
-
-  // Inizializzazione Voice API
-  const initializeVoice = useCallback(async (): Promise<boolean> => {
+  const getPermission = async (): Promise<boolean> => {
     try {
-      if (voiceInitialized) {
-        return true;
-      }
-
-      // Verifica che Voice sia disponibile
-      if (!Voice) {
-        console.error('Voice API non disponibile');
-        setError('Servizio vocale non disponibile');
-        return false;
-      }
-
-      // Setup event listeners
-      Voice.onSpeechStart = () => {
-        console.log('Voice: Speech started');
-        setIsListening(true);
-      };
-
-      Voice.onSpeechEnd = () => {
-        console.log('Voice: Speech ended');
-        setIsListening(false);
-      };
-
-      Voice.onSpeechError = (error) => {
-        console.error('Voice: Speech error', error);
-        setError(`Errore riconoscimento vocale: ${error.error?.message || 'Errore sconosciuto'}`);
-        setState('error');
-        setIsListening(false);
-      };
-
-      Voice.onSpeechResults = (result) => {
-        const recognizedText = result.value?.[0] || '';
-        console.log('Voice: Speech results', recognizedText);
-        if (recognizedText && onVoiceResponse) {
-          onVoiceResponse(recognizedText);
-        }
-      };
-
-      setVoiceInitialized(true);
-      return true;
+      const permission = await Audio.requestPermissionsAsync();
+      return permission.status === 'granted';
     } catch (error) {
-      console.error('Errore inizializzazione Voice:', error);
-      setError('Impossibile inizializzare il servizio vocale');
-      return false;
-    }
-  }, [voiceInitialized, onVoiceResponse]);
-
-  // Gestione permessi
-  const requestPermissions = async (): Promise<boolean> => {
-    try {
-      // Verifica permessi audio usando la utility
-      const audioGranted = await checkAudioPermissions();
-      if (!audioGranted) {
-        setError('Permessi microfono negati');
-        return false;
-      }
-
-      setHasPermissions(true);
-      return true;
-    } catch (error) {
-      console.error('Errore richiesta permessi:', error);
-      setError('Impossibile ottenere i permessi per il microfono');
+      console.error('Error requesting permissions:', error);
       return false;
     }
   };
 
-  // Gestione connessione
-  const connect = async () => {
+
+  const convertAudioToBase64 = async (uri: string): Promise<string> => {
     try {
-      setState('connecting');
-      setError('');
-      
-      // Inizializza Voice API
-      const voiceReady = await initializeVoice();
-      if (!voiceReady) {
-        setState('error');
-        return;
-      }
-      
-      // Simula connessione al servizio vocale
-      await new Promise(resolve => setTimeout(resolve, 500));
-      setState('connected');
-      setServerStatus({ phase: 'connected', message: 'Servizio vocale pronto' });
+      const response = await fetch(uri);
+      const blob = await response.blob();
+
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64data = reader.result as string;
+          resolve(base64data || "");
+        };
+        reader.onerror = () => {
+          reject(new Error("Failed to read file"));
+        };
+        reader.readAsDataURL(blob);
+      });
     } catch (error) {
-      console.error('Errore connessione:', error);
-      setError('Impossibile connettersi al servizio vocale');
-      setState('error');
+      console.error('Error converting audio to base64:', error);
+      return '';
     }
   };
 
-  // Gestione disconnessione
-  const disconnect = async () => {
+  const processAudio = async (uri: string) => {
     try {
-      if (isListening) {
-        try {
-          await Voice.stop();
-        } catch (stopError) {
-          console.error('Errore stop Voice:', stopError);
-        }
-      }
+      setIsProcessing(true);
+      const base64Audio = await convertAudioToBase64(uri);
+
+      actionProvider.data["speaking"] = true;
       
-      // Cleanup Voice API
-      if (voiceInitialized) {
-        try {
-          await Voice.destroy();
-          Voice.removeAllListeners();
-          setVoiceInitialized(false);
-        } catch (destroyError) {
-          console.error('Errore destroy Voice:', destroyError);
-        }
-      }
+      console.log('Audio processed successfully!');
+      console.log('Audio URI:', uri);
+      console.log('Base64 Audio length:', base64Audio.length);
+      console.log('Simulating server response...');
       
-      setState('disconnected');
-      setServerStatus(null);
+      setTimeout(() => {
+        actionProvider.data["speaking"] = false;
+        setIsProcessing(false);
+        console.log('Audio processing completed');
+      }, 2000);
     } catch (error) {
-      console.error('Errore disconnessione:', error);
+      setIsProcessing(false);
+      console.error('Error processing audio:', error);
+      Alert.alert(
+        'Error',
+        'Failed to process audio'
+      );
     }
   };
 
-  // Gestione registrazione
+
   const startRecording = async () => {
+    const permission = await getPermission();
+    if (!permission) {
+      Alert.alert('Permission required', 'Please grant microphone permission');
+      return;
+    }
+
+    if (actionProvider.data["speaking"]) {
+      console.log('Avatar is speaking, interrupting...');
+    }
+
     try {
-      if (!voiceInitialized) {
-        console.error('Voice API non inizializzata');
-        setError('Servizio vocale non inizializzato');
-        return;
-      }
-
-      setState('recording');
-      setError('');
-      setRecordingDuration(0);
-      setServerStatus({ phase: 'recording', message: 'Ascolto in corso...' });
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+      });
       
-      // Usa l'hook start function che internamente chiama Voice.start
-      await start();
+      const options: Audio.RecordingOptions = {
+        android: {
+          extension: ".m4a",
+          audioEncoder: 0,
+          outputFormat: 2,
+        },
+        ios: {
+          audioQuality: 32,
+          bitRate: 128000,
+          extension: ".m4a",
+          numberOfChannels: 1,
+          sampleRate: 44100,
+        },
+        web: {},
+      };
+
+      const { recording } = await Audio.Recording.createAsync(
+        options
+      );
+      
+      actionProvider.data["recording"] = true;
+      actionProvider.data["recordingData"] = recording;
+      setIsRecording(true);
+      
+      console.log('Recording started');
     } catch (error) {
-      console.error('Errore avvio registrazione:', error);
-      setError('Impossibile avviare la registrazione');
-      setState('error');
+      console.error('Error starting recording:', error);
+      Alert.alert('Error', 'Failed to start recording');
     }
   };
 
-  const stopRecording = async () => {
+  const stopRecording = async (): Promise<void> => {
+    if (!actionProvider.data["recordingData"]) {
+      console.log('No recording data available');
+      return;
+    }
+
     try {
-      setState('processing');
-      setServerStatus({ phase: 'processing', message: 'Elaborazione in corso...' });
+      await actionProvider.data["recordingData"].stopAndUnloadAsync();
+      const uri = await actionProvider.data["recordingData"].getURI();
       
-      // Usa l'hook stop function che internamente chiama Voice.stop
-      await stop();
+      actionProvider.data["recording"] = false;
+      actionProvider.data["recordingData"] = null;
+      setIsRecording(false);
       
-      // Simula elaborazione
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setState('connected');
-      setServerStatus({ phase: 'ready', message: 'Pronto per nuova registrazione' });
+      console.log('Recording stopped, URI:', uri);
+      
+      if (uri) {
+        await processAudio(uri);
+      }
     } catch (error) {
-      console.error('Errore stop registrazione:', error);
-      setError('Errore durante l\'elaborazione');
-      setState('error');
+      console.error('Error stopping recording:', error);
+      Alert.alert('Error', 'Failed to stop recording');
     }
   };
 
-  const cancelRecording = async () => {
+  const initiateVoiceRecognition = async () => {
     try {
-      if (isListening) {
-        try {
-          await stop();
-        } catch (stopError) {
-          console.error('Errore stop durante cancellazione:', stopError);
-        }
-      }
-      setState('connected');
-      setRecordingDuration(0);
-      setServerStatus({ phase: 'cancelled', message: 'Registrazione annullata' });
-    } catch (error) {
-      console.error('Errore annullamento:', error);
-    }
-  };
+      const dataCheck = Platform.OS === 'ios' ? -30 : -40;
+      const dataCheckTwo = Platform.OS === 'ios' ? 14 : 20;
+      
+      let sounds: number[] = [];
+      let silenceCounter = 0;
+      let silenceThreshold = 10;
+      
+      RNSoundLevel.start();
+      console.log('Voice recognition started with thresholds:', { dataCheck, dataCheckTwo });
 
-  // Gestione riproduzione (placeholder)
-  const stopPlayback = () => {
-    setState('connected');
-    setServerStatus({ phase: 'ready', message: 'Riproduzione fermata' });
-  };
+      RNSoundLevel.onNewFrame = async (data: { value: number, rawValue: number }) => {
+        if (actionProvider.data["speaking"]) return;
 
-  // Gestione controlli (placeholder)
-  const sendControl = (action: string) => {
-    console.log('Controllo inviato:', action);
-    if (action === 'cancel') {
-      cancelRecording();
-    }
-  };
+        // Speech start detection
+        if (data.value > dataCheck && !actionProvider.data["recording"]) {
+          if (sounds.length > 2) return;
 
-  // Gestione connessione con useCallback
-  const handleConnect = useCallback(async () => {
-    if (!hasPermissions) {
-      const granted = await requestPermissions();
-      if (!granted) {
-        Alert.alert(
-          'Permessi Richiesti',
-          'La chat vocale richiede l\'accesso al microfono per funzionare.',
-          [{ text: 'OK', style: 'default' }]
-        );
-        return;
-      }
-    }
-    
-    await connect();
-  }, [hasPermissions]);
+          if (sounds.length < 2) {
+            sounds.push(data.value);
+            return;
+          }
 
-  // Gestione registrazione
-  const handleRecordToggle = async () => {
-    if (isRecording) {
-      await stopRecording();
-    } else if (canRecord) {
-      await startRecording();
-    }
-  };
+          const diff = sounds[1] - sounds[0];
+          if (diff < -5) {
+            sounds = [];
+            return;
+          }
 
-  const handleClose = () => {
-    // Cleanup prima della chiusura
-    if (isRecording) {
-      cancelRecording().catch(console.error);
-    }
-    if (isSpeaking) {
-      stopPlayback();
-    }
-    disconnect().catch(console.error);
-
-    // Animazione di uscita
-    Animated.parallel([
-      Animated.timing(slideIn, {
-        toValue: height,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.timing(fadeIn, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      onClose();
-    });
-  };
-
-  // Gestione errori
-  const handleErrorDismiss = () => {
-    if (state === 'error') {
-      handleConnect();
-    }
-  };
-
-  // Animazione di entrata del modal
-  useEffect(() => {
-    if (visible) {
-      // Reset delle animazioni
-      slideIn.setValue(height);
-      fadeIn.setValue(0);
-
-      // Animazione di entrata
-      Animated.parallel([
-        Animated.timing(slideIn, {
-          toValue: 0,
-          duration: 400,
-          useNativeDriver: true,
-        }),
-        Animated.timing(fadeIn, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }
-  }, [visible, slideIn, fadeIn]);
-
-  // Auto-connessione e auto-start quando il modal si apre
-  useEffect(() => {
-    if (visible && state === 'idle') {
-      handleConnect();
-    }
-  }, [visible, state, handleConnect]);
-
-  // Auto-start recording dopo la connessione
-  useEffect(() => {
-    if (visible && state === 'connected' && !isListening && hasPermissions) {
-      // Piccolo delay per dare tempo alla UI di essere pronta
-      const autoStartTimer = setTimeout(() => {
-        if (state === 'connected' && !isListening) {
-          console.log('Auto-starting voice recording...');
+          actionProvider.data["recording"] = true;
+          sounds = [];
+          console.log('Speech detected, starting recording');
           startRecording();
         }
-      }, 800);
 
-      return () => clearTimeout(autoStartTimer);
-    }
-  }, [visible, state, isListening, hasPermissions]);
-
-  // Cleanup quando il modal si chiude
-  useEffect(() => {
-    if (!visible) {
-      // Reset degli stati quando si chiude
-      setState('idle');
-      setError('');
-      setRecordingDuration(0);
-      setVoiceInitialized(false);
-      if (isListening) {
-        stop().catch(console.error);
-      }
-    }
-  }, [visible, isListening, stop]);
-
-  // Timer per la durata della registrazione
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isRecording) {
-      interval = setInterval(() => {
-        setRecordingDuration(prev => prev + 100);
-      }, 100);
-    } else {
-      setRecordingDuration(0);
-    }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [isRecording]);
-
-  // Effetto per gestire le risposte vocali
-  useEffect(() => {
-    if (text && text.trim() && onVoiceResponse) {
-      console.log('Voice response received:', text);
-      onVoiceResponse(text);
-      setState('processing');
-      setServerStatus({ phase: 'completed', message: 'Testo riconosciuto con successo' });
-      
-      // Dopo un piccolo delay, torna allo stato connected per permettere nuove registrazioni
-      setTimeout(() => {
-        setState('connected');
-        setServerStatus({ phase: 'ready', message: 'Pronto per nuova registrazione' });
-      }, 1500);
-    }
-  }, [text, onVoiceResponse]);
-
-  // Animazione del cerchio pulsante
-  useEffect(() => {
-    const pulseAnimation = Animated.loop(
-      Animated.sequence([
-        Animated.parallel([
-          Animated.timing(pulseScale, {
-            toValue: 1.2,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseOpacity, {
-            toValue: 0.1,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-        ]),
-        Animated.parallel([
-          Animated.timing(pulseScale, {
-            toValue: 1,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseOpacity, {
-            toValue: 0.3,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-        ]),
-      ])
-    );
-
-    if (visible) {
-      pulseAnimation.start();
-    }
-
-    return () => {
-      pulseAnimation.stop();
-    };
-  }, [visible, pulseScale, pulseOpacity]);
-
-  // Animazione durante la registrazione
-  useEffect(() => {
-    if (isRecording) {
-      const recordingAnimation = Animated.loop(
-        Animated.sequence([
-          Animated.timing(recordingScale, {
-            toValue: 1.1,
-            duration: 500,
-            useNativeDriver: true,
-          }),
-          Animated.timing(recordingScale, {
-            toValue: 1,
-            duration: 500,
-            useNativeDriver: true,
-          }),
-        ])
-      );
-      recordingAnimation.start();
-
-      return () => {
-        recordingAnimation.stop();
+        // Speech end detection
+        if (actionProvider.data["recording"] && data.value < dataCheck) {
+          silenceCounter++;
+          
+          if (silenceCounter >= silenceThreshold) {
+            console.log('Silence detected, stopping recording');
+            silenceCounter = 0;
+            stopRecording();
+          }
+        } else if (actionProvider.data["recording"] && data.value >= dataCheck) {
+          silenceCounter = 0;
+        }
       };
-    } else {
-      recordingScale.setValue(1);
+    } catch (error) {
+      console.log('Voice recognition initialization error:', error);
     }
-  }, [isRecording, recordingScale]);
+  };
 
-  // Render dello stato
-  const renderStateIndicator = () => {
-    const getStateInfo = (currentState: VoiceChatState) => {
-      switch (currentState) {
-        case 'idle':
-          return { icon: 'mic-off', color: '#666', text: 'Inattivo' };
-        case 'connecting':
-          return { icon: 'wifi', color: '#FFA500', text: 'Connessione...' };
-        case 'connected':
-          return { icon: 'mic', color: '#4CAF50', text: 'Pronto' };
-        case 'recording':
-          return { icon: 'fiber-manual-record', color: '#F44336', text: 'Registrando...' };
-        case 'processing':
-          return { icon: 'sync', color: '#2196F3', text: 'Elaborazione...' };
-        case 'speaking':
-          return { icon: 'volume-up', color: '#9C27B0', text: 'Parlando...' };
-        case 'error':
-          return { icon: 'error', color: '#F44336', text: 'Errore' };
-        case 'disconnected':
-          return { icon: 'wifi-off', color: '#666', text: 'Disconnesso' };
-        default:
-          return { icon: 'help', color: '#666', text: 'Sconosciuto' };
+  const startSession = async (): Promise<void> => {
+    setIsLoading(true);
+    
+    try {
+      console.log('Starting voice recognition session...');
+      setActiveSession(true);
+      setIsLoading(false);
+      
+      await initiateVoiceRecognition();
+      console.log('Voice recognition session started successfully');
+    } catch (error) {
+      console.error('Error initiating session:', error);
+      setIsLoading(false);
+      Alert.alert('Error', 'Failed to start session');
+    }
+  };
+
+  const stopSession = async () => {
+    try {
+      console.log('Stopping voice recognition session...');
+      RNSoundLevel.stop();
+      
+      if (actionProvider.data["recordingData"]) {
+        await stopRecording();
+      }
+      
+      setActiveSession(false);
+      setIsRecording(false);
+      setIsProcessing(false);
+      
+      actionProvider.data = {
+        count: 0,
+        recording: false,
+        speaking: false,
+        recordingData: null
+      };
+      
+      console.log('Session stopped');
+    } catch (error) {
+      console.error('Error stopping session:', error);
+    }
+  };
+
+  useEffect(() => {
+    const initSession = async () => {
+      if (visible) {
+        await startSession();
+      } else {
+        await stopSession();
       }
     };
+    
+    initSession();
+    
+    return () => {
+      stopSession();
+    };
+  }, [visible]);
 
-    const { icon, color, text } = getStateInfo(state);
-
-    return (
-      <View style={styles.stateContainer}>
-        <MaterialIcons name={icon as any} size={18} color={color} />
-        <Text style={[styles.stateText, { color }]}>{text}</Text>
-      </View>
-    );
-  };
-
-  // Render del pulsante principale
-  const renderMainButton = () => {
-    if (state === 'connecting' || isProcessing) {
-      return (
-        <Animated.View style={[
-          styles.microphoneCircle,
-          styles.microphoneCircleProcessing,
-          { transform: [{ scale: recordingScale }] }
-        ]}>
-          <ActivityIndicator size="large" color="#fff" />
-        </Animated.View>
-      );
-    }
-
-    if (!isConnected && state !== 'error') {
-      return (
-        <Animated.View style={[
-          styles.microphoneCircle,
-          { transform: [{ scale: recordingScale }] }
-        ]}>
-          <TouchableOpacity
-            style={styles.microphoneButton}
-            onPress={handleConnect}
-            activeOpacity={0.8}
-          >
-            <MaterialIcons name="wifi" size={48} color="#ffffff" />
-          </TouchableOpacity>
-        </Animated.View>
-      );
-    }
-
-    if (state === 'error') {
-      return (
-        <Animated.View style={[
-          styles.microphoneCircle,
-          styles.microphoneCircleRecording,
-          { transform: [{ scale: recordingScale }] }
-        ]}>
-          <TouchableOpacity
-            style={styles.microphoneButton}
-            onPress={handleErrorDismiss}
-            activeOpacity={0.8}
-          >
-            <MaterialIcons name="refresh" size={48} color="#ffffff" />
-          </TouchableOpacity>
-        </Animated.View>
-      );
-    }
-
-    return (
-      <Animated.View style={[
-        styles.microphoneCircle,
-        isRecording && styles.microphoneCircleRecording,
-        isProcessing && styles.microphoneCircleProcessing,
-        { transform: [{ scale: recordingScale }] }
-      ]}>
-        <TouchableOpacity
-          style={styles.microphoneButton}
-          onPress={handleRecordToggle}
-          activeOpacity={0.8}
-          disabled={!canRecord && !canStop}
-        >
-          <Ionicons
-            name={isRecording ? "stop" : "mic"}
-            size={48}
-            color="#ffffff"
-          />
-        </TouchableOpacity>
-      </Animated.View>
-    );
-  };
-
-  // Render dei controlli aggiuntivi
-  const renderControls = () => {
-    if (state === 'error' || state === 'idle' || state === 'disconnected') {
-      return null;
-    }
-
-    return (
-      <View style={styles.controlsContainer}>
-        {isSpeaking && (
-          <TouchableOpacity
-            style={styles.controlButton}
-            onPress={stopPlayback}
-          >
-            <MaterialIcons name="stop" size={24} color="#666" />
-            <Text style={styles.controlText}>Stop</Text>
-          </TouchableOpacity>
-        )}
-        
-        {(isProcessing || isSpeaking) && (
-          <TouchableOpacity
-            style={styles.controlButton}
-            onPress={() => sendControl('cancel')}
-          >
-            <MaterialIcons name="cancel" size={24} color="#666" />
-            <Text style={styles.controlText}>Annulla</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-    );
-  };
-
-  // Render informazioni server
-  const renderServerStatus = () => {
-    if (!serverStatus) return null;
-
-    return (
-      <View style={styles.serverStatusContainer}>
-        <Text style={styles.serverStatusPhase}>
-          {serverStatus.phase.replace('_', ' ').toUpperCase()}
-        </Text>
-        <Text style={styles.serverStatusMessage}>
-          {serverStatus.message}
-        </Text>
-      </View>
-    );
-  };
-
-  // Render durata registrazione
-  const renderRecordingDuration = () => {
-    if (!isRecording || recordingDuration === 0) return null;
-
-    return (
-      <View style={styles.durationContainer}>
-        <MaterialIcons name="access-time" size={16} color="#F44336" />
-        <Text style={styles.durationText}>
-          {formatDuration(recordingDuration)}
-        </Text>
-      </View>
-    );
+  const handleClose = () => {
+    stopSession();
+    onClose();
   };
 
   return (
     <Modal
       visible={visible}
-      transparent={true}
-      animationType="none"
-      statusBarTranslucent={true}
-      onRequestClose={handleClose}
+      animationType="slide"
+      transparent={false}
+      onRequestClose={onClose}
     >
-      <StatusBar barStyle="light-content" backgroundColor="rgba(0,0,0,0.8)" />
-      
-      <Animated.View
-        style={[
-          styles.overlay,
-          {
-            opacity: fadeIn,
-            transform: [{ translateY: slideIn }],
-          },
-        ]}
-      >
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={handleClose}
-            activeOpacity={0.7}
+      <View style={styles.container}>
+        <Text style={styles.title}>Voice Recognition Test</Text>
+        
+        {isLoading && (
+          <Text style={styles.status}>Initializing voice recognition...</Text>
+        )}
+        
+        {activeSession && !isLoading && (
+          <View style={styles.statusContainer}>
+            <Text style={styles.status}>
+              {isRecording ? '🎤 Recording...' : '🎧 Listening for voice...'}
+            </Text>
+            
+            {isProcessing && (
+              <Text style={styles.processingText}>Processing audio...</Text>
+            )}
+          </View>
+        )}
+        
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity 
+            style={[styles.button, styles.testButton]} 
+            onPress={startRecording}
+            disabled={isRecording || isProcessing}
           >
-            <Ionicons name="close" size={28} color="#ffffff" />
+            <Text style={styles.buttonText}>Manual Record Test</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={[styles.button, styles.testButton]} 
+            onPress={stopRecording}
+            disabled={!isRecording}
+          >
+            <Text style={styles.buttonText}>Stop Recording</Text>
           </TouchableOpacity>
         </View>
-
-        {/* Contenuto principale */}
-        <View style={styles.content}>
-          {/* Titolo */}
-          <Text style={styles.title}>Chat Vocale</Text>
-          
-          {/* Sottotitolo automatico */}
-          <Text style={styles.autoSubtitle}>Attivazione automatica</Text>
-          
-          {/* Stato e sottotitolo dinamici */}
-          {renderStateIndicator()}
-          
-          {/* Stato del server */}
-          {renderServerStatus()}
-
-          {/* Cerchio animato centrale */}
-          <View style={styles.microphoneContainer}>
-            {/* Cerchi di pulsazione */}
-            <Animated.View
-              style={[
-                styles.pulseCircle,
-                styles.pulseCircle1,
-                {
-                  transform: [{ scale: pulseScale }],
-                  opacity: pulseOpacity,
-                },
-              ]}
-            />
-            <Animated.View
-              style={[
-                styles.pulseCircle,
-                styles.pulseCircle2,
-                {
-                  transform: [{ scale: pulseScale }],
-                  opacity: pulseOpacity,
-                },
-              ]}
-            />
-
-            {/* Pulsante principale */}
-            {renderMainButton()}
-          </View>
-
-          {/* Durata registrazione */}
-          {renderRecordingDuration()}
-          
-          {/* Controlli aggiuntivi */}
-          {renderControls()}
-
-          {/* Messaggio di errore */}
-          {error && (
-            <View style={styles.errorContainer}>
-              <MaterialIcons name="error-outline" size={20} color="#F44336" />
-              <Text style={styles.errorText}>{error}</Text>
-            </View>
-          )}
-
-          {/* Mostra il testo riconosciuto se disponibile */}
-          {text && (
-            <View style={styles.textContainer}>
-              <MaterialIcons name="record-voice-over" size={20} color="#4CAF50" />
-              <Text style={styles.recognizedText}>{text}</Text>
-            </View>
-          )}
-        </View>
-
-        {/* Footer con istruzioni */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            {state === 'recording' 
-              ? 'Parla ora... Il riconoscimento è attivo'
-              : state === 'processing'
-              ? 'Elaborazione del messaggio...'
-              : state === 'connected'
-              ? 'Connesso - Attivazione automatica'
-              : 'Inizializzazione servizio vocale...'
-            }
-          </Text>
-        </View>
-      </Animated.View>
+        
+        <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
+          <Text style={styles.buttonText}>Close</Text>
+        </TouchableOpacity>
+      </View>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
-  overlay: {
+  container: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.92)",
-    justifyContent: "space-between",
-  },
-  header: {
-    paddingTop: StatusBar.currentHeight ? StatusBar.currentHeight + 20 : 50,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    alignItems: "flex-end",
-  },
-  closeButton: {
-    padding: 12,
-    borderRadius: 25,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-  },
-  content: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 40,
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
   },
   title: {
-    fontSize: 32,
-    fontWeight: "300",
-    color: "#ffffff",
-    textAlign: "center",
-    marginBottom: 12,
-    fontFamily: "System",
-    letterSpacing: -1,
-  },
-  subtitle: {
-    fontSize: 18,
-    fontWeight: "400",
-    color: "#cccccc",
-    textAlign: "center",
-    marginBottom: 80,
-    fontFamily: "System",
-  },
-  microphoneContainer: {
-    position: "relative",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 60,
-  },
-  pulseCircle: {
-    position: "absolute",
-    borderRadius: 100,
-    borderWidth: 2,
-    borderColor: "#ffffff",
-  },
-  pulseCircle1: {
-    width: 200,
-    height: 200,
-  },
-  pulseCircle2: {
-    width: 250,
-    height: 250,
-  },
-  microphoneCircle: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: "#333333",
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 3,
-    borderColor: "#ffffff",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 8,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-  microphoneCircleRecording: {
-    backgroundColor: "#ff4444",
-    borderColor: "#ff6666",
-  },
-  microphoneCircleProcessing: {
-    backgroundColor: "#4444ff",
-    borderColor: "#6666ff",
-  },
-  microphoneButton: {
-    width: "100%",
-    height: "100%",
-    justifyContent: "center",
-    alignItems: "center",
-    borderRadius: 70,
+    fontSize: 24,
+    marginBottom: 40,
+    fontWeight: 'bold',
   },
   statusContainer: {
-    alignItems: "center",
+    alignItems: 'center',
+    marginBottom: 40,
   },
-  statusText: {
+  status: {
+    fontSize: 18,
+    marginBottom: 16,
+    textAlign: 'center',
+    color: '#333',
+  },
+  processingText: {
     fontSize: 16,
-    fontWeight: "400",
-    color: "#bbbbbb",
-    textAlign: "center",
-    fontFamily: "System",
+    color: '#666',
+    fontStyle: 'italic',
   },
-  footer: {
-    paddingHorizontal: 40,
-    paddingBottom: 50,
-    alignItems: "center",
+  buttonContainer: {
+    flexDirection: 'row',
+    gap: 16,
+    marginBottom: 40,
   },
-  footerText: {
-    fontSize: 14,
-    fontWeight: "400",
-    color: "#888888",
-    textAlign: "center",
-    fontFamily: "System",
-  },
-  // Nuovi stili per i componenti aggiunti
-  stateContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    borderRadius: 20,
-  },
-  stateText: {
-    marginLeft: 6,
-    fontSize: 14,
-    fontWeight: "500",
-    fontFamily: "System",
-  },
-  serverStatusContainer: {
-    alignItems: "center",
-    marginBottom: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: "rgba(33, 150, 243, 0.2)",
-    borderRadius: 12,
-    minHeight: 40,
-    justifyContent: "center",
-  },
-  serverStatusPhase: {
-    fontSize: 12,
-    fontWeight: "bold",
-    color: "#87CEEB",
-    marginBottom: 2,
-    fontFamily: "System",
-  },
-  serverStatusMessage: {
-    fontSize: 10,
-    color: "#cccccc",
-    textAlign: "center",
-    fontFamily: "System",
-  },
-  durationContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 16,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    backgroundColor: "rgba(244, 67, 54, 0.2)",
-    borderRadius: 16,
-  },
-  durationText: {
-    marginLeft: 4,
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#FF6B6B",
-    fontFamily: "monospace",
-  },
-  controlsContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginBottom: 16,
-  },
-  controlButton: {
-    alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginHorizontal: 8,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    borderRadius: 12,
-    minWidth: 60,
-  },
-  controlText: {
-    marginTop: 4,
-    fontSize: 11,
-    color: "#cccccc",
-    fontWeight: "500",
-    fontFamily: "System",
-  },
-  errorContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(244, 67, 54, 0.2)",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+  button: {
+    backgroundColor: '#007AFF',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
     borderRadius: 8,
-    marginBottom: 16,
-    maxWidth: "90%",
   },
-  errorText: {
-    marginLeft: 8,
-    color: "#FF6B6B",
-    fontSize: 12,
-    flex: 1,
-    fontFamily: "System",
+  testButton: {
+    backgroundColor: '#28a745',
   },
-  textContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(76, 175, 80, 0.2)",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+  closeButton: {
+    backgroundColor: '#dc3545',
+    paddingVertical: 12,
+    paddingHorizontal: 32,
     borderRadius: 8,
-    marginBottom: 16,
-    maxWidth: "90%",
   },
-  recognizedText: {
-    marginLeft: 8,
-    color: "#4CAF50",
-    fontSize: 14,
-    flex: 1,
-    fontFamily: "System",
-  },
-  autoSubtitle: {
-    fontSize: 14,
-    fontWeight: "400",
-    color: "#4CAF50",
-    textAlign: "center",
-    marginBottom: 8,
-    fontFamily: "System",
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    textAlign: 'center',
   },
 });
+
 
 export default VoiceChatModal;
