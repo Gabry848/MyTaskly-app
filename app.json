@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "My taskly",
-    "slug": "my-app-to-do-list",
+    "slug": "mytaskly",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
