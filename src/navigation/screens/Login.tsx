@@ -9,7 +9,7 @@ import {
   Image,
   StatusBar,
   SafeAreaView,
-  Modal,
+  AppState,
 } from "react-native";
 import { FontAwesome } from "@expo/vector-icons";
 import * as authService from "../../services/authService";
@@ -26,17 +26,17 @@ const LoginScreen = () => {
 
   const [username, setUsername] = React.useState("");
   const [password, setPassword] = React.useState("");
-  const [showPassword, setShowPassword] = React.useState(false); // Stato per mostrare/nascondere password
-  const [loginSuccess, setLoginSuccess] = React.useState(false); // Stato per tenere traccia del login riuscito
-  const [loginAttempts, setLoginAttempts] = React.useState(0); // Contatore tentativi di login
-  const [isBlocked, setIsBlocked] = React.useState(false); // Stato per bloccare il login
-  const [showBlockModal, setShowBlockModal] = React.useState(false); // Stato per mostrare il modal di blocco
+  const [showPassword, setShowPassword] = React.useState(false);
+  const [loginSuccess, setLoginSuccess] = React.useState(false);
+  const [failedAttempts, setFailedAttempts] = React.useState(0);
+  const [isBlocked, setIsBlocked] = React.useState(false);
+  const [showBlockMessage, setShowBlockMessage] = React.useState(false);
   const [notification, setNotification] = React.useState({
     isVisible: false,
     message: "",
     isSuccess: true,
     onFinish: () => {},
-  }); // Effetto per navigare alla Home dopo un login riuscito
+  });
   React.useEffect(() => {
     if (loginSuccess) {
       const timer = setTimeout(() => {
@@ -88,12 +88,6 @@ const LoginScreen = () => {
 
   // login function use authServicec to login
   async function handleLogin() {
-    // Verifica se il login è bloccato
-    if (isBlocked) {
-      setShowBlockModal(true);
-      return;
-    }
-
     try {
       // Verifica se i campi contengono caratteri speciali prima di inviare la richiesta
       if (containsSpecialChars(username)) {
@@ -103,9 +97,6 @@ const LoginScreen = () => {
       
       const login_data = await authService.login(username, password);
       if (login_data.success) {
-        // Reset dei tentativi in caso di successo
-        setLoginAttempts(0);
-        setIsBlocked(false);
         setLoginSuccess(true); // Imposta il login come riuscito
         eventEmitter.emit("loginSuccess"); // Emetti evento per aggiornare lo stato di autenticazione
         showNotification("Login effettuato con successo", true);
@@ -124,50 +115,52 @@ const LoginScreen = () => {
           });
         }, 2000);
       } else {
-        // Incrementa i tentativi di login
-        const newAttempts = loginAttempts + 1;
-        setLoginAttempts(newAttempts);
-        
-        if (newAttempts >= 3) {
-          // Imposta immediatamente i valori senza timeout
-          setIsBlocked(true);
-          setShowBlockModal(true);
-        } else {
-          const remainingAttempts = 3 - newAttempts;
-          showNotification(
-            login_data.message || `Username o password errati. ${remainingAttempts} tentativo${remainingAttempts > 1 ? 'i' : ''} rimasto${remainingAttempts > 1 ? '' : 'o'}.`,
-            false
-          );
-        }
+        handleFailedLogin();
+        showNotification(
+          login_data.message || "Username o password errati.",
+          false
+        );
       }
     } catch (error) {
-      // Incrementa i tentativi anche in caso di errore di rete
-      const newAttempts = loginAttempts + 1;
-      setLoginAttempts(newAttempts);
-      
-      if (newAttempts >= 3) {
-        // Imposta immediatamente i valori senza timeout
-        setIsBlocked(true);
-        setShowBlockModal(true);
-      } else {
-        let errorMessage = "Errore durante il login. Riprova più tardi.";
-        if (
-          error instanceof Error &&
-          (error as any).response &&
-          (error as any).response.status === 401
-        ) {
-          const remainingAttempts = 3 - newAttempts;
-          errorMessage = `Credenziali non valide. ${remainingAttempts} tentativo${remainingAttempts > 1 ? 'i' : ''} rimasto${remainingAttempts > 1 ? '' : 'o'}.`;
-        }
-        showNotification(errorMessage, false);
+      let errorMessage = "Errore durante il login. Riprova più tardi.";
+      if (
+        error instanceof Error &&
+        (error as any).response &&
+        (error as any).response.status === 401
+      ) {
+        errorMessage = "Credenziali non valide.";
       }
+      handleFailedLogin();
+      showNotification(errorMessage, false);
     }
   }
+
+  const handleFailedLogin = () => {
+    const newAttempts = failedAttempts + 1;
+    setFailedAttempts(newAttempts);
+    
+    if (newAttempts >= 3) {
+      setShowBlockMessage(true);
+      
+      setTimeout(() => {
+        setIsBlocked(true);
+        AppState.addEventListener('change', () => {});
+      }, 5000);
+    }
+  };
 
   // Funzione per invertire lo stato di visibilità della password
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
+
+  if (isBlocked) {
+    return (
+      <View style={styles.blockedContainer}>
+        <Text style={styles.blockedText}>App bloccata per troppi tentativi di login.</Text>
+      </View>
+    );
+  }
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
@@ -244,45 +237,11 @@ const LoginScreen = () => {
         <Text style={styles.signUpButtonText}>Create account</Text>
       </TouchableOpacity>
       
-      {/* Modal di blocco dopo 3 tentativi */}
-      {showBlockModal && (
-        <Modal
-          transparent={true}
-          visible={true}
-          onRequestClose={() => {}}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContainer}>
-              <FontAwesome 
-                name="exclamation-triangle" 
-                size={50} 
-                color="#FF6B6B" 
-                style={styles.modalIcon} 
-              />
-              <Text style={styles.modalTitle}>Troppi tentativi falliti</Text>
-              <Text style={styles.modalMessage}>
-                Hai superato il limite di 3 tentativi di login.{'\n\n'}
-                Per riprovare, chiudi completamente l&apos;app e riaprila.
-              </Text>
-              <TouchableOpacity
-                style={styles.modalButton}
-                onPress={() => {
-                  setShowBlockModal(false);
-                  // Non resettiamo isBlocked qui, solo nascondiamo il modal
-                }}
-              >
-                <Text style={styles.modalButtonText}>Ho capito</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
-      )}
-      
       <NotificationSnackbar
-        isVisible={notification.isVisible}
-        message={notification.message}
-        isSuccess={notification.isSuccess}
-        onFinish={notification.onFinish}
+        isVisible={showBlockMessage || notification.isVisible}
+        message={showBlockMessage ? "Troppi tentativi falliti. L'app si bloccherà tra 5 secondi." : notification.message}
+        isSuccess={showBlockMessage ? false : notification.isSuccess}
+        onFinish={showBlockMessage ? () => {} : notification.onFinish}
       />
     </SafeAreaView>
   );
@@ -472,6 +431,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "500",
     fontFamily: "System",
+  },
+  blockedContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#ff0000',
+  },
+  blockedText: {
+    color: '#ffffff',
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
 });
 
