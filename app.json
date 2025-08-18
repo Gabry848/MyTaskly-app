@@ -7,21 +7,21 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "scheme": "myapptodolist",
+    "scheme": "mytaskly",
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
         "NSMicrophoneUsageDescription": "Questa app richiede l'accesso al microfono per registrare messaggi vocali.",
         "ITSAppUsesNonExemptEncryption": false
       },
-      "bundleIdentifier": "com.anonymous.myapptodolist"
+      "bundleIdentifier": "com.Gabry848Studio.Mytaskly"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.anonymous.myapptodolist",
+      "package": "com.Gabry848Studio.Mytaskly",
       "permissions": [
         "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS"
