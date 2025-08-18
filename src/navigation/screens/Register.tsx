@@ -29,11 +29,8 @@ const RegisterScreen = () => {
     message: string;
     isSuccess: boolean;
     onFinish?: () => void;
-  }>({
-    isVisible: false,
-    message: "",
-    isSuccess: true,
-  });
+    key: number;
+  } | null>(null);
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
 
   // Funzione per validare l'input e verificare se contiene caratteri speciali
@@ -49,11 +46,9 @@ const RegisterScreen = () => {
         isVisible: true,
         message: "Lo username non può contenere caratteri speciali",
         isSuccess: false,
+        key: Date.now(),
         onFinish: () => {
-          setNotification((prev) => ({
-            ...prev,
-            isVisible: false,
-          }));
+          setNotification(null);
         },
       });
       return;
@@ -70,11 +65,9 @@ const RegisterScreen = () => {
         isVisible: true,
         message: "Lo username non può contenere caratteri speciali",
         isSuccess: false,
+        key: Date.now(),
         onFinish: () => {
-          setNotification((prev) => ({
-            ...prev,
-            isVisible: false,
-          }));
+          setNotification(null);
         },
       });
       return;
@@ -85,7 +78,8 @@ const RegisterScreen = () => {
         isVisible: true,
         message: "Passwords do not match",
         isSuccess: false,
-        onFinish: () => setNotification((prev) => ({ ...prev, isVisible: false })),
+        key: Date.now(),
+        onFinish: () => setNotification(null),
       });
       return;
     }
@@ -96,6 +90,7 @@ const RegisterScreen = () => {
         isVisible: true,
         message: result.message || "Registrazione effettuata con successo",
         isSuccess: true,
+        key: Date.now(),
       });
       navigation.navigate("EmailVerification", { 
         email: email, 
@@ -107,7 +102,8 @@ const RegisterScreen = () => {
         isVisible: true,
         message: result.message || "Errore durante la registrazione",
         isSuccess: false,
-        onFinish: () => setNotification((prev) => ({ ...prev, isVisible: false })),
+        key: Date.now(),
+        onFinish: () => setNotification(null),
       });
     }
   }  return (
@@ -179,11 +175,15 @@ const RegisterScreen = () => {
       >
         <Text style={styles.loginButtonText}>Login</Text>
       </TouchableOpacity>
-      <NotificationSnackbar
-        isVisible={notification.isVisible}
-        message={notification.message}        isSuccess={notification.isSuccess}
-        onFinish={notification.onFinish}
-      />
+      {notification && (
+        <NotificationSnackbar
+          key={notification.key}
+          isVisible={notification.isVisible}
+          message={notification.message}
+          isSuccess={notification.isSuccess}
+          onFinish={notification.onFinish}
+        />
+      )}
     </SafeAreaView>
   );
 };
