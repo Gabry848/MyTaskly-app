@@ -14,7 +14,7 @@ export const STORAGE_KEYS = {
 };
 
 // URL di default per l'API
-export const DEFAULT_BASE_URL = "https://taskly-production.up.railway.app";
+export const DEFAULT_BASE_URL = "https://api.mytasklyapp.com";
 // https://127.0.0.1:8000
 
 // Endpoint API
