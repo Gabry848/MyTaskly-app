@@ -2,6 +2,7 @@ import { TaskCacheService } from './TaskCacheService';
 import SyncManager from './SyncManager';
 import StorageManager from './StorageManager';
 import { getAllTasks, getCategories } from './taskService';
+import { initializeGoogleSignIn } from './googleSignInService';
 
 class AppInitializer {
   private static instance: AppInitializer;
@@ -22,6 +23,9 @@ class AppInitializer {
 
     try {
       console.log('[APP_INIT] Inizio inizializzazione app...');
+      
+      // 0. Inizializza Google Sign-In
+      await this.initializeGoogleAuth();
       
       // 1. Inizializza i servizi
       const cacheService = TaskCacheService.getInstance();
@@ -86,6 +90,16 @@ class AppInitializer {
     }
   }
 
+  private async initializeGoogleAuth(): Promise<void> {
+    try {
+      console.log('[APP_INIT] Inizializzazione Google Sign-In...');
+      await initializeGoogleSignIn();
+      console.log('[APP_INIT] ✅ Google Sign-In inizializzato');
+    } catch (error) {
+      console.error('[APP_INIT] ❌ Errore nell\'inizializzazione Google Sign-In:', error);
+      // Non bloccare l'app se Google Sign-In fallisce
+    }
+  }
 
   private async loadDataSynchronously(): Promise<void> {
     try {
