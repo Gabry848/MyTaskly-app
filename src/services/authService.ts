@@ -612,4 +612,5 @@ export {
   checkAndRefreshAuth,
   sendVerificationEmail,
   checkEmailVerificationStatus,
+  updateAuthData,
 };
