@@ -1,10 +1,23 @@
 import React from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Dimensions } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Dimensions, Alert } from "react-native";
 import { FontAwesome } from "@expo/vector-icons";
+import GoogleSignInButton from "./GoogleSignInButton";
 
 const { width } = Dimensions.get("window");
 
 const LoginScreen = () => {
+  const handleGoogleSignInSuccess = (user: any) => {
+    Alert.alert(
+      'Login Completato',
+      `Benvenuto ${user.name}!\nEmail: ${user.email}`,
+      [{ text: 'OK' }]
+    );
+  };
+
+  const handleGoogleSignInError = (error: string) => {
+    Alert.alert('Errore Login', error, [{ text: 'OK' }]);
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.avatar} />
@@ -19,6 +32,20 @@ const LoginScreen = () => {
       <TouchableOpacity style={[styles.loginButton, { width: width * 0.9 }]}>
         <Text style={styles.loginText}>Login Now</Text>
       </TouchableOpacity>
+      
+      {/* Aggiungi il separatore */}
+      <View style={styles.separator}>
+        <View style={styles.separatorLine} />
+        <Text style={styles.separatorText}>oppure</Text>
+        <View style={styles.separatorLine} />
+      </View>
+      
+      {/* Bottone Google Sign-In */}
+      <GoogleSignInButton
+        onSignInSuccess={handleGoogleSignInSuccess}
+        onSignInError={handleGoogleSignInError}
+      />
+      
       <View style={[styles.optionsContainer, { width: width * 0.9 }]}> 
         <TouchableOpacity>
           <Text style={styles.optionText}>Remember me</Text>
@@ -103,6 +130,23 @@ const styles = StyleSheet.create({
   signUpButtonText: {
     color: "white",
     fontSize: 14,
+  },
+  separator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 20,
+    width: width * 0.9,
+  },
+  separatorLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  separatorText: {
+    color: 'white',
+    marginHorizontal: 15,
+    fontSize: 14,
+    fontWeight: '500',
   },
 });
 

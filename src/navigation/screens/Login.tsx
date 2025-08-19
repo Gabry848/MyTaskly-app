@@ -16,6 +16,7 @@ import * as authService from "../../services/authService";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { RootStackParamList } from "../../types";
 import eventEmitter from "../../utils/eventEmitter";
+import { signInWithGoogle } from "../../services/googleSignInService";
 
 import { NotificationSnackbar } from "../../../components/NotificationSnackbar";
 
@@ -31,6 +32,7 @@ const LoginScreen = () => {
   const [failedAttempts, setFailedAttempts] = React.useState(0);
   const [isBlocked, setIsBlocked] = React.useState(false);
   const [showBlockMessage, setShowBlockMessage] = React.useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = React.useState(false);
   const [notification, setNotification] = React.useState({
     isVisible: false,
     message: "",
@@ -69,7 +71,7 @@ const LoginScreen = () => {
   };
 
   // Funzione helper per mostrare notifiche
-  const showNotification = (message: string, isSuccess: boolean) => {
+  const showNotification = React.useCallback((message: string, isSuccess: boolean) => {
     // Prima nascondi qualsiasi notifica esistente
     setNotification({ isVisible: false, message: "", isSuccess: true, onFinish: () => {} });
     
@@ -84,7 +86,35 @@ const LoginScreen = () => {
         },
       });
     }, 100);
-  };
+  }, []);
+
+  // Handle Google Auth response
+  // Rimuoviamo il vecchio useEffect per expo-auth-session
+
+  // Google Sign-In function con il nostro servizio
+  async function handleGoogleSignIn() {
+    try {
+      setIsGoogleLoading(true);
+      
+      const result = await signInWithGoogle();
+      
+      if (result.success) {
+        setLoginSuccess(true);
+        eventEmitter.emit("loginSuccess");
+        showNotification("Login con Google effettuato con successo", true);
+      } else {
+        showNotification(
+          result.message || "Errore durante il login con Google.",
+          false
+        );
+      }
+    } catch (error: any) {
+      console.error("Google Sign-In error:", error);
+      showNotification("Errore durante il login con Google. Riprova più tardi.", false);
+    } finally {
+      setIsGoogleLoading(false);
+    }
+  }
 
   // login function use authServicec to login
   async function handleLogin() {
@@ -112,6 +142,7 @@ const LoginScreen = () => {
           navigation.navigate("EmailVerification", {
             email: login_data.email || "",
             username: login_data.username || username,
+            password: password, // Aggiungi la password richiesta
           });
         }, 2000);
       } else {
@@ -218,6 +249,33 @@ const LoginScreen = () => {
         }}
       >
         <Text style={styles.loginText}>Login Now</Text>
+      </TouchableOpacity>
+      
+      <View style={styles.dividerContainer}>
+        <View style={styles.dividerLine} />
+        <Text style={styles.dividerText}>o</Text>
+        <View style={styles.dividerLine} />
+      </View>
+      
+      <TouchableOpacity
+        style={[
+          styles.googleButton, 
+          { width: width * 0.9 },
+          isGoogleLoading && styles.disabledButton
+        ]}
+        onPress={handleGoogleSignIn}
+        disabled={isGoogleLoading}
+      >
+        <View style={styles.googleIconContainer}>
+          {isGoogleLoading ? (
+            <Text style={styles.googleIconText}>...</Text>
+          ) : (
+            <Text style={styles.googleIconText}>G</Text>
+          )}
+        </View>
+        <Text style={styles.googleButtonText}>
+          {isGoogleLoading ? 'Accesso in corso...' : 'Continua con Google'}
+        </Text>
       </TouchableOpacity>
       <View style={[styles.optionsContainer, { width: width * 0.9 }]}>
         <TouchableOpacity>
@@ -443,6 +501,67 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     textAlign: 'center',
+  },
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: width * 0.9,
+    marginVertical: 20,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#e1e5e9',
+  },
+  dividerText: {
+    marginHorizontal: 15,
+    color: '#666666',
+    fontSize: 14,
+    fontFamily: 'System',
+    fontWeight: '400',
+  },
+  googleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#ffffff',
+    paddingVertical: 16,
+    borderRadius: 16,
+    marginBottom: 20,
+    borderWidth: 1.5,
+    borderColor: '#e1e5e9',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 1,
+  },
+  googleIconContainer: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#4285F4',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  googleIconText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: 'bold',
+    fontFamily: 'System',
+  },
+  googleButtonText: {
+    color: '#000000',
+    fontSize: 16,
+    fontWeight: '500',
+    fontFamily: 'System',
+  },
+  disabledButton: {
+    opacity: 0.5,
   },
 });
 
