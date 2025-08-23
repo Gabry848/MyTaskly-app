@@ -18,7 +18,8 @@
       "Bash(npm uninstall:*)",
       "Bash(npx expo start:*)",
       "Bash(taskkill:*)",
-      "Bash(cmd /c:*)"
+      "Bash(cmd /c:*)",
+      "WebFetch(domain:react-native-google-signin.github.io)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"

@@ -7,12 +7,25 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:643213673162:android:b65d71f89d6ae2cfe8aa33",
+        "mobilesdk_app_id": "1:643213673162:android:96dd89fa265e517fe8aa33",
         "android_client_info": {
-          "package_name": "com.anonymous.myapptodolist"
+          "package_name": "com.Gabry848Studio.Mytaskly"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "643213673162-h5j1ps98ubf4r1rst7codtq1nc507o47.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.Gabry848Studio.Mytaskly",
+            "certificate_hash": "352102809a39db773753f32762e5a677c50542a8"
+          }
+        },
+        {
+          "client_id": "643213673162-a0sge7ioso04bpt8lf8febr51fjsgjd8.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAnI0vMYDT1b3CoReqGs86ZPLlqAYLvYAY"
@@ -20,7 +33,55 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "643213673162-a0sge7ioso04bpt8lf8febr51fjsgjd8.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "643213673162-7lk71d5c0ov3703qo5c8mrcfsqipdjlp.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.Gabry848Studio.Mytaskly"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:643213673162:android:b65d71f89d6ae2cfe8aa33",
+        "android_client_info": {
+          "package_name": "com.anonymous.myapptodolist"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "643213673162-a0sge7ioso04bpt8lf8febr51fjsgjd8.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAnI0vMYDT1b3CoReqGs86ZPLlqAYLvYAY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "643213673162-a0sge7ioso04bpt8lf8febr51fjsgjd8.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "643213673162-7lk71d5c0ov3703qo5c8mrcfsqipdjlp.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.Gabry848Studio.Mytaskly"
+              }
+            }
+          ]
         }
       }
     }
