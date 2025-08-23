@@ -19,7 +19,8 @@
       "Bash(npx expo start:*)",
       "Bash(taskkill:*)",
       "Bash(cmd /c:*)",
-      "WebFetch(domain:react-native-google-signin.github.io)"
+      "WebFetch(domain:react-native-google-signin.github.io)",
+      "Bash(keytool:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"
