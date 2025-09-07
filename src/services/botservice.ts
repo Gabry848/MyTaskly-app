@@ -112,6 +112,42 @@ export async function sendMessageToBot(
 }
 
 /**
+ * Elimina la cronologia chat dal server
+ * @returns {Promise<boolean>} - True se l'eliminazione è andata a buon fine, False altrimenti
+ */
+export async function clearChatHistory(): Promise<boolean> {
+  try {
+    // Verifica che l'utente sia autenticato
+    const token = await getValidToken();
+    if (!token) {
+      console.warn("Utente non autenticato - impossibile eliminare la cronologia");
+      return false;
+    }
+
+    // Invia la richiesta DELETE al server per eliminare la cronologia
+    const response = await fetch("https://taskly-production.up.railway.app/chat/history/clear", {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      console.error(`Errore nell'eliminazione cronologia chat: HTTP ${response.status}`);
+      return false;
+    }
+
+    console.log("✅ Cronologia chat eliminata dal server");
+    return true;
+    
+  } catch (error: any) {
+    console.error("❌ Errore nell'eliminazione della cronologia chat:", error);
+    return false;
+  }
+}
+
+/**
  * Crea una nuova chat vuota
  * @returns {Promise<Array>} - Array vuoto per inizializzare una nuova chat
  */
