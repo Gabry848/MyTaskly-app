@@ -3,6 +3,7 @@ import ChatHeader from './ChatHeader';
 import ChatInput from './ChatInput';
 import ChatList from './ChatList';
 import VoiceRecordButton from './VoiceRecordButton';
+import MarkdownExample from './MarkdownExample';
 import { Message, ChatSession } from './types';
 
 // Esporto tutti i componenti e i tipi per facilitare l'import
@@ -11,6 +12,7 @@ export {
   ChatInput,
   ChatList,
   VoiceRecordButton,
+  MarkdownExample,
   Message,
   ChatSession
 };

@@ -143,14 +143,59 @@ export function validateMessage(message: string): boolean {
 /**
  * Formatta un messaggio per la visualizzazione
  * @param {string} message - Il messaggio da formattare
- * @returns {string} - Il messaggio formattato
+ * @returns {string} - Il messaggio formattato con supporto Markdown
  */
 export function formatMessage(message: string): string {
   if (!message || typeof message !== 'string') {
     return "";
   }
   
-  return message.trim();
+  let formattedMessage = message.trim();
+  
+  // Converte alcuni pattern comuni in Markdown
+  // Titoli con emoji task
+  formattedMessage = formattedMessage.replace(
+    /📅 TASK PER LA DATA (.+?):/g, 
+    '## 📅 Task per la data $1\n\n'
+  );
+  
+  // Totale task trovati
+  formattedMessage = formattedMessage.replace(
+    /📊 Totale task trovati: (\d+)/g,
+    '\n---\n**📊 Totale task trovati:** `$1`'
+  );
+  
+  // Pattern per evidenziare i numeri di task
+  formattedMessage = formattedMessage.replace(
+    /(\d+) task/g,
+    '**$1** task'
+  );
+  
+  // Pattern per evidenziare le date
+  formattedMessage = formattedMessage.replace(
+    /(\d{4}-\d{2}-\d{2})/g,
+    '`$1`'
+  );
+  
+  // Pattern per evidenziare gli orari
+  formattedMessage = formattedMessage.replace(
+    /(\d{2}:\d{2})/g,
+    '`$1`'
+  );
+  
+  // Converti status in badge
+  formattedMessage = formattedMessage.replace(
+    /"status":\s*"([^"]+)"/g,
+    '"status": **$1**'
+  );
+  
+  // Converti category_name in evidenziato
+  formattedMessage = formattedMessage.replace(
+    /"category_name":\s*"([^"]+)"/g,
+    '"category_name": *$1*'
+  );
+  
+  return formattedMessage;
 }
 
 /**

@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { StyleSheet, View, Text, Animated } from 'react-native';
 import { MessageBubbleProps } from './types';
 import TaskTableBubble from './TaskTableBubble'; // Importa il nuovo componente
+import Markdown from 'react-native-markdown-display'; // Supporto per Markdown
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style }) => {
   const isBot = message.sender === 'bot';
@@ -61,6 +62,29 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style }) => {
     const legacyMessage = `Ecco i tuoi impegni:\n📅 TASK:\n${JSON.stringify(message.tasks)}\n📊 Totale task trovati: ${message.tasks.length}`;
     return <TaskTableBubble message={legacyMessage} style={style} />;
   }  // Altrimenti, visualizza il messaggio di testo normale
+  
+  // Funzione per renderizzare il contenuto del messaggio
+  const renderMessageContent = () => {
+    if (isBot) {
+      // Per i messaggi del bot, usa il rendering Markdown
+      return (
+        <Markdown style={markdownStyles}>
+          {message.text}
+        </Markdown>
+      );
+    } else {
+      // Per i messaggi dell'utente, usa il testo normale
+      return (
+        <Text style={[
+          styles.messageText,
+          styles.userText
+        ]}>
+          {message.text}
+        </Text>
+      );
+    }
+  };
+
   return (
     <Animated.View style={[
       styles.messageContainer,
@@ -75,12 +99,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style }) => {
         styles.messageBubble,
         isBot ? styles.botBubble : styles.userBubble
       ]}>
-        <Text style={[
-          styles.messageText,
-          isBot ? styles.botText : styles.userText
-        ]}>
-          {message.text}
-        </Text>
+        {renderMessageContent()}
         {message.modelType && isBot && (
           <Text style={styles.modelType}>
             {message.modelType === 'advanced' ? 'Modello avanzato' : 'Modello base'}
@@ -161,5 +180,102 @@ const styles = StyleSheet.create({
     fontFamily: 'System',
   },
 });
+
+// Stili personalizzati per il rendering Markdown
+const markdownStyles = {
+  body: {
+    fontSize: 16,
+    lineHeight: 24,
+    fontFamily: 'System',
+    fontWeight: '400' as const,
+    color: '#1a1a1a',
+  },
+  heading1: {
+    fontSize: 20,
+    fontWeight: 'bold' as const,
+    color: '#1a1a1a',
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  heading2: {
+    fontSize: 18,
+    fontWeight: 'bold' as const,
+    color: '#1a1a1a',
+    marginTop: 10,
+    marginBottom: 6,
+  },
+  heading3: {
+    fontSize: 16,
+    fontWeight: 'bold' as const,
+    color: '#1a1a1a',
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  paragraph: {
+    fontSize: 16,
+    lineHeight: 24,
+    color: '#1a1a1a',
+    marginBottom: 8,
+  },
+  strong: {
+    fontWeight: 'bold' as const,
+    color: '#000000',
+  },
+  em: {
+    fontStyle: 'italic' as const,
+  },
+  code_inline: {
+    backgroundColor: '#f0f0f0',
+    borderRadius: 4,
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    fontFamily: 'monospace',
+    fontSize: 14,
+    color: '#d63384',
+  },
+  code_block: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    padding: 12,
+    marginVertical: 8,
+    fontFamily: 'monospace',
+    fontSize: 14,
+    color: '#212529',
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+  },
+  blockquote: {
+    backgroundColor: '#f8f9fa',
+    borderLeftWidth: 4,
+    borderLeftColor: '#6c757d',
+    paddingLeft: 12,
+    paddingVertical: 8,
+    marginVertical: 8,
+    fontStyle: 'italic' as const,
+  },
+  list_item: {
+    flexDirection: 'row' as const,
+    marginVertical: 2,
+  },
+  bullet_list_icon: {
+    color: '#6c757d',
+    marginRight: 8,
+    fontWeight: 'bold' as const,
+  },
+  ordered_list_icon: {
+    color: '#6c757d',
+    marginRight: 8,
+    fontWeight: 'bold' as const,
+  },
+  link: {
+    color: '#0066cc',
+    textDecorationLine: 'underline' as const,
+  },
+  hr: {
+    backgroundColor: '#e9ecef',
+    height: 1,
+    marginVertical: 16,
+  },
+};
 
 export default MessageBubble;
