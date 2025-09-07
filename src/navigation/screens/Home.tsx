@@ -14,7 +14,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ChatList, Message } from "../../../components/BotChat";
-import { sendMessageToBot } from "../../services/botservice";
+import { sendMessageToBot, formatMessage } from "../../services/botservice";
 import { STORAGE_KEYS } from "../../constants/authConstants";
 import { TaskCacheService } from '../../services/TaskCacheService';
 import SyncManager, { SyncStatus } from '../../services/SyncManager';
@@ -233,10 +233,13 @@ const Home20 = () => {
         messages
       );
 
+      // Formatta la risposta del bot per il supporto Markdown
+      const formattedBotResponse = formatMessage(botResponse);
+
       // Crea il messaggio del bot
       const botMessage: Message = {
         id: generateMessageId(),
-        text: botResponse,
+        text: formattedBotResponse,
         sender: "bot",
         start_time: new Date(),
         modelType: "advanced",

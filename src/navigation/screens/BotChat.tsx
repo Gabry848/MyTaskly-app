@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { View, KeyboardAvoidingView, Platform, SafeAreaView, Alert, Keyboard, Dimensions } from 'react-native';
-import { sendMessageToBot, createNewChat } from '../../services/botservice';
+import { sendMessageToBot, createNewChat, formatMessage } from '../../services/botservice';
 import { 
   ChatHeader, 
   ChatInput, 
@@ -163,6 +163,9 @@ const BotChat: React.FC = () => {
       // Otteniamo la risposta dal server usando il modello selezionato e i messaggi precedenti
       const botResponseText = await sendMessageToBot(text, modelType, lastMessages);
       
+      // Formatta il messaggio per il supporto Markdown
+      const formattedBotResponse = formatMessage(botResponseText);
+      
       // Rimuoviamo il messaggio temporaneo e aggiungiamo la risposta reale
       setMessages(prevMessages => {
         const filtered = prevMessages.filter(msg => msg.id !== tempId);
@@ -170,7 +173,7 @@ const BotChat: React.FC = () => {
           ...filtered,
           {
             id: Math.random().toString(),
-            text: botResponseText,
+            text: formattedBotResponse,
             sender: BOT,
             start_time: new Date(),
             modelType: modelType  // Aggiungiamo l'informazione sul modello utilizzato
