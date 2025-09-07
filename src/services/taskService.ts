@@ -50,7 +50,8 @@ export async function getTasks(category_name?: string, useCache: boolean = true)
       }
       
       const cachedTasks = await getServices().cacheService.getCachedTasks();
-      if (cachedTasks.length > 0) {
+      //if (cachedTasks.length > 0) {
+      if (false) {
         console.log('[TASK_SERVICE] Usando dati dalla cache');
         
         // Filtra per categoria se specificata
