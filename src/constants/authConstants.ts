@@ -24,5 +24,6 @@ export const API_ENDPOINTS = {
   REFRESH: "/auth/refresh",
   SEND_VERIFICATION: "/email/send-verification",
   VERIFICATION_STATUS: "/email/verification-status",
-  TIMEZONE: "/api/notifications/timezone"
+  TIMEZONE: "/api/notifications/timezone",
+  GOOGLE_LOGIN: "/auth/login/google"
 };
