@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { View, KeyboardAvoidingView, Platform, SafeAreaView, Alert, Keyboard, Dimensions } from 'react-native';
-import { sendMessageToBot, createNewChat, formatMessage } from '../../services/botservice';
+import { sendMessageToBot, createNewChat, formatMessage, clearChatHistory } from '../../services/botservice';
 import { 
   ChatHeader, 
   ChatInput, 
@@ -92,7 +92,7 @@ const BotChat: React.FC = () => {
   const handleNewChat = () => {
     Alert.alert(
       "Nuova Chat",
-      "Vuoi creare una nuova chat? Tutti i messaggi attuali verranno eliminati.",
+      "Vuoi creare una nuova chat? Tutti i messaggi attuali verranno eliminati sia localmente che dal server.",
       [
         {
           text: "Annulla",
@@ -100,7 +100,32 @@ const BotChat: React.FC = () => {
         },
         {
           text: "Conferma",
-          onPress: () => initializeChat()
+          onPress: async () => {
+            try {
+              // Elimina la cronologia dal server
+              const serverCleared = await clearChatHistory();
+              
+              if (!serverCleared) {
+                // Mostra un avviso ma procedi comunque con la pulizia locale
+                Alert.alert(
+                  "Avviso",
+                  "Non è stato possibile eliminare la cronologia dal server, ma la chat locale verrà comunque resettata.",
+                  [{ text: "OK", onPress: () => initializeChat() }]
+                );
+              } else {
+                // Tutto ok, procedi con la pulizia locale
+                await initializeChat();
+              }
+            } catch (error) {
+              console.error("Errore durante il reset della chat:", error);
+              // In caso di errore, procedi comunque con la pulizia locale
+              Alert.alert(
+                "Errore",
+                "Si è verificato un errore durante l'eliminazione della cronologia dal server, ma la chat locale verrà resettata.",
+                [{ text: "OK", onPress: () => initializeChat() }]
+              );
+            }
+          }
         }
       ]
     );
