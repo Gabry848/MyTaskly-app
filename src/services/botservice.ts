@@ -1,63 +1,6 @@
 import { getValidToken } from "./authService";
 import { fetch } from 'expo/fetch';
 
-/**
- * Service per la gestione della comunicazione con il bot
- * Gestisce messaggi testuali e chat vocale via WebSocket
- */
-
-// Costanti per la configurazione del servizio
-const MESSAGE_MAX_LENGTH = 1000; // Lunghezza massima totale dei messaggi precedenti
-const MAX_PREVIOUS_MESSAGES = 5; // Numero massimo di messaggi precedenti da includere nel contesto
-
-/**
- * Prepara gli ultimi messaggi per l'invio al server, limitando la lunghezza totale
- * @param {Array} messages - I messaggi della chat
- * @param {number} maxMessages - Numero massimo di messaggi da includere (default: 5)
- * @param {number} maxTotalLength - Lunghezza massima totale consentita in caratteri (default: 1000)
- * @returns {Array} - I messaggi formattati per l'invio al server
- */
-function preparePreviousMessages(
-  messages: any[],
-  maxMessages: number = MAX_PREVIOUS_MESSAGES,
-  maxTotalLength: number = MESSAGE_MAX_LENGTH
-): { content: string; role: string }[] {
-  // Verifica input
-  if (!messages || messages.length === 0) return [];
-
-  // Rimuovi l'ultimo messaggio perché è quello dell'utente che sta scrivendo
-  const messagesWithoutLast = messages.slice(0, -1);
-  
-  // Prendi solo gli ultimi N messaggi
-  const recentMessages = messagesWithoutLast.slice(-maxMessages);
-
-  // Formatta i messaggi nel formato richiesto dal server
-  const formattedMessages = recentMessages.map((msg) => {
-    const content = msg.text || msg.content || "";
-    // Aggiungi indicatore per messaggi già processati per evitare riesecuzioni
-    const processedContent = msg.role === "user" || msg.sender === "user" 
-      ? `${content} (già fatto)` 
-      : content;
-    
-    return {
-      content: processedContent,
-      role: msg.sender || msg.role || "user",
-    };
-  });
-
-  // Calcola la lunghezza totale di tutti i messaggi
-  let totalLength = 0;
-  formattedMessages.forEach((msg) => {
-    totalLength += msg.content.length;
-  });
-
-  // Se la lunghezza supera il massimo, riduci ulteriormente i messaggi
-  if (totalLength > maxTotalLength) {
-    return formattedMessages.slice(-Math.floor(maxMessages / 2));
-  }
-
-  return formattedMessages;
-}
 
 /**
  * Invia un messaggio testuale al bot e riceve una risposta in streaming
@@ -78,15 +21,11 @@ export async function sendMessageToBot(
     if (!token) {
       return "Mi dispiace, sembra che tu non sia autenticato. Effettua il login per continuare.";
     }
-
-    // Prepara i messaggi precedenti per fornire contesto al bot
-    const formattedPreviousMessages = preparePreviousMessages(previousMessages);
     
     // Costruisci il payload per la richiesta
     const requestPayload = {
       quest: userMessage,
       model: modelType,
-      previous_messages: formattedPreviousMessages,
     };
 
     // Invia la richiesta al server con supporto streaming usando expo fetch
