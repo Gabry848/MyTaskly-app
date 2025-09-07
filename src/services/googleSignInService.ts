@@ -155,7 +155,7 @@ const authenticateWithBackend = async (userInfo: any, tokens: any) => {
   try {
     // Invia i dati a un endpoint del tuo backend per l'autenticazione Google
     const response = await axios.post(
-      `${API_ENDPOINTS.SIGNIN}/google`, // Nuovo endpoint per Google Sign-In
+      `${API_ENDPOINTS.GOOGLE_LOGIN}`, // Nuovo endpoint per Google Sign-In
       {
         googleAccessToken: tokens.accessToken,
         googleIdToken: tokens.idToken,

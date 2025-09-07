@@ -157,7 +157,7 @@ Il servizio tenta di autenticare l'utente con il backend tramite l'endpoint:
 
 ```typescript
 // POST /auth/login/google
-const response = await axios.post(`${API_ENDPOINTS.SIGNIN}/google`, {
+const response = await axios.post(`${API_ENDPOINTS.GOOGLE_LOGIN}`, {
   googleAccessToken: tokens.accessToken,
   googleIdToken: tokens.idToken,
   userProfile: {
