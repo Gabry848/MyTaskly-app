@@ -14,7 +14,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ChatList, Message } from "../../../components/BotChat";
-import { sendMessageToBot, formatMessage } from "../../services/botservice";
+import { sendMessageToBot, formatMessage, clearChatHistory } from "../../services/botservice";
 import { STORAGE_KEYS } from "../../constants/authConstants";
 import { TaskCacheService } from '../../services/TaskCacheService';
 import SyncManager, { SyncStatus } from '../../services/SyncManager';
@@ -269,7 +269,15 @@ const Home20 = () => {
     }
   };
 
-  const handleResetChat = () => {
+  const handleResetChat = async () => {
+    try {
+      // Prima elimina la cronologia dal server
+      await clearChatHistory();
+    } catch (error) {
+      console.error("Errore durante l'eliminazione della cronologia dal server:", error);
+      // Procedi comunque con la pulizia locale anche se fallisce quella del server
+    }
+
     // Animazione di uscita per i messaggi
     Animated.parallel([
       Animated.timing(messagesOpacity, {
