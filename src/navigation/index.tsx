@@ -25,6 +25,7 @@ import HelpScreen from "./screens/Help";
 import AboutScreen from "./screens/About";
 import LanguageScreen from "./screens/Language";
 import VoiceSettingsScreen from "./screens/VoiceSettings";
+import GoogleCalendarScreen from "./screens/GoogleCalendar";
 import NotificationDebugScreen from "./screens/NotificationDebug";
 import BugReportScreen from "./screens/BugReport";
 import { NotFound as NotFoundScreen } from "./screens/NotFound";
@@ -49,6 +50,7 @@ export type RootStackParamList = {
   About: undefined;
   Language: undefined;
   VoiceSettings: undefined;
+  GoogleCalendar: undefined;
   NotificationDebug: undefined;
   BugReport: undefined;
   Statistics: undefined;
@@ -290,6 +292,11 @@ function AppStack() {
           name="VoiceSettings" 
           component={VoiceSettingsScreen}
           options={{ title: 'Impostazioni Vocali' }}
+        />
+        <Stack.Screen 
+          name="GoogleCalendar" 
+          component={GoogleCalendarScreen}
+          options={{ title: 'Google Calendar' }}
         />
         <Stack.Screen 
           name="NotificationDebug" 

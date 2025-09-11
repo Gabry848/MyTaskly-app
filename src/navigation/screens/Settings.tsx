@@ -33,6 +33,10 @@ export default function Settings() {
     navigation.navigate('VoiceSettings');
   };
 
+  const handleNavigateToGoogleCalendar = () => {
+    navigation.navigate('GoogleCalendar');
+  };
+
   const testNotification = async () => {
     try {
       const response = await axiosInstance.post('api/notifications/test-timer-notification', {
@@ -121,6 +125,17 @@ export default function Settings() {
           <View style={styles.menuItemContent}>
             <Ionicons name="mic-outline" size={24} color="#000000" />
             <Text style={styles.menuItemText}>Impostazioni vocali</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#666666" />
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.menuItem} 
+          onPress={handleNavigateToGoogleCalendar}
+        >
+          <View style={styles.menuItemContent}>
+            <Ionicons name="calendar-outline" size={24} color="#000000" />
+            <Text style={styles.menuItemText}>Google Calendar</Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color="#666666" />
         </TouchableOpacity>
