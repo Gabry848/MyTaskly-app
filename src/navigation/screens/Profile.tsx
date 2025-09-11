@@ -267,7 +267,7 @@ const ProfileScreen = () => {
               <TouchableOpacity
                 style={[styles.actionButton, styles.settingsButton]}
                 onPress={() => {
-                  // navigation.navigate("Settings") // TODO: Fix navigation types
+                  navigation.navigate("Settings") 
                 }}
                 activeOpacity={0.8}
               >
@@ -293,7 +293,7 @@ const ProfileScreen = () => {
               <TouchableOpacity
                 style={[styles.actionButton, styles.bugReportButton]}
                 onPress={() => {
-                  // navigation.navigate("BugReport") // TODO: Fix navigation types
+                  navigation.navigate("BugReport")
                 }}
                 activeOpacity={0.8}
               >
