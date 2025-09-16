@@ -13,7 +13,7 @@ const GOOGLE_CONFIG = {
   hostedDomain: '',
   forceCodeForRefreshToken: true,
   accountName: '',
-  scopes: ['openid', 'profile', 'email'],
+  scopes: ['openid', 'profile', 'email', 'https://www.googleapis.com/auth/calendar'],
 };
 
 /**
@@ -89,7 +89,10 @@ export const signInWithGoogle = async () => {
     // Ottieni i token
     const tokens = await GoogleSignin.getTokens();
     
-    console.log('✅ Token Google ottenuti');
+    console.log('✅ Token Google ottenuti', tokens);
+
+    // Verifica se esiste un refresh token
+    console.log('🔍 Refresh token disponibile:', tokens.refreshToken ? 'Sì' : 'No');
 
     // Invia i dati al tuo backend per l'autenticazione
     const backendResult = await authenticateWithBackend(userInfo, tokens);
@@ -153,21 +156,37 @@ export const signInWithGoogle = async () => {
  */
 const authenticateWithBackend = async (userInfo: any, tokens: any) => {
   try {
+    const loginData = {
+      google_access_token: tokens.accessToken,
+      google_refresh_token: tokens.refreshToken || null,
+      google_client_id: GOOGLE_CONFIG.webClientId,
+      google_client_secret: null, // Il client secret non dovrebbe essere esposto nel frontend
+      googleAccessToken: tokens.accessToken, // Mantengo per compatibilità
+      googleIdToken: tokens.idToken,
+      userProfile: {
+        id: userInfo.data?.user.id,
+        email: userInfo.data?.user.email,
+        name: userInfo.data?.user.name,
+        photo: userInfo.data?.user.photo,
+        familyName: userInfo.data?.user.familyName,
+        givenName: userInfo.data?.user.givenName,
+      }
+    };
+
+    console.log('📤 Invio parametri al backend:', {
+      google_access_token: tokens.accessToken ? '***' + tokens.accessToken.slice(-10) : 'N/A',
+      google_refresh_token: tokens.refreshToken ? '***' + tokens.refreshToken.slice(-10) : 'N/A',
+      google_client_id: GOOGLE_CONFIG.webClientId,
+      google_client_secret: 'null (sicurezza)',
+      googleAccessToken: tokens.accessToken ? '***' + tokens.accessToken.slice(-10) : 'N/A',
+      googleIdToken: tokens.idToken ? '***' + tokens.idToken.slice(-10) : 'N/A',
+      userEmail: userInfo.data?.user.email,
+    });
+
     // Invia i dati a un endpoint del tuo backend per l'autenticazione Google
     const response = await axios.post(
       `${API_ENDPOINTS.GOOGLE_LOGIN}`, // Nuovo endpoint per Google Sign-In
-      {
-        googleAccessToken: tokens.accessToken,
-        googleIdToken: tokens.idToken,
-        userProfile: {
-          id: userInfo.data?.user.id,
-          email: userInfo.data?.user.email,
-          name: userInfo.data?.user.name,
-          photo: userInfo.data?.user.photo,
-          familyName: userInfo.data?.user.familyName,
-          givenName: userInfo.data?.user.givenName,
-        }
-      },
+      loginData,
       {
         headers: {
           'Content-Type': 'application/json',

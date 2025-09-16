@@ -1,23 +1,61 @@
-import React, { useState } from 'react';
-import { StyleSheet, View, TouchableOpacity, SafeAreaView, StatusBar, Text } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import React, { useEffect } from 'react';
+import { StyleSheet, View, TouchableOpacity, SafeAreaView, StatusBar, Text, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useGoogleCalendar } from '../../hooks/useGoogleCalendar';
 
 export default function GoogleCalendar() {
-  const navigation = useNavigation();
-  const [isConnected, setIsConnected] = useState(false);
+  const {
+    isConnected,
+    isLoading,
+    syncStatus,
+    error,
+    connectToGoogle,
+    disconnect,
+    performInitialSync,
+    syncTasksToCalendar,
+    syncCalendarToTasks,
+    refreshStatus,
+    clearError
+  } = useGoogleCalendar();
 
-  const handleGoBack = () => {
-    navigation.goBack();
+  const handleConnect = async () => {
+    await connectToGoogle();
   };
 
-  const handleConnect = () => {
-    setIsConnected(true);
+  const handleDisconnect = async () => {
+    Alert.alert(
+      'Disconnetti Google Calendar',
+      'Sei sicuro di voler disconnettere il tuo account Google Calendar? I tuoi task esistenti non verranno eliminati.',
+      [
+        { text: 'Annulla', style: 'cancel' },
+        { text: 'Disconnetti', style: 'destructive', onPress: disconnect }
+      ]
+    );
   };
 
-  const handleDisconnect = () => {
-    setIsConnected(false);
+  const handleSyncTasks = async () => {
+    await syncTasksToCalendar();
   };
+
+  const handleSyncEvents = async () => {
+    await syncCalendarToTasks();
+  };
+
+  const handleFullSync = async () => {
+    await performInitialSync();
+  };
+
+  // Controlla stato connessione all'avvio
+  useEffect(() => {
+    refreshStatus();
+  }, []);
+
+  // Gestione errori
+  useEffect(() => {
+    if (error) {
+      Alert.alert('Errore', error, [{ text: 'OK', onPress: clearError }]);
+    }
+  }, [error]);
 
   const renderConnectedView = () => (
     <View style={styles.contentContainer}>
@@ -25,26 +63,41 @@ export default function GoogleCalendar() {
         <Ionicons name="checkmark-circle" size={80} color="#4CAF50" />
         <Text style={styles.successTitle}>Google Calendar Connesso</Text>
         <Text style={styles.successDescription}>
-          Il tuo account Google Calendar è stato collegato con successo. 
-          I tuoi eventi verranno sincronizzati automaticamente.
+          Il tuo account Google Calendar è stato collegato con successo.
+          {syncStatus && (
+            `\n\nTask sincronizzati: ${syncStatus.synced_tasks}/${syncStatus.total_tasks} (${syncStatus.sync_percentage.toFixed(1)}%)`
+          )}
         </Text>
       </View>
       
       <View style={styles.infoContainer}>
-        <Text style={styles.infoTitle}>Sincronizzazione</Text>
-        <Text style={styles.infoDescription}>
-          • Gli eventi vengono sincronizzati ogni 15 minuti
-        </Text>
-        <Text style={styles.infoDescription}>
-          • I nuovi task possono essere creati dai tuoi eventi
-        </Text>
-        <Text style={styles.infoDescription}>
-          • Le modifiche vengono aggiornate in tempo reale
-        </Text>
+        <Text style={styles.infoTitle}>Opzioni di Sincronizzazione</Text>
+        <TouchableOpacity style={styles.syncButton} onPress={handleSyncTasks}>
+          <Ionicons name="arrow-forward-outline" size={20} color="#4285F4" />
+          <Text style={styles.syncButtonText}>Sincronizza Task → Calendario</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity style={styles.syncButton} onPress={handleSyncEvents}>
+          <Ionicons name="arrow-back-outline" size={20} color="#4285F4" />
+          <Text style={styles.syncButtonText}>Importa Eventi → Task</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity style={styles.syncButton} onPress={handleFullSync}>
+          <Ionicons name="sync-outline" size={20} color="#4285F4" />
+          <Text style={styles.syncButtonText}>Sincronizzazione Completa</Text>
+        </TouchableOpacity>
       </View>
 
-      <TouchableOpacity style={styles.disconnectButton} onPress={handleDisconnect}>
-        <Text style={styles.disconnectButtonText}>Disconnetti Account</Text>
+      <TouchableOpacity 
+        style={[styles.disconnectButton, isLoading && styles.disconnectButtonDisabled]} 
+        onPress={handleDisconnect}
+        disabled={isLoading}
+      >
+        {isLoading ? (
+          <ActivityIndicator size="small" color="#FF5722" />
+        ) : (
+          <Text style={styles.disconnectButtonText}>Disconnetti Account</Text>
+        )}
       </TouchableOpacity>
     </View>
   );
@@ -75,10 +128,20 @@ export default function GoogleCalendar() {
         </View>
       </View>
 
-      <TouchableOpacity style={styles.connectButton} onPress={handleConnect}>
-        <Ionicons name="logo-google" size={20} color="#ffffff" />
-        <Text style={styles.connectButtonText}>Connetti Google Calendar</Text>
-      </TouchableOpacity>
+      {/* <TouchableOpacity 
+        style={[styles.connectButton, isLoading && styles.connectButtonDisabled]} 
+        onPress={handleConnect}
+        disabled={isLoading}
+      >
+        {isLoading ? (
+          <ActivityIndicator size="small" color="#ffffff" />
+        ) : (
+          <Ionicons name="logo-google" size={20} color="#ffffff" />
+        )}
+        <Text style={styles.connectButtonText}>
+          {isLoading ? 'Connessione in corso...' : 'Connetti Google Calendar'}
+        </Text> */}
+      {/* </TouchableOpacity> */}
     </View>
   );
 
@@ -86,10 +149,12 @@ export default function GoogleCalendar() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
       
-      {/* Header */}
-      <View style={styles.header}>
+      {/* Work in Progress Banner */}
+      <View style={styles.wipBanner}>
+        <Ionicons name="construct-outline" size={20} color="#FF9800" />
+        <Text style={styles.wipText}>Work in Progress</Text>
       </View>
-
+      
       {/* Content */}
       {isConnected ? renderConnectedView() : renderNotConnectedView()}
     </SafeAreaView>
@@ -225,5 +290,45 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     textAlign: 'center',
+  },
+  connectButtonDisabled: {
+    backgroundColor: '#cccccc',
+  },
+  disconnectButtonDisabled: {
+    opacity: 0.6,
+  },
+  syncButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#f0f7ff',
+    borderRadius: 8,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#e1f0ff',
+  },
+  syncButtonText: {
+    fontSize: 15,
+    color: '#333333',
+    marginLeft: 12,
+    fontWeight: '500',
+    flex: 1,
+  },
+  wipBanner: {
+    backgroundColor: '#FFF3E0',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#FFE0B2',
+  },
+  wipText: {
+    fontSize: 14,
+    color: '#FF9800',
+    fontWeight: '600',
+    marginLeft: 8,
   },
 });
