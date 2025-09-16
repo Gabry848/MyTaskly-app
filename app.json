@@ -60,7 +60,9 @@
       "expo-dev-client"
     ],
     "extra": {
-      "eas": {}
+      "eas": {
+        "projectId": "465d68be-dbee-463a-a2cf-bd01e0e63d3d"
+      }
     },
     "owner": "gabry848"
   }
