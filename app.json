@@ -14,11 +14,17 @@
         "NSMicrophoneUsageDescription": "Questa app richiede l'accesso al microfono per registrare messaggi vocali.",
         "ITSAppUsesNonExemptEncryption": false
       },
-      "bundleIdentifier": "com.Gabry848Studio.Mytaskly"
+      "bundleIdentifier": "com.Gabry848Studio.Mytaskly",
+      "icon": {
+        "dark": "assets/icons/ios-dark.png",
+        "light": "assets/icons/ios-light.png",
+        "tinted": "assets/icons/ios-tinted.png"
+      }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/icons/adaptive-icon.png",
+        "monochromeImage": "./assets/icons/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.Gabry848Studio.Mytaskly",
@@ -38,14 +44,19 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#ffffff",
-          "image": "./assets/icon.png"
+          "image": "./assets/icons/splash-icon-dark.png",
+          "imageWidth": 200,
+          "dark":{
+            "backgroundColor": "#000000",
+            "image": "./assets/icons/splash-icon-light.png"
+          }
         }
       ],
       "react-native-edge-to-edge",
       [
         "expo-notifications",
         {
-          "icon": "./assets/icon.png",
+          "icon": "./assets/icons/adaptive-icon.png",
           "color": "#ffffff",
           "sounds": [],
           "mode": "production"
