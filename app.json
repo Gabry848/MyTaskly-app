@@ -4,7 +4,7 @@
     "slug": "mytaskly",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/icons/ios-light.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "scheme": "mytaskly",
