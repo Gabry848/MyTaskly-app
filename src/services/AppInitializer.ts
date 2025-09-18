@@ -3,6 +3,9 @@ import SyncManager from './SyncManager';
 import StorageManager from './StorageManager';
 import { getAllTasks, getCategories } from './taskService';
 import { initializeGoogleSignIn } from './googleSignInService';
+import { checkAndRefreshAuth } from './authService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { STORAGE_KEYS } from '../constants/authConstants';
 
 class AppInitializer {
   private static instance: AppInitializer;
@@ -26,20 +29,23 @@ class AppInitializer {
       
       // 0. Inizializza Google Sign-In
       await this.initializeGoogleAuth();
-      
-      // 1. Inizializza i servizi
+
+      // 1. Controlla e carica dati utente
+      await this.loadUserData();
+
+      // 2. Inizializza i servizi
       const cacheService = TaskCacheService.getInstance();
       const syncManager = SyncManager.getInstance();
       const storageManager = StorageManager.getInstance();
 
-      // 2. Controlla e pulisci storage se necessario
+      // 3. Controlla e pulisci storage se necessario
       const storageInfo = await storageManager.checkStorageLimit();
       if (storageInfo.isNearLimit) {
         console.log('[APP_INIT] Spazio storage limitato, pulizia automatica...');
         await storageManager.cleanupOldData();
       }
 
-      // 3. Controlla se abbiamo dati in cache
+      // 4. Controlla se abbiamo dati in cache
       const hasCachedData = await cacheService.hasCachedData();
       
       if (!hasCachedData) {
@@ -68,7 +74,7 @@ class AppInitializer {
         }
       }
 
-      // 4. Controlla modifiche offline da sincronizzare
+      // 5. Controlla modifiche offline da sincronizzare
       const offlineChanges = await cacheService.getOfflineChanges();
       if (offlineChanges.length > 0) {
         console.log(`[APP_INIT] ${offlineChanges.length} modifiche offline da sincronizzare`);
@@ -78,7 +84,7 @@ class AppInitializer {
         );
       }
 
-      // 5. Inizializza pulizie periodiche
+      // 6. Inizializza pulizie periodiche
       this.setupPeriodicMaintenance();
 
       this.initialized = true;
@@ -87,6 +93,89 @@ class AppInitializer {
     } catch (error) {
       console.error('[APP_INIT] Errore nell\'inizializzazione:', error);
       // Non bloccare l'app anche se l'inizializzazione fallisce
+    }
+  }
+
+  private async loadUserData(): Promise<void> {
+    try {
+      console.log('[APP_INIT] Caricamento dati utente...');
+
+      // Controlla e aggiorna l'autenticazione
+      const authStatus = await checkAndRefreshAuth();
+
+      if (authStatus.isAuthenticated) {
+        try {
+          // Prova a recuperare i dati utente dal server per avere informazioni aggiornate
+          const { getValidToken } = await import('./authService');
+          const token = await getValidToken();
+
+          if (token) {
+            const axios = (await import('./axiosInstance')).default;
+            const response = await axios.get('/auth/current_user_info', {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+              },
+            });
+
+            const serverUserInfo = response.data;
+            if (serverUserInfo.username) {
+              // Aggiorna USER_NAME con il valore dal server (più affidabile)
+              await AsyncStorage.setItem(STORAGE_KEYS.USER_NAME, serverUserInfo.username);
+              console.log(`[APP_INIT] ✅ USER_NAME sincronizzato dal server: ${serverUserInfo.username}`);
+
+              // Aggiorna anche i dati utente locali con le info dal server
+              const existingUserData = await AsyncStorage.getItem(STORAGE_KEYS.USER_DATA);
+              const userDataToUpdate = existingUserData ? JSON.parse(existingUserData) : {};
+              const updatedUserData = {
+                ...userDataToUpdate,
+                username: serverUserInfo.username,
+                email: serverUserInfo.email || userDataToUpdate.email,
+                registration_date: serverUserInfo.registration_date || userDataToUpdate.registration_date
+              };
+              await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(updatedUserData));
+              console.log('[APP_INIT] ✅ Dati utente aggiornati con info dal server');
+            }
+          } else {
+            // Fallback ai dati locali se non c'è token valido
+            await this.loadUserDataFromStorage();
+          }
+        } catch (serverError) {
+          console.warn('[APP_INIT] ⚠️ Impossibile recuperare dati dal server, uso dati locali:', serverError);
+          // Fallback ai dati locali in caso di errore server
+          await this.loadUserDataFromStorage();
+        }
+      } else {
+        console.log('[APP_INIT] ℹ️ Utente non autenticato, skip caricamento dati utente');
+      }
+
+    } catch (error) {
+      console.error('[APP_INIT] ❌ Errore nel caricamento dati utente:', error);
+      // Non bloccare l'inizializzazione per questo errore
+    }
+  }
+
+  private async loadUserDataFromStorage(): Promise<void> {
+    // Carica dati utente da AsyncStorage come fallback
+    const userData = await AsyncStorage.getItem(STORAGE_KEYS.USER_DATA);
+    if (userData) {
+      const userDataParsed = JSON.parse(userData);
+
+      // Assicurati che USER_NAME sia settato
+      if (userDataParsed.username) {
+        await AsyncStorage.setItem(STORAGE_KEYS.USER_NAME, userDataParsed.username);
+        console.log(`[APP_INIT] ✅ USER_NAME settato da storage locale: ${userDataParsed.username}`);
+      } else {
+        // Se non abbiamo username nei dati utente, prova a recuperarlo direttamente
+        const storedUsername = await AsyncStorage.getItem(STORAGE_KEYS.USER_NAME);
+        if (storedUsername) {
+          console.log(`[APP_INIT] ✅ USER_NAME già presente: ${storedUsername}`);
+        } else {
+          console.log('[APP_INIT] ⚠️ Nessun username trovato nei dati utente');
+        }
+      }
+    } else {
+      console.log('[APP_INIT] ⚠️ Nessun dato utente trovato in storage');
     }
   }
 

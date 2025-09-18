@@ -44,7 +44,7 @@ const ProfileScreen = () => {
   useEffect(() => {
     const fetchInitialData = async () => {
       // Prima carica i dati base da AsyncStorage per mostrare subito qualcosa
-      const username = await AsyncStorage.getItem(STORAGE_KEYS.USER_NAME);
+      const username = "utente"
       setUserData(prev => ({
         ...prev,
         username: username || "Username",
