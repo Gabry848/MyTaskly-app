@@ -18,7 +18,7 @@ export default function Language() {
         {/* Current Language Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="globe" size={24} color="#000000" />
+            <Ionicons name="globe" size={24} color="#28a745" />
             <Text style={styles.sectionTitle}>Lingua attuale</Text>
           </View>
           
@@ -36,7 +36,7 @@ export default function Language() {
               </View>
             </View>
             <View style={styles.selectedIndicator}>
-              <Ionicons name="checkmark-circle" size={24} color="#000000" />
+              <Ionicons name="checkmark-circle" size={24} color="#28a745" />
             </View>
           </TouchableOpacity>
         </View>
@@ -44,7 +44,7 @@ export default function Language() {
         {/* Available Languages Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="list" size={24} color="#000000" />
+            <Ionicons name="list" size={24} color="#17a2b8" />
             <Text style={styles.sectionTitle}>Lingue disponibili</Text>
           </View>
           
@@ -104,7 +104,7 @@ export default function Language() {
         {/* Info Section */}
         <View style={styles.infoSection}>
           <View style={styles.infoCard}>
-            <Ionicons name="information-circle" size={32} color="#000000" />
+            <Ionicons name="information-circle" size={32} color="#17a2b8" />
             <Text style={styles.infoTitle}>Localizzazione in sviluppo</Text>
             <Text style={styles.infoDescription}>
               Stiamo lavorando per aggiungere il supporto a più lingue. 
@@ -120,7 +120,7 @@ export default function Language() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#f8f9fa',
   },
   content: {
     flex: 1,
@@ -128,6 +128,18 @@ const styles = StyleSheet.create({
   section: {
     paddingHorizontal: 20,
     paddingVertical: 24,
+    backgroundColor: '#ffffff',
+    marginHorizontal: 16,
+    marginVertical: 8,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -137,13 +149,13 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#000000',
+    color: '#2c3e50',
     fontFamily: 'System',
     marginLeft: 12,
   },
   sectionSubtitle: {
     fontSize: 14,
-    color: '#000000',
+    color: '#6c757d',
     fontFamily: 'System',
     marginBottom: 20,
   },
@@ -155,13 +167,18 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     backgroundColor: '#ffffff',
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#000000',
     marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   selectedLanguageItem: {
-    borderColor: '#000000',
-    backgroundColor: '#ffffff',
+    backgroundColor: '#f8fff8',
   },
   languageContent: {
     flexDirection: 'row',
@@ -186,13 +203,13 @@ const styles = StyleSheet.create({
   languageName: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#000000',
+    color: '#2c3e50',
     fontFamily: 'System',
     marginBottom: 2,
   },
   languageNative: {
     fontSize: 14,
-    color: '#000000',
+    color: '#6c757d',
     fontFamily: 'System',
   },
   selectedIndicator: {
@@ -207,25 +224,23 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 16,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#f8f9fa',
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#000000',
     marginBottom: 8,
-    opacity: 0.6,
+    opacity: 0.8,
   },
   disabledText: {
-    color: '#000000',
+    color: '#adb5bd',
   },
   comingSoonBadge: {
-    backgroundColor: '#000000',
+    backgroundColor: '#ffc107',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
   },
   comingSoonText: {
     fontSize: 12,
-    color: '#ffffff',
+    color: '#000000',
     fontWeight: '600',
     fontFamily: 'System',
   },
@@ -238,13 +253,19 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 24,
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#000000',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   infoTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#000000',
+    color: '#2c3e50',
     fontFamily: 'System',
     marginTop: 12,
     marginBottom: 8,
@@ -252,7 +273,7 @@ const styles = StyleSheet.create({
   },
   infoDescription: {
     fontSize: 14,
-    color: '#000000',
+    color: '#6c757d',
     textAlign: 'center',
     lineHeight: 20,
     fontFamily: 'System',

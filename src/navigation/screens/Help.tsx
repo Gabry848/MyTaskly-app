@@ -14,7 +14,7 @@ export default function Help() {
         {/* App Overview */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="information-circle" size={28} color="#000000" />
+            <Ionicons name="information-circle" size={28} color="#17a2b8" />
             <Text style={styles.sectionTitle}>Cos&apos;è Mytaskly?</Text>
           </View>
           <Text style={styles.sectionText}>
@@ -27,13 +27,13 @@ export default function Help() {
         {/* Features Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="star" size={28} color="#000000" />
+            <Ionicons name="star" size={28} color="#ffc107" />
             <Text style={styles.sectionTitle}>Funzionalità principali</Text>
           </View>
           
           <View style={styles.featuresList}>
             <View style={styles.featureItem}>
-              <Ionicons name="checkmark-circle" size={20} color="#000000" />
+              <Ionicons name="checkmark-circle" size={20} color="#28a745" />
               <View style={styles.featureTextContainer}>
                 <Text style={styles.featureTitle}>Gestione Task</Text>
                 <Text style={styles.featureDescription}>
@@ -43,7 +43,7 @@ export default function Help() {
             </View>
 
             <View style={styles.featureItem}>
-              <Ionicons name="folder" size={20} color="#000000" />
+              <Ionicons name="folder" size={20} color="#6f42c1" />
               <View style={styles.featureTextContainer}>
                 <Text style={styles.featureTitle}>Categorie</Text>
                 <Text style={styles.featureDescription}>
@@ -53,7 +53,7 @@ export default function Help() {
             </View>
 
             <View style={styles.featureItem}>
-              <Ionicons name="document-text" size={20} color="#000000" />
+              <Ionicons name="document-text" size={20} color="#20c997" />
               <View style={styles.featureTextContainer}>
                 <Text style={styles.featureTitle}>Note</Text>
                 <Text style={styles.featureDescription}>
@@ -63,7 +63,7 @@ export default function Help() {
             </View>
 
             <View style={styles.featureItem}>
-              <Ionicons name="chatbubbles" size={20} color="#000000" />
+              <Ionicons name="chatbubbles" size={20} color="#dc3545" />
               <View style={styles.featureTextContainer}>
                 <Text style={styles.featureTitle}>Assistant AI</Text>
                 <Text style={styles.featureDescription}>
@@ -73,7 +73,7 @@ export default function Help() {
             </View>
 
             <View style={styles.featureItem}>
-              <Ionicons name="notifications" size={20} color="#000000" />
+              <Ionicons name="notifications" size={20} color="#e83e8c" />
               <View style={styles.featureTextContainer}>
                 <Text style={styles.featureTitle}>Notifiche</Text>
                 <Text style={styles.featureDescription}>
@@ -87,7 +87,7 @@ export default function Help() {
         {/* How to Use Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="help-circle" size={28} color="#000000" />
+            <Ionicons name="help-circle" size={28} color="#007bff" />
             <Text style={styles.sectionTitle}>Come utilizzare l&apos;app</Text>
           </View>
 
@@ -145,27 +145,27 @@ export default function Help() {
         {/* Tips Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="bulb" size={28} color="#000000" />
+            <Ionicons name="bulb" size={28} color="#fd7e14" />
             <Text style={styles.sectionTitle}>Suggerimenti</Text>
           </View>
           
           <View style={styles.tipsList}>
             <View style={styles.tipItem}>
-              <Ionicons name="time" size={16} color="#000000" />
+              <Ionicons name="time" size={16} color="#007bff" />
               <Text style={styles.tipText}>
                 Imposta delle priorità per le tue task più importanti
               </Text>
             </View>
 
             <View style={styles.tipItem}>
-              <Ionicons name="calendar" size={16} color="#000000" />
+              <Ionicons name="calendar" size={16} color="#28a745" />
               <Text style={styles.tipText}>
                 Utilizza le date di scadenza per non perdere appuntamenti importanti
               </Text>
             </View>
 
             <View style={styles.tipItem}>
-              <Ionicons name="sync" size={16} color="#000000" />
+              <Ionicons name="sync" size={16} color="#17a2b8" />
               <Text style={styles.tipText}>
                 Mantieni l&apos;app sempre aggiornata per ricevere le ultime funzionalità
               </Text>
@@ -180,7 +180,7 @@ export default function Help() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#f8f9fa',
   },
   content: {
     flex: 1,
@@ -188,8 +188,18 @@ const styles = StyleSheet.create({
   section: {
     paddingHorizontal: 20,
     paddingVertical: 24,
-    borderBottomWidth: 1,
-    borderBottomColor: '#000000',
+    backgroundColor: '#ffffff',
+    marginHorizontal: 16,
+    marginVertical: 8,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -199,13 +209,13 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#000000',
+    color: '#2c3e50',
     fontFamily: 'System',
     marginLeft: 12,
   },
   sectionText: {
     fontSize: 16,
-    color: '#000000',
+    color: '#495057',
     lineHeight: 24,
     fontFamily: 'System',
   },
@@ -224,13 +234,13 @@ const styles = StyleSheet.create({
   featureTitle: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#000000',
+    color: '#2c3e50',
     fontFamily: 'System',
     marginBottom: 4,
   },
   featureDescription: {
     fontSize: 14,
-    color: '#000000',
+    color: '#6c757d',
     lineHeight: 20,
     fontFamily: 'System',
   },
@@ -246,7 +256,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#000000',
+    backgroundColor: '#007bff',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -263,13 +273,13 @@ const styles = StyleSheet.create({
   stepTitle: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#000000',
+    color: '#2c3e50',
     fontFamily: 'System',
     marginBottom: 4,
   },
   stepDescription: {
     fontSize: 14,
-    color: '#000000',
+    color: '#6c757d',
     lineHeight: 20,
     fontFamily: 'System',
   },
@@ -283,7 +293,7 @@ const styles = StyleSheet.create({
   },
   tipText: {
     fontSize: 14,
-    color: '#000000',
+    color: '#6c757d',
     lineHeight: 20,
     fontFamily: 'System',
     marginLeft: 8,
