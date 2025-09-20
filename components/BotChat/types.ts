@@ -9,6 +9,8 @@ export interface Message {
   start_time: Date;
   modelType?: 'base' | 'advanced'; // Tipo di modello utilizzato per questo messaggio
   tasks?: TaskItem[]; // Array opzionale di attività
+  isStreaming?: boolean; // Indica se il messaggio è ancora in streaming
+  isComplete?: boolean; // Indica se il messaggio streaming è completato
 }
 
 // Interfaccia per gli elementi delle attività

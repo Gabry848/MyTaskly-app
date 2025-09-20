@@ -14,7 +14,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ChatList, Message } from "../../../components/BotChat";
-import { sendMessageToBot, formatMessage, clearChatHistory } from "../../services/botservice";
+import { sendMessageToBot, formatMessage, clearChatHistory, StreamingCallback } from "../../services/botservice";
 import { STORAGE_KEYS } from "../../constants/authConstants";
 import { TaskCacheService } from '../../services/TaskCacheService';
 import SyncManager, { SyncStatus } from '../../services/SyncManager';
@@ -225,47 +225,88 @@ const Home20 = () => {
     setMessage("");
     setIsLoading(true);
 
+    // Crea il messaggio del bot in streaming
+    const botMessageId = generateMessageId();
+    const initialBotMessage: Message = {
+      id: botMessageId,
+      text: "",
+      sender: "bot",
+      start_time: new Date(),
+      modelType: "advanced",
+      isStreaming: true,
+      isComplete: false,
+    };
+
+    // Aggiungi il messaggio del bot vuoto per iniziare lo streaming
+    setMessages((prev) => [...prev, initialBotMessage]);
+    setIsLoading(false);
+
     try {
-      // Invia il messaggio al bot
-      const botResponse = await sendMessageToBot(
-        trimmedMessage,
-        "advanced", // Puoi renderlo configurabile
-        messages
-      );
-
-      // Formatta la risposta del bot per il supporto Markdown
-      const formattedBotResponse = formatMessage(botResponse);
-
-      // Crea il messaggio del bot
-      const botMessage: Message = {
-        id: generateMessageId(),
-        text: formattedBotResponse,
-        sender: "bot",
-        start_time: new Date(),
-        modelType: "advanced",
+      // Callback per gestire lo streaming
+      const onStreamChunk: StreamingCallback = (chunk: string, isComplete: boolean) => {
+        if (isComplete) {
+          // Lo streaming è completato, rimuovi l'indicatore
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === botMessageId
+                ? { ...msg, isStreaming: false, isComplete: true }
+                : msg
+            )
+          );
+        } else {
+          // Aggiungi il chunk al messaggio esistente
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === botMessageId
+                ? { ...msg, text: msg.text + chunk }
+                : msg
+            )
+          );
+        }
       };
 
-      // Aggiungi la risposta del bot con un leggero delay per una migliore UX
-      setTimeout(() => {
-        setMessages((prev) => [...prev, botMessage]);
-        setIsLoading(false);
-      }, 300);
+      // Invia il messaggio al bot con streaming
+      const botResponse = await sendMessageToBot(
+        trimmedMessage,
+        "advanced",
+        messages,
+        onStreamChunk
+      );
+
+      // Formatta la risposta completa del bot per il supporto Markdown
+      const formattedBotResponse = formatMessage(botResponse);
+
+      // Aggiorna il messaggio con la risposta formattata finale
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === botMessageId
+            ? {
+                ...msg,
+                text: formattedBotResponse,
+                isStreaming: false,
+                isComplete: true
+              }
+            : msg
+        )
+      );
+
     } catch (error) {
       console.error("Errore nell'invio del messaggio:", error);
 
-      // Messaggio di errore del bot
-      const errorMessage: Message = {
-        id: generateMessageId(),
-        text: "Mi dispiace, si è verificato un errore. Riprova più tardi.",
-        sender: "bot",
-        start_time: new Date(),
-        modelType: "base",
-      };
-
-      setTimeout(() => {
-        setMessages((prev) => [...prev, errorMessage]);
-        setIsLoading(false);
-      }, 300);
+      // Aggiorna il messaggio del bot con un errore
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === botMessageId
+            ? {
+                ...msg,
+                text: "Mi dispiace, si è verificato un errore. Riprova più tardi.",
+                isStreaming: false,
+                isComplete: true,
+                modelType: "base"
+              }
+            : msg
+        )
+      );
     }
   };
 
@@ -320,6 +361,8 @@ const Home20 = () => {
       sender: "bot",
       start_time: new Date(),
       modelType: "advanced",
+      isStreaming: false,
+      isComplete: true,
     };
 
     // Se è il primo messaggio, avvia l'animazione della chat

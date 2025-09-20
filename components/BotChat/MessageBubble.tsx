@@ -9,6 +9,11 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(20)).current;
 
+  // Animazioni per i punti di streaming
+  const streamingDot1 = useRef(new Animated.Value(0.5)).current;
+  const streamingDot2 = useRef(new Animated.Value(0.5)).current;
+  const streamingDot3 = useRef(new Animated.Value(0.5)).current;
+
   // Animazione di entrata per ogni nuovo messaggio
   useEffect(() => {
     Animated.parallel([
@@ -24,6 +29,46 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style }) => {
       }),
     ]).start();
   }, [fadeAnim, slideAnim]);
+
+  // Animazione per i punti di streaming
+  useEffect(() => {
+    if (message.isStreaming) {
+      const createPulseAnimation = (animValue: Animated.Value, delay: number) => {
+        return Animated.loop(
+          Animated.sequence([
+            Animated.delay(delay),
+            Animated.timing(animValue, {
+              toValue: 1,
+              duration: 600,
+              useNativeDriver: true,
+            }),
+            Animated.timing(animValue, {
+              toValue: 0.5,
+              duration: 600,
+              useNativeDriver: true,
+            }),
+          ])
+        );
+      };
+
+      const animations = [
+        createPulseAnimation(streamingDot1, 0),
+        createPulseAnimation(streamingDot2, 200),
+        createPulseAnimation(streamingDot3, 400),
+      ];
+
+      animations.forEach(anim => anim.start());
+
+      return () => {
+        animations.forEach(anim => anim.stop());
+      };
+    } else {
+      // Reset delle animazioni quando lo streaming finisce
+      streamingDot1.setValue(0.5);
+      streamingDot2.setValue(0.5);
+      streamingDot3.setValue(0.5);
+    }
+  }, [message.isStreaming, streamingDot1, streamingDot2, streamingDot3]);
   
   // Formatta la data per la visualizzazione
   const formatTime = (date: Date) => {
@@ -100,7 +145,14 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style }) => {
         isBot ? styles.botBubble : styles.userBubble
       ]}>
         {renderMessageContent()}
-        {message.modelType && isBot && (
+        {message.isStreaming && isBot && (
+          <View style={styles.streamingIndicator}>
+            <Animated.View style={[styles.streamingDot, { opacity: streamingDot1 }]} />
+            <Animated.View style={[styles.streamingDot, { opacity: streamingDot2 }]} />
+            <Animated.View style={[styles.streamingDot, { opacity: streamingDot3 }]} />
+          </View>
+        )}
+        {message.modelType && isBot && !message.isStreaming && (
           <Text style={styles.modelType}>
             {message.modelType === 'advanced' ? 'Modello avanzato' : 'Modello base'}
           </Text>
@@ -178,6 +230,19 @@ const styles = StyleSheet.create({
     marginTop: 6,
     fontStyle: 'italic',
     fontFamily: 'System',
+  },
+  streamingIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    justifyContent: 'flex-start',
+  },
+  streamingDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#666666',
+    marginHorizontal: 2,
   },
 });
 
