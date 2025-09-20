@@ -139,7 +139,7 @@ export default function VoiceSettingsScreen() {
         {/* Introduzione */}
         <View style={styles.introSection}>
           <View style={styles.introIcon}>
-            <Ionicons name="mic" size={32} color="#000000" />
+            <Ionicons name="mic" size={32} color="#2196f3" />
           </View>
           <Text style={styles.introTitle}>Personalizza la Chat Vocale</Text>
           <Text style={styles.introText}>
@@ -175,19 +175,19 @@ export default function VoiceSettingsScreen() {
         {/* Info Aggiuntive */}
         <View style={styles.infoSection}>
           <View style={styles.infoItem}>
-            <Ionicons name="information-circle-outline" size={20} color="#000000" />
+            <Ionicons name="information-circle-outline" size={20} color="#17a2b8" />
             <Text style={styles.infoText}>
               Le impostazioni vengono salvate automaticamente
             </Text>
           </View>
           <View style={styles.infoItem}>
-            <Ionicons name="cloud-outline" size={20} color="#000000" />
+            <Ionicons name="cloud-outline" size={20} color="#28a745" />
             <Text style={styles.infoText}>
               Sincronizzate su tutti i tuoi dispositivi
             </Text>
           </View>
           <View style={styles.infoItem}>
-            <Ionicons name="time-outline" size={20} color="#000000" />
+            <Ionicons name="time-outline" size={20} color="#ffc107" />
             <Text style={styles.infoText}>
               Applicate alla prossima conversazione vocale
             </Text>
@@ -201,18 +201,18 @@ export default function VoiceSettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#f8f9fa',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: '#f8f9fa',
   },
   loadingText: {
     marginTop: 10,
     fontSize: 16,
-    color: '#000000',
+    color: '#495057',
   },
   header: {
     flexDirection: 'row',
@@ -239,21 +239,32 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingTop: 20,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#f8f9fa',
   },
   introSection: {
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingBottom: 30,
     backgroundColor: '#ffffff',
+    marginHorizontal: 16,
+    marginBottom: 16,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 8,
   },
   introIcon: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#e3f2fd',
     borderWidth: 2,
-    borderColor: '#000000',
+    borderColor: '#2196f3',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
@@ -261,19 +272,31 @@ const styles = StyleSheet.create({
   introTitle: {
     fontSize: 24,
     fontWeight: '600',
-    color: '#000000',
+    color: '#2c3e50',
     marginBottom: 10,
     textAlign: 'center',
   },
   introText: {
     fontSize: 16,
-    color: '#333333',
+    color: '#6c757d',
     textAlign: 'center',
     lineHeight: 22,
   },
   settingSection: {
-    marginBottom: 30,
+    marginBottom: 16,
     paddingHorizontal: 20,
+    backgroundColor: '#ffffff',
+    marginHorizontal: 16,
+    borderRadius: 12,
+    paddingVertical: 20,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   settingHeader: {
     marginBottom: 15,
@@ -281,19 +304,17 @@ const styles = StyleSheet.create({
   settingTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#000000',
+    color: '#2c3e50',
     marginBottom: 5,
   },
   settingDescription: {
     fontSize: 14,
-    color: '#666666',
+    color: '#6c757d',
     lineHeight: 20,
   },
   optionsContainer: {
     backgroundColor: '#ffffff',
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#000000',
     overflow: 'hidden',
   },
   optionItem: {
@@ -303,15 +324,15 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: '#e9ecef',
     backgroundColor: '#ffffff',
   },
   selectedOption: {
-    backgroundColor: '#000000',
+    backgroundColor: '#007bff',
   },
   optionText: {
     fontSize: 16,
-    color: '#000000',
+    color: '#2c3e50',
     fontWeight: '400',
   },
   selectedOptionText: {
@@ -323,6 +344,16 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     marginTop: 20,
     backgroundColor: '#ffffff',
+    marginHorizontal: 16,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   infoItem: {
     flexDirection: 'row',
@@ -331,7 +362,7 @@ const styles = StyleSheet.create({
   },
   infoText: {
     fontSize: 14,
-    color: '#333333',
+    color: '#6c757d',
     marginLeft: 10,
     flex: 1,
   },
