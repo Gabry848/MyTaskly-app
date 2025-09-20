@@ -3,17 +3,24 @@ import { fetch } from 'expo/fetch';
 
 
 /**
+ * Callback per gestire chunk di testo in streaming
+ */
+export type StreamingCallback = (chunk: string, isComplete: boolean) => void;
+
+/**
  * Invia un messaggio testuale al bot e riceve una risposta in streaming
  * Utilizza l'endpoint /chat/text per la chat scritta con supporto streaming
  * @param {string} userMessage - Il messaggio dell'utente da inviare al bot
  * @param {string} modelType - Il tipo di modello da utilizzare ('base' o 'advanced')
  * @param {Array} previousMessages - Gli ultimi messaggi scambiati tra utente e bot per il contesto
+ * @param {StreamingCallback} onStreamChunk - Callback per ricevere chunk in streaming (opzionale)
  * @returns {Promise<string>} - La risposta completa del bot
  */
 export async function sendMessageToBot(
   userMessage: string,
   modelType: "base" | "advanced" = "base",
-  previousMessages: any[] = []
+  previousMessages: any[] = [],
+  onStreamChunk?: StreamingCallback
 ): Promise<string> {
   try {
     // Verifica che l'utente sia autenticato
@@ -72,10 +79,15 @@ export async function sendMessageToBot(
             try {
               const jsonStr = line.replace('data: ', '').trim();
               const parsed = JSON.parse(jsonStr);
-              
+
               if (parsed.type === 'content' && parsed.content) {
                 fullMessage += parsed.content;
                 console.log(parsed.content); // Log del contenuto in real-time
+
+                // Chiama la callback se fornita
+                if (onStreamChunk) {
+                  onStreamChunk(parsed.content, false);
+                }
               }
             } catch (e: any) {
               console.log("Errore parsing JSON per linea:", line);
@@ -86,6 +98,11 @@ export async function sendMessageToBot(
       }
     } finally {
       reader.releaseLock();
+    }
+
+    // Notifica il completamento dello streaming
+    if (onStreamChunk) {
+      onStreamChunk('', true);
     }
 
     return fullMessage || "Nessuna risposta ricevuta dal bot.";
