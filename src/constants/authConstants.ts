@@ -11,6 +11,7 @@ export const STORAGE_KEYS = {
   USER_EMAIL: "auth.userEmail",
   USER_ID: "auth.userId",
   USER_PASSWORD: "auth.userPassword",
+  SUGGESTED_COMMAND_SHOWN: "ui.suggestedCommandShown",
 };
 
 // URL di default per l'API

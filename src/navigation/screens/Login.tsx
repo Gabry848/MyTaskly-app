@@ -17,6 +17,8 @@ import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { RootStackParamList } from "../../types";
 import eventEmitter from "../../utils/eventEmitter";
 import { signInWithGoogle } from "../../services/googleSignInService";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { STORAGE_KEYS } from "../../constants/authConstants";
 
 import { NotificationSnackbar } from "../../../components/NotificationSnackbar";
 
@@ -99,6 +101,8 @@ const LoginScreen = () => {
       const result = await signInWithGoogle();
       
       if (result.success) {
+        // Reset del comando suggerito per il nuovo utente
+        await AsyncStorage.setItem(STORAGE_KEYS.SUGGESTED_COMMAND_SHOWN, 'false');
         setLoginSuccess(true);
         eventEmitter.emit("loginSuccess");
         showNotification("Login con Google effettuato con successo", true);
@@ -127,6 +131,8 @@ const LoginScreen = () => {
       
       const login_data = await authService.login(username, password);
       if (login_data.success) {
+        // Reset del comando suggerito per il nuovo utente
+        await AsyncStorage.setItem(STORAGE_KEYS.SUGGESTED_COMMAND_SHOWN, 'false');
         setLoginSuccess(true); // Imposta il login come riuscito
         eventEmitter.emit("loginSuccess"); // Emetti evento per aggiornare lo stato di autenticazione
         showNotification("Login effettuato con successo", true);
