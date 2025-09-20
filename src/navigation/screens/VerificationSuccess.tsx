@@ -15,6 +15,8 @@ import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "../../types";
 import * as authService from "../../services/authService";
 import { NotificationSnackbar } from "../../../components/NotificationSnackbar";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { STORAGE_KEYS } from "../../constants/authConstants";
 
 const { width } = Dimensions.get("window");
 
@@ -99,6 +101,8 @@ const VerificationSuccessScreen = () => {
       const result = await authService.login(username, password);
 
       if (result.success) {
+        // Reset del comando suggerito per il nuovo utente
+        await AsyncStorage.setItem(STORAGE_KEYS.SUGGESTED_COMMAND_SHOWN, 'false');
         setNotification({
           isVisible: true,
           message:

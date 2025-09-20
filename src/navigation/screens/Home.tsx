@@ -30,6 +30,7 @@ const Home20 = () => {
   const [isVoiceChatVisible, setIsVoiceChatVisible] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null);
+  const [suggestedCommandUsed, setSuggestedCommandUsed] = useState(false);
   
   // Servizi
   const cacheService = useRef(TaskCacheService.getInstance()).current;
@@ -67,7 +68,13 @@ const Home20 = () => {
         if (storedUserName) {
           setUserName(storedUserName);
         }
-        
+
+        // Recupera lo stato del comando suggerito
+        const suggestedCommandShown = await AsyncStorage.getItem(
+          STORAGE_KEYS.SUGGESTED_COMMAND_SHOWN
+        );
+        setSuggestedCommandUsed(suggestedCommandShown === 'true');
+
         // Inizializza cache in background
         const hasCachedData = await cacheService.hasCachedData();
         if (!hasCachedData) {
@@ -195,7 +202,15 @@ const Home20 = () => {
     if (isLoading) return;
 
     setMessage(command);
-    
+    setSuggestedCommandUsed(true);
+
+    // Salva in AsyncStorage che il comando è stato utilizzato
+    try {
+      await AsyncStorage.setItem(STORAGE_KEYS.SUGGESTED_COMMAND_SHOWN, 'true');
+    } catch (error) {
+      console.error("Errore nel salvare lo stato del comando suggerito:", error);
+    }
+
     // Simula un breve delay per far vedere il testo nell'input
     setTimeout(() => {
       handleSubmit();
@@ -331,7 +346,7 @@ const Home20 = () => {
         duration: 300,
         useNativeDriver: true,
       }),
-    ]).start(() => {
+    ]).start(async () => {
       // Reset dello stato dopo l'animazione
       setMessages([]);
       setMessage("");
@@ -339,6 +354,17 @@ const Home20 = () => {
       setIsLoading(false);
       setDisplayedText("");
       setIsTyping(false);
+
+      // Leggi il valore persistente del comando suggerito da AsyncStorage
+      try {
+        const suggestedCommandShown = await AsyncStorage.getItem(
+          STORAGE_KEYS.SUGGESTED_COMMAND_SHOWN
+        );
+        setSuggestedCommandUsed(suggestedCommandShown === 'true');
+      } catch (error) {
+        console.error("Errore nel leggere lo stato del comando suggerito:", error);
+        setSuggestedCommandUsed(false);
+      }
 
       // Reset delle animazioni per il prossimo utilizzo
       messagesSlideIn.setValue(50);
@@ -492,24 +518,26 @@ const Home20 = () => {
                 </View>
 
                 {/* Comando suggerito */}
-                <View style={styles.suggestedCommandsContainer}>
-                  <TouchableOpacity
-                    style={[
-                      styles.suggestedCommandButton,
-                      isLoading && styles.suggestedCommandButtonDisabled,
-                    ]}
-                    onPress={() => handleSuggestedCommand("Cosa puoi fare?")}
-                    activeOpacity={0.7}
-                    disabled={isLoading}
-                  >
-                    <Text style={[
-                      styles.suggestedCommandText,
-                      isLoading && styles.suggestedCommandTextDisabled,
-                    ]}>
-                      💡 Cosa puoi fare?
-                    </Text>
-                  </TouchableOpacity>
-                </View>
+                {!suggestedCommandUsed && (
+                  <View style={styles.suggestedCommandsContainer}>
+                    <TouchableOpacity
+                      style={[
+                        styles.suggestedCommandButton,
+                        isLoading && styles.suggestedCommandButtonDisabled,
+                      ]}
+                      onPress={() => handleSuggestedCommand("Cosa puoi fare?")}
+                      activeOpacity={0.7}
+                      disabled={isLoading}
+                    >
+                      <Text style={[
+                        styles.suggestedCommandText,
+                        isLoading && styles.suggestedCommandTextDisabled,
+                      ]}>
+                        💡 Cosa puoi fare?
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
               </View>
             </View>
           )}
