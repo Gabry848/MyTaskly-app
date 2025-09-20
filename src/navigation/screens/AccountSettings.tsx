@@ -120,7 +120,7 @@ export default function AccountSettings() {
             <View style={styles.infoCard}>
               <View style={styles.infoItem}>
                 <View style={styles.infoItemContent}>
-                  <Ionicons name="person-outline" size={24} color="#000000" />
+                  <Ionicons name="person-outline" size={24} color="#007bff" />
                   <View style={styles.infoTextContainer}>
                     <Text style={styles.infoLabel}>Username</Text>
                     <Text style={styles.infoValue}>{userInfo.username}</Text>
@@ -132,7 +132,7 @@ export default function AccountSettings() {
 
               <View style={styles.infoItem}>
                 <View style={styles.infoItemContent}>
-                  <Ionicons name="mail-outline" size={24} color="#000000" />
+                  <Ionicons name="mail-outline" size={24} color="#28a745" />
                   <View style={styles.infoTextContainer}>
                     <Text style={styles.infoLabel}>Email</Text>
                     <Text style={styles.infoValue}>{userInfo.email}</Text>
@@ -144,7 +144,7 @@ export default function AccountSettings() {
 
               <View style={styles.infoItem}>
                 <View style={styles.infoItemContent}>
-                  <Ionicons name="calendar-outline" size={24} color="#000000" />
+                  <Ionicons name="calendar-outline" size={24} color="#17a2b8" />
                   <View style={styles.infoTextContainer}>
                     <Text style={styles.infoLabel}>Data iscrizione</Text>
                     <Text style={styles.infoValue}>{formatDate(userInfo.registration_date)}</Text>
@@ -156,7 +156,7 @@ export default function AccountSettings() {
 
               <View style={styles.infoItem}>
                 <View style={styles.infoItemContent}>
-                  <Ionicons name="shield-outline" size={24} color="#000000" />
+                  <Ionicons name="shield-outline" size={24} color="#ffc107" />
                   <View style={styles.infoTextContainer}>
                     <Text style={styles.infoLabel}>Autenticazione a due fattori</Text>
                     <View style={styles.statusContainer}>
@@ -182,7 +182,7 @@ export default function AccountSettings() {
                 disabled={testNotificationLoading}
               >
                 <View style={styles.testNotificationContent}>
-                  <Ionicons name="notifications-outline" size={24} color="#000000" />
+                  <Ionicons name="notifications-outline" size={24} color="#6f42c1" />
                   <View style={styles.testNotificationTextContainer}>
                     <Text style={styles.testNotificationTitle}>
                       {testNotificationLoading ? 'Invio in corso...' : 'Invia notifica di test'}
@@ -191,7 +191,7 @@ export default function AccountSettings() {
                       Verifica il funzionamento delle notifiche push
                     </Text>
                   </View>
-                  <Ionicons name="send-outline" size={20} color="#000000" />
+                  <Ionicons name="send-outline" size={20} color="#6f42c1" />
                 </View>
               </TouchableOpacity>
             </View>
@@ -203,7 +203,7 @@ export default function AccountSettings() {
             
             <View style={styles.futureCard}>
               <View style={styles.futureContent}>
-                <Ionicons name="time-outline" size={32} color="#000000" />
+                <Ionicons name="time-outline" size={32} color="#fd7e14" />
                 <Text style={styles.futureTitle}>Altre impostazioni in arrivo</Text>
                 <Text style={styles.futureDescription}>
                   Stiamo lavorando per aggiungere nuove funzionalità di gestione account.
@@ -220,7 +220,7 @@ export default function AccountSettings() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#f8f9fa',
   },
   content: {
     flex: 1,
@@ -231,10 +231,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 20,
+    backgroundColor: '#f8f9fa',
   },
   loadingText: {
     fontSize: 16,
-    color: '#000000',
+    color: '#495057',
     marginTop: 16,
     fontFamily: 'System',
   },
@@ -272,16 +273,22 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#000000',
+    color: '#2c3e50',
     fontFamily: 'System',
   },
   infoCard: {
     marginHorizontal: 20,
     backgroundColor: '#ffffff',
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#000000',
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   infoItem: {
     paddingHorizontal: 16,
@@ -297,15 +304,15 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 14,
-    color: '#000000',
+    color: '#6c757d',
     fontFamily: 'System',
     marginBottom: 4,
   },
   infoValue: {
     fontSize: 16,
-    color: '#000000',
+    color: '#2c3e50',
     fontFamily: 'System',
-    fontWeight: '400',
+    fontWeight: '500',
   },
   statusContainer: {
     flexDirection: 'row',
@@ -318,17 +325,17 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   workInProgressBadge: {
-    backgroundColor: '#000000',
+    backgroundColor: '#ffc107',
   },
   statusBadgeText: {
     fontSize: 12,
-    color: '#ffffff',
+    color: '#000000',
     fontWeight: '600',
     fontFamily: 'System',
   },
   separator: {
     height: 1,
-    backgroundColor: '#000000',
+    backgroundColor: '#e9ecef',
     marginHorizontal: 16,
   },
   futureCard: {
@@ -337,8 +344,14 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 24,
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#000000',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   futureContent: {
     alignItems: 'center',
@@ -346,14 +359,14 @@ const styles = StyleSheet.create({
   futureTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#000000',
+    color: '#2c3e50',
     fontFamily: 'System',
     marginTop: 12,
     marginBottom: 8,
   },
   futureDescription: {
     fontSize: 14,
-    color: '#000000',
+    color: '#6c757d',
     textAlign: 'center',
     lineHeight: 20,
     fontFamily: 'System',
@@ -375,14 +388,14 @@ const styles = StyleSheet.create({
   },
   testNotificationTitle: {
     fontSize: 16,
-    color: '#000000',
+    color: '#2c3e50',
     fontFamily: 'System',
     fontWeight: '500',
     marginBottom: 4,
   },
   testNotificationDescription: {
     fontSize: 14,
-    color: '#000000',
+    color: '#6c757d',
     fontFamily: 'System',
   },
 });

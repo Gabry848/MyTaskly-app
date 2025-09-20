@@ -279,8 +279,6 @@ const styles = StyleSheet.create({
   },
   disconnectButton: {
     backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: '#FF5722',
     paddingVertical: 14,
     borderRadius: 12,
     marginTop: 20,
@@ -305,8 +303,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0f7ff',
     borderRadius: 8,
     marginBottom: 10,
-    borderWidth: 1,
-    borderColor: '#e1f0ff',
   },
   syncButtonText: {
     fontSize: 15,
@@ -322,8 +318,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#FFE0B2',
   },
   wipText: {
     fontSize: 14,
