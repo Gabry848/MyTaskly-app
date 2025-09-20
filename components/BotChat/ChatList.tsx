@@ -19,14 +19,14 @@ const ChatList: React.FC<ChatListProps> = ({ messages, style }) => {
 
   const deviceType = getDeviceType();
 
-  // Scroll automatico quando arrivano nuovi messaggi
+  // Scroll automatico quando arrivano nuovi messaggi o quando il contenuto cambia
   useEffect(() => {
     if (messages.length > 0) {
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
       }, 100);
     }
-  }, [messages.length]);
+  }, [messages.length, messages]);
 
   // Gestione tastiera per scroll automatico
   useEffect(() => {
