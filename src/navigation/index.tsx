@@ -29,9 +29,10 @@ import GoogleCalendarScreen from "./screens/GoogleCalendar";
 import NotificationDebugScreen from "./screens/NotificationDebug";
 import BugReportScreen from "./screens/BugReport";
 import { NotFound as NotFoundScreen } from "./screens/NotFound";
-import eventEmitter from "../utils/eventEmitter";
+import eventEmitter, { emitScreenChange, EVENTS } from "../utils/eventEmitter";
 import { useNotifications } from "../services/notificationService";
 import AppInitializer from "../services/AppInitializer";
+import { syncAllData } from "../services/taskService";
 
 // Definizione del tipo per le route dello Stack principale
 export type RootStackParamList = {
@@ -147,7 +148,22 @@ function NavigationHandler() {
       return false; // Lascia che React Navigation gestisca il back button
     };
 
+    // Listener per sincronizzazione automatica al cambio schermata
+    const handleScreenChange = async ({ screenName, params }) => {
+      console.log(`[NAVIGATION] 🔄 Cambio schermata rilevato: ${screenName}`);
+
+      // Avvia sincronizzazione asincrona (non bloccante)
+      syncAllData()
+        .then(({ tasks, categories }) => {
+          console.log(`[NAVIGATION] ✅ Sincronizzazione automatica completata per ${screenName}: ${tasks.length} task, ${categories.length} categorie`);
+        })
+        .catch((error) => {
+          console.log(`[NAVIGATION] ⚠️ Sincronizzazione fallita per ${screenName}:`, error.message);
+        });
+    };
+
     eventEmitter.on("logoutSuccess", handleLogout);
+    eventEmitter.on(EVENTS.SCREEN_CHANGE, handleScreenChange);
     const backHandler = BackHandler.addEventListener(
       "hardwareBackPress",
       handleBackPress
@@ -155,8 +171,25 @@ function NavigationHandler() {
 
     return () => {
       eventEmitter.off("logoutSuccess", handleLogout);
+      eventEmitter.off(EVENTS.SCREEN_CHANGE, handleScreenChange);
       backHandler.remove();
     };
+  }, [navigation]);
+
+  // Monitora i cambi di stato della navigazione per emettere eventi
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('state', (e) => {
+      const state = e.data.state;
+      if (state) {
+        const currentRoute = state.routes[state.index];
+        if (currentRoute) {
+          console.log(`[NAVIGATION] 📱 Navigazione verso: ${currentRoute.name}`);
+          emitScreenChange(currentRoute.name, currentRoute.params);
+        }
+      }
+    });
+
+    return unsubscribe;
   }, [navigation]);
 
   return null;

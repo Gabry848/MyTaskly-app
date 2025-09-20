@@ -4,7 +4,7 @@ import { STORAGE_KEYS } from "../constants/authConstants";
 // eslint-disable-next-line import/no-named-as-default
 import TaskCacheService from './TaskCacheService';
 import SyncManager from './SyncManager';
-import { emitTaskAdded, emitTaskUpdated, emitTaskDeleted } from '../utils/eventEmitter';
+import { emitTaskAdded, emitTaskUpdated, emitTaskDeleted, emitTasksSynced } from '../utils/eventEmitter';
 
 // Lazy initialization dei servizi per evitare problemi di caricamento
 let cacheService: TaskCacheService | null = null;
@@ -727,5 +727,40 @@ export async function updateCategory(
   } catch (error) {
     console.error("Errore nell'aggiornamento della categoria:", error);
     throw error;
+  }
+}
+
+// Funzione per sincronizzare tutti i dati (impegni e categorie) e salvarli nella cache
+export async function syncAllData() {
+  try {
+    console.log('[SYNC] 📱 Avvio sincronizzazione completa dati...');
+
+    // Fetch di tutti i dati in parallelo
+    const [allTasks, allCategories] = await Promise.all([
+      getAllTasks(false), // forza il fetch dall'API
+      getCategories(false) // forza il fetch dall'API
+    ]);
+
+    console.log(`[SYNC] ✅ Sincronizzazione completata: ${allTasks.length} task e ${allCategories.length} categorie`);
+
+    // Salva tutto nella cache
+    if (allTasks.length > 0 || allCategories.length > 0) {
+      await getServices().cacheService.saveTasks(allTasks, allCategories);
+      console.log('[SYNC] 💾 Dati salvati nella cache locale');
+
+      // Emetti evento per notificare la sincronizzazione
+      emitTasksSynced(allTasks, allCategories);
+    }
+
+    return { tasks: allTasks, categories: allCategories };
+  } catch (error) {
+    console.error('[SYNC] ❌ Errore durante la sincronizzazione:', error);
+
+    // In caso di errore, restituisci i dati dalla cache come fallback
+    const cachedTasks = await getServices().cacheService.getCachedTasks();
+    const cachedCategories = await getServices().cacheService.getCachedCategories();
+
+    console.log(`[SYNC] 📂 Fallback su cache: ${cachedTasks.length} task e ${cachedCategories.length} categorie`);
+    return { tasks: cachedTasks, categories: cachedCategories };
   }
 }

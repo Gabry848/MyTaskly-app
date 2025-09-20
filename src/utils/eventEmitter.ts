@@ -56,6 +56,7 @@ export const EVENTS = {
   TASK_UPDATED: 'TASK_UPDATED',
   TASK_DELETED: 'TASK_DELETED',
   TASKS_SYNCED: 'TASKS_SYNCED',
+  SCREEN_CHANGE: 'SCREEN_CHANGE',
 };
 
 // Funzioni helper per emettere eventi
@@ -85,6 +86,10 @@ export const emitTaskDeleted = (taskId) => {
 
 export const emitTasksSynced = (tasks, categories) => {
   globalEventEmitter.emit(EVENTS.TASKS_SYNCED, { tasks, categories });
+};
+
+export const emitScreenChange = (screenName, params) => {
+  globalEventEmitter.emit(EVENTS.SCREEN_CHANGE, { screenName, params });
 };
 
 // Esporto l'emitter per poter aggiungere listener in vari componenti
