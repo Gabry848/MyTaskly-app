@@ -244,12 +244,12 @@ export const TaskListContainer = ({
     priority: number
   ) => {
     const priorityString = priority === 1 ? "Bassa" : priority === 2 ? "Media" : "Alta";
-    
+
     const newTask: TaskType = {
       id: Date.now(),
       title,
       description: description || "", // Assicurarsi che description non sia null
-      end_time: new Date(dueDate).toISOString(),
+      end_time: dueDate && dueDate.trim() ? new Date(dueDate).toISOString() : null, // Supporta task senza scadenza
       priority: priorityString,
       completed: false,
       status: "In sospeso", // Impostare un valore predefinito per status

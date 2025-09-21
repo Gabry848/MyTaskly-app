@@ -148,10 +148,10 @@ const AddTask: React.FC<AddTaskProps> = ({
 
     try {
       if (onSave) {
+        // Se c'è onSave, usa quello (TaskListContainer gestirà la chiamata al server)
         onSave(title, description, dueDate, priority, allowCategorySelection ? localCategory : categoryName);
-      }
-
-      if (categoryName && (!onSave || (onSave && categoryName))) {
+      } else if (categoryName) {
+        // Solo se non c'è onSave, usa addTaskToList per compatibilità
         console.log("Direct call to addTaskToList from AddTask with category:", categoryName);
         addTaskToList(taskObject, categoryName);
       }
