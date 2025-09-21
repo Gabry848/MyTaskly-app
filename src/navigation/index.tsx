@@ -26,6 +26,7 @@ import AboutScreen from "./screens/About";
 import LanguageScreen from "./screens/Language";
 import VoiceSettingsScreen from "./screens/VoiceSettings";
 import GoogleCalendarScreen from "./screens/GoogleCalendar";
+import CalendarScreen from "./screens/Calendar";
 import NotificationDebugScreen from "./screens/NotificationDebug";
 import BugReportScreen from "./screens/BugReport";
 import { NotFound as NotFoundScreen } from "./screens/NotFound";
@@ -64,6 +65,7 @@ export type TabParamList = {
   Home: undefined;
   Categories: undefined;
   Notes: undefined;
+  Calendar: undefined;
   BotChat: undefined;
 };
 
@@ -88,6 +90,9 @@ function HomeTabs() {
               break;
             case "Notes":
               iconName = focused ? "document-text" : "document-text-outline";
+              break;
+            case "Calendar":
+              iconName = focused ? "calendar" : "calendar-outline";
               break;
             case "BotChat":
               iconName = focused ? "chatbubbles" : "chatbubbles-outline";
@@ -117,6 +122,11 @@ function HomeTabs() {
         name="Notes"
         component={NotesScreen}
         options={{ title: "Note" }}
+      />
+      <Tab.Screen
+        name="Calendar"
+        component={CalendarScreen}
+        options={{ title: "Calendario" }}
       />
       {/* <Tab.Screen
         name="BotChat"
