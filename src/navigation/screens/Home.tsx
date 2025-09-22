@@ -10,6 +10,9 @@ import {
   Animated,
   Keyboard,
   ActivityIndicator,
+  Dimensions,
+  Platform,
+  KeyboardAvoidingView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -31,6 +34,8 @@ const Home20 = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null);
   const [suggestedCommandUsed, setSuggestedCommandUsed] = useState(false);
+  const [screenHeight, setScreenHeight] = useState(Dimensions.get('window').height);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   
   // Servizi
   const cacheService = useRef(TaskCacheService.getInstance()).current;
@@ -141,26 +146,36 @@ const Home20 = () => {
       cursorOpacity.setValue(0);
     }
   }, [isTyping, cursorOpacity]);
+  // Effetto per gestire le dimensioni dello schermo
+  useEffect(() => {
+    const subscription = Dimensions.addEventListener('change', ({ window }) => {
+      setScreenHeight(window.height);
+    });
+
+    return () => subscription?.remove();
+  }, []);
+
   // Effetto per gestire la visualizzazione della tastiera
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
       "keyboardDidShow",
       (event) => {
+        setKeyboardHeight(event.endCoordinates.height);
         if (chatStarted) {
-          // Sposta solo l'input sopra la tastiera
+          // Sposta l'input sopra la tastiera con margine maggiore
           Animated.timing(inputBottomPosition, {
-            toValue: event.endCoordinates.height - 35, // 35px   di margine dalla tastiera (5px in più)
+            toValue: event.endCoordinates.height + 10,
             duration: 250,
             useNativeDriver: false,
           }).start();
         }
-        // Non fare nulla per l'input del saluto - deve rimanere fermo
       }
     );
 
     const keyboardDidHideListener = Keyboard.addListener(
       "keyboardDidHide",
       () => {
+        setKeyboardHeight(0);
         if (chatStarted) {
           // Riporta l'input in posizione normale
           Animated.timing(inputBottomPosition, {
@@ -169,7 +184,6 @@ const Home20 = () => {
             useNativeDriver: false,
           }).start();
         }
-        // Non fare nulla per l'input del saluto - deve rimanere fermo
       }
     );
 
@@ -239,6 +253,9 @@ const Home20 = () => {
     // Resetta l'input immediatamente per una migliore UX
     setMessage("");
     setIsLoading(true);
+
+    // Chiudi la tastiera dopo l'invio
+    Keyboard.dismiss();
 
     // Crea il messaggio del bot in streaming
     const botMessageId = generateMessageId();
@@ -399,6 +416,13 @@ const Home20 = () => {
     setMessages((prev) => [...prev, botMessage]);
   };
 
+  // Calcolo dinamico del padding top basato sull'altezza dello schermo
+  const getGreetingPaddingTop = () => {
+    if (screenHeight < 700) return Math.max(screenHeight * 0.15, 80); // Schermi piccoli
+    if (screenHeight < 800) return Math.max(screenHeight * 0.20, 120); // Schermi medi
+    return Math.max(screenHeight * 0.25, 180); // Schermi grandi
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
@@ -449,7 +473,7 @@ const Home20 = () => {
 
       <View style={styles.mainContent}>
         {/* Contenuto principale */}
-        <View style={chatStarted ? styles.contentChatStarted : styles.content}>
+        <View style={chatStarted ? styles.contentChatStarted : [styles.content, { paddingTop: getGreetingPaddingTop() }]}>
           {/* Saluto personalizzato - nascosto quando la chat inizia */}
           {!chatStarted && (
             <View style={styles.greetingSection}>
@@ -469,14 +493,15 @@ const Home20 = () => {
                 <View style={styles.animatedInputWrapper}>
                   <View style={styles.inputContainer}>
                     <TextInput
-                      style={styles.textInput}
+                      style={[styles.textInput, { maxHeight: 120 }]}
                       placeholder="Scrivi un messaggio..."
                       placeholderTextColor="#999999"
                       value={message}
                       onChangeText={setMessage}
-                      multiline={false}
+                      multiline={true}
                       onSubmitEditing={handleSubmit}
                       returnKeyType="send"
+                      blurOnSubmit={true}
                       editable={!isLoading}
                     />
 
@@ -586,14 +611,15 @@ const Home20 = () => {
           >
             <View style={styles.inputContainer}>
               <TextInput
-                style={styles.textInput}
+                style={[styles.textInput, { maxHeight: 120 }]}
                 placeholder="Scrivi un messaggio..."
                 placeholderTextColor="#999999"
                 value={message}
                 onChangeText={setMessage}
-                multiline={false}
+                multiline={true}
                 onSubmitEditing={handleSubmit}
                 returnKeyType="send"
+                blurOnSubmit={true}
                 editable={!isLoading}
               />
 
@@ -765,8 +791,8 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 40,
-    paddingTop: 250, // Aumentato per abbassare il saluto
-    paddingBottom: 80, // Ridotto per dare più spazio alla chat
+    paddingTop: 100, // Ridotto per essere più responsivo
+    paddingBottom: 80,
   },
   contentChatStarted: {
     flex: 1,
@@ -779,7 +805,8 @@ const styles = StyleSheet.create({
   greetingTextContainer: {
     justifyContent: "center",
     alignItems: "center",
-    minHeight: 90, // Altezza minima per evitare sfarfallii
+    minHeight: 70,
+    marginBottom: 20,
   },
   cursorText: {
     fontSize: 34,
@@ -791,18 +818,18 @@ const styles = StyleSheet.create({
   inputSectionUnderGreeting: {
     alignItems: "center",
     paddingHorizontal: 0,
-    marginTop: 40,
+    marginTop: 30,
   },
   animatedInputWrapper: {
     width: "100%",
     alignItems: "center",
   },
   greetingText: {
-    fontSize: 34,
-    fontWeight: "300", // Leggermente più leggero
+    fontSize: Platform.select({ ios: 28, android: 26 }),
+    fontWeight: "300",
     color: "#000000",
     textAlign: "center",
-    lineHeight: 44,
+    lineHeight: Platform.select({ ios: 36, android: 34 }),
     fontFamily: "System",
     letterSpacing: -0.8,
   },
@@ -855,11 +882,11 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-end",
     backgroundColor: "#ffffff",
     borderRadius: 30,
     paddingHorizontal: 24,
-    paddingVertical: 16,
+    paddingVertical: 12,
     width: "100%",
     maxWidth: 420,
     borderWidth: 1.5,
@@ -872,6 +899,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 12,
     elevation: 3,
+    minHeight: 50,
   },
   textInput: {
     flex: 1,
@@ -879,13 +907,17 @@ const styles = StyleSheet.create({
     color: "#000000",
     fontFamily: "System",
     fontWeight: "400",
-    paddingVertical: 10,
+    paddingVertical: 12,
+    textAlignVertical: "top",
+    minHeight: 26,
   },
   voiceButton: {
     marginLeft: 12,
     padding: 8,
     borderRadius: 20,
     backgroundColor: "transparent",
+    alignSelf: "flex-end",
+    marginBottom: 8,
   },
   voiceButtonDisabled: {
     backgroundColor: "#f8f8f8",
@@ -897,6 +929,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#f0f0f0",
     justifyContent: "center",
     alignItems: "center",
+    alignSelf: "flex-end",
+    marginBottom: 8,
   },
   sendButtonDisabled: {
     backgroundColor: "#e8e8e8",

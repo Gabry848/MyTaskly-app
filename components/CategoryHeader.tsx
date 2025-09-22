@@ -8,34 +8,55 @@ interface CategoryHeaderProps {
   imageUrl?: string;
   taskCount: number;
   isLoading: boolean;
+  screenWidth: number;
 }
 
-const CategoryHeader: React.FC<CategoryHeaderProps> = ({ 
-  title, 
-  imageUrl, 
-  taskCount, 
-  isLoading 
+const CategoryHeader: React.FC<CategoryHeaderProps> = ({
+  title,
+  imageUrl,
+  taskCount,
+  isLoading,
+  screenWidth
 }) => {
   return (
     <>
       <LinearGradient
         colors={['rgba(11, 148, 153, 0.7)', 'rgba(11, 148, 153, 0.3)']}
-        style={styles.imageContainer}
+        style={[styles.imageContainer, {
+          width: screenWidth < 350 ? 40 : 50,
+          height: screenWidth < 350 ? 40 : 50,
+        }]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
         {imageUrl ? (
-          <Image source={{ uri: imageUrl }} style={styles.image} />
+          <Image source={{ uri: imageUrl }} style={[styles.image, {
+            width: screenWidth < 350 ? 28 : 36,
+            height: screenWidth < 350 ? 28 : 36,
+          }]} />
         ) : (
-          <MaterialIcons name="category" size={24} color="#fff" style={{margin: 8}} />
+          <MaterialIcons
+            name="category"
+            size={screenWidth < 350 ? 20 : 24}
+            color="#fff"
+            style={{margin: screenWidth < 350 ? 6 : 8}}
+          />
         )}
       </LinearGradient>
 
-      <View style={styles.categoryContainer}>
-        <Text style={styles.add}>{title}</Text>
+      <View style={[styles.categoryContainer, {
+        marginHorizontal: screenWidth < 350 ? 10 : 15,
+      }]}>
+        <Text style={[styles.add, {
+          fontSize: screenWidth < 350 ? 16 : 18,
+          padding: screenWidth < 350 ? 3 : 5,
+        }]}>{title}</Text>
         <View style={styles.counterRow}>
-          <MaterialIcons name="check-circle" size={16} color="#4CAF50" />
-          <Text style={styles.title}>
+          <MaterialIcons name="check-circle" size={screenWidth < 350 ? 14 : 16} color="#4CAF50" />
+          <Text style={[styles.title, {
+            fontSize: screenWidth < 350 ? 12 : 14,
+            marginLeft: screenWidth < 350 ? 4 : 6,
+          }]}>
             {isLoading ? "Caricamento..." : `${taskCount} cose da fare`}
           </Text>
         </View>
