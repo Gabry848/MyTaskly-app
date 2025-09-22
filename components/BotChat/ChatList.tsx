@@ -72,9 +72,10 @@ const ChatList: React.FC<ChatListProps> = ({ messages, style }) => {
 const styles = StyleSheet.create({
   messagesList: {
     paddingVertical: 15,
+    paddingBottom: 80, // Aggiungiamo più spazio per l'input e per visualizzare completamente l'ultimo messaggio
   },
   ipadPadding: {
-    paddingBottom: 20, // Padding ridotto per iPad dato che ora usiamo KeyboardAvoidingView
+    paddingBottom: 100, // Più spazio per iPad per l'input
   },
 });
 
