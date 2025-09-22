@@ -1,11 +1,12 @@
 import React, { useRef, useState } from "react";
-import { 
-  View, 
-  StyleSheet, 
-  Text, 
+import {
+  View,
+  StyleSheet,
+  Text,
   SafeAreaView,
   StatusBar
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import CategoryList from '../../../components/CategoryList';
 import AddCategoryButton from "../../../components/AddCategoryButton";
 import SearchTasksButton from "../../../components/SearchTasksButton";
@@ -14,7 +15,16 @@ import GlobalTaskSearch from "../../../components/GlobalTaskSearch";
 export default function Categories() {
   const categoryListRef = useRef<{ reloadCategories: () => void } | null>(null);
   const [searchModalVisible, setSearchModalVisible] = useState(false);
-  
+
+  // Ricarica le categorie quando la schermata viene visualizzata
+  useFocusEffect(
+    React.useCallback(() => {
+      if (categoryListRef.current) {
+        categoryListRef.current.reloadCategories();
+      }
+    }, [])
+  );
+
   const handleCategoryAdded = () => {
     if (categoryListRef.current) {
       categoryListRef.current.reloadCategories();
@@ -40,7 +50,7 @@ export default function Categories() {
 
       <View style={styles.content}>
         <SearchTasksButton onPress={handleOpenSearch} />
-        <CategoryList />
+        <CategoryList ref={categoryListRef} />
         <View style={styles.addButtonContainer}>
           <AddCategoryButton onCategoryAdded={handleCategoryAdded} />
         </View>
