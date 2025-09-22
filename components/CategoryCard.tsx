@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet, TouchableOpacity, Animated } from "react-native";
+import { StyleSheet, TouchableOpacity, Animated, Dimensions } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../src/types';
@@ -30,6 +30,7 @@ const CategoryCard: React.FC<CategoryCardProps> = ({
 }) => {
   const navigation = useNavigation<CategoryScreenNavigationProp>();
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
+  const screenWidth = Dimensions.get('window').width;
 
   const handlePressIn = () => {
     Animated.spring(scaleAnim, {
@@ -49,7 +50,11 @@ const CategoryCard: React.FC<CategoryCardProps> = ({
   return (
     <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
       <TouchableOpacity
-        style={styles.view}
+        style={[styles.view, {
+          marginHorizontal: screenWidth < 350 ? 8 : 15,
+          padding: screenWidth < 350 ? 12 : 16,
+          flexDirection: screenWidth < 320 ? 'column' : 'row',
+        }]}
         activeOpacity={0.8}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
@@ -58,14 +63,15 @@ const CategoryCard: React.FC<CategoryCardProps> = ({
           navigation.navigate("TaskList", { category_name: title });
         }}
       >
-        <CategoryHeader 
+        <CategoryHeader
           title={title}
           imageUrl={imageUrl}
           taskCount={taskCount}
           isLoading={isLoading}
+          screenWidth={screenWidth}
         />
-        
-        <AddTaskButton onPress={onAddTask} />
+
+        <AddTaskButton onPress={onAddTask} screenWidth={screenWidth} />
       </TouchableOpacity>
     </Animated.View>
   );
