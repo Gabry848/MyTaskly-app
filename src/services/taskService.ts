@@ -583,12 +583,19 @@ export async function addTask(task: Task) {
       
       console.log("Task creation response:", response.data);
       
-      // Aggiorna la cache con l'ID reale del server
+      // Aggiorna la cache con l'ID reale del server SENZA rimuovere il task temporaneo
       if (response.data && response.data.task_id) {
-        const serverTask = { ...data, ...response.data };
-        await getServices().cacheService.removeTaskFromCache(tempId); // Rimuovi il task temporaneo
-        await getServices().cacheService.updateTaskInCache(serverTask); // Aggiungi quello con ID reale
-        
+        const serverTask = {
+          ...data, // Usa i dati originali puliti
+          ...response.data, // Sovrascrivi con i dati del server
+          id: response.data.task_id, // Usa l'ID del server
+          task_id: response.data.task_id, // Assicurati che anche task_id sia impostato
+          tempId: tempId // Mantieni il riferimento al temp ID per la cache
+        };
+
+        // AGGIORNA il task esistente invece di rimuoverlo e ri-aggiungerlo
+        await getServices().cacheService.updateTaskInCache(serverTask);
+
         // Emetti evento per aggiornamento UI
         console.log('[TASK_SERVICE] Emitting TASK_ADDED event for:', serverTask.title);
         emitTaskAdded(serverTask);
