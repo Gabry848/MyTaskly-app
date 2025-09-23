@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation, NavigationProp , useFocusEffect } from '@react-navigation/native';
 import { RootStackParamList } from '../src/types';
 
@@ -22,19 +23,23 @@ interface CategoryViewProps {
   reloadCategories: () => void;
 }
 
-const CategoryView: React.FC<CategoryViewProps> = ({
+interface CategoryViewRef {
+  fetchCategories: () => void;
+}
+
+const CategoryView = forwardRef<CategoryViewRef, CategoryViewProps>(({
   onCategoryAdded,
   onCategoryDeleted,
   onCategoryEdited,
   reloadCategories
-}) => {
+}, ref) => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const [categories, setCategories] = useState<CategoryType[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
-  const fetchCategories = async () => {
+  const fetchCategories = async (forceRefresh: boolean = false) => {
     try {
-      const categoriesData = await getCategories();
+      const categoriesData = await getCategories(!forceRefresh);
       if (Array.isArray(categoriesData)) {
         setCategories(categoriesData);
       } else {
@@ -56,10 +61,22 @@ const CategoryView: React.FC<CategoryViewProps> = ({
   useEffect(() => {
     fetchCategories();
   }, []);
+
+  // Esponi fetchCategories tramite ref
+  useImperativeHandle(ref, () => ({
+    fetchCategories
+  }));
+
   return (
     <ScrollView style={styles.container}>
-      {/* Header container ora più minimal */}
+      {/* Header container con pulsante ricarica */}
       <View style={styles.headerContainer}>
+        <TouchableOpacity
+          style={styles.refreshButton}
+          onPress={() => fetchCategories(true)}
+        >
+          <Icon name="refresh" size={24} color="#000000" />
+        </TouchableOpacity>
       </View>
       {categories && categories.length > 0
         ? categories.map((category, index) => (
@@ -102,13 +119,14 @@ const CategoryView: React.FC<CategoryViewProps> = ({
       )}
     </ScrollView>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: 15,
-  },  headerContainer: {
+  },
+  headerContainer: {
     flexDirection: "row",
     justifyContent: "flex-end", // Allinea il pulsante a destra
     alignItems: "center",
@@ -137,7 +155,8 @@ const styles = StyleSheet.create({
     fontFamily: "System",
     fontWeight: "300",
     lineHeight: 26,
-  },  reloadButton: {
+  },
+  reloadButton: {
     backgroundColor: "#f0f0f0", // Stesso colore del send button di Home20
     paddingVertical: 12,
     paddingHorizontal: 12,
@@ -182,6 +201,25 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
   },
+  refreshButton: {
+    backgroundColor: "#f0f0f0",
+    padding: 10,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+    minWidth: 44,
+    minHeight: 44,
+  },
 });
+
+CategoryView.displayName = 'CategoryView';
 
 export default CategoryView;

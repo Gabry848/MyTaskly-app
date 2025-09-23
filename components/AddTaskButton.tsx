@@ -17,14 +17,7 @@ const AddTaskButton: React.FC<AddTaskButtonProps> = ({ onPress, screenWidth }) =
       }]}
       onPress={onPress}
     >
-      <Text style={[styles.addButtonText, {
-        fontSize: screenWidth < 350 ? 12 : 14,
-      }]}>
-        {screenWidth < 350 ? "+" : "Aggiungi"}
-      </Text>
-      {screenWidth >= 350 && (
-        <MaterialIcons name="add-task" size={18} color="#000000" style={styles.icon} />
-      )}
+      <MaterialIcons name="add-task" size={18} color="#000000" />
     </TouchableOpacity>
   );
 };
