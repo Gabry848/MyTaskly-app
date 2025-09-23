@@ -41,12 +41,18 @@ const CategoryList = forwardRef((props, ref) => {
     // Aggiungi listener per gli eventi delle categorie
     const categoryAddedListener = () => {
       console.log("Evento CATEGORY_ADDED ricevuto, aggiornamento vista");
-      refreshComponent();
+      // Forza il ricaricamento delle categorie dal server per mostrare immediatamente la nuova categoria
+      if (categoryViewRef.current && categoryViewRef.current.fetchCategories) {
+        categoryViewRef.current.fetchCategories(true);
+      }
     };
     
     const categoryUpdatedListener = () => {
       console.log("Evento CATEGORY_UPDATED ricevuto, aggiornamento vista");
-      refreshComponent();
+      // Forza il ricaricamento delle categorie dal server per mostrare i cambiamenti
+      if (categoryViewRef.current && categoryViewRef.current.fetchCategories) {
+        categoryViewRef.current.fetchCategories(true);
+      }
     };
     
     const categoryDeletedListener = () => {
