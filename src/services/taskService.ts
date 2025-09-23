@@ -677,8 +677,15 @@ export async function getCategories(useCache: boolean = true) {
         "Content-Type": "application/json",
       },
     });
-    
-    return response.data;
+
+    const categories = response.data;
+
+    // Aggiorna la cache con le nuove categorie
+    const currentTasks = await getServices().cacheService.getCachedTasks();
+    await getServices().cacheService.saveTasks(currentTasks, categories);
+    console.log('[TASK_SERVICE] Cache categorie aggiornata');
+
+    return categories;
   } catch (error) {
     console.error("Errore nel recupero delle categorie:", error);
     
@@ -702,6 +709,11 @@ export async function deleteCategory(categoryName: string) {
         "Content-Type": "application/json",
       },
     });
+
+    // Rimuovi la categoria dalla cache dopo l'eliminazione riuscita
+    await getServices().cacheService.removeCategoryFromCache(categoryName);
+    console.log(`[TASK_SERVICE] Categoria "${categoryName}" rimossa dalla cache`);
+
     return response.data;
   } catch (error) {
     console.error("Errore nell'eliminazione della categoria:", error);
