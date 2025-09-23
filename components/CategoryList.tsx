@@ -90,7 +90,10 @@ const CategoryList = forwardRef((props, ref) => {
   // Gestori per l'editing e la cancellazione delle categorie
   const handleCategoryDeleted = () => {
     console.log("Categoria eliminata, aggiornamento vista");
-    refreshComponent();
+    // Forza il ricaricamento delle categorie dal server per aggiornare immediatamente la vista
+    if (categoryViewRef.current && categoryViewRef.current.fetchCategories) {
+      categoryViewRef.current.fetchCategories(true);
+    }
   };
 
   const handleCategoryEdited = () => {

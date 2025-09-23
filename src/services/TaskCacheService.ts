@@ -181,7 +181,7 @@ class TaskCacheService {
   async removeTaskFromCache(taskId: string | number): Promise<void> {
     try {
       const cachedTasks = await this.getCachedTasks();
-      const filteredTasks = cachedTasks.filter(task => 
+      const filteredTasks = cachedTasks.filter(task =>
         task.task_id !== taskId && task.id !== taskId
       );
 
@@ -189,6 +189,29 @@ class TaskCacheService {
       await this.saveTasks(filteredTasks, categories);
     } catch (error) {
       console.error('[CACHE] Errore nella rimozione task dalla cache:', error);
+    }
+  }
+
+  // Rimuovi categoria dalla cache
+  async removeCategoryFromCache(categoryName: string): Promise<void> {
+    try {
+      const cachedTasks = await this.getCachedTasks();
+      const cachedCategories = await this.getCachedCategories();
+
+      // Filtra le categorie per rimuovere quella eliminata
+      const filteredCategories = cachedCategories.filter(category =>
+        category.name !== categoryName
+      );
+
+      // Rimuovi anche tutti i task associati a quella categoria
+      const filteredTasks = cachedTasks.filter(task =>
+        task.category_name !== categoryName
+      );
+
+      await this.saveTasks(filteredTasks, filteredCategories);
+      console.log(`[CACHE] Categoria "${categoryName}" rimossa dalla cache`);
+    } catch (error) {
+      console.error('[CACHE] Errore nella rimozione categoria dalla cache:', error);
     }
   }
 
