@@ -57,25 +57,26 @@ export const TaskListContainer = ({
     // Ensure it has an ID - use task_id if available (from server response)
     const taskWithId = {
       ...newTask,
-      id: newTask.id || newTask.task_id || Date.now()
+      id: newTask.id || newTask.task_id || `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     };
     
     // Update the local state directly if this is the current category
     if (category === categoryId) {
       setTasks(prevTasks => {
-        // Check if task already exists
+        // Check if task already exists by ID only
         const taskIndex = prevTasks.findIndex(
-          task => task.id === taskWithId.id || 
-                 (task.task_id && task.task_id === taskWithId.id) ||
-                 (task.title === taskWithId.title && task.description === taskWithId.description)
+          task => (task.id && task.id === taskWithId.id) ||
+                 (task.task_id && taskWithId.task_id && task.task_id === taskWithId.task_id)
         );
-        
+
         if (taskIndex >= 0) {
+          // Update existing task
           const updatedTasks = [...prevTasks];
           updatedTasks[taskIndex] = taskWithId;
           return updatedTasks;
         }
-        
+
+        // Add new task
         return [...prevTasks, taskWithId];
       });
     }
@@ -85,13 +86,12 @@ export const TaskListContainer = ({
       globalTasksRef.tasks[category] = [];
     }
     
-    // Check if task already exists in global ref
+    // Check if task already exists in global ref by ID only
     const globalTaskIndex = globalTasksRef.tasks[category].findIndex(
-      task => task.id === taskWithId.id || 
-             (task.task_id && task.task_id === taskWithId.id) ||
-             (task.title === taskWithId.title && task.description === taskWithId.description)
+      task => (task.id && task.id === taskWithId.id) ||
+             (task.task_id && taskWithId.task_id && task.task_id === taskWithId.task_id)
     );
-    
+
     if (globalTaskIndex >= 0) {
       // Update existing task
       globalTasksRef.tasks[category][globalTaskIndex] = taskWithId;
@@ -246,7 +246,7 @@ export const TaskListContainer = ({
     const priorityString = priority === 1 ? "Bassa" : priority === 2 ? "Media" : "Alta";
 
     const newTask: TaskType = {
-      id: Date.now(),
+      id: `new_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       title,
       description: description || "", // Assicurarsi che description non sia null
       end_time: dueDate && dueDate.trim() ? new Date(dueDate).toISOString() : null, // Supporta task senza scadenza
@@ -298,15 +298,17 @@ export const TaskListContainer = ({
   const handleTaskDelete = async (taskId: number | string) => {
     try {
       // Aggiorniamo subito la lista locale per un feedback immediato
-      setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
-      
+      setTasks(prevTasks => prevTasks.filter(task =>
+        task.id !== taskId && task.task_id !== taskId
+      ));
+
       // Aggiorniamo anche la referenza globale
       if (globalTasksRef.tasks[categoryName]) {
         globalTasksRef.tasks[categoryName] = globalTasksRef.tasks[categoryName].filter(
-          task => task.id !== taskId
+          task => task.id !== taskId && task.task_id !== taskId
         );
       }
-      
+
       // Inviamo la richiesta di eliminazione al server in background
       await taskService.deleteTask(taskId);
     } catch (error) {
@@ -377,15 +379,14 @@ export const TaskListContainer = ({
       // Aggiorna lo stato localmente
       setTasks(prevTasks => {
         return prevTasks.map(task => {
-          if (task.id === taskId) {
+          if (task.id === taskId || task.task_id === taskId) {
             return { ...task, status: "Completato", completed: true };
           }
           return task;
         });
       });
-      
-      // Ricarica tutti i task per avere l'aggiornamento in tempo reale
-      await fetchTasks();
+
+      // Non ricaricamo dal server perché lo stato locale è già aggiornato
     } catch (error) {
       console.error("Errore durante il completamento del task:", error);
       Alert.alert("Errore", "Impossibile completare il task. Riprova.");
@@ -400,15 +401,14 @@ export const TaskListContainer = ({
       // Aggiorna lo stato localmente
       setTasks(prevTasks => {
         return prevTasks.map(task => {
-          if (task.id === taskId) {
+          if (task.id === taskId || task.task_id === taskId) {
             return { ...task, status: "In sospeso", completed: false };
           }
           return task;
         });
       });
-      
-      // Ricarica tutti i task per avere l'aggiornamento in tempo reale
-      await fetchTasks();
+
+      // Non ricaricamo dal server perché lo stato locale è già aggiornato
     } catch (error) {
       console.error("Errore durante la riapertura del task:", error);
       Alert.alert("Errore", "Impossibile riaprire il task. Riprova.");
@@ -464,25 +464,29 @@ export const TaskListContainer = ({
             tasks={listaFiltrata}
             animatedHeight={todoSectionHeight}
             onToggle={() => toggleSection(todoSectionExpanded, setTodoSectionExpanded, todoSectionHeight)}
-            renderTask={(item, index) => (
-              <Task
-                key={`task-${item.id || index}`}
-                task={{
-                  id: item.id || item.task_id || index,
-                  title: item.title,
-                  description: item.description,
-                  priority: item.priority,
-                  end_time: item.end_time,
-                  completed: item.completed || false,
-                  start_time: item.start_time || new Date().toISOString(),
-                  status: item.status || "In sospeso"
-                }}
-                onTaskComplete={handleTaskComplete}
-                onTaskDelete={handleTaskDelete}
-                onTaskEdit={handleTaskEdit}
-                onTaskUncomplete={handleTaskUncomplete}
-              />
-            )}
+            renderTask={(item, index) => {
+              // Ensure every task has a valid ID
+              const taskId = item.id || item.task_id || `fallback_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 9)}`;
+              return (
+                <Task
+                  key={`task-${taskId}`}
+                  task={{
+                    id: taskId,
+                    title: item.title,
+                    description: item.description,
+                    priority: item.priority,
+                    end_time: item.end_time,
+                    completed: item.completed || false,
+                    start_time: item.start_time || new Date().toISOString(),
+                    status: item.status || "In sospeso"
+                  }}
+                  onTaskComplete={handleTaskComplete}
+                  onTaskDelete={handleTaskDelete}
+                  onTaskEdit={handleTaskEdit}
+                  onTaskUncomplete={handleTaskUncomplete}
+                />
+              );
+            }}
             emptyMessage="Non ci sono task da completare. Aggiungi un nuovo task!"
           />
           
@@ -494,24 +498,28 @@ export const TaskListContainer = ({
               tasks={completedTasks}
               animatedHeight={completedSectionHeight}
               onToggle={() => toggleSection(completedSectionExpanded, setCompletedSectionExpanded, completedSectionHeight)}
-              renderTask={(item, index) => (
-                <Task
-                  key={`completed-task-${item.id || index}`}
-                  task={{
-                    id: item.id || item.task_id || index,
-                    title: item.title,
-                    description: item.description,
-                    priority: item.priority,
-                    end_time: item.end_time,
-                    completed: true,
-                    start_time: item.start_time || new Date().toISOString(),
-                    status: "Completato"
-                  }}
-                  onTaskDelete={handleTaskDelete}
-                  onTaskEdit={handleTaskEdit}
-                  onTaskUncomplete={handleTaskUncomplete}
-                />
-              )}
+              renderTask={(item, index) => {
+                // Ensure every completed task has a valid ID
+                const taskId = item.id || item.task_id || `completed_fallback_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 9)}`;
+                return (
+                  <Task
+                    key={`completed-task-${taskId}`}
+                    task={{
+                      id: taskId,
+                      title: item.title,
+                      description: item.description,
+                      priority: item.priority,
+                      end_time: item.end_time,
+                      completed: true,
+                      start_time: item.start_time || new Date().toISOString(),
+                      status: "Completato"
+                    }}
+                    onTaskDelete={handleTaskDelete}
+                    onTaskEdit={handleTaskEdit}
+                    onTaskUncomplete={handleTaskUncomplete}
+                  />
+                );
+              }}
               emptyMessage="Non ci sono task completati."
             />
           )}

@@ -158,12 +158,40 @@ class TaskCacheService {
       }
       
       const cachedTasks = await this.getCachedTasks();
-      const taskIndex = cachedTasks.findIndex(task => 
+
+      // Prima prova a trovare per ID esatto
+      let taskIndex = cachedTasks.findIndex(task =>
         task.task_id === updatedTask.task_id || task.id === updatedTask.id
       );
 
+      // Se non trovato e il task ha un tempId, cerca il task temporaneo
+      if (taskIndex === -1 && (updatedTask as any).tempId) {
+        taskIndex = cachedTasks.findIndex(task =>
+          task.id === (updatedTask as any).tempId || task.task_id === (updatedTask as any).tempId
+        );
+
+        if (taskIndex !== -1) {
+          console.log(`[CACHE] Task temporaneo trovato tramite tempId: "${cachedTasks[taskIndex].title}" (${cachedTasks[taskIndex].id} -> ${updatedTask.task_id})`);
+        }
+      }
+
+      // Fallback: se non trovato e il task ha un ID del server, prova a trovare un task temporaneo con stesso titolo/categoria
+      if (taskIndex === -1 && updatedTask.task_id && !updatedTask.id.toString().startsWith('temp_')) {
+        taskIndex = cachedTasks.findIndex(task =>
+          task.id && task.id.toString().startsWith('temp_') &&
+          task.title === updatedTask.title &&
+          task.category_name === updatedTask.category_name
+        );
+
+        if (taskIndex !== -1) {
+          console.log(`[CACHE] Task temporaneo trovato per fallback: "${cachedTasks[taskIndex].title}" (${cachedTasks[taskIndex].id} -> ${updatedTask.task_id})`);
+        }
+      }
+
       if (taskIndex !== -1) {
-        cachedTasks[taskIndex] = updatedTask;
+        // Rimuovi il tempId prima di salvare definitivamente
+        const { tempId, ...cleanedTask } = updatedTask as any;
+        cachedTasks[taskIndex] = cleanedTask;
         console.log(`[CACHE] Task esistente aggiornato all'indice ${taskIndex}`);
       } else {
         cachedTasks.push(updatedTask);
