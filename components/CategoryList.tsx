@@ -25,10 +25,15 @@ export interface CategoryType {
 
 const CategoryList = forwardRef((props, ref) => {
   const [refreshKey, setRefreshKey] = useState(0);
-  
-  // Forza l'aggiornamento del componente
+  const categoryViewRef = React.useRef<{ fetchCategories: () => void } | null>(null);
+
+  // Forza l'aggiornamento del componente e ricarica dal server
   const refreshComponent = () => {
     setRefreshKey(prevKey => prevKey + 1);
+    // Se abbiamo il ref di CategoryView, chiamiamo il fetch
+    if (categoryViewRef.current && categoryViewRef.current.fetchCategories) {
+      categoryViewRef.current.fetchCategories();
+    }
   };
   
   // Configura i listener per gli eventi globali
@@ -65,7 +70,10 @@ const CategoryList = forwardRef((props, ref) => {
   // Funzione per ricaricare le categorie (esposta tramite ref)
   const reloadCategories = () => {
     console.log("Ricarico le categorie");
-    refreshComponent();
+    // Chiama direttamente fetchCategories invece di refreshComponent
+    if (categoryViewRef.current && categoryViewRef.current.fetchCategories) {
+      categoryViewRef.current.fetchCategories();
+    }
   };
 
   // Esponi la funzione reloadCategories tramite ref
@@ -93,6 +101,7 @@ const CategoryList = forwardRef((props, ref) => {
   return (
     <View style={styles.container} key={refreshKey}>
       <CategoryView
+        ref={categoryViewRef}
         onCategoryAdded={handleCategoryAdded}
         onCategoryDeleted={handleCategoryDeleted}
         onCategoryEdited={handleCategoryEdited}
