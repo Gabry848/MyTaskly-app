@@ -645,7 +645,24 @@ export async function addCategory(category: {
     if (!responseData.id && category.id) {
       responseData.id = category.id;
     }
-    
+
+    // Aggiorna la cache con la nuova categoria
+    const currentTasks = await getServices().cacheService.getCachedTasks();
+    const currentCategories = await getServices().cacheService.getCachedCategories();
+
+    // Aggiungi la nuova categoria alla lista esistente
+    const newCategory = {
+      id: responseData.category_id || responseData.id || category.id,
+      name: categoryData.name,
+      description: categoryData.description,
+      category_id: responseData.category_id,
+      status_code: responseData.status_code
+    };
+
+    const updatedCategories = [...currentCategories, newCategory];
+    await getServices().cacheService.saveTasks(currentTasks, updatedCategories);
+    console.log(`[TASK_SERVICE] Nuova categoria "${categoryData.name}" aggiunta alla cache`);
+
     console.log("Risposta dal server:", responseData);
     return responseData;
   } catch (error) {
