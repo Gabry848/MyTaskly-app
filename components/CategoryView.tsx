@@ -24,7 +24,7 @@ interface CategoryViewProps {
 }
 
 interface CategoryViewRef {
-  fetchCategories: () => void;
+  fetchCategories: (forceRefresh?: boolean) => void;
 }
 
 const CategoryView = forwardRef<CategoryViewRef, CategoryViewProps>(({
