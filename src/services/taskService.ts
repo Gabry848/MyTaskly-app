@@ -37,6 +37,33 @@ export interface Task {
 // Funzione per ottenere tutti gli impegni filtrandoli per categoria (con cache)
 export async function getTasks(category_name?: string, useCache: boolean = true) {
   try {
+    // Controllo autenticazione prima di fare chiamate API
+    const { checkAndRefreshAuth } = await import('./authService');
+    const authStatus = await checkAndRefreshAuth();
+
+    if (!authStatus.isAuthenticated) {
+      console.log('[TASK_SERVICE] getTasks: utente non autenticato, ritorno cache se disponibile');
+
+      // Se non è autenticato, ritorna solo dati dalla cache se disponibili
+      if (useCache) {
+        const cachedTasks = await getServices().cacheService.getCachedTasks();
+        console.log(`[TASK_SERVICE] getTasks: utente non loggato, ritornando ${cachedTasks.length} task dalla cache`);
+
+        // Filtra per categoria se specificata
+        if (category_name) {
+          const filteredTasks = cachedTasks.filter(task => task.category_name === category_name);
+          console.log(`[TASK_SERVICE] getTasks: filtrati ${filteredTasks.length} task per categoria "${category_name}"`);
+          return filteredTasks;
+        }
+
+        return cachedTasks;
+      }
+
+      // Se cache disabilitata e non autenticato, ritorna array vuoto
+      console.log('[TASK_SERVICE] getTasks: utente non loggato e cache disabilitata, ritorno array vuoto');
+      return [];
+    }
+
     // Se richiesto, prova prima dalla cache
     if (useCache) {
       const { cacheService } = getServices();
@@ -182,19 +209,38 @@ export async function getLastTask(last_n: number, useCache: boolean = true) {
 // funzione per ottenere tutti gli impegni (con cache)
 export async function getAllTasks(useCache: boolean = true) {
   try {
+    // Controllo autenticazione prima di fare chiamate API
+    const { checkAndRefreshAuth } = await import('./authService');
+    const authStatus = await checkAndRefreshAuth();
+
+    if (!authStatus.isAuthenticated) {
+      console.log('[TASK_SERVICE] getAllTasks: utente non autenticato, ritorno cache se disponibile');
+
+      // Se non è autenticato, ritorna solo dati dalla cache se disponibili
+      if (useCache) {
+        const cachedTasks = await getServices().cacheService.getCachedTasks();
+        console.log(`[TASK_SERVICE] getAllTasks: utente non loggato, ritornando ${cachedTasks.length} task dalla cache`);
+        return cachedTasks;
+      }
+
+      // Se cache disabilitata e non autenticato, ritorna array vuoto
+      console.log('[TASK_SERVICE] getAllTasks: utente non loggato e cache disabilitata, ritorno array vuoto');
+      return [];
+    }
+
     // Prova prima dalla cache se abilitata
     if (useCache) {
       const cachedTasks = await getServices().cacheService.getCachedTasks();
       if (cachedTasks.length > 0) {
         console.log('[TASK_SERVICE] getAllTasks: usando dati dalla cache');
-        
+
         // Avvia sync in background
         getServices().syncManager.addSyncOperation('GET_TASKS', {});
-        
+
         return cachedTasks;
       }
     }
-    
+
     // Fallback alla logica originale
     console.log('[TASK_SERVICE] getAllTasks: caricamento dalla API');
     
@@ -681,19 +727,38 @@ export async function addCategory(category: {
 // Funzione per ottenere tutte le categorie (con cache)
 export async function getCategories(useCache: boolean = true) {
   try {
+    // Controllo autenticazione prima di fare chiamate API
+    const { checkAndRefreshAuth } = await import('./authService');
+    const authStatus = await checkAndRefreshAuth();
+
+    if (!authStatus.isAuthenticated) {
+      console.log('[TASK_SERVICE] getCategories: utente non autenticato, ritorno cache se disponibile');
+
+      // Se non è autenticato, ritorna solo dati dalla cache se disponibili
+      if (useCache) {
+        const cachedCategories = await getServices().cacheService.getCachedCategories();
+        console.log(`[TASK_SERVICE] getCategories: utente non loggato, ritornando ${cachedCategories.length} categorie dalla cache`);
+        return cachedCategories;
+      }
+
+      // Se cache disabilitata e non autenticato, ritorna array vuoto
+      console.log('[TASK_SERVICE] getCategories: utente non loggato e cache disabilitata, ritorno array vuoto');
+      return [];
+    }
+
     // Prova prima dalla cache se abilitata
     if (useCache) {
       const cachedCategories = await getServices().cacheService.getCachedCategories();
       if (cachedCategories.length > 0) {
         console.log('[TASK_SERVICE] Usando categorie dalla cache');
-        
+
         // Avvia sync in background
         getServices().syncManager.addSyncOperation('GET_TASKS', {});
-        
+
         return cachedCategories;
       }
     }
-    
+
     // Fallback alla chiamata API diretta
     console.log('[TASK_SERVICE] Caricamento categorie dalla API');
     const response = await axios.get(`/categories`, {

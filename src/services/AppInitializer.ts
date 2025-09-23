@@ -45,43 +45,61 @@ class AppInitializer {
         await storageManager.cleanupOldData();
       }
 
-      // 4. Controlla se abbiamo dati in cache
-      const hasCachedData = await cacheService.hasCachedData();
-      
-      if (!hasCachedData) {
-        console.log('[APP_INIT] Nessun dato in cache, caricamento immediato...');
-        // Avvia caricamento sincrono senza aspettare per non bloccare l'inizializzazione
-        this.dataLoadPromise = this.loadDataSynchronously();
-        this.dataLoadPromise.catch(error => 
-          console.error('[APP_INIT] Errore caricamento dati:', error)
-        );
+      // 4. Verifica autenticazione prima di inizializzare cache e sync
+      const authStatus = await checkAndRefreshAuth();
+
+      if (!authStatus.isAuthenticated) {
+        console.log('[APP_INIT] Utente non autenticato, skip operazioni cache e sync');
+        // Carica eventuali dati dalla cache locale per funzionalità offline
+        const hasCachedData = await cacheService.hasCachedData();
+        if (hasCachedData) {
+          console.log('[APP_INIT] Dati cache disponibili per modalità offline');
+          this.isDataLoaded = true;
+        } else {
+          console.log('[APP_INIT] Nessun dato cache, app in modalità vuota');
+          this.notifyDataLoaded([], []);
+        }
       } else {
-        console.log('[APP_INIT] Dati in cache presenti, verifica aggiornamento...');
-        // I dati sono già disponibili dalla cache
-        this.isDataLoaded = true;
-        
-        // Verifica se la cache è obsoleta
-        const isCacheStale = await cacheService.isCacheStale();
-        if (isCacheStale) {
-          console.log('[APP_INIT] Cache obsoleta, aggiornamento sincrono in background');
-          // Avvia sync sincrono per aggiornare i dati
+        console.log('[APP_INIT] Utente autenticato, procedo con inizializzazione cache');
+
+        // Controlla se abbiamo dati in cache
+        const hasCachedData = await cacheService.hasCachedData();
+
+        if (!hasCachedData) {
+          console.log('[APP_INIT] Nessun dato in cache, caricamento immediato...');
+          // Avvia caricamento sincrono senza aspettare per non bloccare l'inizializzazione
           this.dataLoadPromise = this.loadDataSynchronously();
-          this.dataLoadPromise.catch(error => 
-            console.error('[APP_INIT] Errore aggiornamento dati:', error)
+          this.dataLoadPromise.catch(error =>
+            console.error('[APP_INIT] Errore caricamento dati:', error)
           );
         } else {
-          console.log('[APP_INIT] Cache ancora valida, dati già disponibili');
-        }
-      }
+          console.log('[APP_INIT] Dati in cache presenti, verifica aggiornamento...');
+          // I dati sono già disponibili dalla cache
+          this.isDataLoaded = true;
 
-      // 5. Controlla modifiche offline da sincronizzare
-      const offlineChanges = await cacheService.getOfflineChanges();
-      if (offlineChanges.length > 0) {
-        console.log(`[APP_INIT] ${offlineChanges.length} modifiche offline da sincronizzare`);
-        // Avvia sync per le modifiche offline
-        syncManager.startSync().catch(error => 
-          console.error('[APP_INIT] Errore sync offline changes:', error)
-        );
+          // Verifica se la cache è obsoleta
+          const isCacheStale = await cacheService.isCacheStale();
+          if (isCacheStale) {
+            console.log('[APP_INIT] Cache obsoleta, aggiornamento sincrono in background');
+            // Avvia sync sincrono per aggiornare i dati
+            this.dataLoadPromise = this.loadDataSynchronously();
+            this.dataLoadPromise.catch(error =>
+              console.error('[APP_INIT] Errore aggiornamento dati:', error)
+            );
+          } else {
+            console.log('[APP_INIT] Cache ancora valida, dati già disponibili');
+          }
+        }
+
+        // 5. Controlla modifiche offline da sincronizzare (solo se autenticato)
+        const offlineChanges = await cacheService.getOfflineChanges();
+        if (offlineChanges.length > 0) {
+          console.log(`[APP_INIT] ${offlineChanges.length} modifiche offline da sincronizzare`);
+          // Avvia sync per le modifiche offline
+          syncManager.startSync().catch(error =>
+            console.error('[APP_INIT] Errore sync offline changes:', error)
+          );
+        }
       }
 
       // 6. Inizializza pulizie periodiche
@@ -193,7 +211,15 @@ class AppInitializer {
   private async loadDataSynchronously(): Promise<void> {
     try {
       console.log('[APP_INIT] Inizio caricamento sincrono dati...');
-      
+
+      // Verifica autenticazione prima di caricare dati
+      const authStatus = await checkAndRefreshAuth();
+      if (!authStatus.isAuthenticated) {
+        console.log('[APP_INIT] Utente non autenticato, skip caricamento dati dal server');
+        this.notifyDataLoaded([], []);
+        return;
+      }
+
       // Carica dati dal server in maniera sincrona
       const [tasks, categories] = await Promise.all([
         getAllTasks(false), // Non usare cache per caricamento iniziale
