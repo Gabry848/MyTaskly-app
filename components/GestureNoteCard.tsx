@@ -51,6 +51,10 @@ export const GestureNoteCard: React.FC<GestureNoteCardProps> = ({
   const isDragging = useSharedValue(false);
   const scale = useSharedValue(1);
   const shadowOpacity = useSharedValue(0.25);
+  const borderWidth = useSharedValue(0);
+  const borderOpacity = useSharedValue(0);
+  const brightness = useSharedValue(1);
+  const rotation = useSharedValue(0);
   const velocity = useSharedValue({ x: 0, y: 0 });
   const lastTimestamp = useSharedValue(0);
 
@@ -83,12 +87,16 @@ export const GestureNoteCard: React.FC<GestureNoteCardProps> = ({
       
       // Animazioni ultra-fluide per l'inizio del trascinamento
       isDragging.value = true;
-      scale.value = withSpring(1.08, { 
-        damping: 18, 
+      scale.value = withSpring(1.08, {
+        damping: 18,
         stiffness: 350,
         mass: 0.7
       });
       shadowOpacity.value = withTiming(0.45, { duration: 120 });
+      borderWidth.value = withTiming(4, { duration: 150 });
+      borderOpacity.value = withTiming(1, { duration: 150 });
+      brightness.value = withTiming(1.15, { duration: 150 });
+      rotation.value = withSpring(2, { damping: 12, stiffness: 300 });
       
       runOnJS(handleBringToFront)();
       return true;    })
@@ -128,12 +136,16 @@ export const GestureNoteCard: React.FC<GestureNoteCardProps> = ({
       const finalVelocityY = Math.max(-maxMomentum, Math.min(maxMomentum, velocity.value.y * momentumFactor));
       
       // Animazioni ultra-fluide per la fine del trascinamento
-      scale.value = withSpring(1, { 
-        damping: 18, 
+      scale.value = withSpring(1, {
+        damping: 18,
         stiffness: 350,
         mass: 0.7
       });
       shadowOpacity.value = withTiming(0.25, { duration: 180 });
+      borderWidth.value = withTiming(0, { duration: 150 });
+      borderOpacity.value = withTiming(0, { duration: 150 });
+      brightness.value = withTiming(1, { duration: 150 });
+      rotation.value = withSpring(0, { damping: 12, stiffness: 300 });
       
       // Movimento finale con momentum e spring physics
       const finalX = translateX.value + finalVelocityX * 0.1;
@@ -170,10 +182,14 @@ export const GestureNoteCard: React.FC<GestureNoteCardProps> = ({
       transform: [
         { translateX: translateX.value },
         { translateY: translateY.value },
-        { scale: scale.value }
+        { scale: scale.value },
+        { rotate: `${rotation.value}deg` }
       ] as any,
       zIndex: isDragging.value ? 9999 : note.zIndex,
       elevation: isDragging.value ? 18 : note.zIndex / 8,
+      borderWidth: borderWidth.value,
+      borderColor: '#4285F4',
+      opacity: brightness.value,
     };
   });
   // Stile animato per l'ombra semplificato
@@ -229,7 +245,7 @@ export const GestureNoteCard: React.FC<GestureNoteCardProps> = ({
               <Image source={require('../src/assets/ceck.png')} style={styles.saveIcon} />
             </TouchableOpacity>
           </View>        ) : (
-          <TouchableOpacity onPress={handleLongPress} activeOpacity={0.8}>
+          <TouchableOpacity onLongPress={handleLongPress} delayLongPress={300} activeOpacity={0.8}>
             <Text style={styles.noteText}>
               {typeof editText === 'string' && editText.trim() !== '' ? editText : 'Testo nota...'}
             </Text>
