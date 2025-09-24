@@ -297,10 +297,31 @@ export interface VoiceWebSocketMessage {
 
 export interface VoiceWebSocketResponse {
   type: 'status' | 'audio_chunk' | 'error';
-  phase?: 'transcription' | 'ai_processing' | 'tts_generation' | 'audio_streaming';
+  phase?: 'authenticated' | 'receiving_audio' | 'transcription' | 'ai_processing' | 'tts_generation' | 'audio_streaming' | 'complete';
   message?: string;
   data?: string; // base64 audio data
   chunk_index?: number;
+}
+
+/**
+ * Stati di autenticazione WebSocket
+ */
+export enum WebSocketAuthState {
+  DISCONNECTED = 'disconnected',
+  CONNECTING = 'connecting',
+  AUTHENTICATING = 'authenticating',
+  AUTHENTICATED = 'authenticated',
+  FAILED = 'failed'
+}
+
+/**
+ * Interfaccia per messaggi in coda prima dell'autenticazione
+ */
+interface QueuedMessage {
+  type: 'audio_chunk' | 'control';
+  data?: string;
+  is_final?: boolean;
+  action?: 'pause' | 'resume' | 'cancel';
 }
 
 /**
@@ -312,6 +333,8 @@ export interface VoiceChatCallbacks {
   onError?: (error: string) => void;
   onConnectionOpen?: () => void;
   onConnectionClose?: () => void;
+  onAuthenticationSuccess?: (message: string) => void;
+  onAuthenticationFailed?: (error: string) => void;
 }
 
 /**
@@ -320,10 +343,14 @@ export interface VoiceChatCallbacks {
 export class VoiceBotWebSocket {
   private ws: WebSocket | null = null;
   private callbacks: VoiceChatCallbacks;
-  private baseUrl: string = 'wss://taskly-production.up.railway.app';
+  private baseUrl: string = 'wss://api.mytasklyapp.com';
   private reconnectAttempts: number = 0;
   private maxReconnectAttempts: number = 3;
   private reconnectDelay: number = 1000;
+  private authState: WebSocketAuthState = WebSocketAuthState.DISCONNECTED;
+  private messageQueue: QueuedMessage[] = [];
+  private authTimeout: NodeJS.Timeout | null = null;
+  private readonly AUTH_TIMEOUT_MS = 10000; // 10 secondi timeout per autenticazione
 
   constructor(callbacks: VoiceChatCallbacks) {
     this.callbacks = callbacks;
@@ -336,19 +363,21 @@ export class VoiceBotWebSocket {
     try {
       const token = await getValidToken();
       if (!token) {
+        this.authState = WebSocketAuthState.FAILED;
         this.callbacks.onError?.('Token di autenticazione non disponibile');
         return false;
       }
 
+      this.authState = WebSocketAuthState.CONNECTING;
       const wsUrl = `${this.baseUrl}/chat/voice-bot-websocket`;
       this.ws = new WebSocket(wsUrl);
 
       this.ws.onopen = () => {
         console.log('🎤 Connessione WebSocket vocale aperta');
         this.reconnectAttempts = 0;
-        
-        // Invia autenticazione immediatamente
-        this.authenticate(token);
+
+        // Invia autenticazione e avvia timeout
+        this.startAuthentication(token);
         this.callbacks.onConnectionOpen?.();
       };
 
@@ -364,13 +393,18 @@ export class VoiceBotWebSocket {
 
       this.ws.onerror = (error) => {
         console.error('Errore WebSocket vocale:', error);
+        this.authState = WebSocketAuthState.FAILED;
+        this.clearAuthTimeout();
         this.callbacks.onError?.('Errore di connessione WebSocket');
       };
 
       this.ws.onclose = (event) => {
         console.log('🎤 Connessione WebSocket vocale chiusa:', event.code, event.reason);
+        this.authState = WebSocketAuthState.DISCONNECTED;
+        this.clearAuthTimeout();
+        this.clearMessageQueue();
         this.callbacks.onConnectionClose?.();
-        
+
         // Tentativo di riconnessione automatica
         if (this.reconnectAttempts < this.maxReconnectAttempts && event.code !== 1000) {
           this.attemptReconnect();
@@ -380,50 +414,150 @@ export class VoiceBotWebSocket {
       return true;
     } catch (error) {
       console.error('Errore connessione WebSocket vocale:', error);
+      this.authState = WebSocketAuthState.FAILED;
       this.callbacks.onError?.('Impossibile connettersi al servizio vocale');
       return false;
     }
   }
 
   /**
-   * Autentica la connessione WebSocket
+   * Avvia il processo di autenticazione
    */
-  private authenticate(token: string): void {
+  private startAuthentication(token: string): void {
     if (!this.isConnected()) return;
+
+    this.authState = WebSocketAuthState.AUTHENTICATING;
+
+    // Avvia timeout per autenticazione
+    this.authTimeout = setTimeout(() => {
+      this.handleAuthenticationTimeout();
+    }, this.AUTH_TIMEOUT_MS);
 
     const authMessage: VoiceWebSocketMessage = {
       type: 'auth',
       token: token
     };
 
+    console.log('🔐 Invio autenticazione JWT');
     this.ws!.send(JSON.stringify(authMessage));
+  }
+
+  /**
+   * Gestisce il timeout dell'autenticazione
+   */
+  private handleAuthenticationTimeout(): void {
+    console.error('⏰ Timeout autenticazione WebSocket');
+    this.authState = WebSocketAuthState.FAILED;
+    this.callbacks.onAuthenticationFailed?.('Timeout autenticazione - il server non ha risposto');
+    this.disconnect();
+  }
+
+  /**
+   * Pulisce il timeout di autenticazione
+   */
+  private clearAuthTimeout(): void {
+    if (this.authTimeout) {
+      clearTimeout(this.authTimeout);
+      this.authTimeout = null;
+    }
   }
 
   /**
    * Gestisce le risposte ricevute dal WebSocket
    */
   private handleResponse(response: VoiceWebSocketResponse): void {
+    // Validazione sicurezza messaggio
+    if (!this.validateResponse(response)) {
+      console.warn('Messaggio WebSocket non valido ricevuto:', response);
+      return;
+    }
+
     switch (response.type) {
       case 'status':
-        if (response.phase && response.message) {
-          this.callbacks.onStatus?.(response.phase, response.message);
-        }
+        this.handleStatusResponse(response);
         break;
 
       case 'audio_chunk':
-        if (response.data) {
-          this.callbacks.onAudioChunk?.(response.data, response.chunk_index);
-        }
+        this.handleAudioChunkResponse(response);
         break;
 
       case 'error':
-        if (response.message) {
-          this.callbacks.onError?.(response.message);
-        }
+        this.handleErrorResponse(response);
         break;
 
       default:
         console.warn('Tipo di risposta WebSocket sconosciuto:', response.type);
+    }
+  }
+
+  /**
+   * Gestisce risposta di stato (inclusa autenticazione)
+   */
+  private handleStatusResponse(response: VoiceWebSocketResponse): void {
+    if (!response.phase || !response.message) return;
+
+    switch (response.phase) {
+      case 'authenticated':
+        this.handleAuthenticationSuccess(response.message);
+        break;
+
+      case 'receiving_audio':
+      case 'transcription':
+      case 'ai_processing':
+      case 'tts_generation':
+      case 'audio_streaming':
+      case 'complete':
+        this.callbacks.onStatus?.(response.phase, response.message);
+        break;
+
+      default:
+        console.warn('Fase WebSocket sconosciuta:', response.phase);
+    }
+  }
+
+  /**
+   * Gestisce il successo dell'autenticazione
+   */
+  private handleAuthenticationSuccess(message: string): void {
+    console.log('✅ Autenticazione WebSocket riuscita:', message);
+    this.authState = WebSocketAuthState.AUTHENTICATED;
+    this.clearAuthTimeout();
+
+    // Processa messaggi in coda
+    this.processQueuedMessages();
+
+    this.callbacks.onAuthenticationSuccess?.(message);
+    this.callbacks.onStatus?.('authenticated', message);
+  }
+
+  /**
+   * Gestisce risposta audio chunk
+   */
+  private handleAudioChunkResponse(response: VoiceWebSocketResponse): void {
+    if (!this.isAuthenticated()) {
+      console.warn('Ricevuto audio chunk senza autenticazione');
+      return;
+    }
+
+    if (response.data) {
+      this.callbacks.onAudioChunk?.(response.data, response.chunk_index);
+    }
+  }
+
+  /**
+   * Gestisce risposta di errore
+   */
+  private handleErrorResponse(response: VoiceWebSocketResponse): void {
+    if (!response.message) return;
+
+    // Gestione errori specifici di autenticazione
+    if (this.authState === WebSocketAuthState.AUTHENTICATING) {
+      console.error('❌ Errore autenticazione:', response.message);
+      this.authState = WebSocketAuthState.FAILED;
+      this.clearAuthTimeout();
+      this.callbacks.onAuthenticationFailed?.(response.message);
+    } else {
+      this.callbacks.onError?.(response.message);
     }
   }
 
@@ -436,13 +570,20 @@ export class VoiceBotWebSocket {
       return;
     }
 
-    const audioMessage: VoiceWebSocketMessage = {
+    const audioMessage: QueuedMessage = {
       type: 'audio_chunk',
       data: base64AudioData,
       is_final: isFinal
     };
 
-    this.ws!.send(JSON.stringify(audioMessage));
+    // Se non autenticato, metti in coda il messaggio
+    if (!this.isAuthenticated()) {
+      console.log('🔒 Messaggio audio messo in coda (non autenticato)');
+      this.messageQueue.push(audioMessage);
+      return;
+    }
+
+    this.sendMessage(audioMessage);
   }
 
   /**
@@ -454,12 +595,20 @@ export class VoiceBotWebSocket {
       return;
     }
 
-    const controlMessage: VoiceWebSocketMessage = {
+    const controlMessage: QueuedMessage = {
       type: 'control',
       action: action
     };
 
-    this.ws!.send(JSON.stringify(controlMessage));
+    // I comandi di controllo possono essere inviati anche senza autenticazione
+    // per permettere di cancellare operazioni in corso
+    if (!this.isAuthenticated() && action !== 'cancel') {
+      console.log('🔒 Comando di controllo messo in coda (non autenticato)');
+      this.messageQueue.push(controlMessage);
+      return;
+    }
+
+    this.sendMessage(controlMessage);
   }
 
   /**
@@ -467,6 +616,92 @@ export class VoiceBotWebSocket {
    */
   isConnected(): boolean {
     return this.ws !== null && this.ws.readyState === WebSocket.OPEN;
+  }
+
+  /**
+   * Controlla se l'utente è autenticato
+   */
+  isAuthenticated(): boolean {
+    return this.authState === WebSocketAuthState.AUTHENTICATED;
+  }
+
+  /**
+   * Ottiene lo stato di autenticazione corrente
+   */
+  getAuthState(): WebSocketAuthState {
+    return this.authState;
+  }
+
+  /**
+   * Invia un messaggio al WebSocket
+   */
+  private sendMessage(message: QueuedMessage): void {
+    if (!this.isConnected()) return;
+
+    const wsMessage: VoiceWebSocketMessage = {
+      type: message.type,
+      data: message.data,
+      is_final: message.is_final,
+      action: message.action
+    };
+
+    this.ws!.send(JSON.stringify(wsMessage));
+  }
+
+  /**
+   * Processa i messaggi in coda dopo l'autenticazione
+   */
+  private processQueuedMessages(): void {
+    if (this.messageQueue.length === 0) return;
+
+    console.log(`📤 Processando ${this.messageQueue.length} messaggi in coda`);
+
+    while (this.messageQueue.length > 0) {
+      const message = this.messageQueue.shift();
+      if (message) {
+        this.sendMessage(message);
+      }
+    }
+  }
+
+  /**
+   * Pulisce la coda dei messaggi
+   */
+  private clearMessageQueue(): void {
+    if (this.messageQueue.length > 0) {
+      console.log(`🗑️ Pulisco ${this.messageQueue.length} messaggi in coda`);
+      this.messageQueue = [];
+    }
+  }
+
+  /**
+   * Valida la sicurezza di una risposta WebSocket
+   */
+  private validateResponse(response: VoiceWebSocketResponse): boolean {
+    // Controlli di sicurezza di base
+    if (!response || typeof response !== 'object') {
+      return false;
+    }
+
+    // Verifica che il tipo sia valido
+    const validTypes = ['status', 'audio_chunk', 'error'];
+    if (!validTypes.includes(response.type)) {
+      return false;
+    }
+
+    // Verifica lunghezza messaggi per prevenire DoS
+    if (response.message && response.message.length > 1000) {
+      console.warn('Messaggio troppo lungo ricevuto dal server');
+      return false;
+    }
+
+    // Verifica chunk audio per prevenire overflow
+    if (response.data && response.data.length > 50000) { // ~37KB base64 -> ~25KB audio
+      console.warn('Chunk audio troppo grande ricevuto dal server');
+      return false;
+    }
+
+    return true;
   }
 
   /**
@@ -487,6 +722,11 @@ export class VoiceBotWebSocket {
    * Disconnette il WebSocket
    */
   disconnect(): void {
+    // Pulisce timeout e risorse
+    this.clearAuthTimeout();
+    this.clearMessageQueue();
+    this.authState = WebSocketAuthState.DISCONNECTED;
+
     if (this.ws) {
       this.ws.close(1000, 'Disconnessione volontaria');
       this.ws = null;
@@ -494,10 +734,32 @@ export class VoiceBotWebSocket {
   }
 
   /**
-   * Distrugge la connessione e pulisce le risorse
+   * Distrugge la connessione e pulisce tutte le risorse
    */
   destroy(): void {
     this.disconnect();
     this.callbacks = {};
+    this.reconnectAttempts = 0;
+  }
+
+  /**
+   * Forza una nuova autenticazione (utile se il token è stato aggiornato)
+   */
+  async reAuthenticate(): Promise<boolean> {
+    if (!this.isConnected()) {
+      console.warn('Non è possibile ri-autenticarsi: WebSocket non connesso');
+      return false;
+    }
+
+    const token = await getValidToken();
+    if (!token) {
+      this.callbacks.onError?.('Token di autenticazione non disponibile per ri-autenticazione');
+      return false;
+    }
+
+    console.log('🔄 Avvio ri-autenticazione');
+    this.clearMessageQueue(); // Pulisce eventuali messaggi precedenti
+    this.startAuthentication(token);
+    return true;
   }
 }
