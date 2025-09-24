@@ -23,7 +23,8 @@
       "Bash(keytool:*)",
       "Bash(eas credentials:*)",
       "Bash(npx expo doctor:*)",
-      "Bash(npx expo-doctor:*)"
+      "Bash(npx expo-doctor:*)",
+      "Bash(node:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"
