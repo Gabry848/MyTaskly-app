@@ -42,9 +42,8 @@ export function useVoiceChat() {
   const audioPlayerRef = useRef<AudioPlayer | null>(null);
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
-  // Accumulo dei chunk audio
-  const audioChunksRef = useRef<string[]>([]);
   const [isReceivingAudio, setIsReceivingAudio] = useState<boolean>(false);
+  const [chunksReceived, setChunksReceived] = useState<number>(0);
 
   /**
    * Verifica e richiede i permessi audio
@@ -68,70 +67,6 @@ export function useVoiceChat() {
     }
   }, []);
 
-  /**
-   * Riproduce tutti i chunk audio accumulati come un unico file
-   */
-  const playAccumulatedAudio = useCallback(async (): Promise<void> => {
-    if (!audioPlayerRef.current || audioChunksRef.current.length === 0) {
-      console.log('🔊 Nessun audio da riprodurre');
-      setState('connected');
-      return;
-    }
-
-    console.log(`🔊 Inizio riproduzione audio completo (${audioChunksRef.current.length} chunk)`);
-    
-    try {
-      // Decodifica tutti i chunk base64 in dati binari, poi li concatena
-      console.log('🔊 Decodifica e concatenazione chunk audio...');
-      
-      let totalBinaryData = '';
-      
-      for (let i = 0; i < audioChunksRef.current.length; i++) {
-        try {
-          const chunk = audioChunksRef.current[i];
-          const binaryChunk = atob(chunk); // Decodifica base64 to binary string
-          totalBinaryData += binaryChunk;
-        } catch (chunkError) {
-          console.warn(`🔊 Errore decodifica chunk ${i}:`, chunkError);
-          // Continua con gli altri chunk anche se uno è corrotto
-        }
-      }
-      
-      // Ricodifica tutto come base64
-      const completeAudioBase64 = btoa(totalBinaryData);
-      
-      console.log(`🔊 Audio concatenato correttamente:`);
-      console.log(`  - Chunk elaborati: ${audioChunksRef.current.length}`);
-      console.log(`  - Dimensione binaria: ${totalBinaryData.length} bytes`);
-      console.log(`  - Dimensione base64: ${completeAudioBase64.length} caratteri`);
-      
-      // Riproduci l'audio completo con callback per cambiare stato
-      const success = await audioPlayerRef.current.playAudioFromBase64(
-        completeAudioBase64,
-        () => {
-          // Callback chiamato quando la riproduzione è completata
-          console.log('🔊 Riproduzione completa, tornando a stato connected');
-          setState('connected');
-        }
-      );
-      
-      if (success) {
-        console.log('🔊 Riproduzione avviata con successo');
-        // Lo stato rimane 'speaking' fino alla fine della riproduzione
-      } else {
-        console.error('🔊 Errore durante la riproduzione');
-        setState('connected');
-      }
-      
-      // Pulisci i chunk utilizzati
-      audioChunksRef.current = [];
-      
-    } catch (error) {
-      console.error('🔊 Errore riproduzione audio accumulato:', error);
-      setState('connected');
-      audioChunksRef.current = [];
-    }
-  }, []);
 
   /**
    * Callback per gestire i messaggi WebSocket
@@ -151,8 +86,7 @@ export function useVoiceChat() {
     onStatus: (phase: string, message: string) => {
       console.log(`🎤 Status: ${phase} - ${message}`);
       setServerStatus({ phase, message });
-      
-      // Aggiorna lo stato basandosi sulla fase del server
+
       switch (phase) {
         case 'transcription':
         case 'ai_processing':
@@ -160,26 +94,38 @@ export function useVoiceChat() {
           setState('processing');
           break;
         case 'audio_streaming':
-          setState('speaking');
           setIsReceivingAudio(true);
-          // Reset dei chunk audio quando inizia lo streaming
-          audioChunksRef.current = [];
+          setChunksReceived(0);
+          if (audioPlayerRef.current) {
+            audioPlayerRef.current.clearChunks();
+          }
           break;
         case 'complete':
-          // Quando la pipeline è completata, riproduci tutto l'audio accumulato
-          playAccumulatedAudio();
           setIsReceivingAudio(false);
+          if (audioPlayerRef.current && audioPlayerRef.current.getChunksCount() > 0) {
+            console.log('🔊 Pipeline completa, inizio riproduzione...');
+            setState('speaking');
+            audioPlayerRef.current.playAllChunks(() => {
+              console.log('🔊 Riproduzione completata, tornando a connected');
+              setState('connected');
+            });
+          } else {
+            setState('connected');
+          }
           break;
       }
     },
     
     onAudioChunk: (audioData: string, chunkIndex?: number) => {
-      console.log(`🔊 Ricevuto chunk audio: ${chunkIndex || 0}`);
-      
-      // Accumula il chunk invece di riprodurlo immediatamente
-      audioChunksRef.current.push(audioData);
-      
-      // Non cambiare stato qui, rimaniamo in 'speaking' già impostato da audio_streaming
+      console.log(`🔊 Ricevuto chunk audio #${chunkIndex || 0}`);
+
+      if (!audioPlayerRef.current) {
+        console.error('🔊 AudioPlayer non inizializzato');
+        return;
+      }
+
+      audioPlayerRef.current.addChunk(audioData);
+      setChunksReceived(prev => prev + 1);
     },
     
     onError: (errorMessage: string) => {
@@ -194,25 +140,21 @@ export function useVoiceChat() {
    */
   const initialize = useCallback(async (): Promise<boolean> => {
     try {
-      // Esegui debug delle dipendenze
       debugAudioDependencies();
-      
-      // Verifica permessi
+
       const permissionsGranted = await requestPermissions();
       if (!permissionsGranted) {
         return false;
       }
 
-      // Inizializza le classi audio
       audioRecorderRef.current = new AudioRecorder();
       audioPlayerRef.current = new AudioPlayer();
 
-      // Inizializza WebSocket
       websocketRef.current = new VoiceBotWebSocket(websocketCallbacks);
 
       console.log('🎤 Componenti audio inizializzati');
       return true;
-      
+
     } catch (err) {
       console.error('Errore inizializzazione:', err);
       setError('Errore durante l\'inizializzazione');
@@ -443,7 +385,8 @@ export function useVoiceChat() {
     serverStatus,
     recordingDuration,
     hasPermissions,
-    
+    chunksReceived,
+
     // Stati derivati
     isConnected,
     isRecording,
@@ -451,7 +394,7 @@ export function useVoiceChat() {
     isSpeaking,
     canRecord,
     canStop,
-    
+
     // Azioni
     initialize,
     connect,

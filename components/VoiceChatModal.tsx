@@ -37,6 +37,7 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
     serverStatus,
     recordingDuration,
     hasPermissions,
+    chunksReceived,
     isConnected,
     isRecording,
     isProcessing,
@@ -245,7 +246,7 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
         case 'processing':
           return { icon: 'sync', color: '#2196F3', text: 'Elaborazione...' };
         case 'speaking':
-          return { icon: 'volume-up', color: '#9C27B0', text: 'Parlando...' };
+          return { icon: 'volume-up', color: '#9C27B0', text: 'Riproduzione streaming...' };
         case 'error':
           return { icon: 'error', color: '#F44336', text: 'Errore' };
         case 'disconnected':
@@ -380,6 +381,11 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
         <Text style={styles.serverStatusMessage}>
           {serverStatus.message}
         </Text>
+        {serverStatus.phase === 'audio_streaming' && chunksReceived > 0 && (
+          <Text style={styles.serverStatusMessage}>
+            Chunks ricevuti: {chunksReceived}
+          </Text>
+        )}
       </View>
     );
   };
