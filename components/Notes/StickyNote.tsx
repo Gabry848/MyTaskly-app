@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TextInput,
   TouchableOpacity,
-  Alert,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -204,18 +203,7 @@ export const StickyNote: React.FC<StickyNoteProps> = ({ note, canvasScale }) => 
   };
 
   const handleDelete = () => {
-    Alert.alert(
-      'Elimina Nota',
-      'Sei sicuro di voler eliminare questa nota?',
-      [
-        { text: 'Annulla', style: 'cancel' },
-        { 
-          text: 'Elimina', 
-          style: 'destructive',
-          onPress: () => deleteNote(note.id)
-        }
-      ]
-    );
+    deleteNote(note.id);
   };
 
   const ColorPicker: React.FC = () => (

@@ -22,16 +22,17 @@ interface DraggableNoteProps {
   pan?: Animated.ValueXY; // Reso opzionale
 }
 
-const DraggableNote: React.FC<DraggableNoteProps> = ({ 
-  note, 
-  panResponder, 
-  pan, 
+const DraggableNote: React.FC<DraggableNoteProps> = ({
+  note,
+  panResponder,
+  pan,
   onDelete,
   onUpdateText,
   onUpdatePosition,
   onBringToFront
 }) => {
   const [isEditing, setIsEditing] = useState(false);
+  const [isDraggable, setIsDraggable] = useState(false);
   // Assicuriamoci che editText sia sempre una stringa valida
   const [editText, setEditText] = useState(() => {
     return typeof note.text === 'string' ? note.text : '';
@@ -56,16 +57,17 @@ const DraggableNote: React.FC<DraggableNoteProps> = ({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => !isEditing,
       onPanResponderGrant: () => {
+        setIsDraggable(true);
         // Usa addListener per ottenere i valori correnti
         const currentX = (position.x as any).__getValue();
         const currentY = (position.y as any).__getValue();
-        
+
         position.setOffset({
           x: currentX,
           y: currentY
         });
         position.setValue({ x: 0, y: 0 });
-        
+
         // Porta la nota in primo piano se la funzione è disponibile
         if (onBringToFront) {
           onBringToFront(note.id);
@@ -76,13 +78,14 @@ const DraggableNote: React.FC<DraggableNoteProps> = ({
         { useNativeDriver: false }
       ),
       onPanResponderRelease: () => {
+        setIsDraggable(false);
         position.flattenOffset();
-        
+
         // Aggiorna la posizione se la funzione è disponibile
         if (onUpdatePosition) {
           const currentX = (position.x as any).__getValue();
           const currentY = (position.y as any).__getValue();
-          
+
           onUpdatePosition(note.id, {
             x: currentX,
             y: currentY
@@ -116,11 +119,14 @@ const DraggableNote: React.FC<DraggableNoteProps> = ({
           backgroundColor: note.color,
           left: note.position.x,
           top: note.position.y,
-          transform: panResponder ? 
-            [{ translateX: activePan.x }, { translateY: activePan.y }] : 
+          transform: panResponder ?
+            [{ translateX: activePan.x }, { translateY: activePan.y }] :
             [],
           zIndex: note.zIndex,
           elevation: note.zIndex,
+          borderWidth: isDraggable ? 4 : 0,
+          borderColor: '#4285F4',
+          opacity: isDraggable ? 0.95 : 1,
         },
       ]}
     >      <TouchableOpacity 
@@ -141,9 +147,9 @@ const DraggableNote: React.FC<DraggableNoteProps> = ({
           />          <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
             <Image source={require('../src/assets/ceck.png')} style={styles.saveIcon} />
           </TouchableOpacity>
-        </View>        ) : (        <TouchableOpacity 
-          onPress={handleLongPress} 
-          // delayLongPress={500}
+        </View>        ) : (        <TouchableOpacity
+          onLongPress={handleLongPress}
+          delayLongPress={300}
           activeOpacity={0.7}        >
           <Text style={styles.noteText}>
             {typeof editText === 'string' && editText.trim() !== '' ? editText : 'Testo nota...'}
@@ -169,6 +175,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
+    borderWidth: 0,
   },
   noteText: {
     fontSize: 16,
