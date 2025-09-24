@@ -24,7 +24,8 @@
       "Bash(eas credentials:*)",
       "Bash(npx expo doctor:*)",
       "Bash(npx expo-doctor:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "WebSearch"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"

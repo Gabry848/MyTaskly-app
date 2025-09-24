@@ -237,21 +237,21 @@ export class AudioRecorder {
 }
 
 /**
- * Classe per gestire la riproduzione audio
+ * Classe per gestire la riproduzione audio con streaming
  */
 export class AudioPlayer {
-  private sound: Audio.Sound | null = null;
-  private audioQueue: string[] = [];
+  private currentSound: Audio.Sound | null = null;
+  private audioChunks: string[] = [];
   private isPlaying: boolean = false;
+  private onCompleteCallback: (() => void) | null = null;
 
   constructor() {}
 
   /**
-   * Riproduce audio da dati base64
+   * Riproduce audio da dati base64 concatenati
    */
   async playAudioFromBase64(base64Data: string, onComplete?: () => void): Promise<boolean> {
     try {
-      // Configura la modalità audio per la riproduzione
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: false,
         playsInSilentModeIOS: true,
@@ -260,81 +260,109 @@ export class AudioPlayer {
         playThroughEarpieceAndroid: false,
       });
 
-      // Crea un URI temporaneo per i dati base64
-      // Il server probabilmente risponde con M4A, quindi usiamo quella estensione per la riproduzione
       const tempUri = `${FileSystem.documentDirectory}temp_audio_${Date.now()}.m4a`;
-      
-      // Scrivi i dati base64 in un file temporaneo
+
       await FileSystem.writeAsStringAsync(tempUri, base64Data, {
         encoding: FileSystem.EncodingType.Base64,
       });
 
-      // Carica e riproduci l'audio
       const { sound } = await Audio.Sound.createAsync({ uri: tempUri });
-      this.sound = sound;
-      
-      // Configura callback per quando la riproduzione finisce
-      this.sound.setOnPlaybackStatusUpdate((status) => {
+      this.currentSound = sound;
+
+      this.currentSound.setOnPlaybackStatusUpdate((status) => {
         if (status.isLoaded && status.didJustFinish) {
           console.log('🔊 Riproduzione completata');
           this.onPlaybackComplete(onComplete);
         }
       });
 
-      await this.sound.playAsync();
+      await this.currentSound.playAsync();
       this.isPlaying = true;
-      
+
       console.log('🔊 Riproduzione audio iniziata');
       return true;
-      
+
     } catch (error) {
-      console.error('Errore riproduzione audio:', error);
+      console.error('🔊 Errore riproduzione audio:', error);
       return false;
     }
   }
 
   /**
-   * Aggiunge audio alla coda di riproduzione
+   * Aggiunge un chunk alla collezione
    */
-  queueAudio(base64Data: string): void {
-    this.audioQueue.push(base64Data);
-    
-    // Se non stiamo riproducendo, inizia la riproduzione della coda
-    if (!this.isPlaying) {
-      this.playNextInQueue();
+  addChunk(base64Data: string): void {
+    this.audioChunks.push(base64Data);
+    console.log(`🔊 Chunk aggiunto. Totale chunks: ${this.audioChunks.length}`);
+  }
+
+  /**
+   * Concatena tutti i chunk e li riproduce
+   */
+  async playAllChunks(onComplete?: () => void): Promise<boolean> {
+    if (this.audioChunks.length === 0) {
+      console.log('🔊 Nessun chunk da riprodurre');
+      return false;
+    }
+
+    console.log(`🔊 Inizio concatenazione di ${this.audioChunks.length} chunks...`);
+
+    try {
+      let totalBinaryData = '';
+
+      for (let i = 0; i < this.audioChunks.length; i++) {
+        try {
+          const chunk = this.audioChunks[i];
+          const binaryChunk = atob(chunk);
+          totalBinaryData += binaryChunk;
+        } catch (chunkError) {
+          console.warn(`🔊 Errore decodifica chunk ${i}:`, chunkError);
+        }
+      }
+
+      const completeAudioBase64 = btoa(totalBinaryData);
+
+      console.log(`🔊 Audio concatenato:`);
+      console.log(`  - Chunks elaborati: ${this.audioChunks.length}`);
+      console.log(`  - Dimensione binaria: ${totalBinaryData.length} bytes`);
+      console.log(`  - Dimensione base64: ${completeAudioBase64.length} caratteri`);
+
+      this.audioChunks = [];
+
+      return await this.playAudioFromBase64(completeAudioBase64, onComplete);
+
+    } catch (error) {
+      console.error('🔊 Errore concatenazione/riproduzione:', error);
+      this.audioChunks = [];
+      return false;
     }
   }
 
   /**
-   * Riproduce il prossimo audio in coda
+   * Svuota i chunk accumulati
    */
-  private async playNextInQueue(): Promise<void> {
-    if (this.audioQueue.length === 0) {
-      this.isPlaying = false;
-      return;
-    }
-
-    const nextAudio = this.audioQueue.shift()!;
-    await this.playAudioFromBase64(nextAudio);
+  clearChunks(): void {
+    this.audioChunks = [];
+    console.log('🔊 Chunks svuotati');
   }
 
   /**
    * Gestisce il completamento della riproduzione
    */
   private async onPlaybackComplete(onComplete?: () => void): Promise<void> {
-    await this.cleanup();
-    
-    // Riproduce il prossimo audio in coda se presente
-    if (this.audioQueue.length > 0) {
-      setTimeout(() => {
-        this.playNextInQueue();
-      }, 100); // Piccola pausa tra i file audio
-    } else {
-      this.isPlaying = false;
-      // Chiama il callback quando la riproduzione è davvero finita
-      if (onComplete) {
-        onComplete();
+    if (this.currentSound) {
+      try {
+        await this.currentSound.unloadAsync();
+      } catch (error) {
+        console.error('🔊 Errore cleanup audio:', error);
       }
+      this.currentSound = null;
+    }
+
+    this.isPlaying = false;
+
+    if (onComplete) {
+      onComplete();
     }
   }
 
@@ -342,24 +370,19 @@ export class AudioPlayer {
    * Ferma la riproduzione corrente
    */
   async stopPlayback(): Promise<void> {
-    if (this.sound) {
+    if (this.currentSound) {
       try {
-        await this.sound.stopAsync();
+        await this.currentSound.stopAsync();
+        await this.currentSound.unloadAsync();
         console.log('🔊 Riproduzione fermata');
       } catch (error) {
         console.error('Errore stop riproduzione:', error);
       }
+      this.currentSound = null;
     }
-    
-    await this.cleanup();
-    this.isPlaying = false;
-  }
 
-  /**
-   * Svuota la coda audio
-   */
-  clearQueue(): void {
-    this.audioQueue = [];
+    this.isPlaying = false;
+    this.onCompleteCallback = null;
   }
 
   /**
@@ -370,17 +393,10 @@ export class AudioPlayer {
   }
 
   /**
-   * Pulisce le risorse audio
+   * Ottiene il numero di chunk accumulati
    */
-  private async cleanup(): Promise<void> {
-    if (this.sound) {
-      try {
-        await this.sound.unloadAsync();
-      } catch (error) {
-        console.error('Errore cleanup audio:', error);
-      }
-      this.sound = null;
-    }
+  getChunksCount(): number {
+    return this.audioChunks.length;
   }
 
   /**
@@ -388,7 +404,7 @@ export class AudioPlayer {
    */
   async destroy(): Promise<void> {
     await this.stopPlayback();
-    this.clearQueue();
+    this.clearChunks();
   }
 }
 
