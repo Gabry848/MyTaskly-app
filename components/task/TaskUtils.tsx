@@ -5,11 +5,13 @@ export const { width } = Dimensions.get("window");
 // Funzioni di utility per date e priorità
 export const getDaysRemainingText = (endDate) => {
   if (!endDate) return "Nessuna scadenza";
-  
+
   const today = new Date();
+  today.setHours(0, 0, 0, 0);
   const dueDate = new Date(endDate);
+  dueDate.setHours(0, 0, 0, 0);
   const diffTime = dueDate.getTime() - today.getTime();
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
 
   if (diffDays < 0) return "Scaduto";
   if (diffDays === 0) return "Oggi";
@@ -19,11 +21,13 @@ export const getDaysRemainingText = (endDate) => {
 
 export const getDaysRemainingColor = (endDate) => {
   if (!endDate) return "#999999"; // Grigio neutro per task senza scadenza
-  
+
   const today = new Date();
+  today.setHours(0, 0, 0, 0);
   const dueDate = new Date(endDate);
+  dueDate.setHours(0, 0, 0, 0);
   const diffTime = dueDate.getTime() - today.getTime();
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
 
   if (diffDays < 0) return "#000000"; // Nero per scaduti
   if (diffDays <= 2) return "#333333"; // Grigio molto scuro per urgenti
