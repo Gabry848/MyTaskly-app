@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { StyleSheet, View, TextInput, TouchableOpacity, Platform, Dimensions } from 'react-native';
+import { StyleSheet, View, TextInput, TouchableOpacity, Platform, Dimensions, KeyboardAvoidingView } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { ChatInputProps } from './types';
 import VoiceRecordButton from './VoiceRecordButton';
@@ -77,54 +77,58 @@ const ChatInput: React.FC<ExtendedChatInputProps> = ({
     const simulatedTranscription = "Messaggio vocale simulato";
     onSendMessage(simulatedTranscription);
   }, [onSendMessage]);return (
-    <View style={[
-      styles.inputContainer, 
-      style,
-      // Su iPad, aggiungiamo un po' meno ombra e padding
-      deviceType === 'ipad' && styles.ipadContainer
-    ]}>
-      <TextInput
-        ref={inputRef}
-        style={[styles.input, { height: inputHeight }]}
-        value={inputText}
-        onChangeText={setInputText}
-        placeholder="Scrivi un messaggio..."
-        placeholderTextColor="#999"
-        onSubmitEditing={handleSend}
-        returnKeyType="send"
-        autoFocus={Platform.OS === 'ios'}
-        keyboardType="default"
-        spellCheck={false}
-        autoCorrect={false}
-        autoCapitalize="none"
-        multiline={true}
-        maxLength={1000}
-        onContentSizeChange={handleContentSizeChange}
-        blurOnSubmit={false}
-        textAlignVertical="top"
-        editable={!isRecording}      />
-      
-      <View style={styles.buttonContainer}>        <VoiceRecordButton
-          isRecording={isRecording}
-          recordingDuration={recordingDuration}
-          onStartRecording={handleStartRecording}
-          onStopRecording={handleStopRecording}
-          disabled={false}
-        />
-        
-        <TouchableOpacity 
-          style={[styles.sendButton, { height: inputHeight }]} 
-          onPress={handleSend}
-          disabled={inputText.trim() === '' || isRecording}
-        >
-          <MaterialIcons 
-            name="send" 
-            size={24} 
-            color={(inputText.trim() === '' || isRecording) ? '#CCC' : '#007bff'} 
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+    >
+      <View style={[
+        styles.inputContainer,
+        style,
+        deviceType === 'ipad' && styles.ipadContainer
+      ]}>
+        <TextInput
+          ref={inputRef}
+          style={[styles.input, { height: inputHeight }]}
+          value={inputText}
+          onChangeText={setInputText}
+          placeholder="Scrivi un messaggio..."
+          placeholderTextColor="#999"
+          onSubmitEditing={handleSend}
+          returnKeyType="send"
+          autoFocus={Platform.OS === 'ios'}
+          keyboardType="default"
+          spellCheck={false}
+          autoCorrect={false}
+          autoCapitalize="none"
+          multiline={true}
+          maxLength={1000}
+          onContentSizeChange={handleContentSizeChange}
+          blurOnSubmit={false}
+          textAlignVertical="top"
+          editable={!isRecording}      />
+
+        <View style={styles.buttonContainer}>        <VoiceRecordButton
+            isRecording={isRecording}
+            recordingDuration={recordingDuration}
+            onStartRecording={handleStartRecording}
+            onStopRecording={handleStopRecording}
+            disabled={false}
           />
-        </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.sendButton, { height: inputHeight }]}
+            onPress={handleSend}
+            disabled={inputText.trim() === '' || isRecording}
+          >
+            <MaterialIcons
+              name="send"
+              size={24}
+              color={(inputText.trim() === '' || isRecording) ? '#CCC' : '#007bff'}
+            />
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 };
 
