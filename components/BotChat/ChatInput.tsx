@@ -79,7 +79,8 @@ const ChatInput: React.FC<ExtendedChatInputProps> = ({
   }, [onSendMessage]);return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      style={{ width: '100%' }}
     >
       <View style={[
         styles.inputContainer,
