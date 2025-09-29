@@ -22,6 +22,29 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onPress }) => {
     return String(value).trim();
   };
 
+  const formatTaskTime = (startTime?: string, endTime?: string): string => {
+    if (!startTime && !endTime) {
+      return 'Nessuna scadenza';
+    }
+
+    const now = dayjs();
+    const taskDate = dayjs(startTime || endTime);
+
+    let datePrefix = '';
+    if (taskDate.isSame(now, 'day')) {
+      datePrefix = 'Oggi ';
+    } else if (taskDate.isSame(now.add(1, 'day'), 'day')) {
+      datePrefix = 'Domani ';
+    } else {
+      datePrefix = taskDate.format('DD/MM ');
+    }
+
+    const timeRange = startTime ? dayjs(startTime).format('HH:mm') : '--:--';
+    const endTimeFormatted = endTime ? ' - ' + dayjs(endTime).format('HH:mm') : '';
+
+    return datePrefix + timeRange + endTimeFormatted;
+  };
+
   // Determina il colore in base alla priorità (gradiente di scurezza)
   const priorityColors: Record<string, string> = {
     'Alta': '#000000',     // Nero per alta priorità
@@ -75,22 +98,19 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onPress }) => {
           </View>
         </View>
         
-        {task.start_time || task.end_time ? (
-          <View style={styles.taskTimeInfo}>
+        <View style={styles.taskTimeInfo}>
+          {task.start_time || task.end_time ? (
             <Ionicons name="time-outline" size={14} color="#666" />
-            <Text style={styles.taskTimeText}>
-              {task.start_time ? dayjs(task.start_time).format('HH:mm') : '--:--'}
-              {task.end_time ? ' - ' + dayjs(task.end_time).format('HH:mm') : ' - Nessuna scadenza'}
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.taskTimeInfo}>
+          ) : (
             <Ionicons name="calendar-clear-outline" size={14} color="#999" />
-            <Text style={[styles.taskTimeText, { color: '#999' }]}>
-              Nessuna scadenza
-            </Text>
-          </View>
-        )}
+          )}
+          <Text style={[
+            styles.taskTimeText,
+            { color: task.start_time || task.end_time ? '#666' : '#999' }
+          ]}>
+            {formatTaskTime(task.start_time, task.end_time)}
+          </Text>
+        </View>
       </View>
     </TouchableOpacity>
   );
