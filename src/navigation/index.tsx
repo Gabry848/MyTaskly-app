@@ -6,7 +6,7 @@ import {
 } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { BackHandler } from "react-native";
+import { BackHandler, Linking } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Ionicons } from "@expo/vector-icons";
 import LoginScreen from "./screens/Login";
@@ -34,6 +34,9 @@ import eventEmitter, { emitScreenChange, EVENTS } from "../utils/eventEmitter";
 import { useNotifications } from "../services/notificationService";
 import AppInitializer from "../services/AppInitializer";
 import { syncAllData } from "../services/taskService";
+import { handleGoogleLoginSuccess, handleGoogleLoginError } from "../services/googleSignInService";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { STORAGE_KEYS } from "../constants/authConstants";
 
 // Definizione del tipo per le route dello Stack principale
 export type RootStackParamList = {
@@ -219,7 +222,7 @@ function AppStack() {
         // Inizializza l'app prima di tutto
         const appInitializer = AppInitializer.getInstance();
         await appInitializer.initialize();
-        
+
         // Importa la funzione di controllo e refresh automatico
         const { checkAndRefreshAuth } = await import("../services/authService");
         const authResult = await checkAndRefreshAuth();
@@ -240,6 +243,60 @@ function AppStack() {
     };
 
     checkAuthStatus();
+  }, []);
+
+  // Handle deep links for Google login
+  useEffect(() => {
+    const handleDeepLink = async (url: string) => {
+      console.log('🔗 Deep link received:', url);
+
+      try {
+        // Parse URL to check if it's a Google login callback
+        const parsedUrl = new URL(url);
+
+        if (parsedUrl.pathname.includes('/login/success')) {
+          console.log('✅ Processing Google login success...');
+
+          const result = await handleGoogleLoginSuccess(url);
+
+          if (result.success) {
+            // Reset suggested command for new user
+            await AsyncStorage.setItem(STORAGE_KEYS.SUGGESTED_COMMAND_SHOWN, 'false');
+
+            console.log('✅ Google login completed successfully');
+            setIsAuthenticated(true);
+            eventEmitter.emit("loginSuccess");
+          } else {
+            console.error('❌ Google login success processing failed:', result.message);
+          }
+
+        } else if (parsedUrl.pathname.includes('/login') && parsedUrl.searchParams.has('error')) {
+          console.log('❌ Processing Google login error...');
+
+          const result = handleGoogleLoginError(url);
+          console.error('Google login error:', result.message);
+
+        }
+      } catch (error) {
+        console.error('❌ Error processing deep link:', error);
+      }
+    };
+
+    // Listen for deep links
+    const linkingSubscription = Linking.addEventListener('url', ({ url }) => {
+      handleDeepLink(url);
+    });
+
+    // Check if app was opened with a deep link
+    Linking.getInitialURL().then((url) => {
+      if (url) {
+        handleDeepLink(url);
+      }
+    });
+
+    return () => {
+      linkingSubscription?.remove();
+    };
   }, []);
 
   // Listener per eventi di login/logout
