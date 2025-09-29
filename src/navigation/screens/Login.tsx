@@ -16,7 +16,7 @@ import * as authService from "../../services/authService";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { RootStackParamList } from "../../types";
 import eventEmitter from "../../utils/eventEmitter";
-import { signInWithGoogle } from "../../services/googleSignInService";
+import { signInWithGoogle, initiateGoogleLogin, clearWebBrowserSession } from "../../services/googleSignInService";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { STORAGE_KEYS } from "../../constants/authConstants";
 
@@ -93,28 +93,31 @@ const LoginScreen = () => {
   // Handle Google Auth response
   // Rimuoviamo il vecchio useEffect per expo-auth-session
 
-  // Google Sign-In function con il nostro servizio
+  // Google Sign-In function using server-side flow
   async function handleGoogleSignIn() {
     try {
       setIsGoogleLoading(true);
-      
-      const result = await signInWithGoogle();
-      
+
+      console.log('🚀 Initiating Google login server-side flow...');
+      const result = await initiateGoogleLogin();
+
       if (result.success) {
+        console.log('✅ Google login initiated successfully');
         // Reset del comando suggerito per il nuovo utente
         await AsyncStorage.setItem(STORAGE_KEYS.SUGGESTED_COMMAND_SHOWN, 'false');
-        setLoginSuccess(true);
-        eventEmitter.emit("loginSuccess");
+        setLoginSuccess(true); // Imposta il login come riuscito
+        eventEmitter.emit("loginSuccess"); // Emetti evento per aggiornare lo stato di autenticazione
         showNotification("Login con Google effettuato con successo", true);
       } else {
+        console.error('❌ Failed to initiate Google login:', result.message);
         showNotification(
-          result.message || "Errore durante il login con Google.",
+          result.message || "Errore durante l'avvio del login con Google.",
           false
         );
       }
     } catch (error: any) {
-      console.error("Google Sign-In error:", error);
-      showNotification("Errore durante il login con Google. Riprova più tardi.", false);
+      console.error("Google Sign-In initiation error:", error);
+      showNotification("Errore durante l'avvio del login con Google. Riprova più tardi.", false);
     } finally {
       setIsGoogleLoading(false);
     }
