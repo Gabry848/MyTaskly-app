@@ -1,345 +1,226 @@
-import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
-import { Platform } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as WebBrowser from 'expo-web-browser';
 import { updateAuthData } from './authService';
 import axios from './axiosInstance';
 import { API_ENDPOINTS } from '../constants/authConstants';
 
-// Configurazione Google Sign-In
-const GOOGLE_CONFIG = {
-  iosClientId: '643213673162-7lk71d5c0ov3703qo5c8mrcfsqipdjlp.apps.googleusercontent.com',
-  webClientId: '643213673162-a0sge7ioso04bpt8lf8febr51fjsgjd8.apps.googleusercontent.com',
-  offlineAccess: true,
-  hostedDomain: '',
-  forceCodeForRefreshToken: true,
-  accountName: '',
-  scopes: ['openid', 'profile', 'email', 'https://www.googleapis.com/auth/calendar'],
+/**
+ * Clear WebBrowser session to force fresh OAuth consent
+ */
+export const clearWebBrowserSession = async (): Promise<void> => {
+  try {
+    await WebBrowser.dismissBrowser();
+    await WebBrowser.coolDownAsync();
+    console.log('🧹 WebBrowser session cleared');
+  } catch (error) {
+    console.error('❌ Error clearing WebBrowser session:', error);
+  }
 };
 
 /**
- * Inizializza Google Sign-In con la configurazione appropriata
+ * Initialize Google Sign-In configuration
  */
 export const initializeGoogleSignIn = async (): Promise<void> => {
   try {
-    await GoogleSignin.configure({
-      ...GOOGLE_CONFIG,
-      // Usa webClientId per Android e iosClientId per iOS
-      webClientId: GOOGLE_CONFIG.webClientId,
-      iosClientId: Platform.OS === 'ios' ? GOOGLE_CONFIG.iosClientId : undefined,
-    });
-    
-    console.log('✅ Google Sign-In configurato correttamente');
+    // For server-side Google Sign-In, we don't need to initialize the Google SDK
+    // The initialization is handled by the backend server
+    console.log('🔧 Google Sign-In initialized (server-side mode)');
   } catch (error) {
-    console.error('❌ Errore nella configurazione di Google Sign-In:', error);
+    console.error('❌ Error initializing Google Sign-In:', error);
     throw error;
   }
 };
 
 /**
- * Controlla se l'utente è già loggato con Google
+ * Google Sign-In server-side following the new backend implementation
  */
-export const isGoogleSignedIn = async (): Promise<boolean> => {
+export const signInWithGoogleServerSide = async () => {
   try {
-    const currentUser = await GoogleSignin.getCurrentUser();
-    return currentUser !== null;
-  } catch (error) {
-    console.error('❌ Errore nel controllo stato Google Sign-In:', error);
-    return false;
-  }
-};
+    console.log('📤 Starting Google login server-side...');
 
-/**
- * Ottiene le informazioni dell'utente corrente da Google
- */
-export const getCurrentGoogleUser = async () => {
-  try {
-    const userInfo = await GoogleSignin.getCurrentUser();
-    return {
-      success: true,
-      userInfo,
-    };
-  } catch (error: any) {
-    console.error('❌ Errore nel recupero utente Google corrente:', error);
-    return {
-      success: false,
-      error: error.message,
-    };
-  }
-};
+    // 0. Clear any existing WebBrowser session
+    await clearWebBrowserSession();
 
-/**
- * Esegue il login con Google
- */
-export const signInWithGoogle = async () => {
-  try {
-    // Controlla se i Google Play Services sono disponibili
-    await GoogleSignin.hasPlayServices({
-      showPlayServicesUpdateDialog: true,
-    });
+    // 1. Call the server endpoint to get Google authorization URL
+    const response = await axios.get(`${API_ENDPOINTS.GOOGLE_LOGIN}`);
+    const { authorization_url } = response.data;
 
-    // Esegui il sign-in
-    const userInfo = await GoogleSignin.signIn();
-    
-    console.log('✅ Login Google completato:', {
-      id: userInfo.data?.user.id,
-      email: userInfo.data?.user.email,
-      name: userInfo.data?.user.name,
-    });
-
-    // Ottieni i token
-    const tokens = await GoogleSignin.getTokens();
-    
-    console.log('✅ Token Google ottenuti', tokens);
-
-    // Verifica se esiste un refresh token
-    console.log('🔍 Refresh token disponibile:', tokens.refreshToken ? 'Sì' : 'No');
-
-    // Invia i dati al tuo backend per l'autenticazione
-    const backendResult = await authenticateWithBackend(userInfo, tokens);
-    
-    if (backendResult.success) {
-      // Salva i dati dell'utente localmente
-      await updateAuthData({
-        bearerToken: backendResult.bearerToken,
-        refreshToken: backendResult.refreshToken,
-        loginTime: new Date().toISOString(),
-        bearerDuration: backendResult.bearerDuration,
-        refreshDuration: backendResult.refreshDuration,
-        username: userInfo.data?.user.name,
-        email: userInfo.data?.user.email,
-        utente_id: backendResult.utente_id,
-        googleAccessToken: tokens.accessToken,
-        googleIdToken: tokens.idToken,
-      });
-
-      return {
-        success: true,
-        userInfo: userInfo.data?.user,
-        message: 'Login con Google completato con successo',
-        bearerToken: backendResult.bearerToken,
-      };
-    } else {
-      // Se l'autenticazione con il backend fallisce, esegui il logout da Google
-      await signOutFromGoogle();
-      return {
-        success: false,
-        message: backendResult.message || 'Errore nell\'autenticazione con il backend',
-        error: backendResult.error,
-      };
+    if (!authorization_url) {
+      throw new Error('Authorization URL not received from server');
     }
 
-  } catch (error: any) {
-    console.error('❌ Errore durante il login con Google:', error);
-    
-    let errorMessage = 'Errore durante il login con Google';
-    
-    if (error.code === statusCodes.SIGN_IN_CANCELLED) {
-      errorMessage = 'Login cancellato dall\'utente';
-    } else if (error.code === statusCodes.IN_PROGRESS) {
-      errorMessage = 'Login già in corso';
-    } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-      errorMessage = 'Google Play Services non disponibili';
-    } else {
-      errorMessage = error.message || errorMessage;
-    }
+    console.log('🔗 Opening Google authorization URL...');
+    console.log('📋 Authorization URL:', authorization_url);
 
-    return {
-      success: false,
-      message: errorMessage,
-      error: error,
-    };
-  }
-};
-
-/**
- * Autentica l'utente con il backend usando i dati di Google
- */
-const authenticateWithBackend = async (userInfo: any, tokens: any) => {
-  try {
-    const loginData = {
-      google_access_token: tokens.accessToken,
-      google_refresh_token: tokens.refreshToken || null,
-      google_client_id: GOOGLE_CONFIG.webClientId,
-      google_client_secret: null, // Il client secret non dovrebbe essere esposto nel frontend
-      googleAccessToken: tokens.accessToken, // Mantengo per compatibilità
-      googleIdToken: tokens.idToken,
-      userProfile: {
-        id: userInfo.data?.user.id,
-        email: userInfo.data?.user.email,
-        name: userInfo.data?.user.name,
-        photo: userInfo.data?.user.photo,
-        familyName: userInfo.data?.user.familyName,
-        givenName: userInfo.data?.user.givenName,
-      }
-    };
-
-    console.log('📤 Invio parametri al backend:', {
-      google_access_token: tokens.accessToken ? '***' + tokens.accessToken.slice(-10) : 'N/A',
-      google_refresh_token: tokens.refreshToken ? '***' + tokens.refreshToken.slice(-10) : 'N/A',
-      google_client_id: GOOGLE_CONFIG.webClientId,
-      google_client_secret: 'null (sicurezza)',
-      googleAccessToken: tokens.accessToken ? '***' + tokens.accessToken.slice(-10) : 'N/A',
-      googleIdToken: tokens.idToken ? '***' + tokens.idToken.slice(-10) : 'N/A',
-      userEmail: userInfo.data?.user.email,
-    });
-
-    // Invia i dati a un endpoint del tuo backend per l'autenticazione Google
-    const response = await axios.post(
-      `${API_ENDPOINTS.GOOGLE_LOGIN}`, // Nuovo endpoint per Google Sign-In
-      loginData,
+    // 2. Open browser for authorization
+    const result = await WebBrowser.openAuthSessionAsync(
+      authorization_url,
+      'mytaskly://auth/login',
       {
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        showInRecents: true,
       }
     );
 
-    const { bearer_token, refresh_token, bearer_duration, refresh_duration, utente_id } = response.data;
+    if (result.type === 'success') {
+      console.log('✅ Authorization completed, processing result...');
 
-    return {
-      success: true,
-      bearerToken: bearer_token,
-      refreshToken: refresh_token,
-      bearerDuration: bearer_duration,
-      refreshDuration: refresh_duration,
-      utente_id: utente_id,
-      message: 'Autenticazione backend completata',
-    };
+      // 3. Parse the result URL to extract tokens and user data
+      const url = new URL(result.url);
 
-  } catch (error: any) {
-    console.error('❌ Errore nell\'autenticazione con il backend:', error);
-    
-    // Se è un errore 404, significa che l'endpoint non esiste ancora
-    if (error.response?.status === 404) {
+      // Check if this is a success URL
+      if (url.pathname.includes('/success')) {
+        // Check for success parameters
+        const accessToken = url.searchParams.get('access_token');
+        const refreshToken = url.searchParams.get('refresh_token');
+        const userId = url.searchParams.get('user_id');
+        const username = url.searchParams.get('username');
+        const email = url.searchParams.get('email');
+        const bearerDuration = parseInt(url.searchParams.get('bearer_duration') || '3600');
+        const refreshDuration = parseInt(url.searchParams.get('refresh_duration') || '86400');
+
+        if (!accessToken || !userId) {
+          throw new Error('Missing required authentication data from server');
+        }
+
+        // 4. Save authentication data locally
+        await updateAuthData({
+          bearerToken: accessToken,
+          refreshToken: refreshToken || '',
+          loginTime: new Date().toISOString(),
+          bearerDuration: bearerDuration,
+          refreshDuration: refreshDuration,
+          username: decodeURIComponent(username || ''),
+          email: decodeURIComponent(email || ''),
+          utente_id: userId,
+        });
+
+        console.log('✅ Google login server-side completed successfully');
+
+        return {
+          success: true,
+          userInfo: {
+            id: userId,
+            name: decodeURIComponent(username || ''),
+            email: decodeURIComponent(email || ''),
+          },
+          message: 'Login con Google completato con successo',
+          bearerToken: accessToken,
+        };
+      } else {
+        // Check for error parameters in case of error redirect
+        const error = url.searchParams.get('error');
+        const errorMessage = url.searchParams.get('message');
+
+        if (error) {
+          throw new Error(errorMessage || `Google login error: ${error}`);
+        }
+
+        throw new Error('Unexpected redirect URL format');
+      }
+
+    } else if (result.type === 'cancel') {
+      console.log('ℹ️ User cancelled Google login');
       return {
         success: false,
-        message: 'Endpoint Google Sign-In non ancora implementato nel backend',
-        error: error,
+        message: 'Login cancellato dall\'utente',
       };
+    } else {
+      throw new Error('Login fallito - unexpected result type');
     }
-    
+
+  } catch (error: any) {
+    console.error('❌ Error during Google server-side login:', error);
+
     return {
       success: false,
-      message: error.response?.data?.message || 'Errore nell\'autenticazione con il backend',
+      message: error.response?.data?.message || error.message || 'Errore durante il login con Google',
       error: error,
     };
   }
 };
 
 /**
- * Esegue il logout da Google
+ * Handle login success from redirect URL parameters
  */
-export const signOutFromGoogle = async () => {
+export const handleGoogleLoginSuccess = async (url: string) => {
   try {
-    const currentUser = await GoogleSignin.getCurrentUser();
-    
-    if (currentUser) {
-      await GoogleSignin.signOut();
-      console.log('✅ Logout da Google completato');
+    console.log('🔍 Processing login success URL...');
+
+    const parsedUrl = new URL(url);
+    const urlParams = parsedUrl.searchParams;
+
+    const accessToken = urlParams.get('access_token');
+    const refreshToken = urlParams.get('refresh_token');
+    const userId = urlParams.get('user_id');
+    const username = urlParams.get('username');
+    const email = urlParams.get('email');
+
+    if (!accessToken || !userId) {
+      throw new Error('Missing required authentication data');
     }
 
-    // Rimuovi i token Google dal storage locale
-    await AsyncStorage.multiRemove([
-      'auth.googleAccessToken',
-      'auth.googleIdToken',
-    ]);
+    // Save authentication data locally
+    await updateAuthData({
+      bearerToken: accessToken,
+      refreshToken: refreshToken || '',
+      loginTime: new Date().toISOString(),
+      bearerDuration: 3600, // 1 hour default
+      refreshDuration: 86400, // 24 hours default
+      username: username || '',
+      email: email || '',
+      utente_id: userId,
+    });
+
+    console.log('✅ Google login success processed');
 
     return {
       success: true,
-      message: 'Logout da Google completato',
+      userInfo: {
+        id: userId,
+        name: username,
+        email: email,
+      },
+      message: 'Login completed successfully',
     };
-
   } catch (error: any) {
-    console.error('❌ Errore durante il logout da Google:', error);
+    console.error('❌ Error processing login success:', error);
     return {
       success: false,
-      message: 'Errore durante il logout da Google',
-      error: error,
+      message: error.message || 'Error processing login success',
+      error,
     };
   }
 };
 
 /**
- * Revoca l'accesso dell'utente (rimuove completamente l'autorizzazione)
+ * Handle login error from redirect URL parameters
  */
-export const revokeGoogleAccess = async () => {
+export const handleGoogleLoginError = (url: string) => {
   try {
-    await GoogleSignin.revokeAccess();
-    console.log('✅ Accesso Google revocato');
+    const parsedUrl = new URL(url);
+    const urlParams = parsedUrl.searchParams;
 
-    // Rimuovi i token Google dal storage locale
-    await AsyncStorage.multiRemove([
-      'auth.googleAccessToken',
-      'auth.googleIdToken',
-    ]);
+    const error = urlParams.get('error');
+    const message = urlParams.get('message');
 
-    return {
-      success: true,
-      message: 'Accesso Google revocato con successo',
-    };
+    console.error('❌ Google login error:', error, message);
 
-  } catch (error: any) {
-    console.error('❌ Errore nella revoca dell\'accesso Google:', error);
     return {
       success: false,
-      message: 'Errore nella revoca dell\'accesso Google',
-      error: error,
+      error,
+      message: message || 'Google login failed',
+    };
+  } catch (err: any) {
+    console.error('❌ Error parsing login error URL:', err);
+    return {
+      success: false,
+      error: 'url_parse_error',
+      message: 'Error parsing login error response',
     };
   }
 };
 
 /**
- * Ottiene i token di Google attuali
+ * Aliases for backward compatibility
  */
-export const getGoogleTokens = async () => {
-  try {
-    const tokens = await GoogleSignin.getTokens();
-    return {
-      success: true,
-      tokens,
-    };
-  } catch (error: any) {
-    console.error('❌ Errore nel recupero dei token Google:', error);
-    return {
-      success: false,
-      error: error.message,
-    };
-  }
-};
-
-/**
- * Aggiorna i token di Google (se necessario)
- */
-export const refreshGoogleTokens = async () => {
-  try {
-    // Prova a fare un signin silenzioso per aggiornare i token
-    const userInfo = await GoogleSignin.getCurrentUser();
-    const tokens = await GoogleSignin.getTokens();
-    
-    // Salva i nuovi token
-    await AsyncStorage.setItem('auth.googleAccessToken', tokens.accessToken);
-    if (tokens.idToken) {
-      await AsyncStorage.setItem('auth.googleIdToken', tokens.idToken);
-    }
-    
-    return {
-      success: true,
-      tokens,
-      userInfo: userInfo,
-    };
-    
-  } catch (error: any) {
-    console.error('❌ Errore nell\'aggiornamento dei token Google:', error);
-    return {
-      success: false,
-      error: error.message,
-    };
-  }
-};
-
-/**
- * Esporta tutte le funzioni necessarie
- */
-export {
-  GOOGLE_CONFIG,
-};
+export const initiateGoogleLogin = signInWithGoogleServerSide;
+export const signInWithGoogle = signInWithGoogleServerSide;

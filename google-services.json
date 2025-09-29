@@ -14,7 +14,15 @@
       },
       "oauth_client": [
         {
-          "client_id": "643213673162-a0sge7ioso04bpt8lf8febr51fjsgjd8.apps.googleusercontent.com",
+          "client_id": "643213673162-h5j1ps98ubf4r1rst7codtq1nc507o47.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.Gabry848Studio.Mytaskly",
+            "certificate_hash": "aaa0214bac39260925dfb9424e96dbe8395df80f"
+          }
+        },
+        {
+          "client_id": "643213673162-ueb5e6e27mc98n7k8okeuqd7acd8nks7.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
@@ -27,7 +35,7 @@
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "643213673162-a0sge7ioso04bpt8lf8febr51fjsgjd8.apps.googleusercontent.com",
+              "client_id": "643213673162-4l99qbq7hn2tc4ouit0mtr1tj5e45laf.apps.googleusercontent.com",
               "client_type": 3
             },
             {
