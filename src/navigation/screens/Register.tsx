@@ -84,7 +84,43 @@ const RegisterScreen = () => {
       });
       return;
     }
-    
+
+    // Verifica la disponibilità di username ed email prima di procedere
+    const availabilityResult = await authService.checkAvailability(username, email);
+
+    if (!availabilityResult.success) {
+      setNotification({
+        isVisible: true,
+        message: availabilityResult.message || "Errore durante la verifica della disponibilità",
+        isSuccess: false,
+        key: Date.now(),
+        onFinish: () => setNotification(null),
+      });
+      return;
+    }
+
+    if (!availabilityResult.nameAvailable) {
+      setNotification({
+        isVisible: true,
+        message: "Lo username è già in uso. Scegline un altro.",
+        isSuccess: false,
+        key: Date.now(),
+        onFinish: () => setNotification(null),
+      });
+      return;
+    }
+
+    if (!availabilityResult.emailAvailable) {
+      setNotification({
+        isVisible: true,
+        message: "L'email è già registrata. Usa un'altra email o effettua il login.",
+        isSuccess: false,
+        key: Date.now(),
+        onFinish: () => setNotification(null),
+      });
+      return;
+    }
+
     const result = await authService.register(username, email, password);
     if (result.success) {
       setNotification({
@@ -93,8 +129,8 @@ const RegisterScreen = () => {
         isSuccess: true,
         key: Date.now(),
       });
-      navigation.navigate("EmailVerification", { 
-        email: email, 
+      navigation.navigate("EmailVerification", {
+        email: email,
         username: username,
         password: password
       });

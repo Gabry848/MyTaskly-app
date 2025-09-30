@@ -46,7 +46,7 @@ const LoginScreen = () => {
       const timer = setTimeout(() => {
         navigation.navigate("HomeTabs");
         setLoginSuccess(false); // Reset dello stato
-      }, 2000);
+      }, 3500);
 
       return () => clearTimeout(timer);
     }
@@ -132,7 +132,7 @@ const LoginScreen = () => {
         showNotification("Lo username non può contenere caratteri speciali", false);
         return;
       }
-      
+
       const login_data = await authService.login(username, password);
       if (login_data.success) {
         // Reset del comando suggerito per il nuovo utente
@@ -146,7 +146,7 @@ const LoginScreen = () => {
           login_data.message || "Email non verificata. Verifica la tua email prima di effettuare il login.",
           false
         );
-        
+
         // Naviga alla schermata di verifica email dopo un breve ritardo
         setTimeout(() => {
           navigation.navigate("EmailVerification", {
@@ -156,20 +156,62 @@ const LoginScreen = () => {
           });
         }, 2000);
       } else {
+        // Gestione dettagliata degli errori basata sulla risposta del server
         handleFailedLogin();
-        showNotification(
-          login_data.message || "Username o password errati.",
-          false
-        );
+
+        // Determina il messaggio di errore specifico
+        let errorMessage = "Username o password errati.";
+
+        if (login_data.error?.response) {
+          const status = login_data.error.response.status;
+          const detail = login_data.error.response.data?.detail;
+
+          if (status === 401) {
+            // Status 401: Invalid credentials or OAuth user attempting password login
+            if (detail === "Invalid username or password") {
+              errorMessage = "Credenziali non valide. Verifica username e password o prova ad accedere con Google se hai usato l'autenticazione OAuth.";
+            } else {
+              errorMessage = "Credenziali non valide.";
+            }
+          } else if (status === 403) {
+            // Status 403: Email not verified (should be handled by requiresEmailVerification, but as fallback)
+            if (detail === "Email not verified") {
+              errorMessage = "Email non verificata. Controlla la tua casella di posta per il link di verifica.";
+            } else {
+              errorMessage = "Accesso negato. Verifica il tuo account.";
+            }
+          } else {
+            // Altri errori
+            errorMessage = login_data.message || "Errore durante il login.";
+          }
+        } else {
+          errorMessage = login_data.message || "Username o password errati.";
+        }
+
+        showNotification(errorMessage, false);
       }
     } catch (error) {
       let errorMessage = "Errore durante il login. Riprova più tardi.";
       if (
         error instanceof Error &&
-        (error as any).response &&
-        (error as any).response.status === 401
+        (error as any).response
       ) {
-        errorMessage = "Credenziali non valide.";
+        const status = (error as any).response.status;
+        const detail = (error as any).response.data?.detail;
+
+        if (status === 401) {
+          if (detail === "Invalid username or password") {
+            errorMessage = "Credenziali non valide. Verifica username e password o prova ad accedere con Google se hai usato l'autenticazione OAuth.";
+          } else {
+            errorMessage = "Credenziali non valide.";
+          }
+        } else if (status === 403) {
+          if (detail === "Email not verified") {
+            errorMessage = "Email non verificata. Controlla la tua casella di posta per il link di verifica.";
+          } else {
+            errorMessage = "Accesso negato. Verifica il tuo account.";
+          }
+        }
       }
       handleFailedLogin();
       showNotification(errorMessage, false);
