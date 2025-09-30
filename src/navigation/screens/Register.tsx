@@ -41,7 +41,8 @@ const RegisterScreen = () => {
 
   // Funzione per gestire il cambio di username con validazione
   const handleUsernameChange = (text) => {
-    if (containsSpecialChars(text)) {
+    const trimmedText = text.trim();
+    if (containsSpecialChars(trimmedText)) {
       setNotification({
         isVisible: true,
         message: "Lo username non può contenere caratteri speciali",
@@ -53,7 +54,7 @@ const RegisterScreen = () => {
       });
       return;
     }
-    setUsername(text);
+    setUsername(trimmedText);
   };
 
   // Validation for email is not needed as emails naturally contain special characters
@@ -137,7 +138,7 @@ const RegisterScreen = () => {
           style={[styles.input, { width: width * 0.75 }]}
           keyboardType="email-address"
           value={email}
-          onChangeText={setEmail}
+          onChangeText={(text) => setEmail(text.trim().toLowerCase())}
         />
       </View>
       <View style={[styles.inputContainer, { width: width * 0.9 }]}>
@@ -148,7 +149,7 @@ const RegisterScreen = () => {
           style={[styles.input, { width: width * 0.75 }]}
           secureTextEntry
           value={password}
-          onChangeText={setPassword}
+          onChangeText={(text) => setPassword(text.trim())}
         />
       </View>
       <View style={[styles.inputContainer, { width: width * 0.9 }]}>
@@ -159,7 +160,7 @@ const RegisterScreen = () => {
           style={[styles.input, { width: width * 0.75 }]}
           secureTextEntry
           value={confirmPassword}
-          onChangeText={setConfirmPassword}
+          onChangeText={(text) => setConfirmPassword(text.trim())}
         />
       </View>
       <TouchableOpacity
