@@ -34,7 +34,7 @@ export function NotificationSnackbar({
             runOnJS(onFinish)();
           }
         });
-      }, 1500);
+      }, 3000);
 
       return () => clearTimeout(timer);
     } else {

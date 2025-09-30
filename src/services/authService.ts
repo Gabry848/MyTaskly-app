@@ -600,6 +600,52 @@ async function checkEmailVerificationStatus(email: string) {
   }
 }
 
+/**
+ * Verifica la disponibilità di username ed email prima della registrazione
+ *
+ * @param {string} username - Lo username da verificare
+ * @param {string} email - L'email da verificare
+ * @returns {Promise<Object>} - Un oggetto che contiene la disponibilità di username ed email
+ */
+async function checkAvailability(username: string, email: string) {
+  try {
+    const response = await axios.post(
+      API_ENDPOINTS.CHECK_AVAILABILITY,
+      {
+        name: username,
+        email: email,
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    return {
+      success: true,
+      nameAvailable: response.data.name_available,
+      emailAvailable: response.data.email_available,
+      data: response.data,
+    };
+  } catch (error: any) {
+    console.error("❌ Errore durante il controllo della disponibilità:", error.message);
+    if (error.response) {
+      console.error("Dettagli errore:", error.response.data);
+      console.error("Status code:", error.response.status);
+    }
+
+    return {
+      success: false,
+      nameAvailable: false,
+      emailAvailable: false,
+      message: error.response?.data?.message || "Errore durante il controllo della disponibilità",
+      statusCode: error.response?.status,
+      error: error,
+    };
+  }
+}
+
 // Esporta le funzioni
 export {
   login,
@@ -612,5 +658,6 @@ export {
   checkAndRefreshAuth,
   sendVerificationEmail,
   checkEmailVerificationStatus,
+  checkAvailability,
   updateAuthData,
 };
