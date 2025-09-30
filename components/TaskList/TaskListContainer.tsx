@@ -104,10 +104,18 @@ export const TaskListContainer = ({
   const fetchTasks = useCallback(async () => {
     try {
       const data = await taskService.getTasks(categoryId);
-      setTasks(data);
-      
+
+      // IMPORTANTE: Normalizza i task per assicurarsi che abbiano sempre un id valido
+      const normalizedTasks = data.map(task => ({
+        ...task,
+        id: task.id || task.task_id,  // Assicura che id sia sempre presente
+        task_id: task.task_id || task.id  // Assicura che task_id sia sempre presente
+      }));
+
+      setTasks(normalizedTasks);
+
       // Update global reference
-      globalTasksRef.tasks[categoryName] = data;
+      globalTasksRef.tasks[categoryName] = normalizedTasks;
       setIsLoading(false);
     } catch (error) {
       console.error("Error fetching tasks:", error);
@@ -130,45 +138,95 @@ export const TaskListContainer = ({
       // Solo aggiorna se il task appartiene a questa categoria
       if (newTask.category_name === categoryName || newTask.category_name === categoryId) {
         console.log('[TASK_LIST_CONTAINER] Task added event received for category:', categoryName, newTask.title);
+
+        // Normalizza il nuovo task
+        const normalizedTask = {
+          ...newTask,
+          id: newTask.id || newTask.task_id,
+          task_id: newTask.task_id || newTask.id
+        };
+
         setTasks(prevTasks => {
           // Evita duplicati
-          if (prevTasks.some(task => 
-            (task.id === newTask.id) || 
-            (task.task_id === newTask.task_id) ||
-            (newTask.id && task.task_id === newTask.id) ||
-            (newTask.task_id && task.id === newTask.task_id)
+          const taskId = normalizedTask.task_id || normalizedTask.id;
+          if (taskId && prevTasks.some(task =>
+            (task.id === taskId) || (task.task_id === taskId)
           )) {
             return prevTasks;
           }
-          return [...prevTasks, newTask];
+          return [...prevTasks, normalizedTask];
         });
       }
     };
 
     const handleTaskUpdated = (updatedTask: TaskType) => {
-      console.log('[TASK_LIST_CONTAINER] Task updated event received for category:', categoryName, updatedTask.title);
+      console.log('[TASK_LIST_CONTAINER] Task updated event received for category:', categoryName);
+
+      // Normalizza il task aggiornato
+      const normalizedUpdatedTask = {
+        ...updatedTask,
+        id: updatedTask.id || updatedTask.task_id,
+        task_id: updatedTask.task_id || updatedTask.id
+      };
+
+      console.log('[TASK_LIST_CONTAINER] Updated task:', {
+        title: normalizedUpdatedTask.title,
+        id: normalizedUpdatedTask.id,
+        task_id: normalizedUpdatedTask.task_id,
+        status: normalizedUpdatedTask.status,
+        category: normalizedUpdatedTask.category_name
+      });
+
       setTasks(prevTasks => {
+        console.log(`[TASK_LIST_CONTAINER] Stato precedente: ${prevTasks.length} task`);
+        prevTasks.forEach((t, i) => {
+          console.log(`[TASK_LIST_CONTAINER] Task ${i+1}: "${t.title}" (id:${t.id}, task_id:${t.task_id}, status:${t.status})`);
+        });
+
+        const updatedTaskId = normalizedUpdatedTask.task_id || normalizedUpdatedTask.id;
+
+        let foundMatch = false;
         const newTasks = prevTasks.map(task => {
-          const isMatch = (task.id === updatedTask.id) || 
-                         (task.task_id === updatedTask.task_id) ||
-                         (updatedTask.id && task.task_id === updatedTask.id) ||
-                         (updatedTask.task_id && task.id === updatedTask.task_id);
-          
+          // Match solo se abbiamo un ID valido e corrisponde
+          const taskId = task.task_id || task.id;
+          const isMatch = updatedTaskId && taskId && taskId === updatedTaskId;
+
           if (isMatch) {
-            return { ...task, ...updatedTask };
+            foundMatch = true;
+            console.log(`[TASK_LIST_CONTAINER] ✅ Match trovato: "${task.title}" -> aggiornato a status "${normalizedUpdatedTask.status}"`);
+
+            // Merge preservando id e task_id dal task originale se mancanti nell'update
+            return {
+              ...task,
+              ...normalizedUpdatedTask,
+              id: normalizedUpdatedTask.id || task.id,
+              task_id: normalizedUpdatedTask.task_id || task.task_id
+            };
           }
           return task;
         });
-        
-        // Se il task è stato spostato fuori da questa categoria, rimuovilo
-        if (updatedTask.category_name && 
-            updatedTask.category_name !== categoryName && 
-            updatedTask.category_name !== categoryId) {
-          return newTasks.filter(task => 
-            task.id !== updatedTask.id && task.task_id !== updatedTask.task_id
-          );
+
+        if (!foundMatch) {
+          console.log('[TASK_LIST_CONTAINER] ⚠️ Nessun match trovato per il task aggiornato!');
         }
-        
+
+        console.log(`[TASK_LIST_CONTAINER] Nuovo stato: ${newTasks.length} task`);
+        newTasks.forEach((t, i) => {
+          console.log(`[TASK_LIST_CONTAINER] Nuovo Task ${i+1}: "${t.title}" (id:${t.id}, task_id:${t.task_id}, status:${t.status})`);
+        });
+
+        // Se il task è stato spostato fuori da questa categoria, rimuovilo
+        if (normalizedUpdatedTask.category_name &&
+            normalizedUpdatedTask.category_name !== categoryName &&
+            normalizedUpdatedTask.category_name !== categoryId) {
+          console.log('[TASK_LIST_CONTAINER] Task spostato fuori dalla categoria, rimozione...');
+          const taskIdToRemove = normalizedUpdatedTask.task_id || normalizedUpdatedTask.id;
+          return newTasks.filter(task => {
+            const currentTaskId = task.task_id || task.id;
+            return currentTaskId !== taskIdToRemove;
+          });
+        }
+
         return newTasks;
       });
     };
@@ -375,18 +433,7 @@ export const TaskListContainer = ({
   const handleTaskComplete = async (taskId: number | string) => {
     try {
       await taskService.completeTask(taskId);
-      
-      // Aggiorna lo stato localmente
-      setTasks(prevTasks => {
-        return prevTasks.map(task => {
-          if (task.id === taskId || task.task_id === taskId) {
-            return { ...task, status: "Completato", completed: true };
-          }
-          return task;
-        });
-      });
-
-      // Non ricaricamo dal server perché lo stato locale è già aggiornato
+      // L'aggiornamento dello stato avverrà tramite l'evento TASK_UPDATED emesso dal servizio
     } catch (error) {
       console.error("Errore durante il completamento del task:", error);
       Alert.alert("Errore", "Impossibile completare il task. Riprova.");
@@ -397,18 +444,7 @@ export const TaskListContainer = ({
   const handleTaskUncomplete = async (taskId: number | string) => {
     try {
       await taskService.disCompleteTask(taskId);
-      
-      // Aggiorna lo stato localmente
-      setTasks(prevTasks => {
-        return prevTasks.map(task => {
-          if (task.id === taskId || task.task_id === taskId) {
-            return { ...task, status: "In sospeso", completed: false };
-          }
-          return task;
-        });
-      });
-
-      // Non ricaricamo dal server perché lo stato locale è già aggiornato
+      // L'aggiornamento dello stato avverrà tramite l'evento TASK_UPDATED emesso dal servizio
     } catch (error) {
       console.error("Errore durante la riapertura del task:", error);
       Alert.alert("Errore", "Impossibile riaprire il task. Riprova.");

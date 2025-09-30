@@ -49,14 +49,14 @@ class TaskCacheService {
     try {
       console.log('[CACHE] Caricamento task dalla cache...');
       const cachedData = await AsyncStorage.getItem(CACHE_KEYS.TASKS_CACHE);
-      
+
       if (!cachedData) {
         console.log('[CACHE] Nessun dato in cache trovato');
         return [];
       }
 
       const cache: TasksCache = JSON.parse(cachedData);
-      
+
       // Verifica la versione della cache
       if (cache.version !== this.currentCacheVersion) {
         console.log('[CACHE] Versione cache obsoleta, pulizia...');
@@ -65,13 +65,36 @@ class TaskCacheService {
       }
 
       console.log(`[CACHE] Caricati ${cache.tasks.length} task dalla cache`);
-      
+
+      // Deduplica i task basandosi su task_id (mantieni solo l'ultimo)
+      const taskMap = new Map<string | number, Task>();
+      cache.tasks.forEach((task) => {
+        const taskId = task.task_id || task.id;
+        if (taskId) {
+          // Se esiste già, sovrascrivi (manteniamo l'ultimo)
+          if (taskMap.has(taskId)) {
+            console.log(`[CACHE] 🔄 Duplicato trovato per task_id=${taskId}, mantengo l'ultimo`);
+          }
+          taskMap.set(taskId, task);
+        }
+      });
+
+      const deduplicatedTasks = Array.from(taskMap.values());
+
+      if (deduplicatedTasks.length < cache.tasks.length) {
+        console.log(`[CACHE] 🧹 Rimossi ${cache.tasks.length - deduplicatedTasks.length} duplicati dalla cache`);
+
+        // Salva immediatamente la cache pulita
+        const categories = await this.getCachedCategories();
+        await this.saveTasks(deduplicatedTasks, categories);
+      }
+
       // Log dettagliato di ogni task in cache per debug
-      cache.tasks.forEach((task, index) => {
+      deduplicatedTasks.forEach((task, index) => {
         console.log(`[CACHE] Task ${index + 1}: titolo="${task.title}", categoria="${task.category_name}", status="${task.status}"`);
       });
-      
-      return cache.tasks || [];
+
+      return deduplicatedTasks;
     } catch (error) {
       console.error('[CACHE] Errore nel caricamento dalla cache:', error);
       return [];
@@ -150,56 +173,72 @@ class TaskCacheService {
   // Salva singolo task nella cache (per aggiornamenti)
   async updateTaskInCache(updatedTask: Task): Promise<void> {
     try {
-      console.log(`[CACHE] Aggiornando task in cache: "${updatedTask.title}", categoria="${updatedTask.category_name}"`);
-      
+      console.log(`[CACHE] Aggiornando task in cache: "${updatedTask.title}", categoria="${updatedTask.category_name}", status="${updatedTask.status}"`);
+
       // Warn se il task ha category_name undefined
       if (!updatedTask.category_name || updatedTask.category_name === 'undefined') {
         console.warn(`[CACHE] ⚠️ ATTENZIONE: Tentativo di salvare task "${updatedTask.title}" con category_name undefined!`);
       }
-      
+
       const cachedTasks = await this.getCachedTasks();
+      console.log(`[CACHE] Task totali in cache prima dell'update: ${cachedTasks.length}`);
 
-      // Prima prova a trovare per ID esatto
-      let taskIndex = cachedTasks.findIndex(task =>
-        task.task_id === updatedTask.task_id || task.id === updatedTask.id
-      );
+      // IMPORTANTE: Rimuovi TUTTI i task con lo stesso ID per evitare duplicati
+      const taskId = updatedTask.task_id || updatedTask.id;
+      const tempId = (updatedTask as any).tempId;
 
-      // Se non trovato e il task ha un tempId, cerca il task temporaneo
-      if (taskIndex === -1 && (updatedTask as any).tempId) {
-        taskIndex = cachedTasks.findIndex(task =>
-          task.id === (updatedTask as any).tempId || task.task_id === (updatedTask as any).tempId
-        );
+      console.log(`[CACHE] Cercando task con ID: ${taskId}, tempId: ${tempId}`);
 
-        if (taskIndex !== -1) {
-          console.log(`[CACHE] Task temporaneo trovato tramite tempId: "${cachedTasks[taskIndex].title}" (${cachedTasks[taskIndex].id} -> ${updatedTask.task_id})`);
+      // Verifica che abbiamo un ID valido
+      if (!taskId) {
+        console.error(`[CACHE] ❌ ERRORE: Task "${updatedTask.title}" non ha un ID valido!`);
+        return;
+      }
+
+      // Filtra via tutti i task che matchano l'ID corrente
+      let filteredTasks = cachedTasks.filter(task => {
+        const isMatch =
+          (taskId && task.task_id && task.task_id === taskId) ||
+          (taskId && task.id && task.id === taskId) ||
+          (tempId && (task.id === tempId || task.task_id === tempId));
+
+        if (isMatch) {
+          console.log(`[CACHE] 🗑️ Rimosso duplicato task: "${task.title}" (ID: ${task.task_id || task.id}, status: ${task.status})`);
         }
+
+        return !isMatch;
+      });
+
+      console.log(`[CACHE] Task rimanenti dopo filtro: ${filteredTasks.length}`);
+
+      // Se non abbiamo trovato nessun match ma il task ha un ID del server,
+      // prova a trovare un task temporaneo con stesso titolo/categoria
+      if (filteredTasks.length === cachedTasks.length &&
+          updatedTask.task_id &&
+          !updatedTask.id.toString().startsWith('temp_')) {
+        filteredTasks = filteredTasks.filter(task => {
+          const isMatch = task.id &&
+            task.id.toString().startsWith('temp_') &&
+            task.title === updatedTask.title &&
+            task.category_name === updatedTask.category_name;
+
+          if (isMatch) {
+            console.log(`[CACHE] 🗑️ Rimosso task temporaneo: "${task.title}" (${task.id} -> ${updatedTask.task_id})`);
+          }
+
+          return !isMatch;
+        });
       }
 
-      // Fallback: se non trovato e il task ha un ID del server, prova a trovare un task temporaneo con stesso titolo/categoria
-      if (taskIndex === -1 && updatedTask.task_id && !updatedTask.id.toString().startsWith('temp_')) {
-        taskIndex = cachedTasks.findIndex(task =>
-          task.id && task.id.toString().startsWith('temp_') &&
-          task.title === updatedTask.title &&
-          task.category_name === updatedTask.category_name
-        );
+      // Rimuovi il tempId prima di salvare definitivamente
+      const { tempId: _, ...cleanedTask } = updatedTask as any;
 
-        if (taskIndex !== -1) {
-          console.log(`[CACHE] Task temporaneo trovato per fallback: "${cachedTasks[taskIndex].title}" (${cachedTasks[taskIndex].id} -> ${updatedTask.task_id})`);
-        }
-      }
-
-      if (taskIndex !== -1) {
-        // Rimuovi il tempId prima di salvare definitivamente
-        const { tempId, ...cleanedTask } = updatedTask as any;
-        cachedTasks[taskIndex] = cleanedTask;
-        console.log(`[CACHE] Task esistente aggiornato all'indice ${taskIndex}`);
-      } else {
-        cachedTasks.push(updatedTask);
-        console.log(`[CACHE] Nuovo task aggiunto alla cache`);
-      }
+      // Aggiungi il task aggiornato (ora unico)
+      filteredTasks.push(cleanedTask);
+      console.log(`[CACHE] ✅ Task aggiornato e salvato (totale duplicati rimossi: ${cachedTasks.length - filteredTasks.length + 1})`);
 
       const categories = await this.getCachedCategories();
-      await this.saveTasks(cachedTasks, categories);
+      await this.saveTasks(filteredTasks, categories);
     } catch (error) {
       console.error('[CACHE] Errore nell\'aggiornamento task in cache:', error);
     }

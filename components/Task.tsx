@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { TouchableOpacity, Animated, Alert, LayoutAnimation, Platform, UIManager, Easing } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
-import { completeTask, disCompleteTask } from "../src/services/taskService";
 
 // Importa i sottocomponenti
 import TaskHeader from "./task/TaskHeader";
@@ -144,19 +143,15 @@ const Task = ({
     try {
       if (isCompleted) {
         // Se il task è già completato, annulliamo il completamento
-        await disCompleteTask(task.id);
-        
         if (onTaskUncomplete) {
-          onTaskUncomplete(task.id);
+          await onTaskUncomplete(task.id);
         } else {
           Alert.alert("Riaperto", `Task "${task.title}" riaperto.`);
         }
       } else {
         // Se il task non è completato, lo completiamo
-        await completeTask(task.id);
-        
         if (onTaskComplete) {
-          onTaskComplete(task.id);
+          await onTaskComplete(task.id);
         } else {
           Alert.alert("Completato", `Task "${task.title}" segnato come completato.`);
         }
@@ -304,10 +299,8 @@ const Task = ({
   const handleReopen = async () => {
     try {
       // Riapri il task completato
-      await disCompleteTask(task.id);
-      
       if (onTaskUncomplete) {
-        onTaskUncomplete(task.id);
+        await onTaskUncomplete(task.id);
       } else {
         Alert.alert("Riaperto", `Task "${task.title}" riaperto.`);
       }
