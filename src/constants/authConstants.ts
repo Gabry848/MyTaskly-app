@@ -23,6 +23,7 @@ export const API_ENDPOINTS = {
   SIGNIN: "/auth/login",
   SIGNUP: "/auth/register",
   REFRESH: "/auth/refresh",
+  CHECK_AVAILABILITY: "/auth/check-availability",
   SEND_VERIFICATION: "/email/send-verification",
   VERIFICATION_STATUS: "/email/verification-status",
   TIMEZONE: "/api/notifications/timezone",
