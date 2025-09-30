@@ -16,7 +16,7 @@ import * as authService from "../../services/authService";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { RootStackParamList } from "../../types";
 import eventEmitter from "../../utils/eventEmitter";
-import { signInWithGoogle, initiateGoogleLogin, clearWebBrowserSession } from "../../services/googleSignInService";
+import { initiateGoogleLogin } from "../../services/googleSignInService";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { STORAGE_KEYS } from "../../constants/authConstants";
 
@@ -60,16 +60,17 @@ const LoginScreen = () => {
 
   // Funzione per gestire il cambio di username con validazione
   const handleUsernameChange = (text: string) => {
-    if (containsSpecialChars(text)) {
+    const trimmedText = text.trim();
+    if (containsSpecialChars(trimmedText)) {
       showNotification("Lo username non può contenere caratteri speciali", false);
       return;
     }
-    setUsername(text);
+    setUsername(trimmedText);
   };
 
   // Funzione per gestire il cambio di password con validazione
   const handlePasswordChange = (text: string) => {
-    setPassword(text);
+    setPassword(text.trim());
   };
 
   // Funzione helper per mostrare notifiche
