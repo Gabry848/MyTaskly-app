@@ -8,17 +8,28 @@ interface CategoryMenuProps {
   onEdit: () => void;
   onDelete: () => void;
   onShare: () => void;
+  onManageShares?: () => void;
   isDeleting: boolean;
+  isOwned?: boolean;
+  permissionLevel?: "READ_ONLY" | "READ_WRITE";
 }
 
-const CategoryMenu: React.FC<CategoryMenuProps> = ({ 
-  visible, 
-  onClose, 
-  onEdit, 
-  onDelete, 
-  onShare, 
-  isDeleting 
+const CategoryMenu: React.FC<CategoryMenuProps> = ({
+  visible,
+  onClose,
+  onEdit,
+  onDelete,
+  onShare,
+  onManageShares,
+  isDeleting,
+  isOwned = true,
+  permissionLevel = "READ_WRITE"
 }) => {
+  // Determine if user can edit/delete based on permissions
+  const canEdit = isOwned || permissionLevel === "READ_WRITE";
+  const canDelete = isOwned;
+  const canManageSharing = isOwned;
+
   return (
     <Modal
       transparent={true}
@@ -26,38 +37,77 @@ const CategoryMenu: React.FC<CategoryMenuProps> = ({
       animationType="fade"
       onRequestClose={onClose}
     >
-      <TouchableOpacity 
-        style={styles.modalOverlay} 
-        activeOpacity={1} 
+      <TouchableOpacity
+        style={styles.modalOverlay}
+        activeOpacity={1}
         onPress={onClose}
       >
         <View style={styles.menuContainer}>
-          <TouchableOpacity 
-            style={styles.menuItem} 
-            onPress={onEdit}
-          >
-            <MaterialIcons name="edit" size={20} color="#666666" />
-            <Text style={styles.menuText}>Modifica</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.menuItem} 
-            onPress={onDelete}
-            disabled={isDeleting}
-          >
-            <MaterialIcons name="delete" size={20} color="#F44336" />
-            <Text style={[styles.menuText, { color: '#F44336' }]}>
-              {isDeleting ? "Eliminazione..." : "Elimina"}
-            </Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.menuItem} 
+          {/* Edit option - only if user can edit */}
+          {canEdit && (
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={onEdit}
+            >
+              <MaterialIcons name="edit" size={20} color="#666666" />
+              <Text style={styles.menuText}>Modifica</Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Share/Manage Shares option */}
+          <TouchableOpacity
+            style={styles.menuItem}
             onPress={onShare}
           >
             <MaterialIcons name="share" size={20} color="#666666" />
-            <Text style={styles.menuText}>Condividi</Text>
+            <Text style={styles.menuText}>
+              {isOwned ? "Condividi" : "Info Condivisione"}
+            </Text>
           </TouchableOpacity>
+
+          {/* Manage shares option - only for owners */}
+          {canManageSharing && onManageShares && (
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={onManageShares}
+            >
+              <MaterialIcons name="people" size={20} color="#666666" />
+              <Text style={styles.menuText}>Gestisci Accesso</Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Delete option - only for owners */}
+          {canDelete && (
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={onDelete}
+              disabled={isDeleting}
+            >
+              <MaterialIcons name="delete" size={20} color="#F44336" />
+              <Text style={[styles.menuText, { color: '#F44336' }]}>
+                {isDeleting ? "Eliminazione..." : "Elimina"}
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Exit/Leave option - for shared categories */}
+          {!isOwned && (
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={onClose}
+            >
+              <MaterialIcons name="exit-to-app" size={20} color="#666666" />
+              <Text style={styles.menuText}>Esci</Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Read-only indicator */}
+          {!isOwned && permissionLevel === "READ_ONLY" && (
+            <View style={styles.infoItem}>
+              <MaterialIcons name="lock" size={20} color="#999" />
+              <Text style={styles.infoText}>Solo lettura</Text>
+            </View>
+          )}
         </View>
       </TouchableOpacity>
     </Modal>
@@ -100,6 +150,23 @@ const styles = StyleSheet.create({
     color: '#000000', // Nero per coerenza con Home20
     fontFamily: "System", // Stessa famiglia di Home20
     fontWeight: "400", // Stesso peso di Home20
+  },
+  infoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    marginHorizontal: 4,
+    backgroundColor: '#f8f8f8',
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  infoText: {
+    fontSize: 15,
+    marginLeft: 12,
+    color: '#999',
+    fontFamily: "System",
+    fontWeight: "400",
   },
 });
 
