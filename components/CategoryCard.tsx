@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet, TouchableOpacity, Animated, Dimensions } from "react-native";
+import { StyleSheet, TouchableOpacity, Animated, Dimensions, View, Text } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../src/types';
@@ -16,6 +16,9 @@ interface CategoryCardProps {
   imageUrl?: string;
   taskCount: number;
   isLoading: boolean;
+  isShared?: boolean;
+  isOwned?: boolean;
+  permissionLevel?: "READ_ONLY" | "READ_WRITE";
   onAddTask: () => void;
   onLongPress: () => void;
 }
@@ -25,6 +28,9 @@ const CategoryCard: React.FC<CategoryCardProps> = ({
   imageUrl,
   taskCount,
   isLoading,
+  isShared = false,
+  isOwned = true,
+  permissionLevel = "READ_WRITE",
   onAddTask,
   onLongPress
 }) => {
@@ -47,6 +53,24 @@ const CategoryCard: React.FC<CategoryCardProps> = ({
     }).start();
   };
 
+  // Get sharing indicator text and icon
+  const getSharingIndicator = () => {
+    if (!isOwned) {
+      return {
+        icon: permissionLevel === "READ_ONLY" ? "🔒" : "✏️",
+        text: permissionLevel === "READ_ONLY" ? "Sola lettura" : "Condivisa",
+      };
+    } else if (isShared) {
+      return {
+        icon: "👥",
+        text: "Condivisa",
+      };
+    }
+    return null;
+  };
+
+  const sharingIndicator = getSharingIndicator();
+
   return (
     <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
       <TouchableOpacity
@@ -63,13 +87,22 @@ const CategoryCard: React.FC<CategoryCardProps> = ({
           navigation.navigate("TaskList", { category_name: title });
         }}
       >
-        <CategoryHeader
-          title={title}
-          imageUrl={imageUrl}
-          taskCount={taskCount}
-          isLoading={isLoading}
-          screenWidth={screenWidth}
-        />
+        <View style={styles.contentContainer}>
+          <CategoryHeader
+            title={title}
+            imageUrl={imageUrl}
+            taskCount={taskCount}
+            isLoading={isLoading}
+            screenWidth={screenWidth}
+          />
+
+          {sharingIndicator && (
+            <View style={styles.sharingIndicator}>
+              <Text style={styles.sharingIcon}>{sharingIndicator.icon}</Text>
+              <Text style={styles.sharingText}>{sharingIndicator.text}</Text>
+            </View>
+          )}
+        </View>
 
         <AddTaskButton onPress={onAddTask} screenWidth={screenWidth} />
       </TouchableOpacity>
@@ -97,6 +130,26 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08, // Stesso valore di Home20
     shadowRadius: 12, // Stesso valore di Home20
     elevation: 3, // Stesso valore di Home20
+  },
+  contentContainer: {
+    flex: 1,
+  },
+  sharingIndicator: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 6,
+    paddingTop: 6,
+    borderTopWidth: 1,
+    borderTopColor: "#f0f0f0",
+  },
+  sharingIcon: {
+    fontSize: 14,
+    marginRight: 6,
+  },
+  sharingText: {
+    fontSize: 12,
+    color: "#666",
+    fontWeight: "500",
   },
 });
 
