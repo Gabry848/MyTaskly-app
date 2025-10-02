@@ -21,6 +21,11 @@ export interface CategoryType {
   imageUrl?: string;
   category_id?: number;
   status_code?: number;
+  // Campi per la condivisione
+  is_shared?: boolean;
+  owner_id?: number;
+  is_owned?: boolean;
+  permission_level?: "READ_ONLY" | "READ_WRITE";
 }
 
 const CategoryList = forwardRef((props, ref) => {

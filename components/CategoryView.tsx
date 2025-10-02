@@ -14,6 +14,11 @@ interface CategoryType {
   imageUrl?: string;
   category_id?: number;
   status_code?: number;
+  // Campi per la condivisione
+  is_shared?: boolean;
+  owner_id?: number;
+  is_owned?: boolean;
+  permission_level?: "READ_ONLY" | "READ_WRITE";
 }
 
 interface CategoryViewProps {
@@ -85,6 +90,10 @@ const CategoryView = forwardRef<CategoryViewRef, CategoryViewProps>(({
               title={category.name}
               description={category.description}
               imageUrl={category.imageUrl}
+              categoryId={category.category_id || category.id}
+              isShared={category.is_shared}
+              isOwned={category.is_owned}
+              permissionLevel={category.permission_level}
               onDelete={onCategoryDeleted}
               onEdit={onCategoryEdited}
             />

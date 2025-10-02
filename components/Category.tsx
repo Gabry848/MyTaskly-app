@@ -5,6 +5,8 @@ import CategoryCard from './CategoryCard';
 import CategoryMenu from './CategoryMenu';
 import EditCategoryModal from './EditCategoryModal';
 import AddTask from "./AddTask";
+import ShareCategoryDialog from './ShareCategoryDialog';
+import ManageCategoryShares from './ManageCategoryShares';
 import eventEmitter, { emitCategoryDeleted, emitCategoryUpdated, emitTaskAdded , EVENTS } from '../src/utils/eventEmitter';
 
 
@@ -13,17 +15,25 @@ interface CategoryProps {
   description?: string;
   imageUrl?: string;
   taskCount?: number;
-  onDelete?: () => void; 
+  categoryId?: string | number;
+  isShared?: boolean;
+  isOwned?: boolean;
+  permissionLevel?: "READ_ONLY" | "READ_WRITE";
+  onDelete?: () => void;
   onEdit?: () => void;
 }
 
-const Category: React.FC<CategoryProps> = ({ 
+const Category: React.FC<CategoryProps> = ({
   title,
   description = "",
-  imageUrl, 
-  taskCount = 0, 
+  imageUrl,
+  taskCount = 0,
+  categoryId,
+  isShared = false,
+  isOwned = true,
+  permissionLevel = "READ_WRITE",
   onDelete,
-  onEdit 
+  onEdit
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -120,9 +130,19 @@ const Category: React.FC<CategoryProps> = ({
   };
 
   const handleDelete = async () => {
+    // Only owners can delete
+    if (!isOwned) {
+      Alert.alert(
+        "Permesso negato",
+        "Solo il proprietario può eliminare questa categoria."
+      );
+      closeMenu();
+      return;
+    }
+
     try {
       setIsDeleting(true);
-      
+
       Alert.alert(
         "Elimina categoria",
         `Sei sicuro di voler eliminare la categoria "${title}"?`,
@@ -141,12 +161,12 @@ const Category: React.FC<CategoryProps> = ({
             onPress: async () => {
               try {
                 await deleteCategory(title);
-                
+
                 closeMenu();
-                
+
                 // Emetti un evento per notificare l'eliminazione della categoria
                 emitCategoryDeleted(title);
-                
+
                 if (onDelete) {
                   onDelete();
                 }
@@ -169,6 +189,16 @@ const Category: React.FC<CategoryProps> = ({
   };
 
   const handleEdit = () => {
+    // Check permissions - owners and READ_WRITE users can edit
+    if (!isOwned && permissionLevel === "READ_ONLY") {
+      Alert.alert(
+        "Permesso negato",
+        "Hai solo permessi di lettura per questa categoria. Non puoi modificarla."
+      );
+      closeMenu();
+      return;
+    }
+
     closeMenu();
     setEditName(title);
     setEditDescription(description);
@@ -213,12 +243,44 @@ const Category: React.FC<CategoryProps> = ({
     setEditDescription(description);
   };
 
+  const [showShareDialog, setShowShareDialog] = useState(false);
+  const [showManageShares, setShowManageShares] = useState(false);
+
   const handleShare = () => {
     closeMenu();
-    // Implementazione futura della condivisione
+    if (isOwned) {
+      // Se è proprietario, mostra il dialogo per condividere
+      setShowShareDialog(true);
+    } else {
+      Alert.alert(
+        "Categoria condivisa",
+        `Questa categoria è condivisa da un altro utente. Il tuo permesso: ${permissionLevel === "READ_ONLY" ? "Sola lettura" : "Lettura/Scrittura"}`
+      );
+    }
+  };
+
+  const handleManageShares = () => {
+    closeMenu();
+    if (!categoryId) {
+      Alert.alert("Errore", "ID categoria non disponibile");
+      return;
+    }
+    setShowManageShares(true);
+  };
+
+  const handleShareSuccess = (message: string) => {
+    Alert.alert("Successo", message);
   };
 
   const handleAddTask = () => {
+    // Check permissions before allowing task creation
+    if (!isOwned && permissionLevel === "READ_ONLY") {
+      Alert.alert(
+        "Permesso negato",
+        "Hai solo permessi di lettura per questa categoria. Non puoi aggiungere task."
+      );
+      return;
+    }
     setShowAddTask(true);
   };
 
@@ -253,6 +315,9 @@ const Category: React.FC<CategoryProps> = ({
         imageUrl={imageUrl}
         taskCount={actualTaskCount}
         isLoading={isLoading}
+        isShared={isShared}
+        isOwned={isOwned}
+        permissionLevel={permissionLevel}
         onAddTask={handleAddTask}
         onLongPress={handleLongPress}
       />
@@ -263,7 +328,10 @@ const Category: React.FC<CategoryProps> = ({
         onEdit={handleEdit}
         onDelete={handleDelete}
         onShare={handleShare}
+        onManageShares={handleManageShares}
         isDeleting={isDeleting}
+        isOwned={isOwned}
+        permissionLevel={permissionLevel}
       />
 
       <EditCategoryModal
@@ -276,6 +344,30 @@ const Category: React.FC<CategoryProps> = ({
         onDescriptionChange={setEditDescription}
         isEditing={isEditing}
       />
+
+      {categoryId && (
+        <>
+          <ShareCategoryDialog
+            visible={showShareDialog}
+            categoryId={Number(categoryId)}
+            categoryName={title}
+            onClose={() => setShowShareDialog(false)}
+            onSuccess={handleShareSuccess}
+          />
+
+          <ManageCategoryShares
+            visible={showManageShares}
+            categoryId={Number(categoryId)}
+            categoryName={title}
+            isOwner={isOwned}
+            onClose={() => setShowManageShares(false)}
+            onAddPerson={() => {
+              setShowManageShares(false);
+              setShowShareDialog(true);
+            }}
+          />
+        </>
+      )}
 
       <AddTask
         visible={showAddTask}

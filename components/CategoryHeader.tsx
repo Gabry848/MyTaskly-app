@@ -19,7 +19,7 @@ const CategoryHeader: React.FC<CategoryHeaderProps> = ({
   screenWidth
 }) => {
   return (
-    <>
+    <View style={styles.headerContainer}>
       <LinearGradient
         colors={['rgba(11, 148, 153, 0.7)', 'rgba(11, 148, 153, 0.3)']}
         style={[styles.imageContainer, {
@@ -61,11 +61,15 @@ const CategoryHeader: React.FC<CategoryHeaderProps> = ({
           </Text>
         </View>
       </View>
-    </>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  headerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   imageContainer: {
     width: 50,
     height: 50,
