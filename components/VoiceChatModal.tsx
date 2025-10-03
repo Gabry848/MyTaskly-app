@@ -44,6 +44,9 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
     isSpeaking,
     canRecord,
     canStop,
+    vadEnabled,
+    audioLevel,
+    isSpeechActive,
     connect,
     disconnect,
     startRecording,
@@ -51,7 +54,8 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
     cancelRecording,
     stopPlayback,
     sendControl,
-    requestPermissions
+    requestPermissions,
+    toggleVAD,
   } = useVoiceChat();
 
   // Animazioni esistenti
@@ -338,6 +342,59 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
     );
   };
 
+  // Render VAD toggle
+  const renderVADToggle = () => {
+    if (!isConnected || state === 'error' || isRecording) {
+      return null;
+    }
+
+    return (
+      <TouchableOpacity
+        style={[styles.vadToggleButton, vadEnabled && styles.vadToggleButtonActive]}
+        onPress={toggleVAD}
+        activeOpacity={0.7}
+      >
+        <MaterialIcons
+          name={vadEnabled ? "mic" : "mic-off"}
+          size={20}
+          color={vadEnabled ? "#4CAF50" : "#999"}
+        />
+        <Text style={[styles.vadToggleText, vadEnabled && styles.vadToggleTextActive]}>
+          {vadEnabled ? "Auto-Stop: ON" : "Auto-Stop: OFF"}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
+
+  // Render audio level indicator
+  const renderAudioLevel = () => {
+    if (!isRecording || !vadEnabled) {
+      return null;
+    }
+
+    // Converti dB in percentuale visiva (da -160 a 0 dB)
+    const normalizedLevel = Math.max(0, Math.min(100, ((audioLevel + 160) / 160) * 100));
+
+    return (
+      <View style={styles.audioLevelContainer}>
+        <View style={styles.audioLevelBar}>
+          <View
+            style={[
+              styles.audioLevelFill,
+              {
+                width: `${normalizedLevel}%`,
+                backgroundColor: isSpeechActive ? "#4CAF50" : "#666",
+              },
+            ]}
+          />
+        </View>
+        <Text style={styles.audioLevelText}>
+          {isSpeechActive ? "🎤 Voce rilevata" : "⏸️ In attesa..."}
+        </Text>
+      </View>
+    );
+  };
+
   // Render dei controlli aggiuntivi
   const renderControls = () => {
     if (!isConnected || state === 'error') {
@@ -355,7 +412,7 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
             <Text style={styles.controlText}>Stop</Text>
           </TouchableOpacity>
         )}
-        
+
         {(isProcessing || isSpeaking) && (
           <TouchableOpacity
             style={styles.controlButton}
@@ -441,9 +498,15 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
           
           {/* Stato e sottotitolo dinamici */}
           {renderStateIndicator()}
-          
+
+          {/* VAD Toggle */}
+          {renderVADToggle()}
+
           {/* Stato del server */}
           {renderServerStatus()}
+
+          {/* Audio level indicator */}
+          {renderAudioLevel()}
 
           {/* Cerchio animato centrale */}
           <View style={styles.microphoneContainer}>
@@ -491,7 +554,9 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
         {/* Footer con istruzioni */}
         <View style={styles.footer}>
           <Text style={styles.footerText}>
-            Parla chiaramente e attendi la risposta
+            {vadEnabled
+              ? "Parla chiaramente. La registrazione si fermerà automaticamente."
+              : "Parla chiaramente e attendi la risposta"}
           </Text>
         </View>
       </Animated.View>
@@ -705,6 +770,57 @@ const styles = StyleSheet.create({
     color: "#FF6B6B",
     fontSize: 12,
     flex: 1,
+    fontFamily: "System",
+  },
+  // VAD Toggle styles
+  vadToggleButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    borderRadius: 20,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.2)",
+  },
+  vadToggleButtonActive: {
+    backgroundColor: "rgba(76, 175, 80, 0.2)",
+    borderColor: "rgba(76, 175, 80, 0.5)",
+  },
+  vadToggleText: {
+    marginLeft: 8,
+    fontSize: 13,
+    fontWeight: "500",
+    color: "#999",
+    fontFamily: "System",
+  },
+  vadToggleTextActive: {
+    color: "#4CAF50",
+  },
+  // Audio level indicator styles
+  audioLevelContainer: {
+    width: "80%",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  audioLevelBar: {
+    width: "100%",
+    height: 6,
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    borderRadius: 3,
+    overflow: "hidden",
+    marginBottom: 8,
+  },
+  audioLevelFill: {
+    height: "100%",
+    borderRadius: 3,
+    transition: "width 0.1s ease-out",
+  },
+  audioLevelText: {
+    fontSize: 11,
+    color: "#cccccc",
+    fontWeight: "500",
     fontFamily: "System",
   },
 });

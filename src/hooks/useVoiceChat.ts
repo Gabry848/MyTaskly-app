@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { VoiceBotWebSocket, VoiceChatCallbacks } from '../services/botservice';
-import { AudioRecorder, AudioPlayer, checkAudioPermissions } from '../utils/audioUtils';
+import { AudioRecorder, AudioPlayer, checkAudioPermissions, VADCallbacks } from '../utils/audioUtils';
 import { debugAudioDependencies } from '../utils/audioDebug';
 
 /**
@@ -41,9 +41,14 @@ export function useVoiceChat() {
   const audioRecorderRef = useRef<AudioRecorder | null>(null);
   const audioPlayerRef = useRef<AudioPlayer | null>(null);
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  
+
   const [isReceivingAudio, setIsReceivingAudio] = useState<boolean>(false);
   const [chunksReceived, setChunksReceived] = useState<number>(0);
+
+  // VAD states
+  const [vadEnabled, setVadEnabled] = useState<boolean>(false);
+  const [audioLevel, setAudioLevel] = useState<number>(-160);
+  const [isSpeechActive, setIsSpeechActive] = useState<boolean>(false);
 
   /**
    * Verifica e richiede i permessi audio
@@ -194,6 +199,37 @@ export function useVoiceChat() {
   }, [initialize]);
 
   /**
+   * VAD Callbacks
+   */
+  const vadCallbacks: VADCallbacks = {
+    onSpeechStart: () => {
+      console.log('🎤 VAD: Inizio voce rilevato');
+      setIsSpeechActive(true);
+    },
+    onSpeechEnd: () => {
+      console.log('🎤 VAD: Fine voce rilevata');
+      setIsSpeechActive(false);
+    },
+    onSilenceDetected: () => {
+      console.log('🎤 VAD: Silenzio rilevato');
+    },
+    onAutoStop: async () => {
+      console.log('🎤 VAD: Auto-stop attivato');
+      await stopRecording();
+    },
+    onMeteringUpdate: (level: number) => {
+      setAudioLevel(level);
+    },
+  };
+
+  /**
+   * Toggle VAD mode
+   */
+  const toggleVAD = useCallback(() => {
+    setVadEnabled(prev => !prev);
+  }, []);
+
+  /**
    * Avvia la registrazione audio
    */
   const startRecording = useCallback(async (): Promise<boolean> => {
@@ -208,7 +244,7 @@ export function useVoiceChat() {
     }
 
     try {
-      const started = await audioRecorderRef.current.startRecording();
+      const started = await audioRecorderRef.current.startRecording(vadEnabled, vadCallbacks);
       if (!started) {
         setError('Impossibile avviare la registrazione');
         return false;
@@ -216,6 +252,8 @@ export function useVoiceChat() {
 
       setState('recording');
       setError(null);
+      setIsSpeechActive(false);
+      setAudioLevel(-160);
 
       // Aggiorna la durata della registrazione ogni 100ms
       recordingIntervalRef.current = setInterval(() => {
@@ -225,16 +263,16 @@ export function useVoiceChat() {
         }
       }, 100);
 
-      console.log('🎤 Registrazione avviata');
+      console.log('🎤 Registrazione avviata', vadEnabled ? '(VAD attivo)' : '');
       return true;
-      
+
     } catch (err) {
       console.error('Errore avvio registrazione:', err);
       setError('Errore durante la registrazione');
       setState('error');
       return false;
     }
-  }, []);
+  }, [vadEnabled]);
 
   /**
    * Ferma la registrazione e invia l'audio al server
@@ -395,6 +433,11 @@ export function useVoiceChat() {
     canRecord,
     canStop,
 
+    // VAD stati
+    vadEnabled,
+    audioLevel,
+    isSpeechActive,
+
     // Azioni
     initialize,
     connect,
@@ -405,6 +448,7 @@ export function useVoiceChat() {
     stopPlayback,
     sendControl,
     cleanup,
-    requestPermissions
+    requestPermissions,
+    toggleVAD,
   };
 }
