@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useVoiceChat, VoiceChatState } from '../src/hooks/useVoiceChat';
-import { formatDuration } from '../src/utils/audioUtils';
+import { formatDuration, AUDIO_LEVEL_CONFIG } from '../src/utils/audioUtils';
 
 interface VoiceChatModalProps {
   visible: boolean;
@@ -192,12 +192,10 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
     await connect();
   };
 
-  // Gestione registrazione
-  const handleRecordToggle = async () => {
+  // Gestione stop manuale (la registrazione ora parte automaticamente)
+  const handleManualStop = async () => {
     if (isRecording) {
       await stopRecording();
-    } else if (canRecord) {
-      await startRecording();
     }
   };
 
@@ -270,7 +268,7 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
     );
   };
 
-  // Render del pulsante principale
+  // Render del pulsante principale (semplificato)
   const renderMainButton = () => {
     if (state === 'connecting' || isProcessing) {
       return (
@@ -319,61 +317,48 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
       );
     }
 
+    // Pulsante per stop manuale quando sta registrando
+    if (isRecording) {
+      return (
+        <Animated.View style={[
+          styles.microphoneCircle,
+          styles.microphoneCircleRecording,
+          { transform: [{ scale: recordingScale }] }
+        ]}>
+          <TouchableOpacity
+            style={styles.microphoneButton}
+            onPress={handleManualStop}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="stop" size={48} color="#ffffff" />
+          </TouchableOpacity>
+        </Animated.View>
+      );
+    }
+
+    // Icona microfono quando è in ascolto (non cliccabile, registrazione automatica)
     return (
       <Animated.View style={[
         styles.microphoneCircle,
-        isRecording && styles.microphoneCircleRecording,
-        isProcessing && styles.microphoneCircleProcessing,
         { transform: [{ scale: recordingScale }] }
       ]}>
-        <TouchableOpacity
-          style={styles.microphoneButton}
-          onPress={handleRecordToggle}
-          activeOpacity={0.8}
-          disabled={!canRecord && !canStop}
-        >
-          <Ionicons
-            name={isRecording ? "stop" : "mic"}
-            size={48}
-            color="#ffffff"
-          />
-        </TouchableOpacity>
+        <Ionicons name="mic" size={48} color="#ffffff" />
       </Animated.View>
     );
   };
 
-  // Render VAD toggle
-  const renderVADToggle = () => {
-    if (!isConnected || state === 'error' || isRecording) {
-      return null;
-    }
-
-    return (
-      <TouchableOpacity
-        style={[styles.vadToggleButton, vadEnabled && styles.vadToggleButtonActive]}
-        onPress={toggleVAD}
-        activeOpacity={0.7}
-      >
-        <MaterialIcons
-          name={vadEnabled ? "mic" : "mic-off"}
-          size={20}
-          color={vadEnabled ? "#4CAF50" : "#999"}
-        />
-        <Text style={[styles.vadToggleText, vadEnabled && styles.vadToggleTextActive]}>
-          {vadEnabled ? "Auto-Stop: ON" : "Auto-Stop: OFF"}
-        </Text>
-      </TouchableOpacity>
-    );
-  };
+  // VAD è sempre attivo, non serve più il toggle
 
   // Render audio level indicator
   const renderAudioLevel = () => {
-    if (!isRecording || !vadEnabled) {
+    if (!isRecording) {
       return null;
     }
 
-    // Converti dB in percentuale visiva (da -160 a 0 dB)
-    const normalizedLevel = Math.max(0, Math.min(100, ((audioLevel + 160) / 160) * 100));
+    // Normalizza dB usando il range corretto (da -80 dB silenzio a -10 dB voce forte)
+    const normalizedLevel = Math.max(0, Math.min(100,
+      ((audioLevel - AUDIO_LEVEL_CONFIG.MIN_DB) / (AUDIO_LEVEL_CONFIG.MAX_DB - AUDIO_LEVEL_CONFIG.MIN_DB)) * 100
+    ));
 
     return (
       <View style={styles.audioLevelContainer}>
@@ -499,14 +484,11 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
           {/* Stato e sottotitolo dinamici */}
           {renderStateIndicator()}
 
-          {/* VAD Toggle */}
-          {renderVADToggle()}
+          {/* Audio level indicator */}
+          {renderAudioLevel()}
 
           {/* Stato del server */}
           {renderServerStatus()}
-
-          {/* Audio level indicator */}
-          {renderAudioLevel()}
 
           {/* Cerchio animato centrale */}
           <View style={styles.microphoneContainer}>
@@ -554,9 +536,7 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
         {/* Footer con istruzioni */}
         <View style={styles.footer}>
           <Text style={styles.footerText}>
-            {vadEnabled
-              ? "Parla chiaramente. La registrazione si fermerà automaticamente."
-              : "Parla chiaramente e attendi la risposta"}
+            Parla chiaramente. La registrazione si fermerà automaticamente.
           </Text>
         </View>
       </Animated.View>
@@ -771,32 +751,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     flex: 1,
     fontFamily: "System",
-  },
-  // VAD Toggle styles
-  vadToggleButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    borderRadius: 20,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.2)",
-  },
-  vadToggleButtonActive: {
-    backgroundColor: "rgba(76, 175, 80, 0.2)",
-    borderColor: "rgba(76, 175, 80, 0.5)",
-  },
-  vadToggleText: {
-    marginLeft: 8,
-    fontSize: 13,
-    fontWeight: "500",
-    color: "#999",
-    fontFamily: "System",
-  },
-  vadToggleTextActive: {
-    color: "#4CAF50",
   },
   // Audio level indicator styles
   audioLevelContainer: {
