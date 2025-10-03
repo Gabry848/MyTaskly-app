@@ -503,8 +503,11 @@ export class VoiceBotWebSocket {
 
       case 'receiving_audio':
       case 'transcription':
+      case 'transcription_complete':
       case 'ai_processing':
+      case 'ai_complete':
       case 'tts_generation':
+      case 'tts_complete':
       case 'audio_streaming':
       case 'complete':
         this.callbacks.onStatus?.(response.phase, response.message);
