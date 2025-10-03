@@ -18,11 +18,17 @@ export const AUDIO_CONFIG = {
 
 // Configurazioni VAD (Voice Activity Detection)
 export const VAD_CONFIG = {
-  SPEECH_THRESHOLD_DB: -40,        // dB sopra questa soglia = voce rilevata
-  SILENCE_THRESHOLD_DB: -50,       // dB sotto questa soglia = silenzio
-  SILENCE_DURATION_MS: 1500,       // Durata silenzio prima di fermare (1.5s)
+  SPEECH_THRESHOLD_DB: -55,        // dB sopra questa soglia = voce rilevata (più sensibile)
+  SILENCE_THRESHOLD_DB: -65,       // dB sotto questa soglia = silenzio
+  SILENCE_DURATION_MS: 1200,       // Durata silenzio prima di fermare (1.2s)
   METERING_POLL_INTERVAL_MS: 100,  // Intervallo controllo livello audio (100ms)
-  MIN_RECORDING_DURATION_MS: 500,  // Durata minima registrazione prima di VAD
+  MIN_RECORDING_DURATION_MS: 300,  // Durata minima registrazione prima di VAD (300ms)
+};
+
+// Configurazione per normalizzazione audio level
+export const AUDIO_LEVEL_CONFIG = {
+  MIN_DB: -80,  // Livello di silenzio tipico
+  MAX_DB: -10,  // Livello di voce forte
 };
 
 /**
@@ -57,15 +63,21 @@ export class AudioRecorder {
    * Inizializza e avvia la registrazione audio
    */
   async startRecording(enableVAD: boolean = false, vadCallbacks?: VADCallbacks): Promise<boolean> {
+    console.log('🎙️ RECORDER: startRecording chiamato, VAD:', enableVAD);
+
     try {
       // Richiedi i permessi per il microfono
+      console.log('🔐 RECORDER: Richiesta permessi microfono...');
       const { granted } = await Audio.requestPermissionsAsync();
+      console.log('🔐 RECORDER: Permessi microfono:', granted ? '✅ Concessi' : '❌ Negati');
+
       if (!granted) {
-        console.error('Permessi microfono non concessi');
+        console.error('❌ RECORDER: Permessi microfono non concessi');
         return false;
       }
 
       // Configura la modalità audio per la registrazione
+      console.log('⚙️ RECORDER: Configurazione modalità audio...');
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: true,
         playsInSilentModeIOS: true,
@@ -73,8 +85,10 @@ export class AudioRecorder {
         shouldDuckAndroid: true,
         playThroughEarpieceAndroid: false,
       });
+      console.log('✅ RECORDER: Modalità audio configurata');
 
       // Crea una nuova registrazione
+      console.log('📼 RECORDER: Creazione istanza Recording...');
       this.recording = new Audio.Recording();
 
       // Configura le opzioni di registrazione con metering se VAD è abilitato
@@ -82,10 +96,16 @@ export class AudioRecorder {
         ...Audio.RecordingOptionsPresets.HIGH_QUALITY,
         isMeteringEnabled: enableVAD,
       };
+      console.log('⚙️ RECORDER: Opzioni registrazione:', recordingOptions);
 
       // Prepara e avvia la registrazione
+      console.log('🎬 RECORDER: Preparazione registrazione...');
       await this.recording.prepareToRecordAsync(recordingOptions);
+      console.log('✅ RECORDER: Registrazione preparata');
+
+      console.log('▶️ RECORDER: Avvio registrazione...');
       await this.recording.startAsync();
+      console.log('✅ RECORDER: Registrazione avviata!');
 
       this.isRecording = true;
       this.recordingStartTime = Date.now();
@@ -94,14 +114,16 @@ export class AudioRecorder {
 
       // Avvia il monitoraggio VAD se abilitato
       if (enableVAD) {
+        console.log('🎚️ RECORDER: Avvio monitoraggio VAD...');
         this.startVADMonitoring();
       }
 
-      console.log('🎤 Registrazione audio iniziata', enableVAD ? '(VAD attivo)' : '');
+      console.log('🎤 Registrazione audio iniziata', enableVAD ? '(VAD attivo)' : '(VAD disattivo)');
       return true;
 
     } catch (error) {
-      console.error('Errore avvio registrazione:', error);
+      console.error('❌ RECORDER: Errore avvio registrazione:', error);
+      console.error('❌ RECORDER: Stack trace:', error);
       this.cleanup();
       return false;
     }
@@ -309,8 +331,14 @@ export class AudioRecorder {
   private processMeteringLevel(meteringDB: number): void {
     const recordingDuration = this.getRecordingDuration();
 
+    // Log del livello audio ogni 500ms per debugging
+    if (recordingDuration % 500 < VAD_CONFIG.METERING_POLL_INTERVAL_MS) {
+      console.log(`📊 Audio Level: ${meteringDB.toFixed(1)} dB | Duration: ${(recordingDuration / 1000).toFixed(1)}s`);
+    }
+
     // Non attivare VAD se la registrazione è troppo corta
     if (recordingDuration < VAD_CONFIG.MIN_RECORDING_DURATION_MS) {
+      console.log(`⏱️ VAD: Attesa iniziale... (${recordingDuration}ms/${VAD_CONFIG.MIN_RECORDING_DURATION_MS}ms)`);
       return;
     }
 
@@ -319,11 +347,14 @@ export class AudioRecorder {
       if (!this.isSpeechDetected) {
         this.isSpeechDetected = true;
         this.vadCallbacks.onSpeechStart?.();
-        console.log('🎤 VAD: Voce rilevata');
+        console.log(`🎤 VAD: ✅ VOCE RILEVATA! (${meteringDB.toFixed(1)} dB > ${VAD_CONFIG.SPEECH_THRESHOLD_DB} dB)`);
       }
 
       // Reset timer silenzio quando si parla
-      this.silenceStartTime = null;
+      if (this.silenceStartTime) {
+        console.log(`🔊 VAD: Voce continua, reset timer silenzio`);
+        this.silenceStartTime = null;
+      }
     }
     // Rilevamento silenzio
     else if (meteringDB < VAD_CONFIG.SILENCE_THRESHOLD_DB) {
@@ -331,17 +362,26 @@ export class AudioRecorder {
       if (!this.silenceStartTime) {
         this.silenceStartTime = Date.now();
         this.vadCallbacks.onSilenceDetected?.();
-        console.log('🎤 VAD: Silenzio rilevato');
+        console.log(`🔇 VAD: ⏸️ SILENZIO RILEVATO (${meteringDB.toFixed(1)} dB < ${VAD_CONFIG.SILENCE_THRESHOLD_DB} dB)`);
       } else {
         const silenceDuration = Date.now() - this.silenceStartTime;
 
+        // Log progressivo del silenzio
+        if (silenceDuration % 300 < VAD_CONFIG.METERING_POLL_INTERVAL_MS) {
+          console.log(`⏱️ VAD: Silenzio da ${(silenceDuration / 1000).toFixed(1)}s (stop a ${(VAD_CONFIG.SILENCE_DURATION_MS / 1000).toFixed(1)}s)`);
+        }
+
         // Se il silenzio dura abbastanza, ferma la registrazione
         if (silenceDuration >= VAD_CONFIG.SILENCE_DURATION_MS && this.isSpeechDetected) {
-          console.log('🎤 VAD: Auto-stop attivato (silenzio prolungato)');
+          console.log(`🛑 VAD: ⏹️ AUTO-STOP ATTIVATO! (silenzio prolungato ${(silenceDuration / 1000).toFixed(1)}s)`);
           this.vadCallbacks.onAutoStop?.();
           this.vadCallbacks.onSpeechEnd?.();
         }
       }
+    }
+    // Zona intermedia (tra soglia silenzio e soglia voce)
+    else {
+      console.log(`📍 VAD: Zona intermedia (${meteringDB.toFixed(1)} dB tra ${VAD_CONFIG.SILENCE_THRESHOLD_DB} e ${VAD_CONFIG.SPEECH_THRESHOLD_DB})`);
     }
   }
 

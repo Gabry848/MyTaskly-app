@@ -45,8 +45,8 @@ export function useVoiceChat() {
   const [isReceivingAudio, setIsReceivingAudio] = useState<boolean>(false);
   const [chunksReceived, setChunksReceived] = useState<number>(0);
 
-  // VAD states
-  const [vadEnabled, setVadEnabled] = useState<boolean>(false);
+  // VAD states (sempre attivo di default)
+  const [vadEnabled, setVadEnabled] = useState<boolean>(true);
   const [audioLevel, setAudioLevel] = useState<number>(-160);
   const [isSpeechActive, setIsSpeechActive] = useState<boolean>(false);
 
@@ -89,13 +89,16 @@ export function useVoiceChat() {
     },
     
     onStatus: (phase: string, message: string) => {
-      console.log(`🎤 Status: ${phase} - ${message}`);
+      console.log(`📡 Status Server: ${phase} - ${message}`);
       setServerStatus({ phase, message });
 
       switch (phase) {
         case 'transcription':
+        case 'transcription_complete':
         case 'ai_processing':
+        case 'ai_complete':
         case 'tts_generation':
+        case 'tts_complete':
           setState('processing');
           break;
         case 'audio_streaming':
@@ -104,18 +107,29 @@ export function useVoiceChat() {
           if (audioPlayerRef.current) {
             audioPlayerRef.current.clearChunks();
           }
+          setState('speaking');
           break;
         case 'complete':
+          console.log('✅ Pipeline completa!');
           setIsReceivingAudio(false);
           if (audioPlayerRef.current && audioPlayerRef.current.getChunksCount() > 0) {
-            console.log('🔊 Pipeline completa, inizio riproduzione...');
+            console.log('🔊 Riproduzione audio chunks...');
             setState('speaking');
             audioPlayerRef.current.playAllChunks(() => {
-              console.log('🔊 Riproduzione completata, tornando a connected');
+              console.log('🔊 Riproduzione completata, riavvio registrazione...');
               setState('connected');
+              // Riavvia automaticamente la registrazione per la prossima domanda
+              setTimeout(() => {
+                startRecording();
+              }, 500);
             });
           } else {
+            console.log('⚠️ Nessun chunk audio ricevuto, riavvio registrazione...');
             setState('connected');
+            // Riavvia automaticamente la registrazione anche se non ci sono chunk
+            setTimeout(() => {
+              startRecording();
+            }, 500);
           }
           break;
       }
@@ -169,7 +183,7 @@ export function useVoiceChat() {
   }, [requestPermissions]);
 
   /**
-   * Connette al servizio vocale
+   * Connette al servizio vocale e avvia automaticamente la registrazione
    */
   const connect = useCallback(async (): Promise<boolean> => {
     if (!websocketRef.current) {
@@ -181,44 +195,79 @@ export function useVoiceChat() {
     setError(null);
 
     try {
+      console.log('🔌 CONNECT: Connessione WebSocket in corso...');
       const connected = await websocketRef.current!.connect();
+
       if (!connected) {
+        console.error('❌ CONNECT: Connessione fallita');
         setError('Impossibile connettersi al servizio vocale');
         setState('error');
         return false;
       }
 
+      console.log('✅ CONNECT: WebSocket connesso, verifica stato...');
+
+      // Aspetta che il WebSocket sia effettivamente connesso
+      let retries = 0;
+      const maxRetries = 20; // 2 secondi max
+
+      while (!websocketRef.current.isConnected() && retries < maxRetries) {
+        console.log(`⏳ CONNECT: Attesa WebSocket ready... (${retries + 1}/${maxRetries})`);
+        await new Promise(resolve => setTimeout(resolve, 100));
+        retries++;
+      }
+
+      if (!websocketRef.current.isConnected()) {
+        console.error('❌ CONNECT: Timeout connessione WebSocket');
+        setError('Timeout connessione');
+        setState('error');
+        return false;
+      }
+
+      console.log('✅ CONNECT: WebSocket pronto! Avvio registrazione automatica...');
+
+      // Auto-start registrazione DOPO che il WebSocket è connesso
+      const recordingStarted = await startRecording();
+
+      if (!recordingStarted) {
+        console.error('❌ CONNECT: Impossibile avviare la registrazione automatica');
+      }
+
       return true;
-      
+
     } catch (err) {
-      console.error('Errore connessione:', err);
+      console.error('❌ CONNECT: Errore connessione:', err);
       setError('Errore di connessione');
       setState('error');
       return false;
     }
-  }, [initialize]);
+  }, [initialize, startRecording]);
 
   /**
    * VAD Callbacks
    */
   const vadCallbacks: VADCallbacks = {
     onSpeechStart: () => {
-      console.log('🎤 VAD: Inizio voce rilevato');
+      console.log('🎙️ HOOK: ✅ Inizio voce rilevato - UI aggiornata');
       setIsSpeechActive(true);
     },
     onSpeechEnd: () => {
-      console.log('🎤 VAD: Fine voce rilevata');
+      console.log('🎙️ HOOK: ⏹️ Fine voce rilevata - UI aggiornata');
       setIsSpeechActive(false);
     },
     onSilenceDetected: () => {
-      console.log('🎤 VAD: Silenzio rilevato');
+      console.log('🎙️ HOOK: 🔇 Silenzio rilevato - Timer avviato');
     },
     onAutoStop: async () => {
-      console.log('🎤 VAD: Auto-stop attivato');
+      console.log('🎙️ HOOK: 🛑 Auto-stop chiamato - Fermando registrazione...');
       await stopRecording();
     },
     onMeteringUpdate: (level: number) => {
       setAudioLevel(level);
+      // Log dettagliato del livello solo ogni secondo (invece di ogni 100ms)
+      if (Date.now() % 1000 < 150) {
+        console.log(`🎚️ HOOK: Audio level aggiornato → ${level.toFixed(1)} dB`);
+      }
     },
   };
 
@@ -233,23 +282,35 @@ export function useVoiceChat() {
    * Avvia la registrazione audio
    */
   const startRecording = useCallback(async (): Promise<boolean> => {
+    console.log('🎬 START RECORDING: Chiamata startRecording()');
+
     if (!audioRecorderRef.current || !websocketRef.current) {
+      console.error('❌ START RECORDING: Servizio non inizializzato');
+      console.log('  - audioRecorderRef:', !!audioRecorderRef.current);
+      console.log('  - websocketRef:', !!websocketRef.current);
       setError('Servizio non inizializzato');
       return false;
     }
 
     if (!websocketRef.current.isConnected()) {
+      console.error('❌ START RECORDING: WebSocket non connesso');
       setError('WebSocket non connesso');
       return false;
     }
 
+    console.log('✅ START RECORDING: Pre-check OK, avvio registrazione...');
+
     try {
       const started = await audioRecorderRef.current.startRecording(vadEnabled, vadCallbacks);
+      console.log('📝 START RECORDING: Risultato startRecording():', started);
+
       if (!started) {
+        console.error('❌ START RECORDING: Impossibile avviare la registrazione');
         setError('Impossibile avviare la registrazione');
         return false;
       }
 
+      console.log('✅ START RECORDING: Registrazione avviata con successo!');
       setState('recording');
       setError(null);
       setIsSpeechActive(false);
@@ -263,11 +324,11 @@ export function useVoiceChat() {
         }
       }, 100);
 
-      console.log('🎤 Registrazione avviata', vadEnabled ? '(VAD attivo)' : '');
+      console.log('🎤 Registrazione avviata', vadEnabled ? '(VAD attivo)' : '(VAD disattivo)');
       return true;
 
     } catch (err) {
-      console.error('Errore avvio registrazione:', err);
+      console.error('❌ START RECORDING: Errore avvio registrazione:', err);
       setError('Errore durante la registrazione');
       setState('error');
       return false;
