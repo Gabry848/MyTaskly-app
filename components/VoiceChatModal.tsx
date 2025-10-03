@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -13,7 +13,6 @@ import {
 } from "react-native";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useVoiceChat, VoiceChatState } from '../src/hooks/useVoiceChat';
-import { formatDuration, AUDIO_LEVEL_CONFIG } from '../src/utils/audioUtils';
 
 interface VoiceChatModalProps {
   visible: boolean;
@@ -30,35 +29,25 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
   isRecording: externalIsRecording = false,
   onVoiceResponse,
 }) => {
-  // Hook personalizzato per gestire la chat vocale
   const {
     state,
     error,
-    serverStatus,
-    recordingDuration,
     hasPermissions,
-    chunksReceived,
     isConnected,
     isRecording,
     isProcessing,
     isSpeaking,
-    canRecord,
-    canStop,
-    vadEnabled,
-    audioLevel,
     isSpeechActive,
     connect,
     disconnect,
-    startRecording,
     stopRecording,
     cancelRecording,
     stopPlayback,
     sendControl,
     requestPermissions,
-    toggleVAD,
   } = useVoiceChat();
 
-  // Animazioni esistenti
+  // Animazioni
   const pulseScale = useRef(new Animated.Value(1)).current;
   const pulseOpacity = useRef(new Animated.Value(0.3)).current;
   const slideIn = useRef(new Animated.Value(height)).current;
@@ -68,11 +57,9 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
   // Animazione di entrata del modal
   useEffect(() => {
     if (visible) {
-      // Reset delle animazioni
       slideIn.setValue(height);
       fadeIn.setValue(0);
 
-      // Animazione di entrata
       Animated.parallel([
         Animated.timing(slideIn, {
           toValue: 0,
@@ -98,82 +85,76 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
   // Cleanup quando il modal si chiude
   useEffect(() => {
     if (!visible) {
-      if (isRecording) {
-        cancelRecording();
-      }
-      if (isSpeaking) {
-        stopPlayback();
-      }
+      if (isRecording) cancelRecording();
+      if (isSpeaking) stopPlayback();
       disconnect();
     }
   }, [visible]);
 
-  // Animazione del cerchio pulsante
+  // Animazione del cerchio pulsante - solo quando in ascolto
   useEffect(() => {
-    const pulseAnimation = Animated.loop(
-      Animated.sequence([
-        Animated.parallel([
-          Animated.timing(pulseScale, {
-            toValue: 1.2,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseOpacity, {
-            toValue: 0.1,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-        ]),
-        Animated.parallel([
-          Animated.timing(pulseScale, {
-            toValue: 1,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseOpacity, {
-            toValue: 0.3,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-        ]),
-      ])
-    );
+    const shouldAnimate = isRecording && isSpeechActive;
 
-    if (visible) {
+    if (shouldAnimate) {
+      const pulseAnimation = Animated.loop(
+        Animated.sequence([
+          Animated.parallel([
+            Animated.timing(pulseScale, {
+              toValue: 1.15,
+              duration: 800,
+              useNativeDriver: true,
+            }),
+            Animated.timing(pulseOpacity, {
+              toValue: 0,
+              duration: 800,
+              useNativeDriver: true,
+            }),
+          ]),
+          Animated.parallel([
+            Animated.timing(pulseScale, {
+              toValue: 1,
+              duration: 800,
+              useNativeDriver: true,
+            }),
+            Animated.timing(pulseOpacity, {
+              toValue: 0.4,
+              duration: 800,
+              useNativeDriver: true,
+            }),
+          ]),
+        ])
+      );
       pulseAnimation.start();
+
+      return () => pulseAnimation.stop();
     }
+  }, [isRecording, isSpeechActive, pulseScale, pulseOpacity]);
 
-    return () => {
-      pulseAnimation.stop();
-    };
-  }, [visible, pulseScale, pulseOpacity]);
-
-  // Animazione durante la registrazione
+  // Animazione durante elaborazione/risposta
   useEffect(() => {
-    if (isRecording) {
-      const recordingAnimation = Animated.loop(
+    if (isProcessing || isSpeaking) {
+      const thinkingAnimation = Animated.loop(
         Animated.sequence([
           Animated.timing(recordingScale, {
-            toValue: 1.1,
-            duration: 500,
+            toValue: 1.08,
+            duration: 1000,
             useNativeDriver: true,
           }),
           Animated.timing(recordingScale, {
             toValue: 1,
-            duration: 500,
+            duration: 1000,
             useNativeDriver: true,
           }),
         ])
       );
-      recordingAnimation.start();
+      thinkingAnimation.start();
 
       return () => {
-        recordingAnimation.stop();
+        thinkingAnimation.stop();
+        recordingScale.setValue(1);
       };
-    } else {
-      recordingScale.setValue(1);
     }
-  }, [isRecording, recordingScale]);
+  }, [isProcessing, isSpeaking, recordingScale]);
 
   // Gestione connessione
   const handleConnect = async () => {
@@ -188,28 +169,14 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
         return;
       }
     }
-    
     await connect();
   };
 
-  // Gestione stop manuale (la registrazione ora parte automaticamente)
-  const handleManualStop = async () => {
-    if (isRecording) {
-      await stopRecording();
-    }
-  };
-
   const handleClose = () => {
-    // Cleanup prima della chiusura
-    if (isRecording) {
-      cancelRecording();
-    }
-    if (isSpeaking) {
-      stopPlayback();
-    }
+    if (isRecording) cancelRecording();
+    if (isSpeaking) stopPlayback();
     disconnect();
 
-    // Animazione di uscita
     Animated.parallel([
       Animated.timing(slideIn, {
         toValue: height,
@@ -226,55 +193,45 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
     });
   };
 
-  // Gestione errori
   const handleErrorDismiss = () => {
     if (state === 'error') {
       handleConnect();
     }
   };
 
-  // Render dello stato
+  // Render dello stato - versione minimale
   const renderStateIndicator = () => {
-    const getStateInfo = (currentState: VoiceChatState) => {
-      switch (currentState) {
-        case 'idle':
-          return { icon: 'mic-off', color: '#666', text: 'Inattivo' };
-        case 'connecting':
-          return { icon: 'wifi', color: '#FFA500', text: 'Connessione...' };
-        case 'connected':
-          return { icon: 'mic', color: '#4CAF50', text: 'Pronto' };
-        case 'recording':
-          return { icon: 'fiber-manual-record', color: '#F44336', text: 'Registrando...' };
-        case 'processing':
-          return { icon: 'sync', color: '#2196F3', text: 'Elaborazione...' };
-        case 'speaking':
-          return { icon: 'volume-up', color: '#9C27B0', text: 'Riproduzione streaming...' };
-        case 'error':
-          return { icon: 'error', color: '#F44336', text: 'Errore' };
-        case 'disconnected':
-          return { icon: 'wifi-off', color: '#666', text: 'Disconnesso' };
-        default:
-          return { icon: 'help', color: '#666', text: 'Sconosciuto' };
-      }
-    };
+    if (state === 'connecting') {
+      return <Text style={styles.subtleText}>Connessione in corso...</Text>;
+    }
 
-    const { icon, color, text } = getStateInfo(state);
+    if (state === 'error') {
+      return <Text style={styles.subtleText}>Qualcosa è andato storto</Text>;
+    }
 
-    return (
-      <View style={styles.stateContainer}>
-        <MaterialIcons name={icon as any} size={18} color={color} />
-        <Text style={[styles.stateText, { color }]}>{text}</Text>
-      </View>
-    );
+    if (isRecording && isSpeechActive) {
+      return <Text style={styles.subtleText}>Ti ascolto...</Text>;
+    }
+
+    if (isProcessing || isSpeaking) {
+      return <Text style={styles.subtleText}>Sto pensando...</Text>;
+    }
+
+    if (isConnected && !isRecording) {
+      return <Text style={styles.subtleText}>Parla quando vuoi</Text>;
+    }
+
+    return null;
   };
 
-  // Render del pulsante principale (semplificato)
+  // Render del pulsante principale - versione minimale
   const renderMainButton = () => {
-    if (state === 'connecting' || isProcessing) {
+    // Stato: elaborazione o risposta in corso
+    if (isProcessing || isSpeaking) {
       return (
         <Animated.View style={[
           styles.microphoneCircle,
-          styles.microphoneCircleProcessing,
+          styles.thinkingCircle,
           { transform: [{ scale: recordingScale }] }
         ]}>
           <ActivityIndicator size="large" color="#fff" />
@@ -282,167 +239,79 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
       );
     }
 
-    if (!isConnected && state !== 'error') {
+    // Stato: connessione
+    if (state === 'connecting') {
       return (
-        <Animated.View style={[
-          styles.microphoneCircle,
-          { transform: [{ scale: recordingScale }] }
-        ]}>
-          <TouchableOpacity
-            style={styles.microphoneButton}
-            onPress={handleConnect}
-            activeOpacity={0.8}
-          >
-            <MaterialIcons name="wifi" size={48} color="#ffffff" />
-          </TouchableOpacity>
+        <Animated.View style={styles.microphoneCircle}>
+          <ActivityIndicator size="large" color="#fff" />
         </Animated.View>
       );
     }
 
+    // Stato: errore
     if (state === 'error') {
       return (
-        <Animated.View style={[
-          styles.microphoneCircle,
-          styles.microphoneCircleRecording,
-          { transform: [{ scale: recordingScale }] }
-        ]}>
+        <Animated.View style={styles.microphoneCircle}>
           <TouchableOpacity
             style={styles.microphoneButton}
             onPress={handleErrorDismiss}
             activeOpacity={0.8}
           >
-            <MaterialIcons name="refresh" size={48} color="#ffffff" />
+            <MaterialIcons name="refresh" size={52} color="#ffffff" />
           </TouchableOpacity>
         </Animated.View>
       );
     }
 
-    // Pulsante per stop manuale quando sta registrando
-    if (isRecording) {
+    // Stato: non connesso
+    if (!isConnected) {
       return (
-        <Animated.View style={[
-          styles.microphoneCircle,
-          styles.microphoneCircleRecording,
-          { transform: [{ scale: recordingScale }] }
-        ]}>
+        <Animated.View style={styles.microphoneCircle}>
           <TouchableOpacity
             style={styles.microphoneButton}
-            onPress={handleManualStop}
+            onPress={handleConnect}
             activeOpacity={0.8}
           >
-            <Ionicons name="stop" size={48} color="#ffffff" />
+            <MaterialIcons name="wifi" size={52} color="#ffffff" />
           </TouchableOpacity>
         </Animated.View>
       );
     }
 
-    // Icona microfono quando è in ascolto (non cliccabile, registrazione automatica)
+    // Stato: ascolto attivo con animazione semplice
+    const isListening = isRecording && isSpeechActive;
+
     return (
       <Animated.View style={[
         styles.microphoneCircle,
-        { transform: [{ scale: recordingScale }] }
+        isListening && styles.listeningCircle,
       ]}>
-        <Ionicons name="mic" size={48} color="#ffffff" />
+        <Ionicons
+          name={isListening ? "mic" : "mic-outline"}
+          size={56}
+          color="#ffffff"
+        />
       </Animated.View>
     );
   };
 
-  // VAD è sempre attivo, non serve più il toggle
-
-  // Render audio level indicator
-  const renderAudioLevel = () => {
-    if (!isRecording) {
-      return null;
-    }
-
-    // Normalizza dB usando il range corretto (da -80 dB silenzio a -10 dB voce forte)
-    const normalizedLevel = Math.max(0, Math.min(100,
-      ((audioLevel - AUDIO_LEVEL_CONFIG.MIN_DB) / (AUDIO_LEVEL_CONFIG.MAX_DB - AUDIO_LEVEL_CONFIG.MIN_DB)) * 100
-    ));
-
-    return (
-      <View style={styles.audioLevelContainer}>
-        <View style={styles.audioLevelBar}>
-          <View
-            style={[
-              styles.audioLevelFill,
-              {
-                width: `${normalizedLevel}%`,
-                backgroundColor: isSpeechActive ? "#4CAF50" : "#666",
-              },
-            ]}
-          />
-        </View>
-        <Text style={styles.audioLevelText}>
-          {isSpeechActive ? "🎤 Voce rilevata" : "⏸️ In attesa..."}
-        </Text>
-      </View>
-    );
-  };
-
-  // Render dei controlli aggiuntivi
-  const renderControls = () => {
-    if (!isConnected || state === 'error') {
+  // Render pulsante di stop durante elaborazione/risposta
+  const renderStopButton = () => {
+    if (!isProcessing && !isSpeaking) {
       return null;
     }
 
     return (
-      <View style={styles.controlsContainer}>
-        {isSpeaking && (
-          <TouchableOpacity
-            style={styles.controlButton}
-            onPress={stopPlayback}
-          >
-            <MaterialIcons name="stop" size={24} color="#666" />
-            <Text style={styles.controlText}>Stop</Text>
-          </TouchableOpacity>
-        )}
-
-        {(isProcessing || isSpeaking) && (
-          <TouchableOpacity
-            style={styles.controlButton}
-            onPress={() => sendControl('cancel')}
-          >
-            <MaterialIcons name="cancel" size={24} color="#666" />
-            <Text style={styles.controlText}>Annulla</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-    );
-  };
-
-  // Render informazioni server
-  const renderServerStatus = () => {
-    if (!serverStatus) return null;
-
-    return (
-      <View style={styles.serverStatusContainer}>
-        <Text style={styles.serverStatusPhase}>
-          {serverStatus.phase.replace('_', ' ').toUpperCase()}
-        </Text>
-        <Text style={styles.serverStatusMessage}>
-          {serverStatus.message}
-        </Text>
-        {serverStatus.phase === 'audio_streaming' && chunksReceived > 0 && (
-          <Text style={styles.serverStatusMessage}>
-            Chunks ricevuti: {chunksReceived}
-          </Text>
-        )}
-      </View>
-    );
-  };
-
-  // Render durata registrazione
-  const renderRecordingDuration = () => {
-    if (!isRecording || recordingDuration === 0) return null;
-
-    return (
-      <View style={styles.durationContainer}>
-        <MaterialIcons name="access-time" size={16} color="#F44336" />
-        <Text style={styles.durationText}>
-          {formatDuration(recordingDuration)}
-        </Text>
-      </View>
+      <TouchableOpacity
+        style={styles.stopButton}
+        onPress={() => {
+          if (isSpeaking) stopPlayback();
+          if (isProcessing) sendControl('cancel');
+        }}
+        activeOpacity={0.7}
+      >
+        <Text style={styles.stopButtonText}>Interrompi</Text>
+      </TouchableOpacity>
     );
   };
 
@@ -454,8 +323,8 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
       statusBarTranslucent={true}
       onRequestClose={handleClose}
     >
-      <StatusBar barStyle="light-content" backgroundColor="rgba(0,0,0,0.8)" />
-      
+      <StatusBar barStyle="light-content" backgroundColor="rgba(0,0,0,0.95)" />
+
       <Animated.View
         style={[
           styles.overlay,
@@ -472,71 +341,68 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
             onPress={handleClose}
             activeOpacity={0.7}
           >
-            <Ionicons name="close" size={28} color="#ffffff" />
+            <Ionicons name="close" size={26} color="rgba(255, 255, 255, 0.8)" />
           </TouchableOpacity>
         </View>
 
         {/* Contenuto principale */}
         <View style={styles.content}>
-          {/* Titolo */}
-          <Text style={styles.title}>Chat Vocale</Text>
-          
-          {/* Stato e sottotitolo dinamici */}
+          {/* Titolo minimale */}
+          <Text style={styles.title}>Assistente Vocale</Text>
+
+          {/* Messaggio di stato semplice */}
           {renderStateIndicator()}
-
-          {/* Audio level indicator */}
-          {renderAudioLevel()}
-
-          {/* Stato del server */}
-          {renderServerStatus()}
 
           {/* Cerchio animato centrale */}
           <View style={styles.microphoneContainer}>
-            {/* Cerchi di pulsazione */}
-            <Animated.View
-              style={[
-                styles.pulseCircle,
-                styles.pulseCircle1,
-                {
-                  transform: [{ scale: pulseScale }],
-                  opacity: pulseOpacity,
-                },
-              ]}
-            />
-            <Animated.View
-              style={[
-                styles.pulseCircle,
-                styles.pulseCircle2,
-                {
-                  transform: [{ scale: pulseScale }],
-                  opacity: pulseOpacity,
-                },
-              ]}
-            />
+            {/* Cerchi di pulsazione - solo quando in ascolto */}
+            {(isRecording && isSpeechActive) && (
+              <>
+                <Animated.View
+                  style={[
+                    styles.pulseCircle,
+                    styles.pulseCircle1,
+                    {
+                      transform: [{ scale: pulseScale }],
+                      opacity: pulseOpacity,
+                    },
+                  ]}
+                />
+                <Animated.View
+                  style={[
+                    styles.pulseCircle,
+                    styles.pulseCircle2,
+                    {
+                      transform: [{ scale: pulseScale }],
+                      opacity: pulseOpacity,
+                    },
+                  ]}
+                />
+              </>
+            )}
 
             {/* Pulsante principale */}
             {renderMainButton()}
           </View>
 
-          {/* Durata registrazione */}
-          {renderRecordingDuration()}
-          
-          {/* Controlli aggiuntivi */}
-          {renderControls()}
+          {/* Pulsante stop durante elaborazione */}
+          {renderStopButton()}
 
-          {/* Messaggio di errore */}
+          {/* Messaggio di errore minimalista */}
           {error && (
             <View style={styles.errorContainer}>
-              <MaterialIcons name="error-outline" size={20} color="#F44336" />
               <Text style={styles.errorText}>{error}</Text>
+              <TouchableOpacity onPress={handleErrorDismiss}>
+                <Text style={styles.retryText}>Riprova</Text>
+              </TouchableOpacity>
             </View>
           )}
         </View>
 
-        {/* Footer con istruzioni */}
+        {/* Footer con istruzioni semplici */}
         <View style={styles.footer}>
           <Text style={styles.footerText}>
-            Parla chiaramente. La registrazione si fermerà automaticamente.
+            Parla naturalmente
           </Text>
         </View>
       </Animated.View>
@@ -547,234 +413,136 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.92)",
+    backgroundColor: "rgba(0, 0, 0, 0.95)",
     justifyContent: "space-between",
   },
   header: {
-    paddingTop: StatusBar.currentHeight ? StatusBar.currentHeight + 20 : 50,
+    paddingTop: StatusBar.currentHeight ? StatusBar.currentHeight + 16 : 44,
     paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingBottom: 16,
     alignItems: "flex-end",
   },
   closeButton: {
-    padding: 12,
-    borderRadius: 25,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    padding: 10,
+    borderRadius: 24,
+    backgroundColor: "rgba(255, 255, 255, 0.06)",
   },
   content: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 40,
+    paddingHorizontal: 32,
   },
   title: {
-    fontSize: 32,
-    fontWeight: "300",
+    fontSize: 26,
+    fontWeight: "200",
     color: "#ffffff",
     textAlign: "center",
-    marginBottom: 12,
+    marginBottom: 64,
     fontFamily: "System",
-    letterSpacing: -1,
+    letterSpacing: 0.8,
   },
-  subtitle: {
-    fontSize: 18,
-    fontWeight: "400",
-    color: "#cccccc",
+  subtleText: {
+    fontSize: 15,
+    fontWeight: "300",
+    color: "rgba(255, 255, 255, 0.5)",
     textAlign: "center",
-    marginBottom: 80,
+    marginBottom: 52,
     fontFamily: "System",
   },
   microphoneContainer: {
     position: "relative",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 60,
+    marginVertical: 48,
   },
   pulseCircle: {
     position: "absolute",
-    borderRadius: 100,
-    borderWidth: 2,
-    borderColor: "#ffffff",
+    borderRadius: 150,
+    borderWidth: 1,
+    borderColor: "rgba(76, 175, 80, 0.4)",
   },
   pulseCircle1: {
-    width: 200,
-    height: 200,
+    width: 240,
+    height: 240,
   },
   pulseCircle2: {
-    width: 250,
-    height: 250,
+    width: 300,
+    height: 300,
   },
   microphoneCircle: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: "#333333",
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 3,
-    borderColor: "#ffffff",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 8,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 10,
+    borderWidth: 1.5,
+    borderColor: "rgba(255, 255, 255, 0.15)",
   },
-  microphoneCircleRecording: {
-    backgroundColor: "#ff4444",
-    borderColor: "#ff6666",
+  listeningCircle: {
+    backgroundColor: "rgba(76, 175, 80, 0.15)",
+    borderColor: "rgba(76, 175, 80, 0.3)",
   },
-  microphoneCircleProcessing: {
-    backgroundColor: "#4444ff",
-    borderColor: "#6666ff",
+  thinkingCircle: {
+    backgroundColor: "rgba(33, 150, 243, 0.15)",
+    borderColor: "rgba(33, 150, 243, 0.3)",
   },
   microphoneButton: {
     width: "100%",
     height: "100%",
     justifyContent: "center",
     alignItems: "center",
-    borderRadius: 70,
-  },
-  statusContainer: {
-    alignItems: "center",
-  },
-  statusText: {
-    fontSize: 16,
-    fontWeight: "400",
-    color: "#bbbbbb",
-    textAlign: "center",
-    fontFamily: "System",
+    borderRadius: 80,
   },
   footer: {
     paddingHorizontal: 40,
-    paddingBottom: 50,
+    paddingBottom: 64,
     alignItems: "center",
   },
   footerText: {
+    fontSize: 12,
+    fontWeight: "300",
+    color: "rgba(255, 255, 255, 0.35)",
+    textAlign: "center",
+    fontFamily: "System",
+    letterSpacing: 0.3,
+  },
+  stopButton: {
+    paddingHorizontal: 28,
+    paddingVertical: 14,
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
+    borderRadius: 28,
+    marginTop: 40,
+  },
+  stopButtonText: {
     fontSize: 14,
     fontWeight: "400",
-    color: "#888888",
-    textAlign: "center",
+    color: "rgba(255, 255, 255, 0.75)",
     fontFamily: "System",
-  },
-  // Nuovi stili per i componenti aggiunti
-  stateContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    borderRadius: 20,
-  },
-  stateText: {
-    marginLeft: 6,
-    fontSize: 14,
-    fontWeight: "500",
-    fontFamily: "System",
-  },
-  serverStatusContainer: {
-    alignItems: "center",
-    marginBottom: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: "rgba(33, 150, 243, 0.2)",
-    borderRadius: 12,
-    minHeight: 40,
-    justifyContent: "center",
-  },
-  serverStatusPhase: {
-    fontSize: 12,
-    fontWeight: "bold",
-    color: "#87CEEB",
-    marginBottom: 2,
-    fontFamily: "System",
-  },
-  serverStatusMessage: {
-    fontSize: 10,
-    color: "#cccccc",
-    textAlign: "center",
-    fontFamily: "System",
-  },
-  durationContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 16,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    backgroundColor: "rgba(244, 67, 54, 0.2)",
-    borderRadius: 16,
-  },
-  durationText: {
-    marginLeft: 4,
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#FF6B6B",
-    fontFamily: "monospace",
-  },
-  controlsContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginBottom: 16,
-  },
-  controlButton: {
-    alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginHorizontal: 8,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    borderRadius: 12,
-    minWidth: 60,
-  },
-  controlText: {
-    marginTop: 4,
-    fontSize: 11,
-    color: "#cccccc",
-    fontWeight: "500",
-    fontFamily: "System",
+    letterSpacing: 0.2,
   },
   errorContainer: {
-    flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(244, 67, 54, 0.2)",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    marginBottom: 16,
-    maxWidth: "90%",
+    paddingHorizontal: 28,
+    paddingVertical: 18,
+    backgroundColor: "rgba(244, 67, 54, 0.08)",
+    borderRadius: 20,
+    marginTop: 40,
+    maxWidth: "85%",
   },
   errorText: {
-    marginLeft: 8,
-    color: "#FF6B6B",
-    fontSize: 12,
-    flex: 1,
+    color: "rgba(255, 107, 107, 0.85)",
+    fontSize: 13,
+    fontWeight: "300",
+    textAlign: "center",
+    marginBottom: 14,
     fontFamily: "System",
   },
-  // Audio level indicator styles
-  audioLevelContainer: {
-    width: "80%",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  audioLevelBar: {
-    width: "100%",
-    height: 6,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    borderRadius: 3,
-    overflow: "hidden",
-    marginBottom: 8,
-  },
-  audioLevelFill: {
-    height: "100%",
-    borderRadius: 3,
-    transition: "width 0.1s ease-out",
-  },
-  audioLevelText: {
-    fontSize: 11,
-    color: "#cccccc",
-    fontWeight: "500",
+  retryText: {
+    color: "rgba(255, 255, 255, 0.65)",
+    fontSize: 13,
+    fontWeight: "400",
     fontFamily: "System",
   },
 });
