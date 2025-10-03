@@ -297,7 +297,7 @@ export interface VoiceWebSocketMessage {
 
 export interface VoiceWebSocketResponse {
   type: 'status' | 'audio_chunk' | 'error';
-  phase?: 'authenticated' | 'receiving_audio' | 'transcription' | 'ai_processing' | 'tts_generation' | 'audio_streaming' | 'complete';
+  phase?: 'authenticated' | 'receiving_audio' | 'transcription' | 'transcription_complete' | 'ai_processing' | 'ai_complete' | 'tts_generation' | 'tts_complete' | 'audio_streaming' | 'complete';
   message?: string;
   data?: string; // base64 audio data
   chunk_index?: number;
