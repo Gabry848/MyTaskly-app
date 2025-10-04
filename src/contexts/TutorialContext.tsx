@@ -18,6 +18,11 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [shouldAutoStart, setShouldAutoStart] = useState(false);
   const elementRefsMap = useRef<{ [key: string]: any }>({});
 
+  // Log state changes
+  React.useEffect(() => {
+    console.log('[TUTORIAL_CONTEXT] 📊 State changed - isTutorialVisible:', isTutorialVisible);
+  }, [isTutorialVisible]);
+
   // Check if tutorial should auto-start
   React.useEffect(() => {
     const checkTutorialStatus = async () => {
@@ -39,10 +44,12 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, []);
 
   const startTutorial = useCallback(() => {
+    console.log('[TUTORIAL_CONTEXT] 🎯 startTutorial called - setting isTutorialVisible to true');
     setIsTutorialVisible(true);
   }, []);
 
   const closeTutorial = useCallback(() => {
+    console.log('[TUTORIAL_CONTEXT] 🔴 closeTutorial called - setting isTutorialVisible to false');
     setIsTutorialVisible(false);
   }, []);
 
