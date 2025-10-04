@@ -12,10 +12,11 @@ import {
   ActivityIndicator,
   Dimensions,
   Platform,
-  KeyboardAvoidingView,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { TUTORIAL_STORAGE_KEY } from "../../constants/tutorialContent";
 import { ChatList, Message } from "../../../components/BotChat";
 import { sendMessageToBot, formatMessage, clearChatHistory, StreamingCallback } from "../../services/botservice";
 import { STORAGE_KEYS } from "../../constants/authConstants";
@@ -23,6 +24,7 @@ import { TaskCacheService } from '../../services/TaskCacheService';
 import SyncManager, { SyncStatus } from '../../services/SyncManager';
 import Badge from "../../../components/Badge";
 import VoiceChatModal from "../../../components/VoiceChatModal";
+import { useTutorialContext } from "../../contexts/TutorialContext";
 
 const Home20 = () => {
   const [message, setMessage] = useState("");
@@ -36,7 +38,23 @@ const Home20 = () => {
   const [suggestedCommandUsed, setSuggestedCommandUsed] = useState(false);
   const [screenHeight, setScreenHeight] = useState(Dimensions.get('window').height);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
-  
+
+  // Tutorial context
+  const tutorialContext = useTutorialContext();
+
+  const handleStartTutorial = () => {
+    console.log('[HOME] Tutorial context:', tutorialContext);
+    console.log('[HOME] startTutorial function:', tutorialContext?.startTutorial);
+
+    if (tutorialContext && tutorialContext.startTutorial) {
+      console.log('[HOME] 🎯 Starting tutorial...');
+      tutorialContext.startTutorial();
+    } else {
+      console.error('[HOME] ❌ Tutorial context not available!');
+      Alert.alert('Errore', 'Tutorial context non disponibile');
+    }
+  };
+
   // Servizi
   const cacheService = useRef(TaskCacheService.getInstance()).current;
   const syncManager = useRef(SyncManager.getInstance()).current;
@@ -458,6 +476,15 @@ const Home20 = () => {
           )}
         </View>
         <View style={styles.headerActions}>
+          {/* TEMPORARY: Start Tutorial Button */}
+          <TouchableOpacity
+            style={[styles.resetButton, { marginRight: 8 }]}
+            onPress={handleStartTutorial}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="help-circle-outline" size={24} color="#007AFF" />
+          </TouchableOpacity>
+
           {chatStarted && (
             <TouchableOpacity
               style={styles.resetButton}
