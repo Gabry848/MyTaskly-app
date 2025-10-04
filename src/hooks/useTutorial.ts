@@ -111,21 +111,71 @@ export const useTutorial = ({ navigation, onComplete, onSkip }: UseTutorialProps
 
     setIsNavigating(true);
 
-    // Navigate to target screen
     try {
-      // @ts-ignore - navigation can be either stack or tab
-      navigation.navigate(step.targetScreen as any);
+      console.log(`[TUTORIAL] 🧭 Target screen: ${step.targetScreen}`);
 
-      // Wait for navigation to complete and element to render
-      await new Promise(resolve => {
-        navigationTimeoutRef.current = setTimeout(resolve, 300);
-      });
+      // Get current navigation state
+      const state = navigation.getState();
+      const currentRoute = state?.routes?.[state?.index];
+
+      console.log('[TUTORIAL] Current route:', currentRoute?.name);
+
+      // List of tab screens that are nested inside HomeTabs
+      const tabScreens = ['Home', 'Categories', 'Notes', 'Calendar', 'BotChat'];
+
+      if (tabScreens.includes(step.targetScreen)) {
+        // This is a tab screen - use nested navigation
+        console.log(`[TUTORIAL] 📱 Navigating to tab: ${step.targetScreen} inside HomeTabs`);
+
+        try {
+          // @ts-ignore - Navigate to HomeTabs with nested screen parameter
+          navigation.navigate('HomeTabs', {
+            screen: step.targetScreen,
+          });
+        } catch (navError) {
+          console.error(`[TUTORIAL] ❌ Failed to navigate to tab ${step.targetScreen}:`, navError);
+        }
+
+        // Wait longer for nested navigation to complete
+        await new Promise(resolve => {
+          navigationTimeoutRef.current = setTimeout(resolve, 600);
+        });
+      } else {
+        // This is a stack screen - navigate normally
+        console.log(`[TUTORIAL] 📍 Navigating to stack screen: ${step.targetScreen}`);
+
+        try {
+          // @ts-ignore
+          navigation.navigate(step.targetScreen as any);
+        } catch (navError) {
+          console.error(`[TUTORIAL] ❌ Failed to navigate to ${step.targetScreen}:`, navError);
+        }
+
+        // Wait for navigation to complete
+        await new Promise(resolve => {
+          navigationTimeoutRef.current = setTimeout(resolve, 400);
+        });
+      }
+
+      console.log(`[TUTORIAL] 📏 Measuring element: ${step.targetElement}`);
 
       // Measure the target element
       const measurement = await measureElement(step.targetElement);
+
+      if (measurement) {
+        console.log(`[TUTORIAL] ✅ Element measured successfully:`, measurement);
+      } else {
+        console.warn(`[TUTORIAL] ⚠️ Failed to measure element: ${step.targetElement}`);
+      }
+
       setTargetMeasurement(measurement);
     } catch (error) {
-      console.error('[TUTORIAL] Navigation error:', error);
+      console.error(`[TUTORIAL] ❌ Error in navigateAndMeasure:`, error);
+      console.error('[TUTORIAL] Error details:', {
+        targetScreen: step.targetScreen,
+        targetElement: step.targetElement,
+        errorMessage: error instanceof Error ? error.message : String(error)
+      });
       setTargetMeasurement(null);
     } finally {
       setIsNavigating(false);
@@ -171,9 +221,9 @@ export const useTutorial = ({ navigation, onComplete, onSkip }: UseTutorialProps
       setIsVisible(false);
       setTargetMeasurement(null);
 
-      // Navigate back to Home
+      // Navigate back to Home tab using nested navigation
       // @ts-ignore
-      navigation.navigate('Home');
+      navigation.navigate('HomeTabs', { screen: 'Home' });
 
       onSkip?.();
     } catch (error) {
@@ -188,9 +238,9 @@ export const useTutorial = ({ navigation, onComplete, onSkip }: UseTutorialProps
       setIsVisible(false);
       setTargetMeasurement(null);
 
-      // Navigate back to Home
+      // Navigate back to Home tab using nested navigation
       // @ts-ignore
-      navigation.navigate('Home');
+      navigation.navigate('HomeTabs', { screen: 'Home' });
 
       onComplete?.();
     } catch (error) {
