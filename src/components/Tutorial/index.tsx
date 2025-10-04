@@ -20,7 +20,10 @@ export const TutorialManager: React.FC<TutorialManagerProps> = ({
   autoStart = false,
 }) => {
   // Get tutorial visibility from context
-  const { isTutorialVisible } = useTutorialContext();
+  const tutorialContext = useTutorialContext();
+  const { isTutorialVisible, closeTutorial: closeContextTutorial } = tutorialContext;
+
+  console.log('[TUTORIAL_MANAGER] 📱 Component render - isTutorialVisible:', isTutorialVisible);
 
   const {
     isVisible,
@@ -49,8 +52,8 @@ export const TutorialManager: React.FC<TutorialManagerProps> = ({
     console.log('[TUTORIAL_MANAGER] isVisible from hook:', isVisible);
 
     if (isTutorialVisible && !isVisible) {
-      console.log('[TUTORIAL_MANAGER] 🚀 Starting tutorial from context trigger');
-      startTutorial();
+      console.log('[TUTORIAL_MANAGER] 🚀 Starting tutorial from context trigger (FORCE MODE)');
+      startTutorial(true); // Force start when manually triggered
     }
   }, [isTutorialVisible, isVisible, startTutorial]);
 
@@ -69,6 +72,16 @@ export const TutorialManager: React.FC<TutorialManagerProps> = ({
     restartTutorial();
   };
 
+  const handleSkip = () => {
+    skipTutorial();
+    closeContextTutorial(); // Reset context state
+  };
+
+  const handleComplete = () => {
+    completeTutorial();
+    closeContextTutorial(); // Reset context state
+  };
+
   return (
     <Modal
       visible={isVisible}
@@ -79,7 +92,7 @@ export const TutorialManager: React.FC<TutorialManagerProps> = ({
       {currentStep.type === 'welcome' && (
         <WelcomeScreen
           onStart={handleWelcomeStart}
-          onSkip={skipTutorial}
+          onSkip={handleSkip}
         />
       )}
 
@@ -95,13 +108,13 @@ export const TutorialManager: React.FC<TutorialManagerProps> = ({
           canGoNext={canGoNext}
           onBack={previousStep}
           onNext={nextStep}
-          onSkip={skipTutorial}
+          onSkip={handleSkip}
         />
       )}
 
       {currentStep.type === 'completion' && (
         <CompletionScreen
-          onComplete={completeTutorial}
+          onComplete={handleComplete}
           onReview={handleCompletionReview}
         />
       )}
