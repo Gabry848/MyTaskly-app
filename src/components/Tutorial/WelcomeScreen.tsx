@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { View, Text, Pressable, Animated } from 'react-native';
+import { View, Text, Pressable, Animated, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { tutorialStyles } from './styles';
 import { TUTORIAL_CONTENT } from '../../constants/tutorialContent';
@@ -45,7 +45,11 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStart, onSkip })
           style={tutorialStyles.welcomeLogo}
           accessibilityLabel="MyTaskly logo"
         >
-          <Ionicons name="checkmark-done-circle" size={80} color="#000000" />
+          <Image
+            source={require('../../../assets/icons/adaptive-icon.png')}
+            style={{ width: 80, height: 80 }}
+            resizeMode="contain"
+          />
         </View>
 
         {/* Title */}
