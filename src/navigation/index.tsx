@@ -37,6 +37,8 @@ import { syncAllData } from "../services/taskService";
 import { handleGoogleLoginSuccess, handleGoogleLoginError } from "../services/googleSignInService";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { STORAGE_KEYS } from "../constants/authConstants";
+import { TutorialProvider } from "../contexts/TutorialContext";
+import { TutorialManager } from "../components/Tutorial";
 
 // Definizione del tipo per le route dello Stack principale
 export type RootStackParamList = {
@@ -77,66 +79,73 @@ const Tab = createBottomTabNavigator<TabParamList>();
 
 // Tab Navigator per le schermate principali
 function HomeTabs() {
+  const navigation = useNavigation<NavigationProp<TabParamList>>();
+
   return (
-    <Tab.Navigator
-      id={undefined}
-      screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color, size }) => {
-          let iconName: keyof typeof Ionicons.glyphMap;
+    <>
+      <Tab.Navigator
+        id={undefined}
+        screenOptions={({ route }) => ({
+          tabBarIcon: ({ focused, color, size }) => {
+            let iconName: keyof typeof Ionicons.glyphMap;
 
-          switch (route.name) {
-            case "Home":
-              iconName = focused ? "home" : "home-outline";
-              break;
-            case "Categories":
-              iconName = focused ? "grid" : "grid-outline";
-              break;
-            case "Notes":
-              iconName = focused ? "document-text" : "document-text-outline";
-              break;
-            case "Calendar":
-              iconName = focused ? "calendar" : "calendar-outline";
-              break;
-            case "BotChat":
-              iconName = focused ? "chatbubbles" : "chatbubbles-outline";
-              break;
-            default:
-              iconName = "home-outline";
-          }
+            switch (route.name) {
+              case "Home":
+                iconName = focused ? "home" : "home-outline";
+                break;
+              case "Categories":
+                iconName = focused ? "grid" : "grid-outline";
+                break;
+              case "Notes":
+                iconName = focused ? "document-text" : "document-text-outline";
+                break;
+              case "Calendar":
+                iconName = focused ? "calendar" : "calendar-outline";
+                break;
+              case "BotChat":
+                iconName = focused ? "chatbubbles" : "chatbubbles-outline";
+                break;
+              default:
+                iconName = "home-outline";
+            }
 
-          return <Ionicons name={iconName} size={size} color={color} />;
-        },
-        tabBarActiveTintColor: "#007AFF",
-        tabBarInactiveTintColor: "gray",
-        headerShown: false,
-      })}
-    >
-      <Tab.Screen
-        name="Home"
-        component={HomeScreen}
-        options={{ title: "Home" }}
-      />
-      <Tab.Screen
-        name="Categories"
-        component={CategoriesScreen}
-        options={{ title: "Categorie" }}
-      />
-      <Tab.Screen
-        name="Notes"
-        component={NotesScreen}
-        options={{ title: "Note" }}
-      />
-      <Tab.Screen
-        name="Calendar"
-        component={CalendarScreen}
-        options={{ title: "Calendario" }}
-      />
-      {/* <Tab.Screen
-        name="BotChat"
-        component={BotChatScreen}
-        options={{ title: "Chat Bot" }}
-      /> */}
-    </Tab.Navigator>
+            return <Ionicons name={iconName} size={size} color={color} />;
+          },
+          tabBarActiveTintColor: "#007AFF",
+          tabBarInactiveTintColor: "gray",
+          headerShown: false,
+        })}
+      >
+        <Tab.Screen
+          name="Home"
+          component={HomeScreen}
+          options={{ title: "Home" }}
+        />
+        <Tab.Screen
+          name="Categories"
+          component={CategoriesScreen}
+          options={{ title: "Categorie" }}
+        />
+        <Tab.Screen
+          name="Notes"
+          component={NotesScreen}
+          options={{ title: "Note" }}
+        />
+        <Tab.Screen
+          name="Calendar"
+          component={CalendarScreen}
+          options={{ title: "Calendario" }}
+        />
+        {/* <Tab.Screen
+          name="BotChat"
+          component={BotChatScreen}
+          options={{ title: "Chat Bot" }}
+        /> */}
+      </Tab.Navigator>
+
+      {/* Tutorial Manager */}
+      <TutorialManager navigation={navigation} autoStart={true} />
+    </>
   );
 }
 // Componente interno che gestisce l'event emitter
@@ -418,9 +427,11 @@ function AppStack() {
 export default function Navigation() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <NavigationContainer>
-        <AppStack />
-      </NavigationContainer>
+      <TutorialProvider>
+        <NavigationContainer>
+          <AppStack />
+        </NavigationContainer>
+      </TutorialProvider>
     </GestureHandlerRootView>
   );
 }
