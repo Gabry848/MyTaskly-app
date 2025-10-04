@@ -61,6 +61,7 @@
     "react-native": "^0.79.5",
     "react-native-blob-util": "^0.22.2",
     "react-native-chat-ui": "^0.1.9",
+    "react-native-dotenv": "^3.4.11",
     "react-native-edge-to-edge": "1.6.0",
     "react-native-gesture-handler": "~2.24.0",
     "react-native-keyboard-aware-scroll-view": "^0.9.5",
