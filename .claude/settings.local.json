@@ -25,7 +25,9 @@
       "Bash(npx expo doctor:*)",
       "Bash(npx expo-doctor:*)",
       "Bash(node:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(findstr:*)",
+      "Bash(dir:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"

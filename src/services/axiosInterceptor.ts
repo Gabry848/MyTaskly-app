@@ -4,6 +4,9 @@ import { STORAGE_KEYS, API_ENDPOINTS } from '../constants/authConstants';
 import { refreshToken } from './authService';
 import axios from './axiosInstance';
 
+// Chiave segreta hardcoded per le API
+const API_SECRET_KEY = 'ubHL%At28^{Lm-vx2_>rG\\m.*FR*rCMC%-4jMhk(FV8CpMD_mHhx,;mXUmC/^GHkT@B@^]k9:B+ga3VWqVRUv,C[}@;>BE//Y@bG';
+
 // Flag per evitare loop infiniti durante il refresh
 let isRefreshing = false;
 let failedQueue: any[] = [];
@@ -26,6 +29,14 @@ const processQueue = (error: any, token: string | null = null) => {
  */
 axios.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
+    // Aggiungi la chiave segreta ad ogni richiesta
+    if (API_SECRET_KEY) {
+      config.headers['X-API-Key'] = API_SECRET_KEY;
+      console.log('[AXIOS] Chiave segreta aggiunta alla richiesta');
+    } else {
+      console.warn('[AXIOS] API_SECRET_KEY non configurata nelle variabili d\'ambiente');
+    }
+
     const authHeaderValue = config.headers.Authorization as string;
     console.log('[AXIOS] Richiesta in uscita:', {
       method: config.method,
@@ -33,7 +44,7 @@ axios.interceptors.request.use(
       baseURL: config.baseURL,
       fullURL: `${config.baseURL || ''}${config.url || ''}`,
       hasAuthHeader: !!config.headers.Authorization,
-      authHeader: authHeaderValue ? 
+      authHeader: authHeaderValue ?
         `${authHeaderValue.substring(0, 30)}...` : 'N/A'
     });
     
