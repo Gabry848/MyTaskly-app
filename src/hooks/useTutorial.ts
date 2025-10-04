@@ -42,11 +42,26 @@ export const useTutorial = ({ navigation, onComplete, onSkip }: UseTutorialProps
   }, []);
 
   // Start tutorial
-  const startTutorial = useCallback(async () => {
-    const isCompleted = await checkTutorialStatus();
-    if (!isCompleted) {
+  const startTutorial = useCallback(async (force: boolean = false) => {
+    console.log('[TUTORIAL_HOOK] 🎯 startTutorial called with force:', force);
+
+    if (force) {
+      // Force start tutorial regardless of completion status
+      console.log('[TUTORIAL_HOOK] 🚀 Force starting tutorial');
       setCurrentStepIndex(0);
       setIsVisible(true);
+      return;
+    }
+
+    const isCompleted = await checkTutorialStatus();
+    console.log('[TUTORIAL_HOOK] 📊 Tutorial completion status:', isCompleted);
+
+    if (!isCompleted) {
+      console.log('[TUTORIAL_HOOK] ✅ Starting tutorial (not completed)');
+      setCurrentStepIndex(0);
+      setIsVisible(true);
+    } else {
+      console.log('[TUTORIAL_HOOK] ⏭️ Tutorial already completed, skipping');
     }
   }, [checkTutorialStatus]);
 
