@@ -18,6 +18,7 @@ interface CategoryProps {
   categoryId?: string | number;
   isShared?: boolean;
   isOwned?: boolean;
+  ownerName?: string; // Nome del proprietario (per categorie condivise)
   permissionLevel?: "READ_ONLY" | "READ_WRITE";
   onDelete?: () => void;
   onEdit?: () => void;
@@ -31,6 +32,7 @@ const Category: React.FC<CategoryProps> = ({
   categoryId,
   isShared = false,
   isOwned = true,
+  ownerName,
   permissionLevel = "READ_WRITE",
   onDelete,
   onEdit
@@ -49,9 +51,11 @@ const Category: React.FC<CategoryProps> = ({
   const fetchTaskCount = useCallback(async () => {
     try {
       setIsLoading(true);
-      console.log(`[CATEGORY] Caricamento task per categoria: "${title}"`);
-      
-      const tasksData = await getTasks(title);
+      console.log(`[CATEGORY] Caricamento task per categoria: "${title}" (ID: ${categoryId})`);
+
+      // Usa categoryId se disponibile, altrimenti fallback su title
+      const categoryIdentifier = categoryId || title;
+      const tasksData = await getTasks(categoryIdentifier);
       console.log(`[CATEGORY] Task ricevuti per "${title}":`, tasksData);
       
       if (!Array.isArray(tasksData)) {
@@ -81,12 +85,12 @@ const Category: React.FC<CategoryProps> = ({
     } finally {
       setIsLoading(false);
     }
-  }, [title]);
+  }, [title, categoryId]);
 
   // Carica il conteggio dei task all'inizializzazione del componente
   useEffect(() => {
     fetchTaskCount();
-  }, [title, fetchTaskCount]);
+  }, [title, categoryId, fetchTaskCount]);
 
   // Setup listeners per aggiornamenti task count in tempo reale
   useEffect(() => {
@@ -312,11 +316,13 @@ const Category: React.FC<CategoryProps> = ({
     <>
       <CategoryCard
         title={title}
+        categoryId={categoryId}
         imageUrl={imageUrl}
         taskCount={actualTaskCount}
         isLoading={isLoading}
         isShared={isShared}
         isOwned={isOwned}
+        ownerName={ownerName}
         permissionLevel={permissionLevel}
         onAddTask={handleAddTask}
         onLongPress={handleLongPress}

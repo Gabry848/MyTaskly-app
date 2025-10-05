@@ -9,7 +9,8 @@ declare module '*.jpg' {
 }
 
 export interface TaskListRouteParams {
-  category_name: string;
+  category_name: string; // Deprecato, mantenuto per retrocompatibilità
+  categoryId?: number | string; // Preferito
 }
 
 export type RootStackParamList = {

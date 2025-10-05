@@ -13,11 +13,13 @@ type CategoryScreenNavigationProp = StackNavigationProp<
 
 interface CategoryCardProps {
   title: string;
+  categoryId?: string | number;
   imageUrl?: string;
   taskCount: number;
   isLoading: boolean;
   isShared?: boolean;
   isOwned?: boolean;
+  ownerName?: string; // Nome del proprietario (per categorie condivise)
   permissionLevel?: "READ_ONLY" | "READ_WRITE";
   onAddTask: () => void;
   onLongPress: () => void;
@@ -25,11 +27,13 @@ interface CategoryCardProps {
 
 const CategoryCard: React.FC<CategoryCardProps> = ({
   title,
+  categoryId,
   imageUrl,
   taskCount,
   isLoading,
   isShared = false,
   isOwned = true,
+  ownerName,
   permissionLevel = "READ_WRITE",
   onAddTask,
   onLongPress
@@ -56,14 +60,22 @@ const CategoryCard: React.FC<CategoryCardProps> = ({
   // Get sharing indicator text and icon
   const getSharingIndicator = () => {
     if (!isOwned) {
+      // Categoria condivisa con me da un altro utente
+      // Mostra il nome del proprietario se disponibile, altrimenti una descrizione generica
+      const ownerText = ownerName ? `da ${ownerName}` : "da altro utente";
+      const permissionText = permissionLevel === "READ_ONLY" ? "Sola lettura" : "Lettura/Scrittura";
+
       return {
         icon: permissionLevel === "READ_ONLY" ? "🔒" : "✏️",
-        text: permissionLevel === "READ_ONLY" ? "Sola lettura" : "Condivisa",
+        text: `Condivisa ${ownerText}`,
+        subText: permissionText,
       };
     } else if (isShared) {
+      // Categoria mia condivisa con altri
       return {
         icon: "👥",
-        text: "Condivisa",
+        text: "Condivisa con altri",
+        subText: null,
       };
     }
     return null;
@@ -84,7 +96,10 @@ const CategoryCard: React.FC<CategoryCardProps> = ({
         onPressOut={handlePressOut}
         onLongPress={onLongPress}
         onPress={() => {
-          navigation.navigate("TaskList", { category_name: title });
+          navigation.navigate("TaskList", {
+            categoryId: categoryId || title,
+            category_name: title
+          });
         }}
       >
         <View style={styles.contentContainer}>
@@ -98,8 +113,13 @@ const CategoryCard: React.FC<CategoryCardProps> = ({
 
           {sharingIndicator && (
             <View style={styles.sharingIndicator}>
-              <Text style={styles.sharingIcon}>{sharingIndicator.icon}</Text>
-              <Text style={styles.sharingText}>{sharingIndicator.text}</Text>
+              <View style={styles.sharingMainRow}>
+                <Text style={styles.sharingIcon}>{sharingIndicator.icon}</Text>
+                <Text style={styles.sharingText}>{sharingIndicator.text}</Text>
+              </View>
+              {sharingIndicator.subText && (
+                <Text style={styles.sharingSubText}>{sharingIndicator.subText}</Text>
+              )}
             </View>
           )}
         </View>
@@ -135,12 +155,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   sharingIndicator: {
-    flexDirection: "row",
-    alignItems: "center",
     marginTop: 6,
     paddingTop: 6,
     borderTopWidth: 1,
     borderTopColor: "#f0f0f0",
+  },
+  sharingMainRow: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   sharingIcon: {
     fontSize: 14,
@@ -150,6 +172,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#666",
     fontWeight: "500",
+    flex: 1,
+  },
+  sharingSubText: {
+    fontSize: 11,
+    color: "#888",
+    fontWeight: "400",
+    marginTop: 2,
+    marginLeft: 20, // Allineato con il testo sopra (icon width + margin)
   },
 });
 
