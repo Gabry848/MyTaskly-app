@@ -16,7 +16,6 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { TUTORIAL_STORAGE_KEY } from "../../constants/tutorialContent";
 import { ChatList, Message } from "../../../components/BotChat";
 import { sendMessageToBot, formatMessage, clearChatHistory, StreamingCallback } from "../../services/botservice";
 import { STORAGE_KEYS } from "../../constants/authConstants";
@@ -26,7 +25,7 @@ import Badge from "../../../components/Badge";
 import VoiceChatModal from "../../../components/VoiceChatModal";
 import { useTutorialContext } from "../../contexts/TutorialContext";
 
-const Home20 = () => {
+const HomeScreen = () => {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);  const [isLoading, setIsLoading] = useState(false);
   const [chatStarted, setChatStarted] = useState(false);  const [userName, setUserName] = useState("Utente");
@@ -997,4 +996,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Home20;
+export default HomeScreen;
