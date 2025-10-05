@@ -7,6 +7,7 @@ import TaskHeader from "./task/TaskHeader";
 import TaskContent from "./task/TaskContent";
 import TaskActionMenu from "./task/TaskActionMenu";
 import TaskEditModal from "./task/TaskEditModal";
+import ReadOnlyModal from "./task/ReadOnlyModal";
 
 // Importa stili e utility
 import { styles } from "./task/TaskStyles";
@@ -26,11 +27,14 @@ const Task = ({
   onTaskDelete,
   onTaskEdit,
   onTaskUncomplete,
+  isOwned = true,
+  permissionLevel = "READ_WRITE",
 }) => {
   // Stati
   const [expanded, setExpanded] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showReadOnlyModal, setShowReadOnlyModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
   
@@ -164,6 +168,13 @@ const Task = ({
 
   const handleEdit = () => {
     setShowModal(false);
+
+    // Check if user has permission to edit
+    if (!isOwned && permissionLevel === "READ_ONLY") {
+      setShowReadOnlyModal(true);
+      return;
+    }
+
     setShowEditModal(true);
   };
 
@@ -265,27 +276,34 @@ const Task = ({
   };
 
   const handleDelete = () => {
+    // Check if user has permission to delete
+    if (!isOwned && permissionLevel === "READ_ONLY") {
+      setShowModal(false);
+      setShowReadOnlyModal(true);
+      return;
+    }
+
     setIsDeleting(true);
     Alert.alert(
       "Elimina Task",
       `Sei sicuro di voler eliminare "${task.title}"?`,
       [
-        { 
-          text: "Annulla", 
+        {
+          text: "Annulla",
           style: "cancel",
           onPress: () => {
             setIsDeleting(false);
             setShowModal(false);
-          } 
+          }
         },
-        { 
-          text: "Elimina", 
-          style: "destructive", 
+        {
+          text: "Elimina",
+          style: "destructive",
           onPress: () => {
             setShowModal(false);
             animateTaskRemoval();
             setIsDeleting(false);
-          } 
+          }
         },
       ]
     );
@@ -386,11 +404,18 @@ const Task = ({
         />
 
         {/* Modal modifica task */}
-        <TaskEditModal 
+        <TaskEditModal
           visible={showEditModal}
           task={task}
           onClose={() => setShowEditModal(false)}
           onSave={handleSaveEdit}
+        />
+
+        {/* Modal sola lettura */}
+        <ReadOnlyModal
+          visible={showReadOnlyModal}
+          onClose={() => setShowReadOnlyModal(false)}
+          taskTitle={task.title}
         />
       </Animated.View>
     </Animated.View>

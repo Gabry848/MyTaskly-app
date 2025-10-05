@@ -14,6 +14,8 @@ import AddTask from '../AddTask';
 interface TaskListContainerProps {
   categoryName: string;
   categoryId: string;
+  isOwned?: boolean;
+  permissionLevel?: "READ_ONLY" | "READ_WRITE";
   Task: React.ComponentType<any>; // Componente Task
   taskService: {
     getTasks: (categoryId: string) => Promise<TaskType[]>;
@@ -28,6 +30,8 @@ interface TaskListContainerProps {
 export const TaskListContainer = ({
   categoryName,
   categoryId,
+  isOwned = true,
+  permissionLevel = "READ_WRITE",
   Task,
   taskService
 }: TaskListContainerProps) => {
@@ -525,6 +529,8 @@ export const TaskListContainer = ({
                   onTaskDelete={handleTaskDelete}
                   onTaskEdit={handleTaskEdit}
                   onTaskUncomplete={handleTaskUncomplete}
+                  isOwned={isOwned}
+                  permissionLevel={permissionLevel}
                 />
               );
             }}
@@ -558,6 +564,8 @@ export const TaskListContainer = ({
                     onTaskDelete={handleTaskDelete}
                     onTaskEdit={handleTaskEdit}
                     onTaskUncomplete={handleTaskUncomplete}
+                    isOwned={isOwned}
+                    permissionLevel={permissionLevel}
                   />
                 );
               }}
