@@ -107,7 +107,9 @@ const CategoryCard: React.FC<CategoryCardProps> = ({
         onPress={() => {
           navigation.navigate("TaskList", {
             categoryId: categoryId || title,
-            category_name: title
+            category_name: title,
+            isOwned: isOwned,
+            permissionLevel: permissionLevel
           });
         }}
       >

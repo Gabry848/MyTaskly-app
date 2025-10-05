@@ -20,7 +20,12 @@ export type RootStackParamList = {
   VerificationSuccess: { email: string; username: string; password: string };
   HomeTabs: undefined;
   Home20: undefined; // Nuova schermata Home2.0
-  TaskList: { categoryId: number | string; category_name: string };
+  TaskList: {
+    categoryId: number | string;
+    category_name: string;
+    isOwned?: boolean;
+    permissionLevel?: "READ_ONLY" | "READ_WRITE";
+  };
   Profile: undefined;
   Settings: undefined;
   AccountSettings: undefined;

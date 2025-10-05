@@ -14,11 +14,15 @@ type Props = {
 export function TaskList({ route }: Props) {
   const categoryName = route.params.category_name;
   const categoryId = route.params.categoryId;
-  
+  const isOwned = route.params.isOwned ?? true;
+  const permissionLevel = route.params.permissionLevel ?? "READ_WRITE";
+
   return (
-    <TaskListContainer 
+    <TaskListContainer
       categoryName={categoryName}
       categoryId={String(categoryId || categoryName)} // Converti in stringa
+      isOwned={isOwned}
+      permissionLevel={permissionLevel}
       Task={Task}
       taskService={{
         getTasks,
