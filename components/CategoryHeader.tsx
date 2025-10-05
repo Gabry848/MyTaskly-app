@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet, Image } from "react-native";
-import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
+import CategoryBadge from './CategoryBadge';
 
 interface CategoryHeaderProps {
   title: string;
@@ -9,6 +9,7 @@ interface CategoryHeaderProps {
   taskCount: number;
   isLoading: boolean;
   screenWidth: number;
+  badgeType?: 'shared' | 'readOnly' | 'canEdit';
 }
 
 const CategoryHeader: React.FC<CategoryHeaderProps> = ({
@@ -16,18 +17,16 @@ const CategoryHeader: React.FC<CategoryHeaderProps> = ({
   imageUrl,
   taskCount,
   isLoading,
-  screenWidth
+  screenWidth,
+  badgeType
 }) => {
   return (
     <View style={styles.headerContainer}>
-      <LinearGradient
-        colors={['rgba(11, 148, 153, 0.7)', 'rgba(11, 148, 153, 0.3)']}
+      <View
         style={[styles.imageContainer, {
-          width: screenWidth < 350 ? 40 : 50,
-          height: screenWidth < 350 ? 40 : 50,
+          width: screenWidth < 350 ? 48 : 56,
+          height: screenWidth < 350 ? 48 : 56,
         }]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
       >
         {imageUrl ? (
           <Image source={{ uri: imageUrl }} style={[styles.image, {
@@ -37,22 +36,28 @@ const CategoryHeader: React.FC<CategoryHeaderProps> = ({
         ) : (
           <MaterialIcons
             name="category"
-            size={screenWidth < 350 ? 20 : 24}
-            color="#fff"
-            style={{margin: screenWidth < 350 ? 6 : 8}}
+            size={screenWidth < 350 ? 28 : 32}
+            color="#000000"
           />
         )}
-      </LinearGradient>
+      </View>
 
       <View style={[styles.categoryContainer, {
         marginHorizontal: screenWidth < 350 ? 10 : 15,
       }]}>
-        <Text style={[styles.add, {
-          fontSize: screenWidth < 350 ? 16 : 18,
-          padding: screenWidth < 350 ? 3 : 5,
-        }]}>{title}</Text>
+        <View style={styles.titleRow}>
+          <Text style={[styles.add, {
+            fontSize: screenWidth < 350 ? 16 : 18,
+            padding: screenWidth < 350 ? 3 : 5,
+          }]}>{title}</Text>
+          {badgeType && (
+            <View style={styles.inlineBadgeWrapper}>
+              <CategoryBadge type={badgeType} />
+            </View>
+          )}
+        </View>
         <View style={styles.counterRow}>
-          <MaterialIcons name="check-circle" size={screenWidth < 350 ? 14 : 16} color="#4CAF50" />
+          <MaterialIcons name="check-circle-outline" size={screenWidth < 350 ? 14 : 16} color="#757575" />
           <Text style={[styles.title, {
             fontSize: screenWidth < 350 ? 12 : 14,
             marginLeft: screenWidth < 350 ? 4 : 6,
@@ -71,9 +76,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   imageContainer: {
-    width: 50,
-    height: 50,
+    width: 56,
+    height: 56,
     borderRadius: 12,
+    backgroundColor: '#E0E0E0',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -84,26 +90,36 @@ const styles = StyleSheet.create({
   },
   categoryContainer: {
     flex: 1,
-    marginHorizontal: 15, // Aumentato per coerenza con Home20
+    marginHorizontal: 16,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+  },
+  inlineBadgeWrapper: {
+    marginLeft: 6,
+    marginTop: 2,
   },
   add: {
     fontSize: 18,
-    fontWeight: "400", // Alleggerito per coerenza con Home20
-    padding: 5,
-    color: "#000000", // Nero puro come Home20
+    fontWeight: "600",
+    color: "#000000",
+    lineHeight: 24,
+    letterSpacing: -0.3,
     fontFamily: "System",
   },
   counterRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingStart: 5,
+    marginTop: 4,
   },
   title: {
     fontSize: 14,
-    color: "#666666", // Colore leggermente più morbido
-    marginLeft: 6, // Leggermente aumentato
+    color: "#616161",
+    marginLeft: 6,
     fontFamily: "System",
-    fontWeight: "300", // Più leggero per coerenza con Home20
+    fontWeight: "400",
   },
 });
 
