@@ -24,6 +24,7 @@ export interface CategoryType {
   // Campi per la condivisione
   is_shared?: boolean;
   owner_id?: number;
+  owner_name?: string; // Nome del proprietario (per categorie condivise)
   is_owned?: boolean;
   permission_level?: "READ_ONLY" | "READ_WRITE";
 }

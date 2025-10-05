@@ -28,14 +28,15 @@ export interface Task {
   start_time?: string; // Aggiunto
   end_time?: string;
   priority?: string;
-  category_name?: string;
+  category_name?: string; // Deprecato, mantenuto per retrocompatibilità
+  category_id?: string | number; // Nuovo campo preferito
   user?: string;
   isOptimistic?: boolean; // Per indicare se il task è in stato ottimistico (in attesa di conferma server)
   [key: string]: any; // per proprietà aggiuntive
 }
 
 // Funzione per ottenere tutti gli impegni filtrandoli per categoria (con cache)
-export async function getTasks(category_name?: string, useCache: boolean = true) {
+export async function getTasks(categoryIdentifier?: string | number, useCache: boolean = true) {
   try {
     // Controllo autenticazione prima di fare chiamate API
     const { checkAndRefreshAuth } = await import('./authService');
@@ -50,9 +51,11 @@ export async function getTasks(category_name?: string, useCache: boolean = true)
         console.log(`[TASK_SERVICE] getTasks: utente non loggato, ritornando ${cachedTasks.length} task dalla cache`);
 
         // Filtra per categoria se specificata
-        if (category_name) {
-          const filteredTasks = cachedTasks.filter(task => task.category_name === category_name);
-          console.log(`[TASK_SERVICE] getTasks: filtrati ${filteredTasks.length} task per categoria "${category_name}"`);
+        if (categoryIdentifier) {
+          const filteredTasks = cachedTasks.filter(task =>
+            task.category_id === categoryIdentifier || task.category_name === categoryIdentifier
+          );
+          console.log(`[TASK_SERVICE] getTasks: filtrati ${filteredTasks.length} task per categoria "${categoryIdentifier}"`);
           return filteredTasks;
         }
 
@@ -67,81 +70,83 @@ export async function getTasks(category_name?: string, useCache: boolean = true)
     // Se richiesto, prova prima dalla cache
     if (useCache) {
       const { cacheService } = getServices();
-      
+
       // Controlla e pulisce cache corrotta prima di usarla
       const cacheWasCleaned = await cacheService.checkAndFixCorruptedCache();
       if (cacheWasCleaned) {
         console.log('[TASK_SERVICE] Cache corrotta pulita, ricaricamento dall\'API...');
         // Forza il caricamento dall'API dopo aver pulito la cache
-        return getTasks(category_name, false);
+        return getTasks(categoryIdentifier, false);
       }
-      
+
       const cachedTasks = await getServices().cacheService.getCachedTasks();
       if (cachedTasks.length > 0) {
         console.log('[TASK_SERVICE] Usando dati dalla cache');
-        
+
         // Filtra per categoria se specificata
-        if (category_name) {
-          console.log(`[TASK_SERVICE] Filtraggio cache per categoria: "${category_name}"`);
-          console.log(`[TASK_SERVICE] Lunghezza nome categoria: ${category_name.length} caratteri`);
-          console.log(`[TASK_SERVICE] Codici caratteri categoria:`, category_name.split('').map(c => c.charCodeAt(0)));
+        if (categoryIdentifier !== undefined) {
+          console.log(`[TASK_SERVICE] Filtraggio cache per categoria: "${categoryIdentifier}"`);
           console.log(`[TASK_SERVICE] Task totali in cache:`, cachedTasks.length);
-          
-          // Log di tutti i task prima del filtraggio
-          cachedTasks.forEach((task, index) => {
-            console.log(`[TASK_SERVICE] Task ${index + 1}: titolo="${task.title}", categoria="${task.category_name}", status="${task.status}"`);
-            if (task.category_name) {
-              console.log(`[TASK_SERVICE] Task ${index + 1} categoria codici:`, task.category_name.split('').map(c => c.charCodeAt(0)));
-            }
-          });
-          
+
           const filteredTasks = cachedTasks.filter(task => {
-            const taskCategoryName = task.category_name;
-            const exactMatch = taskCategoryName === category_name;
-            
-            // Prova anche un confronto normalizzato
-            const normalizedTaskCategory = taskCategoryName?.trim().toLowerCase();
-            const normalizedSearchCategory = category_name?.trim().toLowerCase();
-            const normalizedMatch = normalizedTaskCategory === normalizedSearchCategory;
-            
-            const matches = exactMatch || normalizedMatch;
-            console.log(`[TASK_SERVICE] Confronto: "${taskCategoryName}" === "${category_name}" = ${exactMatch} (normalizzato: ${normalizedMatch})`);
-            return matches;
+            // Prova prima con category_id (preferito)
+            if (task.category_id !== undefined && task.category_id === categoryIdentifier) {
+              return true;
+            }
+            // Fallback su category_name per retrocompatibilità
+            if (typeof categoryIdentifier === 'string') {
+              const taskCategoryName = task.category_name;
+              const exactMatch = taskCategoryName === categoryIdentifier;
+              const normalizedTaskCategory = taskCategoryName?.trim().toLowerCase();
+              const normalizedSearchCategory = categoryIdentifier.trim().toLowerCase();
+              const normalizedMatch = normalizedTaskCategory === normalizedSearchCategory;
+              return exactMatch || normalizedMatch;
+            }
+            return false;
           });
-          
-          console.log(`[TASK_SERVICE] Task filtrati dalla cache per "${category_name}":`, filteredTasks.length);
-          filteredTasks.forEach((task, index) => {
-            console.log(`[TASK_SERVICE] Task filtrato ${index + 1}: titolo="${task.title}", status="${task.status}"`);
-          });
-          
+
+          console.log(`[TASK_SERVICE] Task filtrati dalla cache per "${categoryIdentifier}":`, filteredTasks.length);
+
           // Avvia sync in background
-          getServices().syncManager.addSyncOperation('GET_TASKS', { category_name });
-          
+          getServices().syncManager.addSyncOperation('GET_TASKS', { categoryIdentifier });
+
           return filteredTasks;
         }
-        
+
         // Avvia sync in background
         getServices().syncManager.addSyncOperation('GET_TASKS', {});
-        
+
         return cachedTasks;
       }
     }
-    
+
     // Fallback alla chiamata API diretta
     console.log('[TASK_SERVICE] Caricamento dalla API (cache vuota o disabilitata)');
-    
-    if (category_name) {
-      console.log(`[TASK_SERVICE] Richiesta API per categoria: "${category_name}"`);
-      // ogni spazio viene sostituito con %20
-      const encodedCategoryName = category_name.replace(/ /g, "%20");
-      console.log(`[TASK_SERVICE] Nome categoria codificato: "${encodedCategoryName}"`);
-      const response = await axios.get(`/tasks/${encodedCategoryName}`, {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-      console.log(`[TASK_SERVICE] Risposta API per categoria "${category_name}":`, response.data);
-      return response.data;
+
+    if (categoryIdentifier !== undefined) {
+      // Usa il nuovo endpoint con category_id se è un numero, altrimenti usa il vecchio endpoint con category_name
+      if (typeof categoryIdentifier === 'number' || !isNaN(Number(categoryIdentifier))) {
+        console.log(`[TASK_SERVICE] Richiesta API per category_id: ${categoryIdentifier}`);
+        const response = await axios.get(`/tasks/by-category-id/${categoryIdentifier}`, {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        console.log(`[TASK_SERVICE] Risposta API per category_id ${categoryIdentifier}:`, response.data);
+        return response.data;
+      } else {
+        // Fallback al vecchio endpoint per retrocompatibilità
+        console.log(`[TASK_SERVICE] Richiesta API per categoria (deprecato): "${categoryIdentifier}"`);
+        const encodedCategoryName = String(categoryIdentifier).replace(/ /g, "%20");
+        console.log(`[TASK_SERVICE] Nome categoria codificato: "${encodedCategoryName}"`);
+        const response = await axios.get(`/tasks/${encodedCategoryName}`, {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        console.log(`[TASK_SERVICE] Risposta API per categoria "${categoryIdentifier}":`, response.data);
+        return response.data;
+      }
     }
 
     const response = await axios.get(`/tasks/`, {
@@ -152,27 +157,33 @@ export async function getTasks(category_name?: string, useCache: boolean = true)
     return response.data;
   } catch (error) {
     console.error("Errore nel recupero dei task:", error);
-    
+
     // In caso di errore, prova a restituire i dati cached come fallback
     if (useCache) {
       console.log('[TASK_SERVICE] Errore API, tentativo fallback cache');
       const cachedTasks = await getServices().cacheService.getCachedTasks();
-      if (category_name) {
-        console.log(`[TASK_SERVICE] Fallback cache per categoria: "${category_name}"`);
+      if (categoryIdentifier !== undefined) {
+        console.log(`[TASK_SERVICE] Fallback cache per categoria: "${categoryIdentifier}"`);
         const filteredTasks = cachedTasks.filter(task => {
-          const taskCategoryName = task.category_name;
-          const exactMatch = taskCategoryName === category_name;
-          const normalizedTaskCategory = taskCategoryName?.trim().toLowerCase();
-          const normalizedSearchCategory = category_name?.trim().toLowerCase();
-          const normalizedMatch = normalizedTaskCategory === normalizedSearchCategory;
-          return exactMatch || normalizedMatch;
+          if (task.category_id !== undefined && task.category_id === categoryIdentifier) {
+            return true;
+          }
+          if (typeof categoryIdentifier === 'string') {
+            const taskCategoryName = task.category_name;
+            const exactMatch = taskCategoryName === categoryIdentifier;
+            const normalizedTaskCategory = taskCategoryName?.trim().toLowerCase();
+            const normalizedSearchCategory = categoryIdentifier.trim().toLowerCase();
+            const normalizedMatch = normalizedTaskCategory === normalizedSearchCategory;
+            return exactMatch || normalizedMatch;
+          }
+          return false;
         });
-        console.log(`[TASK_SERVICE] Task fallback per "${category_name}":`, filteredTasks.length);
+        console.log(`[TASK_SERVICE] Task fallback per "${categoryIdentifier}":`, filteredTasks.length);
         return filteredTasks;
       }
       return cachedTasks;
     }
-    
+
     return [];
   }
 }
@@ -251,16 +262,27 @@ export async function getAllTasks(useCache: boolean = true) {
       // Per ogni categoria, otteniamo i task
       for (const category of categories) {
         try {
-          console.log(`[getAllTasks] Recuperando task per categoria: "${category.name}"`);
-          const categoryTasks = await getTasks(category.name, false); // Non usare cache per singole categorie
+          // Usa category_id se disponibile, altrimenti fallback su category.name
+          const categoryIdentifier = category.category_id || category.id || category.name;
+          console.log(`[getAllTasks] Recuperando task per categoria: "${category.name}" (ID: ${categoryIdentifier})`);
+          const categoryTasks = await getTasks(categoryIdentifier, false); // Non usare cache per singole categorie
           console.log(`[getAllTasks] Task ricevuti per "${category.name}":`, categoryTasks);
-          
+
           if (Array.isArray(categoryTasks)) {
-            // Correggi i task che hanno category_name undefined o mancante
+            // Correggi i task che hanno category_name/category_id undefined o mancante
             const correctedTasks = categoryTasks.map(task => {
-              if (!task.category_name || task.category_name === 'undefined') {
-                console.log(`[getAllTasks] 🔧 Correggendo category_name per task "${task.title}" da undefined a "${category.name}"`);
-                return { ...task, category_name: category.name };
+              const needsCategoryIdFix = !task.category_id;
+              // Solo aggiusta category_name se category_id è anch'esso mancante
+              // (altrimenti potremmo sovrascrivere con un nome sbagliato per categorie condivise con lo stesso nome)
+              const needsCategoryNameFix = (!task.category_name || task.category_name === 'undefined') && needsCategoryIdFix;
+
+              if (needsCategoryNameFix || needsCategoryIdFix) {
+                console.log(`[getAllTasks] 🔧 Correggendo campi categoria per task "${task.title}"`);
+                return {
+                  ...task,
+                  category_name: needsCategoryNameFix ? category.name : task.category_name,
+                  category_id: needsCategoryIdFix ? (category.category_id || category.id) : task.category_id
+                };
               }
               return task;
             });
@@ -325,15 +347,21 @@ export async function updateTask(
     console.log(status)
     // Assicura che tutti i parametri richiesti siano inclusi
     // e che i valori nulli/undefined siano gestiti
-    const taskData = {
+    const taskData: any = {
       title: updatedTask.title,
       description: updatedTask.description || null, // Invia null se non definito
       start_time: updatedTask.start_time || null, // Invia null se non definito
       end_time: updatedTask.end_time || null,     // Invia null se non definito
       priority: updatedTask.priority || null,   // Invia null se non definito
       status: status,
-      category_name: updatedTask.category_name || null // Invia null se non definito
     };
+
+    // Usa category_id se disponibile (preferito), altrimenti fallback su category_name
+    if (updatedTask.category_id !== undefined) {
+      taskData.category_id = updatedTask.category_id;
+    } else if (updatedTask.category_name !== undefined) {
+      taskData.category_name = updatedTask.category_name;
+    }
 
     console.log("Updating task with data:", taskData); // Log per debug
 
@@ -582,28 +610,34 @@ export async function addTask(task: Task) {
         task.priority = task.priority === 1 ? 'Bassa' : task.priority === 2 ? 'Media' : 'Alta';
       }
     }
-    
+
     // Assicurati che le date siano nel formato corretto
     const startTime = task.start_time ? new Date(task.start_time) : new Date();
     const endTime = task.end_time ? new Date(task.end_time) : null;
-    
+
     // Validazione: end_time deve essere successiva a start_time
     if (endTime && endTime <= startTime) {
       console.warn("⚠️ ATTENZIONE: end_time è precedente o uguale a start_time");
       console.warn("start_time:", startTime.toISOString());
       console.warn("end_time:", endTime.toISOString());
     }
-    
-    const data = {
+
+    const data: any = {
       title: task.title,
       description: task.description || "",
       start_time: startTime.toISOString(),
       end_time: endTime ? endTime.toISOString() : null,
       priority: task.priority,
       status: task.status || "In sospeso",
-      category_name: task.category_name,
       user: task.user || username,
     };
+
+    // Usa category_id se disponibile, altrimenti fallback su category_name
+    if (task.category_id !== undefined) {
+      data.category_id = task.category_id;
+    } else if (task.category_name !== undefined) {
+      data.category_name = task.category_name;
+    }
     
     // Genera un ID temporaneo per il task locale
     const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;

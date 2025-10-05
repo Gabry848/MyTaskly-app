@@ -135,8 +135,13 @@ export const TaskListContainer = ({
   // Setup listeners per aggiornamenti task in tempo reale
   useEffect(() => {
     const handleTaskAdded = (newTask: TaskType) => {
-      // Solo aggiorna se il task appartiene a questa categoria
-      if (newTask.category_name === categoryName || newTask.category_name === categoryId) {
+      // Solo aggiorna se il task appartiene a questa categoria (usa category_id se disponibile)
+      const taskBelongsToCategory =
+        (newTask.category_id && newTask.category_id.toString() === categoryId.toString()) ||
+        newTask.category_name === categoryName ||
+        newTask.category_name === categoryId;
+
+      if (taskBelongsToCategory) {
         console.log('[TASK_LIST_CONTAINER] Task added event received for category:', categoryName, newTask.title);
 
         // Normalizza il nuovo task
