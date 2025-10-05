@@ -1,55 +1,69 @@
 import React from "react";
-import { TouchableOpacity, Text, StyleSheet } from "react-native";
+import { Pressable, StyleSheet, Platform } from "react-native";
 import { MaterialIcons } from '@expo/vector-icons';
 
 interface AddTaskButtonProps {
   onPress: () => void;
   screenWidth: number;
+  categoryTitle?: string;
 }
 
-const AddTaskButton: React.FC<AddTaskButtonProps> = ({ onPress, screenWidth }) => {
+const AddTaskButton: React.FC<AddTaskButtonProps> = ({ onPress, screenWidth, categoryTitle }) => {
   return (
-    <TouchableOpacity
-      style={[styles.controlsContainer, {
-        paddingVertical: screenWidth < 350 ? 8 : 10,
-        paddingHorizontal: screenWidth < 350 ? 12 : 16,
-        marginTop: screenWidth < 320 ? 8 : 0,
-      }]}
+    <Pressable
+      accessible={true}
+      accessibilityLabel="Aggiungi nuova attività"
+      accessibilityRole="button"
+      accessibilityHint={categoryTitle ? `Aggiungi una nuova attività alla categoria ${categoryTitle}` : "Aggiungi una nuova attività"}
+      style={({ pressed }) => [
+        styles.controlsContainer,
+        {
+          paddingVertical: screenWidth < 350 ? 12 : 12,
+          paddingHorizontal: screenWidth < 350 ? 12 : 12,
+          marginTop: screenWidth < 320 ? 8 : 0,
+        },
+        pressed && styles.pressed,
+      ]}
       onPress={onPress}
     >
-      <MaterialIcons name="add-task" size={18} color="#000000" />
-    </TouchableOpacity>
+      {({ pressed }) => (
+        <MaterialIcons
+          name="add-task"
+          size={20}
+          color={pressed ? "#424242" : "#000000"}
+        />
+      )}
+    </Pressable>
   );
 };
 
 const styles = StyleSheet.create({
   controlsContainer: {
-    flexDirection: 'row',
+    minWidth: 44,
+    minHeight: 44,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#f0f0f0", // Stesso colore del send button di Home20
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 20, // Stesso stile dei bottoni di Home20
-    borderWidth: 1.5,
-    borderColor: "#e1e5e9", // Stesso colore del bordo dell'input di Home20
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    backgroundColor: "#F5F5F5",
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 6,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
-  addButtonText: {
-    color: '#000000', // Nero come Home20
-    fontWeight: '400', // Più leggero per coerenza con Home20
-    fontSize: 14,
-    fontFamily: "System",
-  },
-  icon: {
-    marginLeft: 6,
+  pressed: {
+    backgroundColor: "#EEEEEE",
+    borderColor: "#BDBDBD",
   },
 });
 
