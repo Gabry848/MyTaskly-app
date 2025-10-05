@@ -17,6 +17,7 @@ interface CategoryType {
   // Campi per la condivisione
   is_shared?: boolean;
   owner_id?: number;
+  owner_name?: string; // Nome del proprietario (per categorie condivise)
   is_owned?: boolean;
   permission_level?: "READ_ONLY" | "READ_WRITE";
 }
@@ -93,6 +94,7 @@ const CategoryView = forwardRef<CategoryViewRef, CategoryViewProps>(({
               categoryId={category.category_id || category.id}
               isShared={category.is_shared}
               isOwned={category.is_owned}
+              ownerName={category.owner_name}
               permissionLevel={category.permission_level}
               onDelete={onCategoryDeleted}
               onEdit={onCategoryEdited}

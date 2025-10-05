@@ -51,13 +51,15 @@ const CategoryOverview: React.FC<CategoryOverviewProps> = ({
         // Crea un array di promesse per chiamate parallele
         const categoryPromises = categories.map(async (category) => {
           try {
-            const tasksData = await getTasks(category.name);
-            
+            // Usa category.id se disponibile, altrimenti fallback su category.name
+            const categoryIdentifier = category.id || category.name;
+            const tasksData = await getTasks(categoryIdentifier);
+
             // Filtrare i task per quelli non completati (come in Category.tsx)
-            const incompleteTasks = tasksData.filter((task: Task) => 
+            const incompleteTasks = tasksData.filter((task: Task) =>
               task.status !== "Completato" && task.status !== "Completed"
             );
-            
+
             return {
               ...category,
               taskCount: incompleteTasks.length
