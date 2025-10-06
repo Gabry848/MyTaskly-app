@@ -145,24 +145,33 @@ const Task = ({
 
   const handleToggleComplete = async () => {
     try {
+      // Use task_id if available, otherwise fallback to id
+      const taskId = task.task_id || task.id;
+
+      if (!taskId) {
+        console.error("Errore: task senza ID valido", task);
+        Alert.alert("Errore", "Task non ha un ID valido.");
+        return;
+      }
+
       if (isCompleted) {
         // Se il task è già completato, annulliamo il completamento
         if (onTaskUncomplete) {
-          await onTaskUncomplete(task.id);
+          await onTaskUncomplete(taskId);
         } else {
           Alert.alert("Riaperto", `Task "${task.title}" riaperto.`);
         }
       } else {
         // Se il task non è completato, lo completiamo
         if (onTaskComplete) {
-          await onTaskComplete(task.id);
+          await onTaskComplete(taskId);
         } else {
           Alert.alert("Completato", `Task "${task.title}" segnato come completato.`);
         }
       }
     } catch (error) {
-      console.error("Errore durante la modifica dello stato del task:", error);
-      Alert.alert("Errore", "Impossibile modificare lo stato del task. Riprova.");
+      console.error("Errore nel completamento del task:", error);
+      Alert.alert("Errore", "Impossibile completare il task. Riprova.");
     }
   };
 
@@ -202,7 +211,8 @@ const Task = ({
       
       if (hasChanged) {
         console.log("Salvataggio modifiche per task:", updatedTask);
-        onTaskEdit(task.id, updatedTask);
+        const taskId = task.task_id || task.id;
+        onTaskEdit(taskId, updatedTask);
       } else {
         console.log("Nessuna modifica rilevata");
       }
@@ -268,8 +278,9 @@ const Task = ({
         }),
       ]).start(() => {
         if (onTaskDelete) {
-          console.log("Eliminazione dell'impegno con ID:", task.id);
-          onTaskDelete(task.id);
+          const taskId = task.task_id || task.id;
+          console.log("Eliminazione dell'impegno con ID:", taskId);
+          onTaskDelete(taskId);
         }
       });
     });
@@ -316,9 +327,17 @@ const Task = ({
 
   const handleReopen = async () => {
     try {
+      const taskId = task.task_id || task.id;
+
+      if (!taskId) {
+        console.error("Errore: task senza ID valido", task);
+        Alert.alert("Errore", "Task non ha un ID valido.");
+        return;
+      }
+
       // Riapri il task completato
       if (onTaskUncomplete) {
-        await onTaskUncomplete(task.id);
+        await onTaskUncomplete(taskId);
       } else {
         Alert.alert("Riaperto", `Task "${task.title}" riaperto.`);
       }

@@ -108,13 +108,19 @@ export async function getTasks(categoryIdentifier?: string | number, useCache: b
           console.log(`[TASK_SERVICE] Task filtrati dalla cache per "${categoryIdentifier}":`, filteredTasks.length);
 
           // Avvia sync in background
-          getServices().syncManager.addSyncOperation('GET_TASKS', { categoryIdentifier });
+          const { syncManager } = getServices();
+          if (syncManager) {
+            syncManager.addSyncOperation('GET_TASKS', { categoryIdentifier });
+          }
 
           return filteredTasks;
         }
 
         // Avvia sync in background
-        getServices().syncManager.addSyncOperation('GET_TASKS', {});
+        const { syncManager } = getServices();
+        if (syncManager) {
+          syncManager.addSyncOperation('GET_TASKS', {});
+        }
 
         return cachedTasks;
       }
@@ -245,7 +251,10 @@ export async function getAllTasks(useCache: boolean = true) {
         console.log('[TASK_SERVICE] getAllTasks: usando dati dalla cache');
 
         // Avvia sync in background
-        getServices().syncManager.addSyncOperation('GET_TASKS', {});
+        const { syncManager } = getServices();
+        if (syncManager) {
+          syncManager.addSyncOperation('GET_TASKS', {});
+        }
 
         return cachedTasks;
       }
@@ -384,13 +393,18 @@ export async function updateTask(
       return response.data;
     } catch (networkError) {
       console.log('[TASK_SERVICE] Errore di rete, salvataggio offline per updateTask', networkError);
-      
+
       // Salva la modifica offline
-      await getServices().syncManager.saveOfflineChange('UPDATE', 'TASK', {
-        id: taskId,
-        task_id: taskId,
-        ...taskData
-      });
+      const { syncManager } = getServices();
+      if (syncManager) {
+        await syncManager.saveOfflineChange('UPDATE', 'TASK', {
+          id: taskId,
+          task_id: taskId,
+          ...taskData
+        });
+      } else {
+        console.error("[TASK_SERVICE] SyncManager non disponibile per salvare modifica offline");
+      }
       
       // Emetti evento anche per task offline
       console.log('[TASK_SERVICE] Emitting TASK_UPDATED event for offline task:', fullUpdatedTask.title);
@@ -436,10 +450,27 @@ export async function completeTask(taskId: string | number) {
     // 2. CONFERMA DAL SERVER: Prova a confermare con il server
     try {
       console.log("[TASK_SERVICE] Confermando completamento con il server...");
-      
-      const response = await axios.put(`/tasks/${taskId}`, {
-        status: "Completato"
-      }, {
+
+      // Invia tutti i campi necessari al server, non solo lo status
+      const updateData = {
+        title: taskToUpdate.title,
+        description: taskToUpdate.description || "",
+        status: "Completato",
+        priority: taskToUpdate.priority || "Bassa",
+        start_time: taskToUpdate.start_time,
+        end_time: taskToUpdate.end_time,
+      };
+
+      // Aggiungi category_id se presente, altrimenti category_name
+      if (taskToUpdate.category_id) {
+        updateData.category_id = taskToUpdate.category_id;
+      } else if (taskToUpdate.category_name && taskToUpdate.category_name !== 'undefined') {
+        updateData.category_name = taskToUpdate.category_name;
+      }
+
+      console.log("[TASK_SERVICE] Dati inviati al server:", updateData);
+
+      const response = await axios.put(`/tasks/${taskId}`, updateData, {
         headers: {
           "Content-Type": "application/json",
         },
@@ -463,11 +494,16 @@ export async function completeTask(taskId: string | number) {
       emitTaskUpdated(rollbackTask);
       
       // Salva come modifica offline per retry successivo
-      await getServices().syncManager.saveOfflineChange('UPDATE', 'TASK', {
-        id: taskId,
-        task_id: taskId,
-        status: "Completato"
-      });
+      const { syncManager } = getServices();
+      if (syncManager) {
+        await syncManager.saveOfflineChange('UPDATE', 'TASK', {
+          id: taskId,
+          task_id: taskId,
+          status: "Completato"
+        });
+      } else {
+        console.error("[TASK_SERVICE] SyncManager non disponibile per salvare modifica offline");
+      }
       
       console.log("[TASK_SERVICE] Rollback completato, operazione salvata per sync offline");
       
@@ -512,10 +548,27 @@ export async function disCompleteTask(taskId: string | number) {
     // 2. CONFERMA DAL SERVER: Prova a confermare con il server
     try {
       console.log("[TASK_SERVICE] Confermando riapertura con il server...");
-      
-      const response = await axios.put(`/tasks/${taskId}`, {
-        status: "In sospeso"
-      }, {
+
+      // Invia tutti i campi necessari al server, non solo lo status
+      const updateData = {
+        title: taskToUpdate.title,
+        description: taskToUpdate.description || "",
+        status: "In sospeso",
+        priority: taskToUpdate.priority || "Bassa",
+        start_time: taskToUpdate.start_time,
+        end_time: taskToUpdate.end_time,
+      };
+
+      // Aggiungi category_id se presente, altrimenti category_name
+      if (taskToUpdate.category_id) {
+        updateData.category_id = taskToUpdate.category_id;
+      } else if (taskToUpdate.category_name && taskToUpdate.category_name !== 'undefined') {
+        updateData.category_name = taskToUpdate.category_name;
+      }
+
+      console.log("[TASK_SERVICE] Dati inviati al server per riapertura:", updateData);
+
+      const response = await axios.put(`/tasks/${taskId}`, updateData, {
         headers: {
           "Content-Type": "application/json",
         },
@@ -537,13 +590,18 @@ export async function disCompleteTask(taskId: string | number) {
       const rollbackTask = { ...optimisticTask, status: previousStatus };
       await cacheService.updateTaskInCache(rollbackTask);
       emitTaskUpdated(rollbackTask);
-      
+
       // Salva come modifica offline per retry successivo
-      await getServices().syncManager.saveOfflineChange('UPDATE', 'TASK', {
-        id: taskId,
-        task_id: taskId,
-        status: "In sospeso"
-      });
+      const { syncManager } = getServices();
+      if (syncManager) {
+        await syncManager.saveOfflineChange('UPDATE', 'TASK', {
+          id: taskId,
+          task_id: taskId,
+          status: "In sospeso"
+        });
+      } else {
+        console.error("[TASK_SERVICE] SyncManager non disponibile per salvare modifica offline");
+      }
       
       console.log("[TASK_SERVICE] Rollback completato, operazione salvata per sync offline");
       
@@ -582,10 +640,15 @@ export async function deleteTask(taskId: string | number) {
       console.log('[TASK_SERVICE] Errore di rete, salvataggio offline per deleteTask', networkError);
 
       // Salva l'eliminazione offline
-      await getServices().syncManager.saveOfflineChange('DELETE', 'TASK', {
-        id: taskId,
-        task_id: taskId
-      });
+      const { syncManager } = getServices();
+      if (syncManager) {
+        await syncManager.saveOfflineChange('DELETE', 'TASK', {
+          id: taskId,
+          task_id: taskId
+        });
+      } else {
+        console.error("[TASK_SERVICE] SyncManager non disponibile per salvare modifica offline");
+      }
       
       // Emetti evento anche per eliminazione offline
       console.log('[TASK_SERVICE] Emitting TASK_DELETED event for offline deletion:', taskId);
@@ -685,7 +748,12 @@ export async function addTask(task: Task) {
       console.log('[TASK_SERVICE] Errore di rete, salvataggio offline per addTask', networkError);
 
       // Salva l'aggiunta offline
-      await getServices().syncManager.saveOfflineChange('CREATE', 'TASK', data);
+      const { syncManager } = getServices();
+      if (syncManager) {
+        await syncManager.saveOfflineChange('CREATE', 'TASK', data);
+      } else {
+        console.error("[TASK_SERVICE] SyncManager non disponibile per salvare modifica offline");
+      }
       
       // Emetti evento anche per task offline
       console.log('[TASK_SERVICE] Emitting TASK_ADDED event for offline task:', tempTask.title);
@@ -786,7 +854,10 @@ export async function getCategories(useCache: boolean = true) {
         console.log('[TASK_SERVICE] Usando categorie dalla cache');
 
         // Avvia sync in background
-        getServices().syncManager.addSyncOperation('GET_TASKS', {});
+        const { syncManager } = getServices();
+        if (syncManager) {
+          syncManager.addSyncOperation('GET_TASKS', {});
+        }
 
         return cachedCategories;
       }
