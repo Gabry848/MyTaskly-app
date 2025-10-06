@@ -122,16 +122,27 @@ class TaskCacheService {
   async saveTasks(tasks: Task[], categories: Category[] = []): Promise<void> {
     try {
       console.log(`[CACHE] Salvando ${tasks.length} task in cache...`);
-      
-      // Carica i task attuali dalla cache per confronto
-      const currentTasks = await this.getCachedTasks();
-      
+
+      // Carica i task attuali dalla cache per confronto e per preservare category_name
+      // IMPORTANTE: Leggi direttamente dalla cache senza deduplicazione per evitare loop
+      let currentTasks: Task[] = [];
+      try {
+        const cachedData = await AsyncStorage.getItem(CACHE_KEYS.TASKS_CACHE);
+        if (cachedData) {
+          const cache: TasksCache = JSON.parse(cachedData);
+          currentTasks = cache.tasks || [];
+        }
+      } catch (error) {
+        console.warn('[CACHE] Errore nel caricamento task per confronto:', error);
+      }
+      const currentTasksMap = new Map(currentTasks.map(t => [t.task_id || t.id, t]));
+
       // Identifica task rimossi (presenti in cache ma non nei nuovi dati)
       const newTaskIds = new Set(tasks.map(task => task.task_id || task.id));
-      const removedTasks = currentTasks.filter(task => 
+      const removedTasks = currentTasks.filter(task =>
         !newTaskIds.has(task.task_id) && !newTaskIds.has(task.id)
       );
-      
+
       if (removedTasks.length > 0) {
         console.log(`[CACHE] 🗑️ RIMOZIONE TASK FANTASMA: ${removedTasks.length} task rimossi dal server`);
         removedTasks.forEach(removedTask => {
@@ -142,17 +153,38 @@ class TaskCacheService {
           });
         });
       }
-      
+
+      // Preserva category_name dai task esistenti se i nuovi task lo hanno undefined
+      const tasksToSave = tasks.map(task => {
+        const taskId = task.task_id || task.id;
+        const existingTask = currentTasksMap.get(taskId);
+
+        // Se il task ha category_name undefined ma esiste in cache con un valore valido, preservalo
+        if ((!task.category_name || task.category_name === 'undefined') &&
+            existingTask &&
+            existingTask.category_name &&
+            existingTask.category_name !== 'undefined') {
+          console.log(`[CACHE] 🔧 Preservando category_name per task "${task.title}": "${existingTask.category_name}"`);
+          return {
+            ...task,
+            category_name: existingTask.category_name,
+            category_id: task.category_id || existingTask.category_id
+          };
+        }
+
+        return task;
+      });
+
       // Log di ogni task prima del salvataggio
-      tasks.forEach((task, index) => {
+      tasksToSave.forEach((task, index) => {
         console.log(`[CACHE] Salvando Task ${index + 1}: titolo="${task.title}", categoria="${task.category_name}", status="${task.status}"`);
         if (task.category_name === undefined || task.category_name === "undefined") {
           console.warn(`[CACHE] ⚠️ ATTENZIONE: Task "${task.title}" ha category_name undefined!`);
         }
       });
-      
+
       const cache: TasksCache = {
-        tasks,
+        tasks: tasksToSave,
         categories,
         lastSync: Date.now(),
         version: this.currentCacheVersion
@@ -160,8 +192,8 @@ class TaskCacheService {
 
       await AsyncStorage.setItem(CACHE_KEYS.TASKS_CACHE, JSON.stringify(cache));
       await AsyncStorage.setItem(CACHE_KEYS.LAST_SYNC_TIMESTAMP, cache.lastSync.toString());
-      
-      console.log(`[CACHE] ✅ Salvati ${tasks.length} task e ${categories.length} categorie in cache`);
+
+      console.log(`[CACHE] ✅ Salvati ${tasksToSave.length} task e ${categories.length} categorie in cache`);
       if (removedTasks.length > 0) {
         console.log(`[CACHE] 🧹 Cache pulita: ${removedTasks.length} task fantasma rimossi`);
       }
@@ -203,18 +235,19 @@ class TaskCacheService {
           (tempId && (task.id === tempId || task.task_id === tempId));
 
         if (isMatch) {
-          console.log(`[CACHE] 🗑️ Rimosso duplicato task: "${task.title}" (ID: ${task.task_id || task.id}, status: ${task.status})`);
+          console.log(`[CACHE] 🗑️ Rimosso task esistente: "${task.title}" (ID: ${task.task_id || task.id}, status: ${task.status})`);
         }
 
         return !isMatch;
       });
 
-      console.log(`[CACHE] Task rimanenti dopo filtro: ${filteredTasks.length}`);
+      console.log(`[CACHE] Task rimanenti dopo rimozione duplicati: ${filteredTasks.length}`);
 
       // Se non abbiamo trovato nessun match ma il task ha un ID del server,
       // prova a trovare un task temporaneo con stesso titolo/categoria
       if (filteredTasks.length === cachedTasks.length &&
           updatedTask.task_id &&
+          updatedTask.id &&
           !updatedTask.id.toString().startsWith('temp_')) {
         filteredTasks = filteredTasks.filter(task => {
           const isMatch = task.id &&
@@ -233,9 +266,20 @@ class TaskCacheService {
       // Rimuovi il tempId prima di salvare definitivamente
       const { tempId: _, ...cleanedTask } = updatedTask as any;
 
-      // Aggiungi il task aggiornato (ora unico)
-      filteredTasks.push(cleanedTask);
-      console.log(`[CACHE] ✅ Task aggiornato e salvato (totale duplicati rimossi: ${cachedTasks.length - filteredTasks.length + 1})`);
+      // Aggiungi il task aggiornato solo se NON è completato
+      // I task completati non devono essere salvati nella cache per evitare confusione
+      const isCompletedTask = cleanedTask.status?.toLowerCase() === 'completato' || cleanedTask.status?.toLowerCase() === 'completed';
+
+      if (isCompletedTask) {
+        console.log(`[CACHE] ⚠️ Task completato NON aggiunto alla cache (sarà rimosso): "${cleanedTask.title}"`);
+        // Il task viene solo rimosso dalla cache (già fatto dal filtro sopra), non lo riaggiugiamo
+      } else {
+        // Aggiungi il task aggiornato se non è completato
+        filteredTasks.push(cleanedTask);
+        console.log(`[CACHE] ✅ Task aggiornato e salvato in cache`);
+      }
+
+      console.log(`[CACHE] Task totali in cache dopo l'update: ${filteredTasks.length} (duplicati rimossi: ${cachedTasks.length - filteredTasks.length})`);
 
       const categories = await this.getCachedCategories();
       await this.saveTasks(filteredTasks, categories);

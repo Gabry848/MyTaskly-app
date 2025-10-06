@@ -281,12 +281,10 @@ export async function getAllTasks(useCache: boolean = true) {
             // Correggi i task che hanno category_name/category_id undefined o mancante
             const correctedTasks = categoryTasks.map(task => {
               const needsCategoryIdFix = !task.category_id;
-              // Solo aggiusta category_name se category_id è anch'esso mancante
-              // (altrimenti potremmo sovrascrivere con un nome sbagliato per categorie condivise con lo stesso nome)
-              const needsCategoryNameFix = (!task.category_name || task.category_name === 'undefined') && needsCategoryIdFix;
+              const needsCategoryNameFix = !task.category_name || task.category_name === 'undefined';
 
               if (needsCategoryNameFix || needsCategoryIdFix) {
-                console.log(`[getAllTasks] 🔧 Correggendo campi categoria per task "${task.title}"`);
+                console.log(`[getAllTasks] 🔧 Correggendo campi categoria per task "${task.title}" (category_name: ${needsCategoryNameFix}, category_id: ${needsCategoryIdFix})`);
                 return {
                   ...task,
                   category_name: needsCategoryNameFix ? category.name : task.category_name,
@@ -477,13 +475,24 @@ export async function completeTask(taskId: string | number) {
       });
       
       console.log("[TASK_SERVICE] ✅ Completamento confermato dal server:", response.data);
-      
+
       // Aggiorna con i dati definitivi dal server, rimuovendo il flag optimistic
-      const finalTask = { ...optimisticTask, ...response.data, isOptimistic: false };
+      // IMPORTANTE: Preserva i campi del task originale se il server non li restituisce
+      const finalTask = {
+        ...optimisticTask,
+        ...response.data,
+        // Assicurati che category_name e category_id siano preservati
+        category_name: response.data.category_name || optimisticTask.category_name,
+        category_id: response.data.category_id || optimisticTask.category_id,
+        isOptimistic: false
+      };
       await cacheService.updateTaskInCache(finalTask);
-      emitTaskUpdated(finalTask);
-      
-      return response.data || optimisticTask;
+
+      // NON emettere un secondo evento perché l'optimistic update è già stato emesso
+      // e lo status non è cambiato (era già "Completato")
+      console.log("[TASK_SERVICE] Task confermato dal server, cache aggiornata (evento già emesso in fase optimistic)");
+
+      return finalTask;
       
     } catch (serverError) {
       console.error("[TASK_SERVICE] ❌ Errore server nel completamento, rollback:", serverError);
@@ -575,13 +584,24 @@ export async function disCompleteTask(taskId: string | number) {
       });
       
       console.log("[TASK_SERVICE] ✅ Riapertura confermata dal server:", response.data);
-      
+
       // Aggiorna con i dati definitivi dal server, rimuovendo il flag optimistic
-      const finalTask = { ...optimisticTask, ...response.data, isOptimistic: false };
+      // IMPORTANTE: Preserva i campi del task originale se il server non li restituisce
+      const finalTask = {
+        ...optimisticTask,
+        ...response.data,
+        // Assicurati che category_name e category_id siano preservati
+        category_name: response.data.category_name || optimisticTask.category_name,
+        category_id: response.data.category_id || optimisticTask.category_id,
+        isOptimistic: false
+      };
       await cacheService.updateTaskInCache(finalTask);
-      emitTaskUpdated(finalTask);
-      
-      return response.data || optimisticTask;
+
+      // NON emettere un secondo evento perché l'optimistic update è già stato emesso
+      // e lo status non è cambiato (era già "In sospeso")
+      console.log("[TASK_SERVICE] Task confermato dal server, cache aggiornata (evento già emesso in fase optimistic)");
+
+      return finalTask;
       
     } catch (serverError) {
       console.error("[TASK_SERVICE] ❌ Errore server nella riapertura, rollback:", serverError);

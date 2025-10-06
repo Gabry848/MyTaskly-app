@@ -175,32 +175,62 @@ const CalendarView: React.FC = () => {
     };
 
     const handleTaskUpdated = (updatedTask: TaskType) => {
-      console.log('[CALENDAR] Task updated event received:', updatedTask.title);
-      
+      console.log('[CALENDAR] ===================== TASK UPDATED EVENT =====================');
+      console.log('[CALENDAR] Task updated:', updatedTask.title);
+      console.log('[CALENDAR] Task ID:', updatedTask.id, 'task_id:', updatedTask.task_id);
+      console.log('[CALENDAR] Task status:', updatedTask.status);
+      console.log('[CALENDAR] Task category:', updatedTask.category_name);
+
       setTasks(prevTasks => {
-        const updatedTasks = prevTasks.map(task => {
-          // Trova il task by ID o task_id
-          const isMatch = (task.id === updatedTask.id) || 
-                         (task.task_id === updatedTask.task_id) ||
-                         (updatedTask.id && task.task_id === updatedTask.id) ||
-                         (updatedTask.task_id && task.id === updatedTask.task_id);
-          
+        console.log('[CALENDAR] Current tasks count BEFORE update:', prevTasks.length);
+        prevTasks.forEach((t, i) => {
+          console.log(`[CALENDAR]   Task ${i + 1}: "${t.title}" (status: ${t.status})`);
+        });
+
+        // Controlla se il task aggiornato è completato
+        const isUpdatedTaskCompleted = filterIncompleteTasks([updatedTask]).length === 0;
+        console.log('[CALENDAR] Is updated task completed?', isUpdatedTaskCompleted);
+
+        if (isUpdatedTaskCompleted) {
+          // Se il task aggiornato è completato, rimuovilo dalla lista
+          console.log('[CALENDAR] Rimuovendo task completato dalla vista:', updatedTask.title);
+          const updatedTaskIdToMatch = updatedTask.task_id || updatedTask.id;
+          console.log('[CALENDAR] ID del task da rimuovere:', updatedTaskIdToMatch);
+
+          const newTasks = prevTasks.filter(task => {
+            const taskIdToCompare = task.task_id || task.id;
+            const isMatch = taskIdToCompare && updatedTaskIdToMatch && (taskIdToCompare === updatedTaskIdToMatch);
+
+            console.log(`[CALENDAR]   Comparing task "${task.title}" (ID: ${taskIdToCompare}) with updated task ID ${updatedTaskIdToMatch}: match=${isMatch}`);
+
+            if (isMatch) {
+              console.log('[CALENDAR]   ❌ Removing:', task.title);
+            } else {
+              console.log('[CALENDAR]   ✅ Keeping:', task.title);
+            }
+            return !isMatch;
+          });
+          console.log('[CALENDAR] Tasks count AFTER removal:', newTasks.length);
+          return newTasks;
+        }
+
+        // Altrimenti, aggiorna il task nella lista
+        console.log('[CALENDAR] Aggiornando task (non completato)');
+        const updatedTaskIdToMatch = updatedTask.task_id || updatedTask.id;
+
+        const newTasks = prevTasks.map(task => {
+          const taskIdToCompare = task.task_id || task.id;
+          const isMatch = taskIdToCompare && updatedTaskIdToMatch && (taskIdToCompare === updatedTaskIdToMatch);
+
           if (isMatch) {
+            console.log('[CALENDAR]   ✏️ Updating:', task.title);
             return { ...task, ...updatedTask };
           }
           return task;
         });
-        
-        // Filtra i task per rimuovere quelli completati
-        const filteredTasks = updatedTasks.filter(task => {
-          const keepTask = filterIncompleteTasks([task]).length > 0;
-          if (!keepTask) {
-            console.log('[CALENDAR] Rimuovendo task completato dalla vista:', task.title);
-          }
-          return keepTask;
-        });
-        
-        return filteredTasks;
+        console.log('[CALENDAR] Tasks count AFTER update:', newTasks.length);
+        console.log('[CALENDAR] ================================================================');
+        return newTasks;
       });
     };
 
@@ -274,11 +304,8 @@ const CalendarView: React.FC = () => {
   const handleTaskComplete = async (taskId: number | string) => {
     try {
       await completeTask(taskId);
-      setTasks(prev => prev.map(task => 
-        (task.id === taskId || task.task_id === taskId) 
-          ? { ...task, status: "Completato", completed: true } 
-          : task
-      ));
+      // Non aggiornare manualmente lo stato - l'evento TASK_UPDATED lo farà automaticamente
+      console.log("[CALENDAR] Task completato, attendendo evento per aggiornamento UI");
     } catch (error) {
       console.error("Errore nel completamento del task:", error);
       Alert.alert("Errore", "Impossibile completare il task. Riprova.");
@@ -289,11 +316,8 @@ const CalendarView: React.FC = () => {
   const handleTaskUncomplete = async (taskId: number | string) => {
     try {
       await disCompleteTask(taskId);
-      setTasks(prev => prev.map(task => 
-        (task.id === taskId || task.task_id === taskId) 
-          ? { ...task, status: "In sospeso", completed: false } 
-          : task
-      ));
+      // Non aggiornare manualmente lo stato - l'evento TASK_UPDATED lo farà automaticamente
+      console.log("[CALENDAR] Task riaperto, attendendo evento per aggiornamento UI");
     } catch (error) {
       console.error("Errore nell'annullamento del completamento del task:", error);
       Alert.alert("Errore", "Impossibile riaprire il task. Riprova.");
