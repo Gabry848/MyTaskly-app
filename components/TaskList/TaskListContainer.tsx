@@ -516,14 +516,11 @@ export const TaskListContainer = ({
                 <Task
                   key={`task-${taskId}`}
                   task={{
+                    ...item,
                     id: taskId,
-                    title: item.title,
-                    description: item.description,
-                    priority: item.priority,
-                    end_time: item.end_time,
-                    completed: item.completed || false,
                     start_time: item.start_time || new Date().toISOString(),
-                    status: item.status || "In sospeso"
+                    status: item.status || "In sospeso",
+                    completed: item.completed || false
                   }}
                   onTaskComplete={handleTaskComplete}
                   onTaskDelete={handleTaskDelete}
@@ -552,14 +549,11 @@ export const TaskListContainer = ({
                   <Task
                     key={`completed-task-${taskId}`}
                     task={{
+                      ...item,
                       id: taskId,
-                      title: item.title,
-                      description: item.description,
-                      priority: item.priority,
-                      end_time: item.end_time,
-                      completed: true,
                       start_time: item.start_time || new Date().toISOString(),
-                      status: "Completato"
+                      status: "Completato",
+                      completed: true
                     }}
                     onTaskDelete={handleTaskDelete}
                     onTaskEdit={handleTaskEdit}

@@ -173,7 +173,8 @@ class TaskCacheService {
   // Salva singolo task nella cache (per aggiornamenti)
   async updateTaskInCache(updatedTask: Task): Promise<void> {
     try {
-      console.log(`[CACHE] Aggiornando task in cache: "${updatedTask.title}", categoria="${updatedTask.category_name}", status="${updatedTask.status}"`);
+      const optimisticFlag = (updatedTask as any).isOptimistic ? '🔄 OPTIMISTIC' : '✅ CONFIRMED';
+      console.log(`[CACHE] ${optimisticFlag} Aggiornando task in cache: "${updatedTask.title}", categoria="${updatedTask.category_name}", status="${updatedTask.status}"`);
 
       // Warn se il task ha category_name undefined
       if (!updatedTask.category_name || updatedTask.category_name === 'undefined') {
@@ -215,6 +216,7 @@ class TaskCacheService {
       // prova a trovare un task temporaneo con stesso titolo/categoria
       if (filteredTasks.length === cachedTasks.length &&
           updatedTask.task_id &&
+          updatedTask.id &&
           !updatedTask.id.toString().startsWith('temp_')) {
         filteredTasks = filteredTasks.filter(task => {
           const isMatch = task.id &&
