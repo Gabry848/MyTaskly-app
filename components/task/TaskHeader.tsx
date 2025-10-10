@@ -4,24 +4,27 @@ import { styles } from "./TaskStyles";
 import { Checkbox, TaskTitle, DateDisplay, DaysRemaining } from "./BasicComponents";
 
 // Componente per l'intestazione del task (checkbox, titolo, info)
-const TaskHeader = ({ 
-  task, 
+const TaskHeader = ({
+  task,
   isCompleted,
   expanded,
   onCheckboxPress,
   onTaskPress,
   onPressIn,
   onPressOut,
-  isOptimistic = false
+  isOptimistic = false,
+  hideCheckbox = false
 }) => {
   return (
     <View style={styles.topRow}>
-      {/* Checkbox */}
-      <Checkbox 
-        checked={isCompleted} 
-        onPress={onCheckboxPress} 
-        isOptimistic={isOptimistic}
-      />
+      {/* Checkbox - Nascosto se hideCheckbox è true */}
+      {!hideCheckbox && (
+        <Checkbox
+          checked={isCompleted}
+          onPress={onCheckboxPress}
+          isOptimistic={isOptimistic}
+        />
+      )}
 
       {/* Task Info */}
       <Pressable 
