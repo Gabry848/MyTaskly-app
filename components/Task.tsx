@@ -29,6 +29,7 @@ const Task = ({
   onTaskUncomplete,
   isOwned = true,
   permissionLevel = "READ_WRITE",
+  hideCheckbox = false,
 }) => {
   // Stati
   const [expanded, setExpanded] = useState(false);
@@ -357,7 +358,7 @@ const Task = ({
         ]}
       >
         {/* Header con checkbox, titolo e data */}
-        <TaskHeader 
+        <TaskHeader
           task={task}
           isCompleted={isCompleted}
           expanded={expanded}
@@ -366,6 +367,7 @@ const Task = ({
           onPressIn={handlePressIn}
           onPressOut={handlePressOut}
           isOptimistic={task.isOptimistic || false}
+          hideCheckbox={hideCheckbox}
         />
 
         {/* Area descrizione espandibile */}
