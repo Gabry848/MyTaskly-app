@@ -89,9 +89,12 @@ export async function getTasks(categoryIdentifier?: string | number, useCache: b
           console.log(`[TASK_SERVICE] Task totali in cache:`, cachedTasks.length);
 
           const filteredTasks = cachedTasks.filter(task => {
-            // Prova prima con category_id (preferito)
-            if (task.category_id !== undefined && task.category_id === categoryIdentifier) {
-              return true;
+            // Prova prima con category_id (preferito) - confronta sia come numero che come stringa
+            if (task.category_id !== undefined) {
+              // Confronta convertendo entrambi a stringa per gestire "84" === 84
+              if (task.category_id.toString() === categoryIdentifier.toString()) {
+                return true;
+              }
             }
             // Fallback su category_name per retrocompatibilità
             if (typeof categoryIdentifier === 'string') {
@@ -133,6 +136,28 @@ export async function getTasks(categoryIdentifier?: string | number, useCache: b
           },
         });
         console.log(`[TASK_SERVICE] Risposta API per category_id ${categoryIdentifier}:`, response.data);
+
+        // Salva i task ricevuti in cache per uso futuro
+        if (useCache && response.data && Array.isArray(response.data)) {
+          const tasksToCache = response.data.map((task: Task) => ({
+            ...task,
+            id: task.task_id || task.id,
+            task_id: task.task_id || task.id
+          }));
+
+          // Carica la cache esistente e aggiorna solo i task di questa categoria
+          const { cacheService } = getServices();
+          const existingTasks = await cacheService.getCachedTasks();
+          const otherCategoryTasks = existingTasks.filter(t =>
+            t.category_id !== categoryIdentifier && t.category_id?.toString() !== categoryIdentifier.toString()
+          );
+          const updatedCache = [...otherCategoryTasks, ...tasksToCache];
+          const categories = await cacheService.getCachedCategories();
+
+          await cacheService.saveTasks(updatedCache, categories);
+          console.log(`[TASK_SERVICE] ✅ Salvati ${tasksToCache.length} task in cache per category_id ${categoryIdentifier}`);
+        }
+
         return response.data;
       } else {
         // Fallback al vecchio endpoint per retrocompatibilità
@@ -145,6 +170,29 @@ export async function getTasks(categoryIdentifier?: string | number, useCache: b
           },
         });
         console.log(`[TASK_SERVICE] Risposta API per categoria "${categoryIdentifier}":`, response.data);
+
+        // Salva i task ricevuti in cache per uso futuro
+        if (useCache && response.data && Array.isArray(response.data)) {
+          const tasksToCache = response.data.map((task: Task) => ({
+            ...task,
+            category_name: task.category_name || categoryIdentifier,
+            id: task.task_id || task.id,
+            task_id: task.task_id || task.id
+          }));
+
+          // Carica la cache esistente e aggiorna solo i task di questa categoria
+          const { cacheService } = getServices();
+          const existingTasks = await cacheService.getCachedTasks();
+          const otherCategoryTasks = existingTasks.filter(t =>
+            t.category_name !== categoryIdentifier
+          );
+          const updatedCache = [...otherCategoryTasks, ...tasksToCache];
+          const categories = await cacheService.getCachedCategories();
+
+          await cacheService.saveTasks(updatedCache, categories);
+          console.log(`[TASK_SERVICE] ✅ Salvati ${tasksToCache.length} task in cache per categoria "${categoryIdentifier}"`);
+        }
+
         return response.data;
       }
     }
@@ -272,12 +320,10 @@ export async function getAllTasks(useCache: boolean = true) {
             // Correggi i task che hanno category_name/category_id undefined o mancante
             const correctedTasks = categoryTasks.map(task => {
               const needsCategoryIdFix = !task.category_id;
-              // Solo aggiusta category_name se category_id è anch'esso mancante
-              // (altrimenti potremmo sovrascrivere con un nome sbagliato per categorie condivise con lo stesso nome)
-              const needsCategoryNameFix = (!task.category_name || task.category_name === 'undefined') && needsCategoryIdFix;
+              const needsCategoryNameFix = !task.category_name || task.category_name === 'undefined';
 
               if (needsCategoryNameFix || needsCategoryIdFix) {
-                console.log(`[getAllTasks] 🔧 Correggendo campi categoria per task "${task.title}"`);
+                console.log(`[getAllTasks] 🔧 Correggendo campi categoria per task "${task.title}" - category_name: ${task.category_name} → ${category.name}`);
                 return {
                   ...task,
                   category_name: needsCategoryNameFix ? category.name : task.category_name,
@@ -446,19 +492,31 @@ export async function completeTask(taskId: string | number) {
       });
       
       console.log("[TASK_SERVICE] ✅ Completamento confermato dal server:", response.data);
-      
-      // Aggiorna con i dati definitivi dal server, rimuovendo il flag optimistic
-      const finalTask = { ...optimisticTask, ...response.data, isOptimistic: false };
+
+      // Aggiorna con i dati definitivi dal server, rimuovendo il flag optimistic e pulendo eventuali flag temporanei
+      const { isOptimistic: _, tempId: __, message: ___, ...cleanServerData } = response.data || {};
+      const finalTask = {
+        ...taskToUpdate,
+        ...cleanServerData,
+        status: "Completato",
+        isOptimistic: false,
+        // Preserva esplicitamente category_name e category_id dal task originale se non presenti nel server response
+        category_name: cleanServerData.category_name || taskToUpdate.category_name,
+        category_id: cleanServerData.category_id || taskToUpdate.category_id
+      };
       await cacheService.updateTaskInCache(finalTask);
+
+      // Emetti evento finale per confermare l'aggiornamento UI
+      console.log("[TASK_SERVICE] Emitting final TASK_UPDATED event after server confirmation");
       emitTaskUpdated(finalTask);
-      
-      return response.data || optimisticTask;
+
+      return finalTask;
       
     } catch (serverError) {
       console.error("[TASK_SERVICE] ❌ Errore server nel completamento, rollback:", serverError);
       
       // 3. ROLLBACK: Ripristina lo stato precedente
-      const rollbackTask = { ...optimisticTask, status: previousStatus };
+      const rollbackTask = { ...taskToUpdate, status: previousStatus, isOptimistic: false };
       await cacheService.updateTaskInCache(rollbackTask);
       emitTaskUpdated(rollbackTask);
       
@@ -522,19 +580,31 @@ export async function disCompleteTask(taskId: string | number) {
       });
       
       console.log("[TASK_SERVICE] ✅ Riapertura confermata dal server:", response.data);
-      
-      // Aggiorna con i dati definitivi dal server, rimuovendo il flag optimistic
-      const finalTask = { ...optimisticTask, ...response.data, isOptimistic: false };
+
+      // Aggiorna con i dati definitivi dal server, rimuovendo il flag optimistic e pulendo eventuali flag temporanei
+      const { isOptimistic: _, tempId: __, message: ___, ...cleanServerData } = response.data || {};
+      const finalTask = {
+        ...taskToUpdate,
+        ...cleanServerData,
+        status: "In sospeso",
+        isOptimistic: false,
+        // Preserva esplicitamente category_name e category_id dal task originale se non presenti nel server response
+        category_name: cleanServerData.category_name || taskToUpdate.category_name,
+        category_id: cleanServerData.category_id || taskToUpdate.category_id
+      };
       await cacheService.updateTaskInCache(finalTask);
+
+      // Emetti evento finale per confermare l'aggiornamento UI
+      console.log("[TASK_SERVICE] Emitting final TASK_UPDATED event after server confirmation");
       emitTaskUpdated(finalTask);
-      
-      return response.data || optimisticTask;
+
+      return finalTask;
       
     } catch (serverError) {
       console.error("[TASK_SERVICE] ❌ Errore server nella riapertura, rollback:", serverError);
       
       // 3. ROLLBACK: Ripristina lo stato precedente
-      const rollbackTask = { ...optimisticTask, status: previousStatus };
+      const rollbackTask = { ...taskToUpdate, status: previousStatus, isOptimistic: false };
       await cacheService.updateTaskInCache(rollbackTask);
       emitTaskUpdated(rollbackTask);
       
