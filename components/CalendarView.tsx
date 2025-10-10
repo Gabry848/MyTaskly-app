@@ -534,13 +534,14 @@ const CalendarView: React.FC = () => {
       <ScrollView style={styles.taskList}>
         {getTasksForSelectedDate().length > 0 ? (
           getTasksForSelectedDate().map((task) => (
-            <Task 
-              key={task.task_id || task.id || `task-${sanitizeString(task.title)}-${task.start_time || Date.now()}`} 
-              task={task} 
+            <Task
+              key={task.task_id || task.id || `task-${sanitizeString(task.title)}-${task.start_time || Date.now()}`}
+              task={task}
               onTaskComplete={handleTaskComplete}
               onTaskUncomplete={handleTaskUncomplete}
               onTaskEdit={handleTaskEdit}
               onTaskDelete={handleTaskDelete}
+              hideCheckbox={true}
             />
           ))
         ) : (
