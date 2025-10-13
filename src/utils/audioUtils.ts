@@ -18,8 +18,8 @@ export const AUDIO_CONFIG = {
 
 // Configurazioni VAD (Voice Activity Detection)
 export const VAD_CONFIG = {
-  SPEECH_THRESHOLD_DB: -45,        // dB sopra questa soglia = voce rilevata (più sensibile)
-  SILENCE_THRESHOLD_DB: -55,       // dB sotto questa soglia = silenzio
+  SPEECH_THRESHOLD_DB: -50,        // dB sopra questa soglia = voce rilevata (più sensibile)
+  SILENCE_THRESHOLD_DB: -60,       // dB sotto questa soglia = silenzio
   SILENCE_DURATION_MS: 1200,       // Durata silenzio prima di fermare (1.2s)
   METERING_POLL_INTERVAL_MS: 100,  // Intervallo controllo livello audio (100ms)
   MIN_RECORDING_DURATION_MS: 300,  // Durata minima registrazione prima di VAD (300ms)
