@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, ScrollView, StyleSheet, Alert, ActivityIndicator, Animated } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Alert, ActivityIndicator, Animated, Dimensions } from 'react-native';
 import dayjs from 'dayjs';
 import { Task as TaskType, getAllTasks, addTask, deleteTask, updateTask, completeTask, disCompleteTask } from '../src/services/taskService';
 import { TaskCacheService } from '../src/services/TaskCacheService';
@@ -20,7 +20,10 @@ const CalendarView: React.FC = () => {
   const [showAddTask, setShowAddTask] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null);
-  
+
+  // Screen dimensions
+  const screenWidth = Dimensions.get('window').width;
+
   // Servizi
   const cacheService = useRef(TaskCacheService.getInstance()).current;
   const syncManager = useRef(SyncManager.getInstance()).current;
@@ -264,9 +267,19 @@ const CalendarView: React.FC = () => {
       if (!task.end_time) {
         return false;
       }
-      
+
       const taskDate = dayjs(task.end_time).format('YYYY-MM-DD');
       return taskDate === selectedDate;
+    }).map(task => {
+      // Normalizza il task per assicurare che abbia sempre la proprietà `id`
+      // Il componente Task usa `task.id` quindi dobbiamo garantire che sia presente
+      if (!task.id && task.task_id) {
+        return { ...task, id: task.task_id };
+      }
+      if (task.id && !task.task_id) {
+        return { ...task, task_id: task.id };
+      }
+      return task;
     });
   };
 
@@ -471,9 +484,9 @@ const CalendarView: React.FC = () => {
               </View>
             )}
           </View>
-          <AddTaskButton onPress={handleAddTask} />
+          <AddTaskButton onPress={handleAddTask} screenWidth={screenWidth} />
         </View>
-        
+
         {/* Componente di caricamento */}
         <LoadingComponent />
         
@@ -528,9 +541,9 @@ const CalendarView: React.FC = () => {
             </View>
           )}
         </View>
-        <AddTaskButton onPress={handleAddTask} />
+        <AddTaskButton onPress={handleAddTask} screenWidth={screenWidth} />
       </View>
-      
+
       <ScrollView style={styles.taskList}>
         {getTasksForSelectedDate().length > 0 ? (
           getTasksForSelectedDate().map((task) => (
@@ -550,7 +563,7 @@ const CalendarView: React.FC = () => {
             <Text style={styles.noTasksText}>
               Nessun impegno per questa data
             </Text>
-            <AddTaskButton onPress={handleAddTask} />
+            <AddTaskButton onPress={handleAddTask} screenWidth={screenWidth} />
           </View>
         )}
       </ScrollView>
