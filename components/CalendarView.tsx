@@ -287,11 +287,13 @@ const CalendarView: React.FC = () => {
   const handleTaskComplete = async (taskId: number | string) => {
     try {
       await completeTask(taskId);
-      setTasks(prev => prev.map(task => 
-        (task.id === taskId || task.task_id === taskId) 
-          ? { ...task, status: "Completato", completed: true } 
+      setTasks(prev => prev.map(task =>
+        (task.id === taskId || task.task_id === taskId)
+          ? { ...task, status: "Completato", completed: true }
           : task
       ));
+      // Ricarica i task per aggiornare il calendario
+      fetchTasks();
     } catch (error) {
       console.error("Errore nel completamento del task:", error);
       Alert.alert("Errore", "Impossibile completare il task. Riprova.");
@@ -302,11 +304,13 @@ const CalendarView: React.FC = () => {
   const handleTaskUncomplete = async (taskId: number | string) => {
     try {
       await disCompleteTask(taskId);
-      setTasks(prev => prev.map(task => 
-        (task.id === taskId || task.task_id === taskId) 
-          ? { ...task, status: "In sospeso", completed: false } 
+      setTasks(prev => prev.map(task =>
+        (task.id === taskId || task.task_id === taskId)
+          ? { ...task, status: "In sospeso", completed: false }
           : task
       ));
+      // Ricarica i task per aggiornare il calendario
+      fetchTasks();
     } catch (error) {
       console.error("Errore nell'annullamento del completamento del task:", error);
       Alert.alert("Errore", "Impossibile riaprire il task. Riprova.");
@@ -554,7 +558,6 @@ const CalendarView: React.FC = () => {
               onTaskUncomplete={handleTaskUncomplete}
               onTaskEdit={handleTaskEdit}
               onTaskDelete={handleTaskDelete}
-              hideCheckbox={true}
             />
           ))
         ) : (
