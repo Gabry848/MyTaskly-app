@@ -74,25 +74,55 @@ export function useVoiceChat() {
 
 
   /**
+   * Ref per gestire l'avvio automatico della registrazione dopo autenticazione
+   */
+  const shouldAutoStartRecordingRef = useRef<boolean>(false);
+
+  /**
    * Callback per gestire i messaggi WebSocket
    */
   const websocketCallbacks: VoiceChatCallbacks = {
     onConnectionOpen: () => {
-      console.log('🎤 WebSocket connesso');
-      setState('connected');
+      console.log('🎤 WebSocket connesso, in attesa di autenticazione...');
+      // Non impostare 'connected' qui, aspetta l'autenticazione
       setError(null);
     },
-    
+
+    onAuthenticationSuccess: (message: string) => {
+      console.log('✅ Autenticazione completata:', message);
+      setState('connected');
+
+      // Avvia la registrazione se richiesto
+      if (shouldAutoStartRecordingRef.current) {
+        console.log('🎤 Avvio registrazione automatica post-autenticazione...');
+        shouldAutoStartRecordingRef.current = false;
+        setTimeout(() => {
+          startRecording();
+        }, 100);
+      }
+    },
+
+    onAuthenticationFailed: (error: string) => {
+      console.error('❌ Autenticazione fallita:', error);
+      setError(`Autenticazione fallita: ${error}`);
+      setState('error');
+    },
+
     onConnectionClose: () => {
       console.log('🎤 WebSocket disconnesso');
       setState('disconnected');
+      shouldAutoStartRecordingRef.current = false;
     },
-    
+
     onStatus: (phase: string, message: string) => {
       console.log(`📡 Status Server: ${phase} - ${message}`);
       setServerStatus({ phase, message });
 
       switch (phase) {
+        case 'receiving_audio':
+          // Audio ricevuto dal server
+          console.log('📥 Server sta ricevendo audio...');
+          break;
         case 'transcription':
         case 'transcription_complete':
         case 'ai_processing':
@@ -134,7 +164,7 @@ export function useVoiceChat() {
           break;
       }
     },
-    
+
     onAudioChunk: (audioData: string, chunkIndex?: number) => {
       console.log(`🔊 Ricevuto chunk audio #${chunkIndex || 0}`);
 
@@ -146,7 +176,7 @@ export function useVoiceChat() {
       audioPlayerRef.current.addChunk(audioData);
       setChunksReceived(prev => prev + 1);
     },
-    
+
     onError: (errorMessage: string) => {
       console.error('🎤 Errore WebSocket:', errorMessage);
       setError(errorMessage);
@@ -205,43 +235,49 @@ export function useVoiceChat() {
         return false;
       }
 
-      console.log('✅ CONNECT: WebSocket connesso, verifica stato...');
+      console.log('✅ CONNECT: WebSocket connesso, attesa autenticazione...');
 
-      // Aspetta che il WebSocket sia effettivamente connesso
+      // Imposta il flag per avviare automaticamente la registrazione dopo l'autenticazione
+      shouldAutoStartRecordingRef.current = true;
+
+      // Aspetta che il WebSocket sia autenticato (non solo connesso)
       let retries = 0;
-      const maxRetries = 20; // 2 secondi max
+      const maxRetries = 30; // 3 secondi max per autenticazione
 
-      while (!websocketRef.current.isConnected() && retries < maxRetries) {
-        console.log(`⏳ CONNECT: Attesa WebSocket ready... (${retries + 1}/${maxRetries})`);
+      while (!websocketRef.current.isAuthenticated() && retries < maxRetries) {
+        console.log(`⏳ CONNECT: Attesa autenticazione... (${retries + 1}/${maxRetries})`);
         await new Promise(resolve => setTimeout(resolve, 100));
         retries++;
+
+        // Se il WebSocket si è disconnesso durante l'attesa, esci
+        if (!websocketRef.current.isConnected()) {
+          console.error('❌ CONNECT: WebSocket disconnesso durante autenticazione');
+          setError('WebSocket disconnesso');
+          setState('error');
+          shouldAutoStartRecordingRef.current = false;
+          return false;
+        }
       }
 
-      if (!websocketRef.current.isConnected()) {
-        console.error('❌ CONNECT: Timeout connessione WebSocket');
-        setError('Timeout connessione');
+      if (!websocketRef.current.isAuthenticated()) {
+        console.error('❌ CONNECT: Timeout autenticazione WebSocket');
+        setError('Timeout autenticazione');
         setState('error');
+        shouldAutoStartRecordingRef.current = false;
         return false;
       }
 
-      console.log('✅ CONNECT: WebSocket pronto! Avvio registrazione automatica...');
-
-      // Auto-start registrazione DOPO che il WebSocket è connesso
-      const recordingStarted = await startRecording();
-
-      if (!recordingStarted) {
-        console.error('❌ CONNECT: Impossibile avviare la registrazione automatica');
-      }
-
+      console.log('✅ CONNECT: Autenticazione completata! Registrazione verrà avviata automaticamente...');
       return true;
 
     } catch (err) {
       console.error('❌ CONNECT: Errore connessione:', err);
       setError('Errore di connessione');
       setState('error');
+      shouldAutoStartRecordingRef.current = false;
       return false;
     }
-  }, [initialize, startRecording]);
+  }, [initialize]);
 
   /**
    * VAD Callbacks
@@ -298,7 +334,13 @@ export function useVoiceChat() {
       return false;
     }
 
-    console.log('✅ START RECORDING: Pre-check OK, avvio registrazione...');
+    if (!websocketRef.current.isAuthenticated()) {
+      console.error('❌ START RECORDING: WebSocket non autenticato');
+      setError('WebSocket non autenticato');
+      return false;
+    }
+
+    console.log('✅ START RECORDING: Pre-check OK (connesso e autenticato), avvio registrazione...');
 
     try {
       const started = await audioRecorderRef.current.startRecording(vadEnabled, vadCallbacks);
