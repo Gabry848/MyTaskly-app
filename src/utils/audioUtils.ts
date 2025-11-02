@@ -404,11 +404,46 @@ export class AudioRecorder {
  */
 export class AudioPlayer {
   private currentSound: Audio.Sound | null = null;
-  private audioChunks: string[] = [];
+  private chunkBuffer: Array<{ index?: number; data: string }> = [];
+  private seenChunkIndexes: Set<number> = new Set();
+  private highestIndexedChunk: number = -1;
   private isPlaying: boolean = false;
   private onCompleteCallback: (() => void) | null = null;
 
   constructor() {}
+
+  /**
+   * Converte base64 in array di bytes
+   */
+  private base64ToBytes(base64: string): Uint8Array {
+    try {
+      const binaryString = atob(base64);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      return bytes;
+    } catch (error) {
+      console.error('Errore conversione base64 to bytes:', error);
+      return new Uint8Array(0);
+    }
+  }
+
+  /**
+   * Converte bytes in base64
+   */
+  private bytesToBase64(bytes: Uint8Array): string {
+    try {
+      let binary = '';
+      for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      return btoa(binary);
+    } catch (error) {
+      console.error('Errore conversione bytes to base64:', error);
+      return '';
+    }
+  }
 
   /**
    * Riproduce audio da dati base64 concatenati
@@ -454,49 +489,161 @@ export class AudioPlayer {
   /**
    * Aggiunge un chunk alla collezione
    */
-  addChunk(base64Data: string): void {
-    this.audioChunks.push(base64Data);
-    console.log(`🔊 Chunk aggiunto. Totale chunks: ${this.audioChunks.length}`);
+  addChunk(base64Data: string, chunkIndex?: number): boolean {
+    if (typeof chunkIndex === 'number') {
+      if (this.seenChunkIndexes.has(chunkIndex)) {
+        console.warn(`🔊 Chunk duplicato ricevuto (indice ${chunkIndex}) - ignorato`);
+        return false;
+      }
+
+      if (this.highestIndexedChunk >= 0 && chunkIndex > this.highestIndexedChunk + 1) {
+        console.warn(`🔊 Mancano uno o più chunk prima dell'indice ${chunkIndex} (ultimo ricevuto ${this.highestIndexedChunk})`);
+      }
+
+      if (this.highestIndexedChunk >= 0 && chunkIndex < this.highestIndexedChunk) {
+        console.warn(`🔊 Chunk fuori ordine rilevato: indice ${chunkIndex} ricevuto dopo ${this.highestIndexedChunk}`);
+      }
+
+      this.seenChunkIndexes.add(chunkIndex);
+      this.highestIndexedChunk = Math.max(this.highestIndexedChunk, chunkIndex);
+    }
+
+    this.chunkBuffer.push({ index: chunkIndex, data: base64Data });
+    console.log(`🔊 Chunk aggiunto. Totale chunks: ${this.getChunksCount()}`);
+    return true;
   }
 
   /**
    * Concatena tutti i chunk e li riproduce
+   * Salva i chunk in un singolo file e lo riproduce
    */
   async playAllChunks(onComplete?: () => void): Promise<boolean> {
-    if (this.audioChunks.length === 0) {
+    const totalChunks = this.getChunksCount();
+
+    if (totalChunks === 0) {
       console.log('🔊 Nessun chunk da riprodurre');
       return false;
     }
 
-    console.log(`🔊 Inizio concatenazione di ${this.audioChunks.length} chunks...`);
+    console.log(`🔊 Inizio concatenazione di ${totalChunks} chunks...`);
 
     try {
-      let totalBinaryData = '';
+      console.log('🔊 Preparazione sequenza chunks per la riproduzione...');
+      const indexedChunks = this.chunkBuffer
+        .filter(chunk => typeof chunk.index === 'number')
+        .sort((a, b) => (a.index as number) - (b.index as number));
+      const nonIndexedChunks = this.chunkBuffer.filter(chunk => typeof chunk.index !== 'number');
 
-      for (let i = 0; i < this.audioChunks.length; i++) {
-        try {
-          const chunk = this.audioChunks[i];
-          const binaryChunk = atob(chunk);
-          totalBinaryData += binaryChunk;
-        } catch (chunkError) {
-          console.warn(`🔊 Errore decodifica chunk ${i}:`, chunkError);
+      if (indexedChunks.length > 1) {
+        const sortedIndexes = indexedChunks.map(chunk => chunk.index as number);
+        for (let i = 1; i < sortedIndexes.length; i++) {
+          const expected = sortedIndexes[i - 1] + 1;
+          if (sortedIndexes[i] !== expected) {
+            if (sortedIndexes[i] < expected) {
+              console.warn(`🔊 Ordine chunk non crescente: indice ${sortedIndexes[i]} dopo ${sortedIndexes[i - 1]}`);
+            } else {
+              console.warn(`🔊 Mancano ${sortedIndexes[i] - expected} chunk audio prima dell'indice ${sortedIndexes[i]}`);
+            }
+          }
         }
       }
 
-      const completeAudioBase64 = btoa(totalBinaryData);
+      const playbackQueue = [...indexedChunks, ...nonIndexedChunks];
 
-      console.log(`🔊 Audio concatenato:`);
-      console.log(`  - Chunks elaborati: ${this.audioChunks.length}`);
+      if (playbackQueue.length === 0) {
+        console.warn('🔊 Nessun chunk valido da riprodurre dopo il filtraggio');
+        this.clearChunks();
+        return false;
+      }
+
+      console.log('🔊 Concatenazione chunks base64...');
+      const binaryChunks: Uint8Array[] = [];
+
+      playbackQueue.forEach((chunk, position) => {
+        try {
+          const binaryData = this.base64ToBytes(chunk.data);
+
+          if (!binaryData.length) {
+            console.warn(`🔊 Chunk ${chunk.index ?? position} vuoto o non valido, ignorato`);
+            return;
+          }
+
+          binaryChunks.push(binaryData);
+          console.log(`🔊 Chunk ${chunk.index ?? position} concatenato: ${binaryData.length} bytes aggiunti`);
+        } catch (chunkError) {
+          console.warn(`🔊 Errore decodifica chunk ${chunk.index ?? position}:`, chunkError);
+        }
+      });
+
+      if (binaryChunks.length === 0) {
+        console.warn('🔊 Nessun chunk audio valido dopo la decodifica');
+        this.clearChunks();
+        return false;
+      }
+
+      const totalBinaryLength = binaryChunks.reduce((acc, chunk) => acc + chunk.length, 0);
+      const totalBinaryData = new Uint8Array(totalBinaryLength);
+      let offset = 0;
+
+      binaryChunks.forEach((chunk) => {
+        totalBinaryData.set(chunk, offset);
+        offset += chunk.length;
+      });
+
+      const finalAudioPath = `${FileSystem.documentDirectory}final_audio_${Date.now()}.m4a`;
+      const completeAudioBase64 = this.bytesToBase64(totalBinaryData);
+
+      console.log('🔊 Audio concatenato:');
+      console.log(`  - Chunks elaborati: ${binaryChunks.length}`);
       console.log(`  - Dimensione binaria: ${totalBinaryData.length} bytes`);
       console.log(`  - Dimensione base64: ${completeAudioBase64.length} caratteri`);
+      console.log(`🔊 Salvataggio file audio finale: ${finalAudioPath.split('/').pop()}`);
 
-      this.audioChunks = [];
+      await FileSystem.writeAsStringAsync(finalAudioPath, completeAudioBase64, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
 
-      return await this.playAudioFromBase64(completeAudioBase64, onComplete);
+      this.clearChunks();
+
+      console.log('🔊 Riproduzione file audio...');
+
+      try {
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: false,
+          playsInSilentModeIOS: true,
+          staysActiveInBackground: true,
+          shouldDuckAndroid: true,
+          playThroughEarpieceAndroid: false,
+        });
+
+        const { sound } = await Audio.Sound.createAsync({ uri: finalAudioPath });
+        this.currentSound = sound;
+
+        this.currentSound.setOnPlaybackStatusUpdate((status) => {
+          if (status.isLoaded && status.didJustFinish) {
+            console.log('🔊 Riproduzione completata');
+            this.onPlaybackComplete(onComplete, finalAudioPath);
+          }
+        });
+
+        await this.currentSound.playAsync();
+        this.isPlaying = true;
+        console.log('🔊 Riproduzione audio iniziata');
+        return true;
+      } catch (error) {
+        console.error('🔊 Errore riproduzione:', error);
+
+        try {
+          await FileSystem.deleteAsync(finalAudioPath);
+        } catch {
+          console.warn('🔊 Errore eliminazione file fallito');
+        }
+        return false;
+      }
 
     } catch (error) {
-      console.error('🔊 Errore concatenazione/riproduzione:', error);
-      this.audioChunks = [];
+      console.error('🔊 Errore concatenazione:', error);
+      this.clearChunks();
       return false;
     }
   }
@@ -505,14 +652,16 @@ export class AudioPlayer {
    * Svuota i chunk accumulati
    */
   clearChunks(): void {
-    this.audioChunks = [];
+    this.chunkBuffer = [];
+    this.seenChunkIndexes.clear();
+    this.highestIndexedChunk = -1;
     console.log('🔊 Chunks svuotati');
   }
 
   /**
    * Gestisce il completamento della riproduzione
    */
-  private async onPlaybackComplete(onComplete?: () => void): Promise<void> {
+  private async onPlaybackComplete(onComplete?: () => void, audioFilePath?: string): Promise<void> {
     if (this.currentSound) {
       try {
         await this.currentSound.unloadAsync();
@@ -520,6 +669,16 @@ export class AudioPlayer {
         console.error('🔊 Errore cleanup audio:', error);
       }
       this.currentSound = null;
+    }
+
+    // Pulisci il file audio temporaneo
+    if (audioFilePath) {
+      try {
+        await FileSystem.deleteAsync(audioFilePath);
+        console.log('🔊 File audio temporaneo eliminato');
+      } catch {
+        console.warn('🔊 Errore eliminazione file audio temporaneo');
+      }
     }
 
     this.isPlaying = false;
@@ -559,7 +718,7 @@ export class AudioPlayer {
    * Ottiene il numero di chunk accumulati
    */
   getChunksCount(): number {
-    return this.audioChunks.length;
+    return this.chunkBuffer.length;
   }
 
   /**

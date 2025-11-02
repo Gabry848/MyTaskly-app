@@ -41,6 +41,7 @@ export function useVoiceChat() {
   const audioRecorderRef = useRef<AudioRecorder | null>(null);
   const audioPlayerRef = useRef<AudioPlayer | null>(null);
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const lastChunkIndexRef = useRef<number | null>(null);
 
   const [isReceivingAudio, setIsReceivingAudio] = useState<boolean>(false);
   const [chunksReceived, setChunksReceived] = useState<number>(0);
@@ -122,6 +123,7 @@ export function useVoiceChat() {
         case 'receiving_audio':
           // Audio ricevuto dal server
           console.log('📥 Server sta ricevendo audio...');
+          lastChunkIndexRef.current = null;
           break;
         case 'transcription':
         case 'transcription_complete':
@@ -134,6 +136,7 @@ export function useVoiceChat() {
         case 'audio_streaming':
           setIsReceivingAudio(true);
           setChunksReceived(0);
+          lastChunkIndexRef.current = null;
           if (audioPlayerRef.current) {
             audioPlayerRef.current.clearChunks();
           }
@@ -142,6 +145,7 @@ export function useVoiceChat() {
         case 'complete':
           console.log('✅ Pipeline completa!');
           setIsReceivingAudio(false);
+          lastChunkIndexRef.current = null;
           if (audioPlayerRef.current && audioPlayerRef.current.getChunksCount() > 0) {
             console.log('🔊 Riproduzione audio chunks...');
             setState('speaking');
@@ -166,15 +170,39 @@ export function useVoiceChat() {
     },
 
     onAudioChunk: (audioData: string, chunkIndex?: number) => {
-      console.log(`🔊 Ricevuto chunk audio #${chunkIndex || 0}`);
+      console.log(`🔊 Ricevuto chunk audio ${typeof chunkIndex === 'number' ? `#${chunkIndex}` : '(senza indice)'}`);
 
       if (!audioPlayerRef.current) {
         console.error('🔊 AudioPlayer non inizializzato');
         return;
       }
 
-      audioPlayerRef.current.addChunk(audioData);
-      setChunksReceived(prev => prev + 1);
+      if (typeof chunkIndex === 'number') {
+        const previousIndex = lastChunkIndexRef.current;
+
+        if (previousIndex !== null) {
+          if (chunkIndex === previousIndex) {
+            console.warn(`🔊 Chunk duplicato #${chunkIndex} ricevuto dal server`);
+          } else if (chunkIndex < previousIndex) {
+            console.warn(`🔊 Chunk fuori ordine: #${chunkIndex} ricevuto dopo #${previousIndex}`);
+          } else if (chunkIndex > previousIndex + 1) {
+            console.warn(`🔊 Mancano ${chunkIndex - previousIndex - 1} chunk prima di #${chunkIndex}`);
+          }
+        } else if (chunkIndex > 0) {
+          console.warn(`🔊 Primo chunk ricevuto con indice ${chunkIndex} (atteso 0)`);
+        }
+      }
+
+      const stored = audioPlayerRef.current.addChunk(audioData, chunkIndex);
+
+      if (stored) {
+        if (typeof chunkIndex === 'number') {
+          lastChunkIndexRef.current = lastChunkIndexRef.current === null
+            ? chunkIndex
+            : Math.max(lastChunkIndexRef.current, chunkIndex);
+        }
+        setChunksReceived(prev => prev + 1);
+      }
     },
 
     onError: (errorMessage: string) => {
