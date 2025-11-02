@@ -337,6 +337,8 @@ export interface VoiceChatCallbacks {
   onAuthenticationFailed?: (error: string) => void;
 }
 
+const MAX_AUDIO_CHUNK_BYTES = 2_500_000; // ~2.5MB di audio PCM/mp3
+
 /**
  * Classe per gestire la connessione WebSocket per la chat vocale
  */
@@ -718,9 +720,16 @@ export class VoiceBotWebSocket {
     }
 
     // Verifica chunk audio per prevenire overflow
-    if (response.data && response.data.length > 50000) { // ~37KB base64 -> ~25KB audio
-      console.warn('Chunk audio troppo grande ricevuto dal server');
-      return false;
+    if (response.data) {
+      if (response.type === 'audio_chunk') {
+        const approxChunkBytes = Math.floor(response.data.length * 0.75);
+        if (approxChunkBytes > MAX_AUDIO_CHUNK_BYTES) {
+          console.warn(`Chunk audio molto grande ricevuto dal server (~${approxChunkBytes} bytes)`);
+        }
+      } else if (response.data.length > 50000) {
+        console.warn('Payload dati troppo grande ricevuto dal server');
+        return false;
+      }
     }
 
     return true;
