@@ -14,6 +14,7 @@ import {
   Platform,
   Alert,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scrollview";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ChatList, Message } from "../../../components/BotChat";
@@ -444,8 +445,15 @@ const HomeScreen = () => {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
 
-      {/* Header con titolo principale e indicatori sync */}
-      <View style={styles.header}>
+      <KeyboardAwareScrollView
+        style={styles.keyboardAwareScrollView}
+        contentContainerStyle={styles.scrollViewContent}
+        enableOnAndroid={true}
+        extraScrollHeight={20}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* Header con titolo principale e indicatori sync */}
+        <View style={styles.header}>
         <View style={styles.titleSection}>
           <Text style={styles.mainTitle}>Mytaskly</Text>
           {syncStatus && (
@@ -686,6 +694,7 @@ const HomeScreen = () => {
             </View>          </Animated.View>
         )}
       </View>
+      </KeyboardAwareScrollView>
 
       {/* Voice Chat Modal */}
       <VoiceChatModal
@@ -702,6 +711,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#ffffff",
+  },
+  keyboardAwareScrollView: {
+    flex: 1,
+    backgroundColor: "#ffffff",
+  },
+  scrollViewContent: {
+    flexGrow: 1,
   },
   keyboardAvoidingView: {
     flex: 1,

@@ -42,6 +42,21 @@ const CategoryView = forwardRef<CategoryViewRef, CategoryViewProps>(({
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const [categories, setCategories] = useState<CategoryType[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [isReloading, setIsReloading] = useState<boolean>(false);
+  const previousCategoriesRef = React.useRef<CategoryType[]>([]);
+
+  const categoriesAreEqual = (cat1: CategoryType[], cat2: CategoryType[]): boolean => {
+    if (cat1.length !== cat2.length) return false;
+
+    return cat1.every(c1 =>
+      cat2.some(c2 =>
+        c1.id === c2.id &&
+        c1.name === c2.name &&
+        c1.description === c2.description &&
+        c1.category_id === c2.category_id
+      )
+    );
+  };
 
   const fetchCategories = async (forceRefresh: boolean = false) => {
     try {
@@ -58,9 +73,38 @@ const CategoryView = forwardRef<CategoryViewRef, CategoryViewProps>(({
     }
   };
 
+  const reloadCategoriesAsync = async () => {
+    setIsReloading(true);
+    setCategories([]); // Nasconde tutte le categorie
+    try {
+      const categoriesData = await getCategories(false); // Force refresh
+      if (Array.isArray(categoriesData)) {
+        // Confronta le categorie con le precedenti
+        if (!categoriesAreEqual(categoriesData, previousCategoriesRef.current)) {
+          setCategories(categoriesData);
+          previousCategoriesRef.current = categoriesData;
+          console.log("Categorie aggiornate - differenze rilevate");
+        } else {
+          // Se non ci sono differenze, mostra comunque le categorie
+          setCategories(categoriesData);
+          console.log("Categorie ricaricate - nessuna differenza");
+        }
+      } else {
+        console.error("getCategories non ha restituito un array:", categoriesData);
+      }
+    } catch (error) {
+      console.error("Errore nel ricaricamento delle categorie:", error);
+      // Ripristina le categorie precedenti in caso di errore
+      setCategories(previousCategoriesRef.current);
+    } finally {
+      setIsReloading(false);
+    }
+  };
+
   useFocusEffect(
     React.useCallback(() => {
-      fetchCategories();
+      // Al focus, ricarica le categorie in modo asincrono
+      reloadCategoriesAsync();
     }, [])
   );
 
@@ -79,12 +123,18 @@ const CategoryView = forwardRef<CategoryViewRef, CategoryViewProps>(({
       <View style={styles.headerContainer}>
         <TouchableOpacity
           style={styles.refreshButton}
-          onPress={() => fetchCategories(true)}
+          onPress={() => reloadCategoriesAsync()}
+          disabled={isReloading}
         >
-          <Icon name="refresh" size={24} color="#000000" />
+          <Icon
+            name="refresh"
+            size={24}
+            color={isReloading ? "#cccccc" : "#000000"}
+          />
         </TouchableOpacity>
       </View>
-      {categories && categories.length > 0
+      {/* Mostra le categorie solo se non stiamo ricaricando */}
+      {!isReloading && categories && categories.length > 0
         ? categories.map((category, index) => (
             <Category
               key={`${category.id || category.name}-${index}`}
@@ -100,7 +150,7 @@ const CategoryView = forwardRef<CategoryViewRef, CategoryViewProps>(({
               onEdit={onCategoryEdited}
             />
           ))
-        : !loading && (
+        : !loading && !isReloading && (
             <View style={styles.noCategoriesContainer}>
               <Text style={styles.noCategoriesMessage}>
                 Aggiungi la tua prima categoria per iniziare!{"\n"}
@@ -123,7 +173,7 @@ const CategoryView = forwardRef<CategoryViewRef, CategoryViewProps>(({
               </TouchableOpacity>
             </View>
           )}
-      {loading && (
+      {(loading || isReloading) && (
         <View style={styles.loadingSpinner}>
           <View style={styles.spinner}></View>
         </View>
