@@ -11,11 +11,11 @@ import {
   ActivityIndicator
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { 
-  getVoiceSettings, 
-  updateVoiceSettings, 
-  VoiceSettings, 
-  VOICE_SETTINGS_OPTIONS 
+import {
+  getVoiceSettings,
+  updateVoiceSettings,
+  VoiceSettings,
+  VOICE_SETTINGS_OPTIONS
 } from '../../services/voiceSettingsService';
 
 export default function VoiceSettingsScreen() {
@@ -54,7 +54,7 @@ export default function VoiceSettingsScreen() {
     };
 
     setSettings(newSettings);
-    
+
     // Salva automaticamente le modifiche
     await saveSettings(newSettings);
   };
@@ -63,7 +63,7 @@ export default function VoiceSettingsScreen() {
     try {
       setSaving(true);
       const success = await updateVoiceSettings(settingsToSave);
-      
+
       if (success) {
         // Successo silenzioso per un'esperienza fluida
         console.log('Impostazioni vocali salvate con successo');
@@ -87,36 +87,34 @@ export default function VoiceSettingsScreen() {
     settingKey: keyof VoiceSettings,
     options: { label: string; value: string }[]
   ) => (
-    <View style={styles.settingSection}>
-      <View style={styles.settingHeader}>
-        <Text style={styles.settingTitle}>{title}</Text>
-        <Text style={styles.settingDescription}>{description}</Text>
+    <>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>{title}</Text>
+        <Text style={styles.sectionDescription}>{description}</Text>
       </View>
-      
-      <View style={styles.optionsContainer}>
-        {options.map((option) => (
-          <TouchableOpacity
-            key={option.value}
-            style={[
-              styles.optionItem,
-              settings[settingKey] === option.value && styles.selectedOption
-            ]}
-            onPress={() => handleSettingChange(settingKey, option.value)}
-            disabled={loading || saving}
-          >
-            <Text style={[
-              styles.optionText,
-              settings[settingKey] === option.value && styles.selectedOptionText
-            ]}>
-              {option.label}
-            </Text>
-            {settings[settingKey] === option.value && (
-              <Ionicons name="checkmark" size={20} color="#ffffff" />
-            )}
-          </TouchableOpacity>
-        ))}
-      </View>
-    </View>
+
+      {options.map((option, index) => (
+        <TouchableOpacity
+          key={option.value}
+          style={[
+            styles.optionItem,
+            settings[settingKey] === option.value && styles.selectedOption
+          ]}
+          onPress={() => handleSettingChange(settingKey, option.value)}
+          disabled={loading || saving}
+        >
+          <Text style={[
+            styles.optionText,
+            settings[settingKey] === option.value && styles.selectedOptionText
+          ]}>
+            {option.label}
+          </Text>
+          {settings[settingKey] === option.value && (
+            <Ionicons name="checkmark" size={20} color="#000000" />
+          )}
+        </TouchableOpacity>
+      ))}
+    </>
   );
 
   if (loading) {
@@ -138,12 +136,9 @@ export default function VoiceSettingsScreen() {
       <ScrollView style={styles.content}>
         {/* Introduzione */}
         <View style={styles.introSection}>
-          <View style={styles.introIcon}>
-            <Ionicons name="mic" size={32} color="#2196f3" />
-          </View>
           <Text style={styles.introTitle}>Personalizza la Chat Vocale</Text>
           <Text style={styles.introText}>
-            Configura come il bot vocale risponde alle tue domande. 
+            Configura come il bot vocale risponde alle tue domande.
             Le impostazioni vengono applicate automaticamente a tutte le conversazioni vocali.
           </Text>
         </View>
@@ -173,25 +168,29 @@ export default function VoiceSettingsScreen() {
         )}
 
         {/* Info Aggiuntive */}
-        <View style={styles.infoSection}>
-          <View style={styles.infoItem}>
-            <Ionicons name="information-circle-outline" size={20} color="#17a2b8" />
-            <Text style={styles.infoText}>
-              Le impostazioni vengono salvate automaticamente
-            </Text>
-          </View>
-          <View style={styles.infoItem}>
-            <Ionicons name="cloud-outline" size={20} color="#28a745" />
-            <Text style={styles.infoText}>
-              Sincronizzate su tutti i tuoi dispositivi
-            </Text>
-          </View>
-          <View style={styles.infoItem}>
-            <Ionicons name="time-outline" size={20} color="#ffc107" />
-            <Text style={styles.infoText}>
-              Applicate alla prossima conversazione vocale
-            </Text>
-          </View>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Informazioni</Text>
+        </View>
+
+        <View style={styles.infoItem}>
+          <Ionicons name="information-circle-outline" size={20} color="#000000" />
+          <Text style={styles.infoText}>
+            Le impostazioni vengono salvate automaticamente
+          </Text>
+        </View>
+
+        <View style={styles.infoItem}>
+          <Ionicons name="cloud-outline" size={20} color="#000000" />
+          <Text style={styles.infoText}>
+            Sincronizzate su tutti i tuoi dispositivi
+          </Text>
+        </View>
+
+        <View style={styles.infoItem}>
+          <Ionicons name="time-outline" size={20} color="#000000" />
+          <Text style={styles.infoText}>
+            Applicate alla prossima conversazione vocale
+          </Text>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -201,169 +200,99 @@ export default function VoiceSettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#ffffff',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#ffffff',
   },
   loadingText: {
     marginTop: 10,
     fontSize: 16,
     color: '#495057',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#000000',
-  },
-  backButton: {
-    padding: 5,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#000000',
-  },
-  headerRight: {
-    width: 30,
-    alignItems: 'center',
+    fontFamily: 'System',
   },
   content: {
     flex: 1,
     paddingTop: 20,
-    backgroundColor: '#f8f9fa',
   },
   introSection: {
-    alignItems: 'center',
     paddingHorizontal: 20,
-    paddingBottom: 30,
+    paddingVertical: 24,
     backgroundColor: '#ffffff',
-    marginHorizontal: 16,
-    marginBottom: 16,
-    borderRadius: 16,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 8,
-  },
-  introIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#e3f2fd',
-    borderWidth: 2,
-    borderColor: '#2196f3',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
   },
   introTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '600',
-    color: '#2c3e50',
-    marginBottom: 10,
-    textAlign: 'center',
+    color: '#000000',
+    marginBottom: 12,
+    fontFamily: 'System',
   },
   introText: {
     fontSize: 16,
     color: '#6c757d',
-    textAlign: 'center',
     lineHeight: 22,
+    fontFamily: 'System',
   },
-  settingSection: {
-    marginBottom: 16,
+  sectionHeader: {
     paddingHorizontal: 20,
+    paddingTop: 30,
+    paddingBottom: 8,
     backgroundColor: '#ffffff',
-    marginHorizontal: 16,
-    borderRadius: 12,
-    paddingVertical: 20,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
   },
-  settingHeader: {
-    marginBottom: 15,
-  },
-  settingTitle: {
+  sectionTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#2c3e50',
+    color: '#000000',
     marginBottom: 5,
+    fontFamily: 'System',
   },
-  settingDescription: {
+  sectionDescription: {
     fontSize: 14,
     color: '#6c757d',
     lineHeight: 20,
-  },
-  optionsContainer: {
-    backgroundColor: '#ffffff',
-    borderRadius: 8,
-    overflow: 'hidden',
+    fontFamily: 'System',
   },
   optionItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 16,
     paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e9ecef',
+    paddingVertical: 16,
     backgroundColor: '#ffffff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
   },
   selectedOption: {
-    backgroundColor: '#007bff',
+    backgroundColor: '#f8f9fa',
   },
   optionText: {
-    fontSize: 16,
-    color: '#2c3e50',
+    fontSize: 17,
+    color: '#000000',
     fontWeight: '400',
+    fontFamily: 'System',
   },
   selectedOptionText: {
-    color: '#ffffff',
     fontWeight: '600',
-  },
-  infoSection: {
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    marginTop: 20,
-    backgroundColor: '#ffffff',
-    marginHorizontal: 16,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
   },
   infoItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: '#ffffff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
   },
   infoText: {
-    fontSize: 14,
-    color: '#6c757d',
-    marginLeft: 10,
+    fontSize: 16,
+    color: '#495057',
+    marginLeft: 15,
     flex: 1,
+    fontFamily: 'System',
   },
 });
