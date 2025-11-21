@@ -12,103 +12,99 @@ export default function Language() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
-      
+
       {/* Content */}
       <ScrollView style={styles.content}>
         {/* Current Language Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Ionicons name="globe" size={24} color="#28a745" />
-            <Text style={styles.sectionTitle}>Lingua attuale</Text>
-          </View>
-          
-          <TouchableOpacity 
-            style={[styles.languageItem, styles.selectedLanguageItem]}
-            onPress={() => handleLanguageSelect('it')}
-          >
-            <View style={styles.languageContent}>
-              <View style={styles.flagContainer}>
-                <Text style={styles.flagEmoji}>🇮🇹</Text>
-              </View>
-              <View style={styles.languageInfo}>
-                <Text style={styles.languageName}>Italiano</Text>
-                <Text style={styles.languageNative}>Italiano</Text>
-              </View>
-            </View>
-            <View style={styles.selectedIndicator}>
-              <Ionicons name="checkmark-circle" size={24} color="#28a745" />
-            </View>
-          </TouchableOpacity>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Lingua attuale</Text>
         </View>
 
-        {/* Available Languages Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Ionicons name="list" size={24} color="#17a2b8" />
-            <Text style={styles.sectionTitle}>Lingue disponibili</Text>
+        <TouchableOpacity
+          style={styles.languageItem}
+          onPress={() => handleLanguageSelect('it')}
+        >
+          <View style={styles.languageContent}>
+            <View style={styles.flagContainer}>
+              <Text style={styles.flagEmoji}>🇮🇹</Text>
+            </View>
+            <View style={styles.languageInfo}>
+              <Text style={styles.languageName}>Italiano</Text>
+              <Text style={styles.languageNative}>Italiano</Text>
+            </View>
           </View>
-          
+          <Ionicons name="checkmark-circle" size={24} color="#28a745" />
+        </TouchableOpacity>
+
+        {/* Available Languages Section */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Lingue disponibili</Text>
+        </View>
+
+        <View style={styles.section}>
           <Text style={styles.sectionSubtitle}>
             Al momento è disponibile solo la lingua italiana
           </Text>
+        </View>
 
-          {/* Future Languages */}
-          <View style={styles.futureLanguagesList}>
-            <View style={styles.futureLanguageItem}>
-              <View style={styles.languageContent}>
-                <View style={styles.flagContainer}>
-                  <Text style={styles.flagEmoji}>🇺🇸</Text>
-                </View>
-                <View style={styles.languageInfo}>
-                  <Text style={[styles.languageName, styles.disabledText]}>English</Text>
-                  <Text style={[styles.languageNative, styles.disabledText]}>English</Text>
-                </View>
-              </View>
-              <View style={styles.comingSoonBadge}>
-                <Text style={styles.comingSoonText}>Prossimamente</Text>
-              </View>
+        {/* Future Languages */}
+        <View style={styles.futureLanguageItem}>
+          <View style={styles.languageContent}>
+            <View style={styles.flagContainer}>
+              <Text style={styles.flagEmoji}>🇺🇸</Text>
             </View>
+            <View style={styles.languageInfo}>
+              <Text style={[styles.languageName, styles.disabledText]}>English</Text>
+              <Text style={[styles.languageNative, styles.disabledText]}>English</Text>
+            </View>
+          </View>
+          <View style={styles.comingSoonBadge}>
+            <Text style={styles.comingSoonText}>Prossimamente</Text>
+          </View>
+        </View>
 
-            <View style={styles.futureLanguageItem}>
-              <View style={styles.languageContent}>
-                <View style={styles.flagContainer}>
-                  <Text style={styles.flagEmoji}>🇪🇸</Text>
-                </View>
-                <View style={styles.languageInfo}>
-                  <Text style={[styles.languageName, styles.disabledText]}>Español</Text>
-                  <Text style={[styles.languageNative, styles.disabledText]}>Español</Text>
-                </View>
-              </View>
-              <View style={styles.comingSoonBadge}>
-                <Text style={styles.comingSoonText}>Prossimamente</Text>
-              </View>
+        <View style={styles.futureLanguageItem}>
+          <View style={styles.languageContent}>
+            <View style={styles.flagContainer}>
+              <Text style={styles.flagEmoji}>🇪🇸</Text>
             </View>
+            <View style={styles.languageInfo}>
+              <Text style={[styles.languageName, styles.disabledText]}>Español</Text>
+              <Text style={[styles.languageNative, styles.disabledText]}>Español</Text>
+            </View>
+          </View>
+          <View style={styles.comingSoonBadge}>
+            <Text style={styles.comingSoonText}>Prossimamente</Text>
+          </View>
+        </View>
 
-            <View style={styles.futureLanguageItem}>
-              <View style={styles.languageContent}>
-                <View style={styles.flagContainer}>
-                  <Text style={styles.flagEmoji}>🇫🇷</Text>
-                </View>
-                <View style={styles.languageInfo}>
-                  <Text style={[styles.languageName, styles.disabledText]}>Français</Text>
-                  <Text style={[styles.languageNative, styles.disabledText]}>Français</Text>
-                </View>
-              </View>
-              <View style={styles.comingSoonBadge}>
-                <Text style={styles.comingSoonText}>Prossimamente</Text>
-              </View>
+        <View style={styles.futureLanguageItem}>
+          <View style={styles.languageContent}>
+            <View style={styles.flagContainer}>
+              <Text style={styles.flagEmoji}>🇫🇷</Text>
             </View>
+            <View style={styles.languageInfo}>
+              <Text style={[styles.languageName, styles.disabledText]}>Français</Text>
+              <Text style={[styles.languageNative, styles.disabledText]}>Français</Text>
+            </View>
+          </View>
+          <View style={styles.comingSoonBadge}>
+            <Text style={styles.comingSoonText}>Prossimamente</Text>
           </View>
         </View>
 
         {/* Info Section */}
-        <View style={styles.infoSection}>
-          <View style={styles.infoCard}>
-            <Ionicons name="information-circle" size={32} color="#17a2b8" />
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Informazioni</Text>
+        </View>
+
+        <View style={styles.infoItem}>
+          <Ionicons name="information-circle-outline" size={24} color="#000000" />
+          <View style={styles.infoTextContainer}>
             <Text style={styles.infoTitle}>Localizzazione in sviluppo</Text>
             <Text style={styles.infoDescription}>
-              Stiamo lavorando per aggiungere il supporto a più lingue. 
-              Le nuove lingue saranno disponibili nei prossimi aggiornamenti dell&apos;app.
+              Stiamo lavorando per aggiungere il supporto a più lingue.
+              Le nuove lingue saranno disponibili nei prossimi aggiornamenti dell'app.
             </Text>
           </View>
         </View>
@@ -120,65 +116,45 @@ export default function Language() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#ffffff',
   },
   content: {
     flex: 1,
-  },
-  section: {
-    paddingHorizontal: 20,
-    paddingVertical: 24,
-    backgroundColor: '#ffffff',
-    marginHorizontal: 16,
-    marginVertical: 8,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    paddingTop: 20,
   },
   sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
+    paddingHorizontal: 20,
+    paddingTop: 30,
+    paddingBottom: 15,
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#2c3e50',
+    color: '#000000',
     fontFamily: 'System',
-    marginLeft: 12,
+  },
+  section: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: '#ffffff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
   },
   sectionSubtitle: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#6c757d',
     fontFamily: 'System',
-    marginBottom: 20,
+    fontWeight: '400',
   },
   languageItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingVertical: 16,
     backgroundColor: '#ffffff',
-    borderRadius: 12,
-    marginBottom: 8,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  selectedLanguageItem: {
-    backgroundColor: '#f8fff8',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
   },
   languageContent: {
     flexDirection: 'row',
@@ -189,10 +165,10 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#f8f9fa',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+    marginRight: 15,
   },
   flagEmoji: {
     fontSize: 24,
@@ -201,9 +177,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   languageName: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#2c3e50',
+    fontSize: 17,
+    fontWeight: '400',
+    color: '#000000',
     fontFamily: 'System',
     marginBottom: 2,
   },
@@ -212,22 +188,16 @@ const styles = StyleSheet.create({
     color: '#6c757d',
     fontFamily: 'System',
   },
-  selectedIndicator: {
-    marginLeft: 12,
-  },
-  futureLanguagesList: {
-    marginTop: 8,
-  },
   futureLanguageItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: '#f8f9fa',
-    borderRadius: 12,
-    marginBottom: 8,
-    opacity: 0.8,
+    backgroundColor: '#ffffff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+    opacity: 0.6,
   },
   disabledText: {
     color: '#adb5bd',
@@ -244,37 +214,30 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontFamily: 'System',
   },
-  infoSection: {
+  infoItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
     paddingHorizontal: 20,
-    paddingVertical: 24,
-  },
-  infoCard: {
+    paddingVertical: 16,
     backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 24,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  infoTextContainer: {
+    flex: 1,
+    marginLeft: 15,
   },
   infoTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#2c3e50',
+    fontSize: 17,
+    fontWeight: '400',
+    color: '#000000',
     fontFamily: 'System',
-    marginTop: 12,
-    marginBottom: 8,
-    textAlign: 'center',
+    marginBottom: 4,
   },
   infoDescription: {
     fontSize: 14,
     color: '#6c757d',
-    textAlign: 'center',
+    textAlign: 'left',
     lineHeight: 20,
     fontFamily: 'System',
   },
