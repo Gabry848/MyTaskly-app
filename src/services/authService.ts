@@ -646,6 +646,166 @@ async function checkAvailability(username: string, email: string) {
   }
 }
 
+/**
+ * Cambia la password dell'utente autenticato
+ *
+ * @param {string} oldPassword - La password attuale dell'utente
+ * @param {string} newPassword - La nuova password desiderata
+ * @returns {Promise<Object>} - Un oggetto che contiene lo stato dell'operazione
+ */
+async function changePassword(oldPassword: string, newPassword: string) {
+  try {
+    const token = await getValidToken();
+    if (!token) {
+      return {
+        success: false,
+        message: "Token di autenticazione non valido",
+      };
+    }
+
+    const response = await axios.put(
+      API_ENDPOINTS.CHANGE_PASSWORD,
+      {
+        old_password: oldPassword,
+        new_password: newPassword,
+      },
+      {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    // Aggiorna la password salvata in AsyncStorage
+    await AsyncStorage.setItem(STORAGE_KEYS.USER_PASSWORD, newPassword);
+
+    return {
+      success: true,
+      message: response.data.message || "Password aggiornata con successo",
+    };
+  } catch (error: any) {
+    console.error("❌ Errore durante il cambio password:", error.message);
+    if (error.response) {
+      console.error("Dettagli errore:", error.response.data);
+      console.error("Status code:", error.response.status);
+    }
+
+    return {
+      success: false,
+      message: error.response?.data?.message || "Errore durante il cambio password",
+      statusCode: error.response?.status,
+      error: error,
+    };
+  }
+}
+
+/**
+ * Cambia l'email dell'utente autenticato
+ *
+ * @param {string} newEmail - La nuova email desiderata
+ * @param {string} password - La password attuale per conferma
+ * @returns {Promise<Object>} - Un oggetto che contiene lo stato dell'operazione
+ */
+async function changeEmail(newEmail: string, password: string) {
+  try {
+    const token = await getValidToken();
+    if (!token) {
+      return {
+        success: false,
+        message: "Token di autenticazione non valido",
+      };
+    }
+
+    const response = await axios.put(
+      API_ENDPOINTS.CHANGE_EMAIL,
+      {
+        new_email: newEmail,
+        password: password,
+      },
+      {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    // Aggiorna l'email salvata in AsyncStorage
+    await AsyncStorage.setItem(STORAGE_KEYS.USER_EMAIL, newEmail);
+
+    return {
+      success: true,
+      message: response.data.message || "Email aggiornata con successo",
+    };
+  } catch (error: any) {
+    console.error("❌ Errore durante il cambio email:", error.message);
+    if (error.response) {
+      console.error("Dettagli errore:", error.response.data);
+      console.error("Status code:", error.response.status);
+    }
+
+    return {
+      success: false,
+      message: error.response?.data?.message || "Errore durante il cambio email",
+      statusCode: error.response?.status,
+      error: error,
+    };
+  }
+}
+
+/**
+ * Cambia l'username dell'utente autenticato
+ *
+ * @param {string} newUsername - Il nuovo username desiderato
+ * @returns {Promise<Object>} - Un oggetto che contiene lo stato dell'operazione
+ */
+async function changeUsername(newUsername: string) {
+  try {
+    const token = await getValidToken();
+    if (!token) {
+      return {
+        success: false,
+        message: "Token di autenticazione non valido",
+      };
+    }
+
+    const response = await axios.put(
+      API_ENDPOINTS.CHANGE_USERNAME,
+      {
+        new_username: newUsername,
+      },
+      {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    // Aggiorna l'username salvato in AsyncStorage
+    await AsyncStorage.setItem(STORAGE_KEYS.USER_NAME, newUsername);
+
+    return {
+      success: true,
+      message: response.data.message || "Username aggiornato con successo",
+    };
+  } catch (error: any) {
+    console.error("❌ Errore durante il cambio username:", error.message);
+    if (error.response) {
+      console.error("Dettagli errore:", error.response.data);
+      console.error("Status code:", error.response.status);
+    }
+
+    return {
+      success: false,
+      message: error.response?.data?.message || "Errore durante il cambio username",
+      statusCode: error.response?.status,
+      error: error,
+    };
+  }
+}
+
 // Esporta le funzioni
 export {
   login,
@@ -660,4 +820,7 @@ export {
   checkEmailVerificationStatus,
   checkAvailability,
   updateAuthData,
+  changePassword,
+  changeEmail,
+  changeUsername,
 };
