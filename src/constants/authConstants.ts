@@ -29,5 +29,8 @@ export const API_ENDPOINTS = {
   TIMEZONE: "/api/notifications/timezone",
   GOOGLE_LOGIN: "/auth/google/login",
   GOOGLE_AUTH_URL: "/auth/google/url",
-  GOOGLE_CALLBACK: "/auth/google/callback"
+  GOOGLE_CALLBACK: "/auth/google/callback",
+  CHANGE_PASSWORD: "/auth/password",
+  CHANGE_EMAIL: "/auth/email",
+  CHANGE_USERNAME: "/auth/username"
 };
