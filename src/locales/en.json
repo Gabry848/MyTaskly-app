@@ -1,0 +1,417 @@
+{
+  "navigation": {
+    "tabs": {
+      "home": "Home",
+      "categories": "Categories",
+      "notes": "Notes",
+      "calendar": "Calendar",
+      "statistics": "Statistics"
+    },
+    "screens": {
+      "login": "Login",
+      "register": "Register",
+      "emailVerification": "Email Verification",
+      "verificationSuccess": "Verification Complete",
+      "home": "Home",
+      "taskList": "Task List",
+      "categories": "Categories",
+      "notes": "Notes",
+      "calendar": "Calendar",
+      "statistics": "Statistics",
+      "profile": "Profile",
+      "settings": "Settings",
+      "accountSettings": "Account Settings",
+      "changePassword": "Change Password",
+      "help": "Help",
+      "about": "About",
+      "language": "Language",
+      "voiceSettings": "Voice Settings",
+      "googleCalendar": "Google Calendar",
+      "notificationDebug": "Notification Debug",
+      "bugReport": "Bug Report",
+      "notFound": "Page not found"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "sections": {
+      "account": "Account",
+      "support": "Support",
+      "general": "General",
+      "info": "Info",
+      "development": "Development"
+    },
+    "menu": {
+      "manageAccount": "Manage account",
+      "changePassword": "Change password",
+      "help": "Help",
+      "language": "Language",
+      "voiceSettings": "Voice settings",
+      "googleCalendar": "Google Calendar",
+      "about": "About",
+      "testNotifications": "Test Notifications (10s)"
+    }
+  },
+  "home": {
+    "title": "Mytaskly",
+    "greeting": "Hi {{username}},\nwhat do you want to do today?",
+    "greetingDefault": "Hi User,\nwhat do you want to do today?",
+    "chat": {
+      "placeholder": "Write a message...",
+      "botTyping": "Bot is typing...",
+      "error": "Sorry, an error occurred. Please try again later.",
+      "suggestedCommand": "💡 What can you do?"
+    },
+    "sync": {
+      "syncing": "Syncing...",
+      "offline": "Offline mode",
+      "pending": "{{count}} changes to sync",
+      "synced": "Synced"
+    }
+  },
+  "tutorial": {
+    "welcome": {
+      "title": "Welcome to MyTaskly!",
+      "description": "Your personal AI assistant to manage tasks, notes and calendar. Discover how to use all features in a few steps.",
+      "startButton": "Start Tour",
+      "skipButton": "Skip tour"
+    },
+    "steps": {
+      "chat": {
+        "title": "Chat with AI",
+        "description": "Write a message or tap the microphone to chat vocally. The AI assistant will help you manage your activities."
+      },
+      "categories": {
+        "title": "Your Categories",
+        "description": "Organize your activities in categories. Long press on a category to edit or delete it."
+      },
+      "tasks": {
+        "title": "Manage Tasks",
+        "description": "Tap a task to complete it. Long press to edit, delete or set reminders."
+      },
+      "notes": {
+        "title": "Draw and Annotate",
+        "description": "Use the whiteboard to draw, take notes or create sketches. Tap the + button to add a new note."
+      },
+      "calendar": {
+        "title": "Activity Calendar",
+        "description": "View all your tasks organized by date. Tap a day to see scheduled activities."
+      },
+      "statistics": {
+        "title": "Your Statistics",
+        "description": "Monitor your progress with charts and analytics. View the number of completed tasks, category distribution and your trend over time."
+      }
+    },
+    "completion": {
+      "title": "All Set!",
+      "description": "You're now ready to use MyTaskly at its best! You can review this tutorial anytime from Settings.",
+      "primaryButton": "Start Now",
+      "secondaryButton": "Review Tutorial"
+    },
+    "navigation": {
+      "next": "Next",
+      "back": "Back",
+      "skip": "Skip"
+    }
+  },
+  "help": {
+    "title": "Help",
+    "sections": {
+      "whatIs": {
+        "title": "What is Mytaskly?",
+        "description": "Mytaskly is your personal app for managing daily activities. Organize your tasks, create custom categories and keep everything under control with a simple and intuitive interface."
+      },
+      "features": {
+        "title": "Main features",
+        "taskManagement": {
+          "title": "Task Management",
+          "description": "Create, edit and delete your activities with ease"
+        },
+        "categories": {
+          "title": "Categories",
+          "description": "Organize your tasks in custom categories"
+        },
+        "notes": {
+          "title": "Notes",
+          "description": "Add notes and memos to never forget anything"
+        },
+        "aiAssistant": {
+          "title": "AI Assistant",
+          "description": "Chat with the AI assistant to better organize your activities"
+        },
+        "notifications": {
+          "title": "Notifications",
+          "description": "Receive reminders to never miss a deadline"
+        }
+      },
+      "howToUse": {
+        "title": "How to use the app",
+        "step1": {
+          "title": "Start from Home",
+          "description": "The main screen shows you an overview of your activities"
+        },
+        "step2": {
+          "title": "Create your categories",
+          "description": "Go to the Categories section to organize your tasks"
+        },
+        "step3": {
+          "title": "Add your tasks",
+          "description": "Create new activities and assign them to appropriate categories"
+        },
+        "step4": {
+          "title": "Use the AI Assistant",
+          "description": "Chat with the assistant to get suggestions and better organize your time"
+        },
+        "step5": {
+          "title": "View your statistics",
+          "description": "Access the Statistics section to monitor your progress, view charts and analyze your performance"
+        }
+      },
+      "tips": {
+        "title": "Tips"
+      }
+    }
+  },
+  "accountSettings": {
+    "title": "Account information",
+    "loading": "Loading...",
+    "fields": {
+      "username": "Username",
+      "email": "Email",
+      "registrationDate": "Registration date"
+    },
+    "actions": {
+      "changeEmail": "Change Email",
+      "changeUsername": "Change Username"
+    },
+    "modals": {
+      "changeEmail": {
+        "title": "Change Email",
+        "newEmail": "New Email",
+        "password": "Password",
+        "confirm": "Confirm",
+        "cancel": "Cancel"
+      },
+      "changeUsername": {
+        "title": "Change Username",
+        "newUsername": "New Username",
+        "confirm": "Confirm",
+        "cancel": "Cancel"
+      }
+    },
+    "messages": {
+      "emailChanged": "Email changed successfully",
+      "usernameChanged": "Username changed successfully",
+      "error": "An error occurred"
+    }
+  },
+  "changePassword": {
+    "title": "Change Password",
+    "fields": {
+      "currentPassword": "Current password",
+      "newPassword": "New password",
+      "confirmPassword": "Confirm password"
+    },
+    "button": "Change Password",
+    "messages": {
+      "success": "Password changed successfully",
+      "error": "Error changing password",
+      "passwordMismatch": "Passwords don't match"
+    }
+  },
+  "language": {
+    "title": "Language",
+    "currentLanguage": "Current language",
+    "availableLanguages": "Available languages",
+    "comingSoon": "Coming soon",
+    "languages": {
+      "it": "Italiano",
+      "en": "English",
+      "es": "Español",
+      "fr": "Français"
+    },
+    "messages": {
+      "changed": "Language changed successfully"
+    }
+  },
+  "voiceSettings": {
+    "title": "Voice Settings",
+    "fields": {
+      "voiceModel": "Voice model",
+      "voiceGender": "Voice gender",
+      "voiceQuality": "Voice quality"
+    },
+    "options": {
+      "male": "Male",
+      "female": "Female"
+    },
+    "messages": {
+      "saved": "Voice settings saved successfully"
+    }
+  },
+  "about": {
+    "title": "About",
+    "appName": "Mytaskly",
+    "version": "Version",
+    "aboutApp": "About the app",
+    "appStatus": "App status",
+    "inDevelopment": "In development",
+    "copyright": "© 2024 Mytaskly. All rights reserved."
+  },
+  "categories": {
+    "title": "Your categories",
+    "empty": "No categories found",
+    "addCategory": "Add Category",
+    "editCategory": "Edit Category",
+    "deleteCategory": "Delete Category",
+    "fields": {
+      "title": "Title",
+      "description": "Description"
+    },
+    "messages": {
+      "created": "Category created successfully",
+      "updated": "Category updated successfully",
+      "deleted": "Category deleted successfully",
+      "error": "Error",
+      "emptyTitle": "Category name cannot be empty"
+    }
+  },
+  "tasks": {
+    "addTask": "Add Task",
+    "editTask": "Edit Task",
+    "deleteTask": "Delete Task",
+    "completed": "Completed",
+    "reopened": "Reopened",
+    "fields": {
+      "title": "Enter title",
+      "description": "Description",
+      "dueDate": "Due date",
+      "priority": "Priority",
+      "category": "Category"
+    },
+    "priority": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High"
+    },
+    "messages": {
+      "created": "Task created successfully",
+      "updated": "Task updated successfully",
+      "deleted": "Task deleted successfully",
+      "completed": "Task completed",
+      "reopened": "Task reopened"
+    }
+  },
+  "notes": {
+    "title": "Notes",
+    "newNote": "New Note",
+    "create": "Create",
+    "cancel": "Cancel",
+    "messages": {
+      "created": "Note created successfully",
+      "deleted": "Note deleted successfully"
+    }
+  },
+  "calendar": {
+    "title": "Calendar",
+    "today": "Today",
+    "months": {
+      "january": "January",
+      "february": "February",
+      "march": "March",
+      "april": "April",
+      "may": "May",
+      "june": "June",
+      "july": "July",
+      "august": "August",
+      "september": "September",
+      "october": "October",
+      "november": "November",
+      "december": "December"
+    },
+    "days": {
+      "monday": "Mon",
+      "tuesday": "Tue",
+      "wednesday": "Wed",
+      "thursday": "Thu",
+      "friday": "Fri",
+      "saturday": "Sat",
+      "sunday": "Sun"
+    }
+  },
+  "statistics": {
+    "title": "Statistics",
+    "overview": "Overview",
+    "tasksCompleted": "Tasks Completed",
+    "tasksInProgress": "Tasks in Progress",
+    "totalTasks": "Total Tasks",
+    "categoryDistribution": "Category Distribution",
+    "completionRate": "Completion Rate",
+    "noData": "No data available"
+  },
+  "common": {
+    "buttons": {
+      "save": "Save",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "edit": "Edit",
+      "create": "Create",
+      "confirm": "Confirm",
+      "close": "Close",
+      "back": "Back",
+      "next": "Next",
+      "done": "Done",
+      "retry": "Retry",
+      "refresh": "Refresh"
+    },
+    "messages": {
+      "loading": "Loading...",
+      "saving": "Saving...",
+      "success": "Operation completed successfully",
+      "error": "An error occurred",
+      "confirmDelete": "Are you sure you want to delete?",
+      "noConnection": "No internet connection",
+      "tryAgain": "Try again later"
+    },
+    "search": {
+      "placeholder": "Search...",
+      "noResults": "No results found"
+    }
+  },
+  "errors": {
+    "network": "Network error",
+    "server": "Server error",
+    "unauthorized": "Unauthorized",
+    "notFound": "Not found",
+    "validation": "Validation error",
+    "unknown": "Unknown error"
+  },
+  "auth": {
+    "login": {
+      "title": "Login",
+      "email": "Email",
+      "password": "Password",
+      "button": "Login",
+      "noAccount": "Don't have an account?",
+      "register": "Register",
+      "forgotPassword": "Forgot password?"
+    },
+    "register": {
+      "title": "Register",
+      "username": "Username",
+      "email": "Email",
+      "password": "Password",
+      "confirmPassword": "Confirm Password",
+      "button": "Register",
+      "hasAccount": "Already have an account?",
+      "login": "Login"
+    },
+    "messages": {
+      "loginSuccess": "Login successful",
+      "loginError": "Error during login",
+      "registerSuccess": "Registration completed successfully",
+      "registerError": "Error during registration",
+      "logoutSuccess": "Logout successful"
+    }
+  }
+}
