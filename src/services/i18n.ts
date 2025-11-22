@@ -39,26 +39,27 @@ export const saveLanguage = async (language: string): Promise<void> => {
   }
 };
 
-// Inizializzazione i18n
-const initI18n = async () => {
-  const language = await getStoredLanguage();
+// Inizializzazione i18n sincronizzata
+i18n
+  .use(initReactI18next)
+  .init({
+    compatibilityJSON: 'v3',
+    resources,
+    lng: 'it', // Lingua di default
+    fallbackLng: 'it',
+    interpolation: {
+      escapeValue: false,
+    },
+    react: {
+      useSuspense: false,
+    },
+  });
 
-  i18n
-    .use(initReactI18next)
-    .init({
-      compatibilityJSON: 'v3',
-      resources,
-      lng: language,
-      fallbackLng: 'it',
-      interpolation: {
-        escapeValue: false,
-      },
-      react: {
-        useSuspense: false,
-      },
-    });
-};
-
-initI18n();
+// Carica la lingua salvata dopo l'inizializzazione
+getStoredLanguage().then((language) => {
+  if (i18n.language !== language) {
+    i18n.changeLanguage(language);
+  }
+});
 
 export default i18n;
