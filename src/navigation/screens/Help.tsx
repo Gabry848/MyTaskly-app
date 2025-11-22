@@ -132,6 +132,18 @@ export default function Help() {
           </View>
         </View>
 
+        <View style={styles.stepItem}>
+          <View style={styles.stepNumber}>
+            <Text style={styles.stepNumberText}>5</Text>
+          </View>
+          <View style={styles.stepTextContainer}>
+            <Text style={styles.stepTitle}>Visualizza le tue statistiche</Text>
+            <Text style={styles.stepDescription}>
+              Accedi alla sezione Statistiche per monitorare il tuo progresso, visualizzare i grafici e analizzare le tue prestazioni
+            </Text>
+          </View>
+        </View>
+
         {/* Tips Section */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Suggerimenti</Text>

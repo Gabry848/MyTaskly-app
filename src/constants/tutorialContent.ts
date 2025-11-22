@@ -31,6 +31,11 @@ export const TUTORIAL_CONTENT = {
     description: "Visualizza tutti i tuoi task organizzati per data. Tocca un giorno per vedere le attività programmate.",
     icon: "calendar",
   },
+  step7: {
+    title: "Le tue Statistiche",
+    description: "Monitora il tuo progresso con grafici e analitiche. Visualizza il numero di task completati, la distribuzione per categoria e il tuo andamento nel tempo.",
+    icon: "bar-chart",
+  },
   completion: {
     title: "Tutto Pronto!",
     description: "Ora sei pronto per utilizzare MyTaskly al meglio! Puoi rivedere questo tutorial in qualsiasi momento dalle Impostazioni.",
@@ -48,7 +53,7 @@ export const TUTORIAL_CONTENT = {
 export interface TutorialStep {
   id: number;
   type: 'welcome' | 'spotlight' | 'completion';
-  targetScreen?: 'Home' | 'Categories' | 'TaskList' | 'Notes' | 'Calendar';
+  targetScreen?: 'Home' | 'Categories' | 'TaskList' | 'Notes' | 'Calendar' | 'Statistics';
   targetElement?: string; // ref name for spotlight
   content: {
     title: string;
@@ -123,6 +128,17 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
   },
   {
     id: 7,
+    type: 'spotlight',
+    targetScreen: 'Statistics',
+    targetElement: 'statisticsContainer',
+    content: {
+      title: TUTORIAL_CONTENT.step7.title,
+      description: TUTORIAL_CONTENT.step7.description,
+      icon: TUTORIAL_CONTENT.step7.icon,
+    },
+  },
+  {
+    id: 8,
     type: 'completion',
     content: {
       title: TUTORIAL_CONTENT.completion.title,
