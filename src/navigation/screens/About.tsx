@@ -29,93 +29,88 @@ export default function About() {
 
         <View style={styles.section}>
           <Text style={styles.description}>
-            Mytaskly è un'applicazione per la gestione delle attività quotidiane,
-            progettata per aiutarti a organizzare il tuo tempo e aumentare la tua produttività.
+            {t('about.description1')}
           </Text>
         </View>
 
         <View style={styles.section}>
           <Text style={styles.description}>
-            L'app è attualmente in fase beta e viene costantemente migliorata
-            con nuove funzionalità e aggiornamenti.
+            {t('about.description2')}
           </Text>
         </View>
 
         {/* Developer Section */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Sviluppatore</Text>
+          <Text style={styles.sectionTitle}>{t('about.developer.title')}</Text>
         </View>
 
         <View style={styles.developerItem}>
           <Ionicons name="person-circle-outline" size={48} color="#000000" />
           <View style={styles.developerText}>
-            <Text style={styles.developerName}>Gabry848 Studio</Text>
-            <Text style={styles.developerRole}>Sviluppatore & Designer</Text>
+            <Text style={styles.developerName}>{t('about.developer.name')}</Text>
+            <Text style={styles.developerRole}>{t('about.developer.role')}</Text>
           </View>
         </View>
 
         <View style={styles.section}>
           <Text style={styles.description}>
-            Mytaskly è sviluppata con passione da Gabry848 Studio,
-            con l'obiettivo di creare strumenti semplici ed efficaci
-            per la produttività personale.
+            {t('about.developer.description')}
           </Text>
         </View>
 
         {/* Status Section */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Stato dell'app</Text>
+          <Text style={styles.sectionTitle}>{t('about.status.title')}</Text>
         </View>
 
         <View style={styles.statusItem}>
           <View style={styles.betaBadge}>
             <Ionicons name="flask" size={16} color="#000000" />
-            <Text style={styles.betaText}>BETA</Text>
+            <Text style={styles.betaText}>{t('about.status.betaBadge')}</Text>
           </View>
           <View style={styles.statusTextContainer}>
             <Text style={styles.betaDescription}>
-              Questa è una versione beta dell'applicazione.
-              Potrebbero essere presenti alcuni bug o funzionalità incomplete.
+              {t('about.status.betaDescription')}
             </Text>
             <Text style={styles.betaNote}>
-              I tuoi feedback sono preziosi per migliorare l'app!
+              {t('about.status.betaNote')}
             </Text>
           </View>
         </View>
 
         {/* Features in Development */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>In sviluppo</Text>
+          <Text style={styles.sectionTitle}>{t('about.inDevelopment.title')}</Text>
         </View>
 
         <View style={styles.featureItem}>
           <Ionicons name="ellipse-outline" size={16} color="#000000" />
-          <Text style={styles.featureText}>Sincronizzazione cloud</Text>
+          <Text style={styles.featureText}>{t('about.inDevelopment.cloudSync')}</Text>
         </View>
 
         <View style={styles.featureItem}>
           <Ionicons name="ellipse-outline" size={16} color="#000000" />
-          <Text style={styles.featureText}>Notifiche avanzate</Text>
+          <Text style={styles.featureText}>{t('about.inDevelopment.advancedNotifications')}</Text>
         </View>
 
         <View style={styles.featureItem}>
           <Ionicons name="ellipse-outline" size={16} color="#000000" />
-          <Text style={styles.featureText}>Temi personalizzati</Text>
+          <Text style={styles.featureText}>{t('about.inDevelopment.customThemes')}</Text>
         </View>
 
         <View style={styles.featureItem}>
           <Ionicons name="ellipse-outline" size={16} color="#000000" />
-          <Text style={styles.featureText}>Statistiche avanzate</Text>
+          <Text style={styles.featureText}>{t('about.inDevelopment.advancedStatistics')}</Text>
         </View>
 
         {/* Copyright Section */}
         <View style={styles.copyrightSection}>
           <Text style={styles.copyrightText}>
-            © 2024 Gabry848 Studio
+            {t('about.copyright')}
           </Text>
 
           <Text style={styles.copyrightSubtext}>
-            Tutti i diritti riservati
+            {t('about.rightsReserved')}
           </Text>
         </View>
       </ScrollView>

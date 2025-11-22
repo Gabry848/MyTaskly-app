@@ -79,7 +79,7 @@ const RegisterScreen = () => {
     if (password !== confirmPassword) {
       setNotification({
         isVisible: true,
-        message: "Passwords do not match",
+        message: t('auth.register.errors.passwordMismatch'),
         isSuccess: false,
         key: Date.now(),
         onFinish: () => setNotification(null),
@@ -93,7 +93,7 @@ const RegisterScreen = () => {
     if (!availabilityResult.success) {
       setNotification({
         isVisible: true,
-        message: availabilityResult.message || "Errore durante la verifica della disponibilità",
+        message: availabilityResult.message || t('auth.register.errors.availabilityCheck'),
         isSuccess: false,
         key: Date.now(),
         onFinish: () => setNotification(null),
@@ -104,7 +104,7 @@ const RegisterScreen = () => {
     if (!availabilityResult.nameAvailable) {
       setNotification({
         isVisible: true,
-        message: "Lo username è già in uso. Scegline un altro.",
+        message: t('auth.register.errors.usernameTaken'),
         isSuccess: false,
         key: Date.now(),
         onFinish: () => setNotification(null),
@@ -115,7 +115,7 @@ const RegisterScreen = () => {
     if (!availabilityResult.emailAvailable) {
       setNotification({
         isVisible: true,
-        message: "L'email è già registrata. Usa un'altra email o effettua il login.",
+        message: t('auth.register.errors.emailTaken'),
         isSuccess: false,
         key: Date.now(),
         onFinish: () => setNotification(null),
@@ -127,7 +127,7 @@ const RegisterScreen = () => {
     if (result.success) {
       setNotification({
         isVisible: true,
-        message: result.message || "Registrazione effettuata con successo",
+        message: result.message || t('auth.register.success'),
         isSuccess: true,
         key: Date.now(),
       });
@@ -139,7 +139,7 @@ const RegisterScreen = () => {
     } else {
       setNotification({
         isVisible: true,
-        message: result.message || "Errore durante la registrazione",
+        message: result.message || t('auth.register.errors.generic'),
         isSuccess: false,
         key: Date.now(),
         onFinish: () => setNotification(null),
@@ -156,7 +156,7 @@ const RegisterScreen = () => {
       </View><View style={[styles.inputContainer, { width: width * 0.9 }]}>
         <FontAwesome name="user" size={20} color="#666666" style={styles.icon} />
         <TextInput
-          placeholder="Username"
+          placeholder={t('auth.register.username')}
           placeholderTextColor="#999999"
           style={[styles.input, { width: width * 0.75 }]}
           value={username}
@@ -171,7 +171,7 @@ const RegisterScreen = () => {
           style={styles.icon}
         />
         <TextInput
-          placeholder="Email"
+          placeholder={t('auth.register.email')}
           placeholderTextColor="#999999"
           style={[styles.input, { width: width * 0.75 }]}
           keyboardType="email-address"
@@ -182,7 +182,7 @@ const RegisterScreen = () => {
       <View style={[styles.inputContainer, { width: width * 0.9 }]}>
         <FontAwesome name="lock" size={20} color="#666666" style={styles.icon} />
         <TextInput
-          placeholder="Password"
+          placeholder={t('auth.register.password')}
           placeholderTextColor="#999999"
           style={[styles.input, { width: width * 0.75 }]}
           secureTextEntry
@@ -193,7 +193,7 @@ const RegisterScreen = () => {
       <View style={[styles.inputContainer, { width: width * 0.9 }]}>
         <FontAwesome name="lock" size={20} color="#666666" style={styles.icon} />
         <TextInput
-          placeholder="Confirm Password"
+          placeholder={t('auth.register.confirmPassword')}
           placeholderTextColor="#999999"
           style={[styles.input, { width: width * 0.75 }]}
           secureTextEntry
@@ -205,14 +205,14 @@ const RegisterScreen = () => {
         style={[styles.registerButton, { width: width * 0.9 }]}
         onPress={handleRegister}
       >
-        <Text style={styles.registerText}>Avanti</Text>
+        <Text style={styles.registerText}>{t('auth.register.next')}</Text>
       </TouchableOpacity>
-      <Text style={styles.loginText}>Already have an account?</Text>
-      <TouchableOpacity 
+      <Text style={styles.loginText}>{t('auth.register.alreadyHaveAccount')}</Text>
+      <TouchableOpacity
         style={styles.loginButton}
         onPress={() => navigation.navigate("Login")}
       >
-        <Text style={styles.loginButtonText}>Login</Text>
+        <Text style={styles.loginButtonText}>{t('auth.register.loginButton')}</Text>
       </TouchableOpacity>
       {notification && (
         <NotificationSnackbar

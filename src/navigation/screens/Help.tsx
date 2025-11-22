@@ -20,9 +20,7 @@ export default function Help() {
 
         <View style={styles.section}>
           <Text style={styles.sectionText}>
-            Mytaskly è la tua app personale per la gestione delle attività quotidiane.
-            Organizza le tue task, crea categorie personalizzate e mantieni tutto sotto controllo
-            con un'interfaccia semplice e intuitiva.
+            {t('help.sections.whatIs.description')}
           </Text>
         </View>
 
@@ -34,9 +32,9 @@ export default function Help() {
         <View style={styles.featureItem}>
           <Ionicons name="checkmark-circle-outline" size={24} color="#000000" />
           <View style={styles.featureTextContainer}>
-            <Text style={styles.featureTitle}>Gestione Task</Text>
+            <Text style={styles.featureTitle}>{t('help.sections.features.taskManagement.title')}</Text>
             <Text style={styles.featureDescription}>
-              Crea, modifica ed elimina le tue attività con facilità
+              {t('help.sections.features.taskManagement.description')}
             </Text>
           </View>
         </View>
@@ -44,9 +42,9 @@ export default function Help() {
         <View style={styles.featureItem}>
           <Ionicons name="folder-outline" size={24} color="#000000" />
           <View style={styles.featureTextContainer}>
-            <Text style={styles.featureTitle}>Categorie</Text>
+            <Text style={styles.featureTitle}>{t('help.sections.features.categories.title')}</Text>
             <Text style={styles.featureDescription}>
-              Organizza le tue task in categorie personalizzate
+              {t('help.sections.features.categories.description')}
             </Text>
           </View>
         </View>
@@ -54,9 +52,9 @@ export default function Help() {
         <View style={styles.featureItem}>
           <Ionicons name="document-text-outline" size={24} color="#000000" />
           <View style={styles.featureTextContainer}>
-            <Text style={styles.featureTitle}>Note</Text>
+            <Text style={styles.featureTitle}>{t('help.sections.features.notes.title')}</Text>
             <Text style={styles.featureDescription}>
-              Aggiungi note e appunti per non dimenticare nulla
+              {t('help.sections.features.notes.description')}
             </Text>
           </View>
         </View>
@@ -64,9 +62,9 @@ export default function Help() {
         <View style={styles.featureItem}>
           <Ionicons name="chatbubbles-outline" size={24} color="#000000" />
           <View style={styles.featureTextContainer}>
-            <Text style={styles.featureTitle}>Assistant AI</Text>
+            <Text style={styles.featureTitle}>{t('help.sections.features.aiAssistant.title')}</Text>
             <Text style={styles.featureDescription}>
-              Chatta con l'assistente AI per organizzare meglio le tue attività
+              {t('help.sections.features.aiAssistant.description')}
             </Text>
           </View>
         </View>
@@ -74,16 +72,16 @@ export default function Help() {
         <View style={styles.featureItem}>
           <Ionicons name="notifications-outline" size={24} color="#000000" />
           <View style={styles.featureTextContainer}>
-            <Text style={styles.featureTitle}>Notifiche</Text>
+            <Text style={styles.featureTitle}>{t('help.sections.features.notifications.title')}</Text>
             <Text style={styles.featureDescription}>
-              Ricevi promemoria per non perdere mai una scadenza
+              {t('help.sections.features.notifications.description')}
             </Text>
           </View>
         </View>
 
         {/* How to Use Section */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Come utilizzare l'app</Text>
+          <Text style={styles.sectionTitle}>{t('help.sections.howToUse.title')}</Text>
         </View>
 
         <View style={styles.stepItem}>
@@ -91,9 +89,9 @@ export default function Help() {
             <Text style={styles.stepNumberText}>1</Text>
           </View>
           <View style={styles.stepTextContainer}>
-            <Text style={styles.stepTitle}>Inizia dalla Home</Text>
+            <Text style={styles.stepTitle}>{t('help.sections.howToUse.step1.title')}</Text>
             <Text style={styles.stepDescription}>
-              La schermata principale ti mostra una panoramica delle tue attività
+              {t('help.sections.howToUse.step1.description')}
             </Text>
           </View>
         </View>
@@ -103,9 +101,9 @@ export default function Help() {
             <Text style={styles.stepNumberText}>2</Text>
           </View>
           <View style={styles.stepTextContainer}>
-            <Text style={styles.stepTitle}>Crea le tue categorie</Text>
+            <Text style={styles.stepTitle}>{t('help.sections.howToUse.step2.title')}</Text>
             <Text style={styles.stepDescription}>
-              Vai nella sezione Categorie per organizzare le tue task
+              {t('help.sections.howToUse.step2.description')}
             </Text>
           </View>
         </View>
@@ -115,9 +113,9 @@ export default function Help() {
             <Text style={styles.stepNumberText}>3</Text>
           </View>
           <View style={styles.stepTextContainer}>
-            <Text style={styles.stepTitle}>Aggiungi le tue task</Text>
+            <Text style={styles.stepTitle}>{t('help.sections.howToUse.step3.title')}</Text>
             <Text style={styles.stepDescription}>
-              Crea nuove attività e assegnale alle categorie appropriate
+              {t('help.sections.howToUse.step3.description')}
             </Text>
           </View>
         </View>
@@ -127,9 +125,9 @@ export default function Help() {
             <Text style={styles.stepNumberText}>4</Text>
           </View>
           <View style={styles.stepTextContainer}>
-            <Text style={styles.stepTitle}>Usa l'AI Assistant</Text>
+            <Text style={styles.stepTitle}>{t('help.sections.howToUse.step4.title')}</Text>
             <Text style={styles.stepDescription}>
-              Chatta con l'assistente per ricevere suggerimenti e organizzare meglio il tuo tempo
+              {t('help.sections.howToUse.step4.description')}
             </Text>
           </View>
         </View>
@@ -139,36 +137,36 @@ export default function Help() {
             <Text style={styles.stepNumberText}>5</Text>
           </View>
           <View style={styles.stepTextContainer}>
-            <Text style={styles.stepTitle}>Visualizza le tue statistiche</Text>
+            <Text style={styles.stepTitle}>{t('help.sections.howToUse.step5.title')}</Text>
             <Text style={styles.stepDescription}>
-              Accedi alla sezione Statistiche per monitorare il tuo progresso, visualizzare i grafici e analizzare le tue prestazioni
+              {t('help.sections.howToUse.step5.description')}
             </Text>
           </View>
         </View>
 
         {/* Tips Section */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Suggerimenti</Text>
+          <Text style={styles.sectionTitle}>{t('help.sections.tips.title')}</Text>
         </View>
 
         <View style={styles.tipItem}>
           <Ionicons name="time-outline" size={20} color="#000000" />
           <Text style={styles.tipText}>
-            Imposta delle priorità per le tue task più importanti
+            {t('help.sections.tips.tip1')}
           </Text>
         </View>
 
         <View style={styles.tipItem}>
           <Ionicons name="calendar-outline" size={20} color="#000000" />
           <Text style={styles.tipText}>
-            Utilizza le date di scadenza per non perdere appuntamenti importanti
+            {t('help.sections.tips.tip2')}
           </Text>
         </View>
 
         <View style={styles.tipItem}>
           <Ionicons name="sync-outline" size={20} color="#000000" />
           <Text style={styles.tipText}>
-            Mantieni l'app sempre aggiornata per ricevere le ultime funzionalità
+            {t('help.sections.tips.tip3')}
           </Text>
         </View>
       </ScrollView>
