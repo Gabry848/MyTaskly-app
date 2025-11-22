@@ -7,6 +7,7 @@ import axios from '../../services/axiosInstance';
 import { sendTestNotification } from '../../services/notificationService';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../types';
+import { useTranslation } from 'react-i18next';
 
 interface UserInfo {
   username: string;
@@ -16,6 +17,7 @@ interface UserInfo {
 }
 
 export default function AccountSettings() {
+  const { t } = useTranslation();
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [loading, setLoading] = useState(true);
