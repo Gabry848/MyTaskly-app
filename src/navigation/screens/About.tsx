@@ -2,8 +2,10 @@ import { Text } from '@react-navigation/elements';
 import React from 'react';
 import { StyleSheet, View, SafeAreaView, StatusBar, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 export default function About() {
+  const { t } = useTranslation();
 
   return (
     <SafeAreaView style={styles.container}>
@@ -16,13 +18,13 @@ export default function About() {
           <View style={styles.logoContainer}>
             <Ionicons name="checkmark-done-circle" size={80} color="#000000" />
           </View>
-          <Text style={styles.appName}>Mytaskly</Text>
-          <Text style={styles.version}>Versione 1.0.0 Beta</Text>
+          <Text style={styles.appName}>{t('about.appName')}</Text>
+          <Text style={styles.version}>{t('about.version')} 1.0.0 Beta</Text>
         </View>
 
         {/* App Info Section */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Informazioni sull'app</Text>
+          <Text style={styles.sectionTitle}>{t('about.aboutApp')}</Text>
         </View>
 
         <View style={styles.section}>

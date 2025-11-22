@@ -16,10 +16,12 @@ import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "../../types";
 import * as authService from "../../services/authService";
 import { NotificationSnackbar } from "../../../components/NotificationSnackbar";
+import { useTranslation } from 'react-i18next';
 
 const { width } = Dimensions.get("window");
 
 const RegisterScreen = () => {
+  const { t } = useTranslation();
   const [username, setUsername] = React.useState("");
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
@@ -45,7 +47,7 @@ const RegisterScreen = () => {
     if (containsSpecialChars(trimmedText)) {
       setNotification({
         isVisible: true,
-        message: "Lo username non può contenere caratteri speciali",
+        message: t('errors.validation'),
         isSuccess: false,
         key: Date.now(),
         onFinish: () => {
@@ -64,7 +66,7 @@ const RegisterScreen = () => {
     if (containsSpecialChars(username)) {
       setNotification({
         isVisible: true,
-        message: "Lo username non può contenere caratteri speciali",
+        message: t('errors.validation'),
         isSuccess: false,
         key: Date.now(),
         onFinish: () => {
