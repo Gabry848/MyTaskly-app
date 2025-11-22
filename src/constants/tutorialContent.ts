@@ -1,53 +1,63 @@
-// Tutorial content in Italian for MyTaskly onboarding
-export const TUTORIAL_CONTENT = {
+import i18n from '../services/i18n';
+
+// Tutorial content using i18n translations
+export const getTutorialContent = () => ({
   welcome: {
-    title: "Benvenuto in MyTaskly!",
-    description: "Il tuo assistente AI personale per gestire task, note e calendario. Scopri come usare tutte le funzionalità in pochi passaggi.",
-    startButton: "Inizia il Tour",
-    skipButton: "Salta il tour",
+    title: i18n.t('tutorial.welcome.title'),
+    description: i18n.t('tutorial.welcome.description'),
+    startButton: i18n.t('tutorial.welcome.startButton'),
+    skipButton: i18n.t('tutorial.welcome.skipButton'),
   },
   step2: {
-    title: "Chat con l'AI",
-    description: "Scrivi un messaggio o tocca il microfono per chattare vocalmente. L'assistente AI ti aiuterà a gestire le tue attività.",
+    title: i18n.t('tutorial.steps.chat.title'),
+    description: i18n.t('tutorial.steps.chat.description'),
     icon: "chatbubble-ellipses",
   },
   step3: {
-    title: "Le tue Categorie",
-    description: "Organizza le tue attività in categorie. Tieni premuto su una categoria per modificarla o eliminarla.",
+    title: i18n.t('tutorial.steps.categories.title'),
+    description: i18n.t('tutorial.steps.categories.description'),
     icon: "grid",
   },
   step4: {
-    title: "Gestisci i Task",
-    description: "Tocca un task per completarlo. Tieni premuto per modificare, eliminare o impostare promemoria.",
+    title: i18n.t('tutorial.steps.tasks.title'),
+    description: i18n.t('tutorial.steps.tasks.description'),
     icon: "checkbox",
   },
   step5: {
-    title: "Disegna e Annota",
-    description: "Usa la lavagna per disegnare, prendere appunti o creare schizzi. Tocca il pulsante + per aggiungere una nuova nota.",
+    title: i18n.t('tutorial.steps.notes.title'),
+    description: i18n.t('tutorial.steps.notes.description'),
     icon: "brush",
   },
   step6: {
-    title: "Calendario delle Attività",
-    description: "Visualizza tutti i tuoi task organizzati per data. Tocca un giorno per vedere le attività programmate.",
+    title: i18n.t('tutorial.steps.calendar.title'),
+    description: i18n.t('tutorial.steps.calendar.description'),
     icon: "calendar",
   },
   step7: {
-    title: "Le tue Statistiche",
-    description: "Monitora il tuo progresso con grafici e analitiche. Visualizza il numero di task completati, la distribuzione per categoria e il tuo andamento nel tempo.",
+    title: i18n.t('tutorial.steps.statistics.title'),
+    description: i18n.t('tutorial.steps.statistics.description'),
     icon: "bar-chart",
   },
   completion: {
-    title: "Tutto Pronto!",
-    description: "Ora sei pronto per utilizzare MyTaskly al meglio! Puoi rivedere questo tutorial in qualsiasi momento dalle Impostazioni.",
-    primaryButton: "Inizia Ora",
-    secondaryButton: "Rivedi Tutorial",
+    title: i18n.t('tutorial.completion.title'),
+    description: i18n.t('tutorial.completion.description'),
+    primaryButton: i18n.t('tutorial.completion.primaryButton'),
+    secondaryButton: i18n.t('tutorial.completion.secondaryButton'),
   },
   navigation: {
-    next: "Avanti",
-    back: "Indietro",
-    skip: "Salta",
+    next: i18n.t('tutorial.navigation.next'),
+    back: i18n.t('tutorial.navigation.back'),
+    skip: i18n.t('tutorial.navigation.skip'),
   },
-};
+});
+
+// For backward compatibility, export as constant that updates with language
+export const TUTORIAL_CONTENT = getTutorialContent();
+
+// Listen for language changes and update content
+i18n.on('languageChanged', () => {
+  Object.assign(TUTORIAL_CONTENT, getTutorialContent());
+});
 
 // Tutorial steps configuration
 export interface TutorialStep {
@@ -62,90 +72,96 @@ export interface TutorialStep {
   };
 }
 
-export const TUTORIAL_STEPS: TutorialStep[] = [
-  {
-    id: 1,
-    type: 'welcome',
-    content: {
-      title: TUTORIAL_CONTENT.welcome.title,
-      description: TUTORIAL_CONTENT.welcome.description,
+export const getTutorialSteps = (): TutorialStep[] => {
+  const content = getTutorialContent();
+
+  return [
+    {
+      id: 1,
+      type: 'welcome',
+      content: {
+        title: content.welcome.title,
+        description: content.welcome.description,
+      },
     },
-  },
-  {
-    id: 2,
-    type: 'spotlight',
-    targetScreen: 'Home',
-    targetElement: 'chatInput',
-    content: {
-      title: TUTORIAL_CONTENT.step2.title,
-      description: TUTORIAL_CONTENT.step2.description,
-      icon: TUTORIAL_CONTENT.step2.icon,
+    {
+      id: 2,
+      type: 'spotlight',
+      targetScreen: 'Home',
+      targetElement: 'chatInput',
+      content: {
+        title: content.step2.title,
+        description: content.step2.description,
+        icon: content.step2.icon,
+      },
     },
-  },
-  {
-    id: 3,
-    type: 'spotlight',
-    targetScreen: 'Categories',
-    targetElement: 'categoryList',
-    content: {
-      title: TUTORIAL_CONTENT.step3.title,
-      description: TUTORIAL_CONTENT.step3.description,
-      icon: TUTORIAL_CONTENT.step3.icon,
+    {
+      id: 3,
+      type: 'spotlight',
+      targetScreen: 'Categories',
+      targetElement: 'categoryList',
+      content: {
+        title: content.step3.title,
+        description: content.step3.description,
+        icon: content.step3.icon,
+      },
     },
-  },
-  {
-    id: 4,
-    type: 'spotlight',
-    targetScreen: 'Categories',
-    targetElement: 'taskItem',
-    content: {
-      title: TUTORIAL_CONTENT.step4.title,
-      description: TUTORIAL_CONTENT.step4.description,
-      icon: TUTORIAL_CONTENT.step4.icon,
+    {
+      id: 4,
+      type: 'spotlight',
+      targetScreen: 'Categories',
+      targetElement: 'taskItem',
+      content: {
+        title: content.step4.title,
+        description: content.step4.description,
+        icon: content.step4.icon,
+      },
     },
-  },
-  {
-    id: 5,
-    type: 'spotlight',
-    targetScreen: 'Notes',
-    targetElement: 'whiteboard',
-    content: {
-      title: TUTORIAL_CONTENT.step5.title,
-      description: TUTORIAL_CONTENT.step5.description,
-      icon: TUTORIAL_CONTENT.step5.icon,
+    {
+      id: 5,
+      type: 'spotlight',
+      targetScreen: 'Notes',
+      targetElement: 'whiteboard',
+      content: {
+        title: content.step5.title,
+        description: content.step5.description,
+        icon: content.step5.icon,
+      },
     },
-  },
-  {
-    id: 6,
-    type: 'spotlight',
-    targetScreen: 'Calendar',
-    targetElement: 'calendar',
-    content: {
-      title: TUTORIAL_CONTENT.step6.title,
-      description: TUTORIAL_CONTENT.step6.description,
-      icon: TUTORIAL_CONTENT.step6.icon,
+    {
+      id: 6,
+      type: 'spotlight',
+      targetScreen: 'Calendar',
+      targetElement: 'calendar',
+      content: {
+        title: content.step6.title,
+        description: content.step6.description,
+        icon: content.step6.icon,
+      },
     },
-  },
-  {
-    id: 7,
-    type: 'spotlight',
-    targetScreen: 'Statistics',
-    targetElement: 'statisticsContainer',
-    content: {
-      title: TUTORIAL_CONTENT.step7.title,
-      description: TUTORIAL_CONTENT.step7.description,
-      icon: TUTORIAL_CONTENT.step7.icon,
+    {
+      id: 7,
+      type: 'spotlight',
+      targetScreen: 'Statistics',
+      targetElement: 'statisticsContainer',
+      content: {
+        title: content.step7.title,
+        description: content.step7.description,
+        icon: content.step7.icon,
+      },
     },
-  },
-  {
-    id: 8,
-    type: 'completion',
-    content: {
-      title: TUTORIAL_CONTENT.completion.title,
-      description: TUTORIAL_CONTENT.completion.description,
+    {
+      id: 8,
+      type: 'completion',
+      content: {
+        title: content.completion.title,
+        description: content.completion.description,
+      },
     },
-  },
-];
+  ];
+};
+
+export const TUTORIAL_STEPS = getTutorialSteps();
 
 // AsyncStorage key for tutorial completion status
 export const TUTORIAL_STORAGE_KEY = '@mytaskly:tutorial_completed';

@@ -25,8 +25,10 @@ import SyncManager, { SyncStatus } from '../../services/SyncManager';
 import Badge from "../../../components/Badge";
 import VoiceChatModal from "../../../components/VoiceChatModal";
 import { useTutorialContext } from "../../contexts/TutorialContext";
+import { useTranslation } from 'react-i18next';
 
 const HomeScreen = () => {
+  const { t } = useTranslation();
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);  const [isLoading, setIsLoading] = useState(false);
   const [chatStarted, setChatStarted] = useState(false);  const [userName, setUserName] = useState("Utente");
@@ -116,7 +118,7 @@ const HomeScreen = () => {
   // Effetto per l'animazione di scrittura del testo di saluto
   useEffect(() => {
     if (userName && !chatStarted) {
-      const greetingText = `Ciao ${userName},\ncosa vuoi fare oggi?`;
+      const greetingText = t('home.greeting', { username: userName });
       let currentIndex = 0;
       setDisplayedText("");
       setIsTyping(true);
@@ -349,7 +351,7 @@ const HomeScreen = () => {
           msg.id === botMessageId
             ? {
                 ...msg,
-                text: "Mi dispiace, si è verificato un errore. Riprova più tardi.",
+                text: t('home.chat.error'),
                 isStreaming: false,
                 isComplete: true,
                 modelType: "base"
@@ -461,22 +463,22 @@ const HomeScreen = () => {
               {syncStatus.isSyncing ? (
                 <View style={styles.syncingContainer}>
                   <ActivityIndicator size="small" color="#666666" />
-                  <Text style={styles.syncText}>Sincronizzando...</Text>
+                  <Text style={styles.syncText}>{t('home.sync.syncing')}</Text>
                 </View>
               ) : !syncStatus.isOnline ? (
                 <View style={styles.offlineContainer}>
                   <Ionicons name="cloud-offline-outline" size={16} color="#ff6b6b" />
-                  <Text style={styles.offlineText}>Modalità offline</Text>
+                  <Text style={styles.offlineText}>{t('home.sync.offline')}</Text>
                 </View>
               ) : syncStatus.pendingChanges > 0 ? (
                 <View style={styles.pendingContainer}>
                   <Ionicons name="sync-outline" size={16} color="#ffa726" />
-                  <Text style={styles.pendingText}>{syncStatus.pendingChanges} modifiche da sincronizzare</Text>
+                  <Text style={styles.pendingText}>{t('home.sync.pending', { count: syncStatus.pendingChanges })}</Text>
                 </View>
               ) : (
                 <View style={styles.onlineContainer}>
                   <Ionicons name="checkmark-circle-outline" size={16} color="#4caf50" />
-                  <Text style={styles.onlineText}>Sincronizzato</Text>
+                  <Text style={styles.onlineText}>{t('home.sync.synced')}</Text>
                 </View>
               )}
             </View>
@@ -528,7 +530,7 @@ const HomeScreen = () => {
                   <View style={styles.inputContainer}>
                     <TextInput
                       style={[styles.textInput, { maxHeight: 120 }]}
-                      placeholder="Scrivi un messaggio..."
+                      placeholder={t('home.chat.placeholder')}
                       placeholderTextColor="#999999"
                       value={message}
                       onChangeText={setMessage}
@@ -584,7 +586,7 @@ const HomeScreen = () => {
                         styles.suggestedCommandButton,
                         isLoading && styles.suggestedCommandButtonDisabled,
                       ]}
-                      onPress={() => handleSuggestedCommand("Cosa puoi fare?")}
+                      onPress={() => handleSuggestedCommand(t('home.chat.suggestedCommand'))}
                       activeOpacity={0.7}
                       disabled={isLoading}
                     >
@@ -592,7 +594,7 @@ const HomeScreen = () => {
                         styles.suggestedCommandText,
                         isLoading && styles.suggestedCommandTextDisabled,
                       ]}>
-                        💡 Cosa puoi fare?
+                        {t('home.chat.suggestedCommand')}
                       </Text>
                     </TouchableOpacity>
                   </View>
@@ -616,7 +618,7 @@ const HomeScreen = () => {
                 <View style={styles.loadingContainer}>
                   <View style={styles.loadingBubble}>
                     <Text style={styles.loadingText}>
-                      Il bot sta scrivendo...
+                      {t('home.chat.botTyping')}
                     </Text>
                     <View style={styles.loadingDots}>
                       <View style={styles.dot} />
@@ -646,7 +648,7 @@ const HomeScreen = () => {
             <View style={styles.inputContainer}>
               <TextInput
                 style={[styles.textInput, { maxHeight: 120 }]}
-                placeholder="Scrivi un messaggio..."
+                placeholder={t('home.chat.placeholder')}
                 placeholderTextColor="#999999"
                 value={message}
                 onChangeText={setMessage}
