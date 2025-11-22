@@ -121,7 +121,7 @@ export const useTutorial = ({ navigation, onComplete, onSkip }: UseTutorialProps
       console.log('[TUTORIAL] Current route:', currentRoute?.name);
 
       // List of tab screens that are nested inside HomeTabs
-      const tabScreens = ['Home', 'Categories', 'Notes', 'Calendar', 'BotChat'];
+      const tabScreens = ['Home', 'Categories', 'Notes', 'Calendar', 'Statistics', 'BotChat'];
 
       if (tabScreens.includes(step.targetScreen)) {
         // This is a tab screen - use nested navigation
