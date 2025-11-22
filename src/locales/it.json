@@ -420,5 +420,103 @@
       "registerError": "Errore durante la registrazione",
       "logoutSuccess": "Logout effettuato con successo"
     }
+  },
+  "profile": {
+    "user": {
+      "subtitle": "Utente Mytaskly"
+    },
+    "accountInfo": {
+      "title": "Informazioni Account",
+      "email": "Email",
+      "joinDate": "Membro dal"
+    },
+    "buttons": {
+      "myActivities": "Le mie Attività",
+      "settings": "Impostazioni",
+      "bugReport": "Segnala Bug",
+      "logout": "Esci dall'account"
+    },
+    "logout": {
+      "success": "Logout effettuato con successo",
+      "error": "Errore durante il logout"
+    }
+  },
+  "bugReport": {
+    "header": {
+      "title": "Segnala un Bug",
+      "description": "Aiutaci a migliorare l'app segnalando eventuali problemi che hai riscontrato."
+    },
+    "form": {
+      "titleLabel": "Titolo del bug *",
+      "titlePlaceholder": "Breve descrizione del problema",
+      "descriptionLabel": "Descrizione dettagliata *",
+      "descriptionPlaceholder": "Descrivi il problema in dettaglio: cosa stavi facendo quando si è verificato, quale errore hai visto, come riprodurre il problema...",
+      "submitButton": "Invia Segnalazione"
+    },
+    "tips": {
+      "title": "Consigli per una buona segnalazione",
+      "content": "• Sii specifico: descrivi esattamente cosa è successo\n• Includi i passi per riprodurre il problema\n• Menciona su quale schermata si è verificato l'errore\n• Descrivi il comportamento atteso vs quello riscontrato"
+    },
+    "errors": {
+      "title": "Errore",
+      "emptyFields": "Inserisci sia il titolo che la descrizione del bug",
+      "invalidToken": "Token di autenticazione non valido",
+      "submitError": "Si è verificato un errore durante l'invio della segnalazione. Riprova più tardi."
+    },
+    "success": {
+      "title": "Successo",
+      "message": "Il bug è stato segnalato con successo. Grazie per il tuo contributo!"
+    }
+  },
+  "statistics": {
+    "title": "Statistiche",
+    "loading": "Caricamento statistiche...",
+    "noData": "Nessun dato disponibile",
+    "errors": {
+      "loading": "Errore nel caricamento delle statistiche",
+      "connection": "Errore di connessione. Controlla la tua connessione internet."
+    },
+    "kpi": {
+      "completed": "Completati",
+      "completionRate": "Tasso di completamento",
+      "pending": "In sospeso",
+      "dailyAverage": "Media giornaliera",
+      "tasksPerDay": "task al giorno",
+      "outOf": "su {{total}}"
+    },
+    "priority": {
+      "title": "Distribuzione per Priorità",
+      "high": "Alta",
+      "medium": "Media",
+      "low": "Bassa",
+      "totalTasks": "task totali"
+    },
+    "deadlines": {
+      "title": "Scadenze imminenti",
+      "next7Days": "Prossimi 7 giorni",
+      "next14Days": "Prossimi 14 giorni",
+      "next30Days": "Prossimi 30 giorni"
+    },
+    "overdue": {
+      "alert": "Hai {{count}} task scaduti!"
+    },
+    "streak": {
+      "days": "giorni di fila",
+      "keepGoing": "Continua così! 💪"
+    }
+  },
+  "taskList": {
+    "sections": {
+      "todo": "Da fare",
+      "completed": "Completati",
+      "emptyTodo": "Non ci sono task da completare. Aggiungi un nuovo task!",
+      "emptyCompleted": "Non ci sono task completati."
+    },
+    "filters": {
+      "active": "Filtri attivi:"
+    }
+  },
+  "task": {
+    "noDeadline": "Nessuna scadenza"
   }
 }
