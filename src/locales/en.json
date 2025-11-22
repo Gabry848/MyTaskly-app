@@ -420,5 +420,103 @@
       "registerError": "Error during registration",
       "logoutSuccess": "Logout successful"
     }
+  },
+  "profile": {
+    "user": {
+      "subtitle": "Mytaskly User"
+    },
+    "accountInfo": {
+      "title": "Account Information",
+      "email": "Email",
+      "joinDate": "Member since"
+    },
+    "buttons": {
+      "myActivities": "My Activities",
+      "settings": "Settings",
+      "bugReport": "Report Bug",
+      "logout": "Log out"
+    },
+    "logout": {
+      "success": "Logout successful",
+      "error": "Error during logout"
+    }
+  },
+  "bugReport": {
+    "header": {
+      "title": "Report a Bug",
+      "description": "Help us improve the app by reporting any issues you encounter."
+    },
+    "form": {
+      "titleLabel": "Bug title *",
+      "titlePlaceholder": "Brief description of the problem",
+      "descriptionLabel": "Detailed description *",
+      "descriptionPlaceholder": "Describe the problem in detail: what you were doing when it occurred, what error you saw, how to reproduce the issue...",
+      "submitButton": "Submit Report"
+    },
+    "tips": {
+      "title": "Tips for a good bug report",
+      "content": "• Be specific: describe exactly what happened\n• Include steps to reproduce the problem\n• Mention which screen the error occurred on\n• Describe expected vs actual behavior"
+    },
+    "errors": {
+      "title": "Error",
+      "emptyFields": "Enter both bug title and description",
+      "invalidToken": "Invalid authentication token",
+      "submitError": "An error occurred while submitting the report. Please try again later."
+    },
+    "success": {
+      "title": "Success",
+      "message": "Bug report submitted successfully. Thank you for your contribution!"
+    }
+  },
+  "statistics": {
+    "title": "Statistics",
+    "loading": "Loading statistics...",
+    "noData": "No data available",
+    "errors": {
+      "loading": "Error loading statistics",
+      "connection": "Connection error. Please check your internet connection."
+    },
+    "kpi": {
+      "completed": "Completed",
+      "completionRate": "Completion rate",
+      "pending": "Pending",
+      "dailyAverage": "Daily average",
+      "tasksPerDay": "tasks per day",
+      "outOf": "out of {{total}}"
+    },
+    "priority": {
+      "title": "Priority Distribution",
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low",
+      "totalTasks": "total tasks"
+    },
+    "deadlines": {
+      "title": "Upcoming deadlines",
+      "next7Days": "Next 7 days",
+      "next14Days": "Next 14 days",
+      "next30Days": "Next 30 days"
+    },
+    "overdue": {
+      "alert": "You have {{count}} overdue tasks!"
+    },
+    "streak": {
+      "days": "days in a row",
+      "keepGoing": "Keep it up! 💪"
+    }
+  },
+  "taskList": {
+    "sections": {
+      "todo": "To do",
+      "completed": "Completed",
+      "emptyTodo": "No tasks to complete. Add a new task!",
+      "emptyCompleted": "No completed tasks."
+    },
+    "filters": {
+      "active": "Active filters:"
+    }
+  },
+  "task": {
+    "noDeadline": "No deadline"
   }
 }
