@@ -20,390 +20,8 @@ import {
   getUpcomingDeadlines,
 } from '../../services/statisticsService';
 
-// Overview Tab
-const OverviewTab = ({ data, loading }: any) => {
-  const { t } = useTranslation();
-
-  if (loading) {
-    return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
-      </View>
-    );
-  }
-
-  if (!data) {
-    return (
-      <View style={styles.centerContainer}>
-        <Text style={styles.errorText}>{t('statistics.noData')}</Text>
-      </View>
-    );
-  }
-
-  const { productivity_overview, overdue_count, current_streak } = data;
-
-  const getTrendIcon = (value: number) => {
-    if (value >= 80) return { name: 'trending-up' as const, color: '#34C759' };
-    if (value >= 50) return { name: 'remove' as const, color: '#FF9500' };
-    return { name: 'trending-down' as const, color: '#FF3B30' };
-  };
-
-  const renderKPICard = (
-    icon: string,
-    title: string,
-    value: string | number,
-    subtitle?: string,
-    trend?: { name: any; color: string }
-  ) => (
-    <View style={styles.kpiCard}>
-      <View style={styles.kpiHeader}>
-        <Ionicons name={icon as any} size={24} color="#007AFF" />
-        {trend && <Ionicons name={trend.name} size={20} color={trend.color} />}
-      </View>
-      <Text style={styles.kpiValue}>{value}</Text>
-      <Text style={styles.kpiTitle}>{title}</Text>
-      {subtitle && <Text style={styles.kpiSubtitle}>{subtitle}</Text>}
-    </View>
-  );
-
-  return (
-    <ScrollView
-      style={styles.scrollView}
-      contentContainerStyle={styles.scrollContent}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Overdue Alert */}
-      {overdue_count > 0 && (
-        <View style={styles.alertBanner}>
-          <Ionicons name="warning" size={20} color="#FFFFFF" />
-          <Text style={styles.alertText}>
-            {t('statistics.overdue.alert', { count: overdue_count })}
-          </Text>
-        </View>
-      )}
-
-      {/* Streak Card */}
-      {current_streak > 0 && (
-        <View style={styles.streakCard}>
-          <View style={styles.streakContent}>
-            <Text style={styles.streakEmoji}>🔥</Text>
-            <View style={styles.streakInfo}>
-              <Text style={styles.streakValue}>{current_streak}</Text>
-              <Text style={styles.streakLabel}>
-                {t('statistics.streak.days', { count: current_streak })}
-              </Text>
-            </View>
-          </View>
-          <Text style={styles.streakSubtext}>{t('statistics.streak.keepGoing')}</Text>
-        </View>
-      )}
-
-      {/* KPI Cards Grid */}
-      <View style={styles.kpiGrid}>
-        {renderKPICard(
-          'checkmark-circle',
-          t('statistics.kpi.completed'),
-          productivity_overview.completed_tasks,
-          t('statistics.kpi.outOf', { total: productivity_overview.total_tasks }),
-          getTrendIcon(productivity_overview.completion_rate)
-        )}
-        {renderKPICard(
-          'bar-chart',
-          t('statistics.kpi.completionRate'),
-          `${productivity_overview.completion_rate.toFixed(1)}%`
-        )}
-        {renderKPICard(
-          'time',
-          t('statistics.kpi.pending'),
-          productivity_overview.pending_tasks
-        )}
-        {renderKPICard(
-          'calendar',
-          t('statistics.kpi.dailyAverage'),
-          productivity_overview.avg_completed_per_day.toFixed(1),
-          t('statistics.kpi.tasksPerDay')
-        )}
-      </View>
-
-      <View style={{ height: 40 }} />
-    </ScrollView>
-  );
-};
-
-// Priority Tab
-const PriorityTab = ({ data, loading }: any) => {
-  const { t } = useTranslation();
-
-  if (loading) {
-    return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
-      </View>
-    );
-  }
-
-  if (!data) {
-    return (
-      <View style={styles.centerContainer}>
-        <Text style={styles.errorText}>{t('statistics.noData')}</Text>
-      </View>
-    );
-  }
-
-  const renderPriorityCard = (
-    priority: string,
-    data: { total_count: number; completed_count: number; completion_rate: number },
-    color: string
-  ) => (
-    <View style={styles.priorityCard}>
-      <View style={styles.priorityHeader}>
-        <View style={[styles.priorityDot, { backgroundColor: color }]} />
-        <Text style={styles.priorityName}>{priority}</Text>
-      </View>
-      <View style={styles.priorityStats}>
-        <Text style={styles.priorityCount}>{data.total_count}</Text>
-        <Text style={styles.priorityLabel}>{t('statistics.priority.totalTasks')}</Text>
-      </View>
-      <View style={styles.priorityProgress}>
-        <View style={styles.priorityProgressBg}>
-          <View
-            style={[
-              styles.priorityProgressFill,
-              { width: `${data.completion_rate}%`, backgroundColor: color },
-            ]}
-          />
-        </View>
-        <Text style={styles.priorityRate}>{data.completion_rate.toFixed(0)}%</Text>
-      </View>
-    </View>
-  );
-
-  return (
-    <ScrollView
-      style={styles.scrollView}
-      contentContainerStyle={styles.scrollContent}
-      showsVerticalScrollIndicator={false}
-    >
-      <View style={styles.priorityGrid}>
-        {data.alta && renderPriorityCard(t('statistics.priority.high'), data.alta, '#FF3B30')}
-        {data.media && renderPriorityCard(t('statistics.priority.medium'), data.media, '#FF9500')}
-        {data.bassa && renderPriorityCard(t('statistics.priority.low'), data.bassa, '#34C759')}
-      </View>
-      <View style={{ height: 40 }} />
-    </ScrollView>
-  );
-};
-
-// Category Tab
-const CategoryTab = ({ data, loading }: any) => {
-  const { t } = useTranslation();
-
-  if (loading) {
-    return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
-      </View>
-    );
-  }
-
-  if (!data || !data.categories) {
-    return (
-      <View style={styles.centerContainer}>
-        <Text style={styles.errorText}>{t('statistics.noData')}</Text>
-      </View>
-    );
-  }
-
-  const renderCategoryItem = (category: any) => (
-    <View key={category.category_name} style={styles.categoryCard}>
-      <View style={styles.categoryHeader}>
-        <Text style={styles.categoryName}>{category.category_name}</Text>
-        <View
-          style={[
-            styles.categoryBadge,
-            {
-              backgroundColor:
-                category.completion_rate >= 80
-                  ? '#E8F5E9'
-                  : category.completion_rate >= 60
-                  ? '#FFF3E0'
-                  : '#FFEBEE',
-            },
-          ]}
-        >
-          <Text
-            style={[
-              styles.categoryBadgeText,
-              {
-                color:
-                  category.completion_rate >= 80
-                    ? '#34C759'
-                    : category.completion_rate >= 60
-                    ? '#FF9500'
-                    : '#FF3B30',
-              },
-            ]}
-          >
-            {category.completion_rate.toFixed(0)}%
-          </Text>
-        </View>
-      </View>
-
-      <View style={styles.categoryStats}>
-        <View style={styles.categoryStatItem}>
-          <Text style={styles.categoryStatLabel}>Totali</Text>
-          <Text style={styles.categoryStatValue}>{category.total_tasks}</Text>
-        </View>
-        <View style={styles.categoryStatDivider} />
-        <View style={styles.categoryStatItem}>
-          <Text style={styles.categoryStatLabel}>Completati</Text>
-          <Text style={styles.categoryStatValue}>{category.completed_tasks}</Text>
-        </View>
-        <View style={styles.categoryStatDivider} />
-        <View style={styles.categoryStatItem}>
-          <Text style={styles.categoryStatLabel}>In sospeso</Text>
-          <Text style={styles.categoryStatValue}>{category.pending_tasks}</Text>
-        </View>
-      </View>
-
-      <View style={styles.categoryProgressBg}>
-        <View
-          style={[
-            styles.categoryProgressFill,
-            { width: `${category.completion_rate}%` },
-          ]}
-        />
-      </View>
-    </View>
-  );
-
-  return (
-    <ScrollView
-      style={styles.scrollView}
-      contentContainerStyle={styles.scrollContent}
-      showsVerticalScrollIndicator={false}
-    >
-      {data.categories.map(renderCategoryItem)}
-      <View style={{ height: 40 }} />
-    </ScrollView>
-  );
-};
-
-// Deadlines Tab
-const DeadlinesTab = ({ data, loading }: any) => {
-  const { t } = useTranslation();
-
-  if (loading) {
-    return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
-      </View>
-    );
-  }
-
-  if (!data) {
-    return (
-      <View style={styles.centerContainer}>
-        <Text style={styles.errorText}>{t('statistics.noData')}</Text>
-      </View>
-    );
-  }
-
-  const renderDeadlineItem = (task: any, index: number) => {
-    const daysUntil = task.days_until_deadline;
-    const getUrgencyColor = () => {
-      if (daysUntil < 3) return '#FF3B30';
-      if (daysUntil < 7) return '#FF9500';
-      return '#34C759';
-    };
-
-    return (
-      <View key={`deadline-${index}`} style={styles.deadlineItemCard}>
-        <View style={styles.deadlineItemHeader}>
-          <View style={styles.deadlineItemLeft}>
-            <View
-              style={[styles.deadlineIndicator, { backgroundColor: getUrgencyColor() }]}
-            />
-            <View style={styles.deadlineItemInfo}>
-              <Text style={styles.deadlineItemTitle} numberOfLines={1}>
-                {task.title}
-              </Text>
-              <Text style={styles.deadlineItemCategory}>{task.category_name}</Text>
-            </View>
-          </View>
-          <View
-            style={[styles.deadlineBadge, { backgroundColor: getUrgencyColor() + '20' }]}
-          >
-            <Text style={[styles.deadlineBadgeText, { color: getUrgencyColor() }]}>
-              {daysUntil}d
-            </Text>
-          </View>
-        </View>
-        <View style={styles.deadlineItemPriority}>
-          <Ionicons
-            name={
-              task.priority === 'Alta'
-                ? 'alert-circle'
-                : task.priority === 'Media'
-                ? 'alert'
-                : 'checkmark-circle'
-            }
-            size={16}
-            color={
-              task.priority === 'Alta'
-                ? '#FF3B30'
-                : task.priority === 'Media'
-                ? '#FF9500'
-                : '#34C759'
-            }
-          />
-          <Text style={styles.deadlineItemPriorityText}>{task.priority}</Text>
-        </View>
-      </View>
-    );
-  };
-
-  const upcoming7 = data.next_7_days || [];
-  const upcoming14 = data.next_14_days || [];
-
-  return (
-    <ScrollView
-      style={styles.scrollView}
-      contentContainerStyle={styles.scrollContent}
-      showsVerticalScrollIndicator={false}
-    >
-      {upcoming7.length > 0 && (
-        <>
-          <Text style={styles.deadlineSectionTitle}>🔴 Prossimi 7 giorni</Text>
-          {upcoming7.map((task: any, idx: number) => renderDeadlineItem(task, idx))}
-        </>
-      )}
-
-      {upcoming14.length > upcoming7.length && (
-        <>
-          <Text style={[styles.deadlineSectionTitle, { marginTop: 20 }]}>🟡 Prossimi 14 giorni</Text>
-          {upcoming14
-            .slice(upcoming7.length)
-            .map((task: any, idx: number) => renderDeadlineItem(task, idx + 100))}
-        </>
-      )}
-
-      {upcoming7.length === 0 && upcoming14.length === 0 && (
-        <View style={styles.emptyState}>
-          <Ionicons name="checkmark-done-circle-outline" size={64} color="#34C759" />
-          <Text style={styles.emptyStateText}>Nessuna scadenza imminente!</Text>
-        </View>
-      )}
-
-      <View style={{ height: 40 }} />
-    </ScrollView>
-  );
-};
-
-// Main Component
 export default function Statistics() {
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -472,27 +90,193 @@ export default function Statistics() {
     );
   }
 
-  const renderTabButton = (tabId: string, label: string, icon: string) => (
-    <TouchableOpacity
-      key={tabId}
-      style={[styles.tabButton, activeTab === tabId && styles.tabButtonActive]}
-      onPress={() => setActiveTab(tabId)}
-    >
-      <Ionicons
-        name={icon as any}
-        size={24}
-        color={activeTab === tabId ? '#007AFF' : '#999999'}
-      />
-      <Text
-        style={[
-          styles.tabButtonLabel,
-          activeTab === tabId && styles.tabButtonLabelActive,
-        ]}
-      >
-        {label}
-      </Text>
-    </TouchableOpacity>
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+        <View style={styles.header}>
+          <Text style={styles.mainTitle}>{t('statistics.title')}</Text>
+        </View>
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color="#007AFF" />
+          <Text style={styles.loadingText}>{t('statistics.loading')}</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const getTrendIcon = (value: number) => {
+    if (value >= 80) return { name: 'trending-up' as const, color: '#34C759' };
+    if (value >= 50) return { name: 'remove' as const, color: '#FF9500' };
+    return { name: 'trending-down' as const, color: '#FF3B30' };
+  };
+
+  const renderKPICard = (
+    icon: string,
+    title: string,
+    value: string | number,
+    subtitle?: string,
+    trend?: { name: any; color: string }
+  ) => (
+    <View style={styles.kpiCard}>
+      <View style={styles.kpiHeader}>
+        <Ionicons name={icon as any} size={24} color="#007AFF" />
+        {trend && <Ionicons name={trend.name} size={20} color={trend.color} />}
+      </View>
+      <Text style={styles.kpiValue}>{value}</Text>
+      <Text style={styles.kpiTitle}>{title}</Text>
+      {subtitle && <Text style={styles.kpiSubtitle}>{subtitle}</Text>}
+    </View>
   );
+
+  const renderPriorityCard = (
+    priority: string,
+    data: { total_count: number; completed_count: number; completion_rate: number },
+    color: string
+  ) => (
+    <View key={priority} style={styles.priorityCard}>
+      <View style={styles.priorityHeader}>
+        <View style={[styles.priorityDot, { backgroundColor: color }]} />
+        <Text style={styles.priorityName}>{priority}</Text>
+      </View>
+      <View style={styles.priorityStats}>
+        <Text style={styles.priorityCount}>{data.total_count}</Text>
+        <Text style={styles.priorityLabel}>{t('statistics.priority.totalTasks')}</Text>
+      </View>
+      <View style={styles.priorityProgress}>
+        <View style={styles.priorityProgressBg}>
+          <View
+            style={[
+              styles.priorityProgressFill,
+              { width: `${data.completion_rate}%`, backgroundColor: color },
+            ]}
+          />
+        </View>
+        <Text style={styles.priorityRate}>{data.completion_rate.toFixed(0)}%</Text>
+      </View>
+    </View>
+  );
+
+  const renderCategoryItem = (category: any) => (
+    <View key={category.category_name} style={styles.categoryCard}>
+      <View style={styles.categoryHeader}>
+        <Text style={styles.categoryName}>{category.category_name}</Text>
+        <View
+          style={[
+            styles.categoryBadge,
+            {
+              backgroundColor:
+                category.completion_rate >= 80
+                  ? '#E8F5E9'
+                  : category.completion_rate >= 60
+                  ? '#FFF3E0'
+                  : '#FFEBEE',
+            },
+          ]}
+        >
+          <Text
+            style={[
+              styles.categoryBadgeText,
+              {
+                color:
+                  category.completion_rate >= 80
+                    ? '#34C759'
+                    : category.completion_rate >= 60
+                    ? '#FF9500'
+                    : '#FF3B30',
+              },
+            ]}
+          >
+            {category.completion_rate.toFixed(0)}%
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.categoryStats}>
+        <View style={styles.categoryStatItem}>
+          <Text style={styles.categoryStatLabel}>Totali</Text>
+          <Text style={styles.categoryStatValue}>{category.total_tasks}</Text>
+        </View>
+        <View style={styles.categoryStatDivider} />
+        <View style={styles.categoryStatItem}>
+          <Text style={styles.categoryStatLabel}>Completati</Text>
+          <Text style={styles.categoryStatValue}>{category.completed_tasks}</Text>
+        </View>
+        <View style={styles.categoryStatDivider} />
+        <View style={styles.categoryStatItem}>
+          <Text style={styles.categoryStatLabel}>In sospeso</Text>
+          <Text style={styles.categoryStatValue}>{category.pending_tasks}</Text>
+        </View>
+      </View>
+
+      <View style={styles.categoryProgressBg}>
+        <View
+          style={[
+            styles.categoryProgressFill,
+            { width: `${category.completion_rate}%` },
+          ]}
+        />
+      </View>
+    </View>
+  );
+
+  const renderDeadlineItem = (task: any, index: number) => {
+    const daysUntil = task.days_until_deadline;
+    const getUrgencyColor = () => {
+      if (daysUntil < 3) return '#FF3B30';
+      if (daysUntil < 7) return '#FF9500';
+      return '#34C759';
+    };
+
+    return (
+      <View key={`deadline-${index}`} style={styles.deadlineItemCard}>
+        <View style={styles.deadlineItemHeader}>
+          <View style={styles.deadlineItemLeft}>
+            <View
+              style={[styles.deadlineIndicator, { backgroundColor: getUrgencyColor() }]}
+            />
+            <View style={styles.deadlineItemInfo}>
+              <Text style={styles.deadlineItemTitle} numberOfLines={1}>
+                {task.title}
+              </Text>
+              <Text style={styles.deadlineItemCategory}>{task.category_name}</Text>
+            </View>
+          </View>
+          <View
+            style={[styles.deadlineBadge, { backgroundColor: getUrgencyColor() + '20' }]}
+          >
+            <Text style={[styles.deadlineBadgeText, { color: getUrgencyColor() }]}>
+              {daysUntil}d
+            </Text>
+          </View>
+        </View>
+        <View style={styles.deadlineItemPriority}>
+          <Ionicons
+            name={
+              task.priority === 'Alta'
+                ? 'alert-circle'
+                : task.priority === 'Media'
+                ? 'alert'
+                : 'checkmark-circle'
+            }
+            size={16}
+            color={
+              task.priority === 'Alta'
+                ? '#FF3B30'
+                : task.priority === 'Media'
+                ? '#FF9500'
+                : '#34C759'
+            }
+          />
+          <Text style={styles.deadlineItemPriorityText}>{task.priority}</Text>
+        </View>
+      </View>
+    );
+  };
+
+  const { productivity_overview, overdue_count, current_streak } = dashboardData || {};
+  const upcoming7 = deadlineData?.next_7_days || [];
+  const upcoming14 = deadlineData?.next_14_days || [];
 
   return (
     <SafeAreaView style={styles.container}>
@@ -502,65 +286,129 @@ export default function Statistics() {
         <Text style={styles.mainTitle}>{t('statistics.title')}</Text>
       </View>
 
-      {/* Tab Navigation */}
-      <View style={styles.tabsContainer}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.tabsContent}
-        >
-          {renderTabButton('overview', 'Panoramica', 'stats-chart')}
-          {renderTabButton('priority', 'Priorità', 'alert-circle')}
-          {renderTabButton('category', 'Categorie', 'folder')}
-          {renderTabButton('deadlines', 'Scadenze', 'calendar')}
-        </ScrollView>
-      </View>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#007AFF" />
+        }
+      >
+        {/* Overdue Alert */}
+        {overdue_count > 0 && (
+          <View style={styles.alertBanner}>
+            <Ionicons name="warning" size={20} color="#FFFFFF" />
+            <Text style={styles.alertText}>
+              {t('statistics.overdue.alert', { count: overdue_count })}
+            </Text>
+          </View>
+        )}
 
-      {/* Content Area with Pull-to-Refresh */}
-      {activeTab === 'overview' && (
-        <View style={styles.contentWrapper}>
-          <ScrollView
-            refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-            }
-          >
-            <OverviewTab data={dashboardData} loading={loading} />
-          </ScrollView>
+        {/* Streak Card */}
+        {current_streak > 0 && (
+          <View style={styles.streakCard}>
+            <View style={styles.streakContent}>
+              <Text style={styles.streakEmoji}>🔥</Text>
+              <View style={styles.streakInfo}>
+                <Text style={styles.streakValue}>{current_streak}</Text>
+                <Text style={styles.streakLabel}>
+                  {t('statistics.streak.days', { count: current_streak })}
+                </Text>
+              </View>
+            </View>
+            <Text style={styles.streakSubtext}>{t('statistics.streak.keepGoing')}</Text>
+          </View>
+        )}
+
+        {/* KPI Cards Grid */}
+        <View style={styles.sectionTitle}>
+          <Text style={styles.sectionTitleText}>Panoramica</Text>
         </View>
-      )}
-      {activeTab === 'priority' && (
-        <View style={styles.contentWrapper}>
-          <ScrollView
-            refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-            }
-          >
-            <PriorityTab data={priorityData} loading={loading} />
-          </ScrollView>
+        <View style={styles.kpiGrid}>
+          {renderKPICard(
+            'checkmark-circle',
+            t('statistics.kpi.completed'),
+            productivity_overview.completed_tasks,
+            t('statistics.kpi.outOf', { total: productivity_overview.total_tasks }),
+            getTrendIcon(productivity_overview.completion_rate)
+          )}
+          {renderKPICard(
+            'bar-chart',
+            t('statistics.kpi.completionRate'),
+            `${productivity_overview.completion_rate.toFixed(1)}%`
+          )}
+          {renderKPICard(
+            'time',
+            t('statistics.kpi.pending'),
+            productivity_overview.pending_tasks
+          )}
+          {renderKPICard(
+            'calendar',
+            t('statistics.kpi.dailyAverage'),
+            productivity_overview.avg_completed_per_day.toFixed(1),
+            t('statistics.kpi.tasksPerDay')
+          )}
         </View>
-      )}
-      {activeTab === 'category' && (
-        <View style={styles.contentWrapper}>
-          <ScrollView
-            refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-            }
-          >
-            <CategoryTab data={categoryData} loading={loading} />
-          </ScrollView>
+
+        {/* Priority Distribution */}
+        <View style={styles.sectionTitle}>
+          <Text style={styles.sectionTitleText}>Distribuzione Priorità</Text>
         </View>
-      )}
-      {activeTab === 'deadlines' && (
-        <View style={styles.contentWrapper}>
-          <ScrollView
-            refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-            }
-          >
-            <DeadlinesTab data={deadlineData} loading={loading} />
-          </ScrollView>
+        <View style={styles.priorityGrid}>
+          {priorityData?.alta && renderPriorityCard(t('statistics.priority.high'), priorityData.alta, '#FF3B30')}
+          {priorityData?.media && renderPriorityCard(t('statistics.priority.medium'), priorityData.media, '#FF9500')}
+          {priorityData?.bassa && renderPriorityCard(t('statistics.priority.low'), priorityData.bassa, '#34C759')}
         </View>
-      )}
+
+        {/* Category Performance */}
+        {categoryData?.categories && categoryData.categories.length > 0 && (
+          <>
+            <View style={styles.sectionTitle}>
+              <Text style={styles.sectionTitleText}>Performance per Categoria</Text>
+            </View>
+            <View style={styles.categoryGrid}>
+              {categoryData.categories.map(renderCategoryItem)}
+            </View>
+          </>
+        )}
+
+        {/* Upcoming Deadlines */}
+        {(upcoming7.length > 0 || upcoming14.length > 0) && (
+          <>
+            <View style={styles.sectionTitle}>
+              <Text style={styles.sectionTitleText}>Scadenze Imminenti</Text>
+            </View>
+
+            {upcoming7.length > 0 && (
+              <>
+                <Text style={styles.deadlineSectionTitle}>🔴 Prossimi 7 giorni</Text>
+                <View style={styles.deadlineGrid}>
+                  {upcoming7.map((task: any, idx: number) => renderDeadlineItem(task, idx))}
+                </View>
+              </>
+            )}
+
+            {upcoming14.length > upcoming7.length && (
+              <>
+                <Text style={styles.deadlineSectionTitle}>🟡 Prossimi 14 giorni</Text>
+                <View style={styles.deadlineGrid}>
+                  {upcoming14
+                    .slice(upcoming7.length)
+                    .map((task: any, idx: number) => renderDeadlineItem(task, idx + 100))}
+                </View>
+              </>
+            )}
+          </>
+        )}
+
+        {upcoming7.length === 0 && upcoming14.length === 0 && (
+          <View style={styles.emptyState}>
+            <Ionicons name="checkmark-done-circle-outline" size={64} color="#34C759" />
+            <Text style={styles.emptyStateText}>Nessuna scadenza imminente!</Text>
+          </View>
+        )}
+
+        <View style={{ height: 40 }} />
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -573,7 +421,7 @@ const styles = StyleSheet.create({
   header: {
     paddingTop: 20,
     paddingHorizontal: 15,
-    paddingBottom: 15,
+    paddingBottom: 10,
   },
   mainTitle: {
     paddingTop: 10,
@@ -584,53 +432,23 @@ const styles = StyleSheet.create({
     fontFamily: 'System',
     letterSpacing: -1.5,
   },
-  tabsContainer: {
-    borderBottomWidth: 1,
-    borderBottomColor: '#e1e5e9',
-    backgroundColor: '#ffffff',
-  },
-  tabsContent: {
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    gap: 8,
-  },
-  tabButton: {
-    alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    backgroundColor: '#f8f9fa',
-    borderWidth: 1,
-    borderColor: '#e1e5e9',
-  },
-  tabButtonActive: {
-    backgroundColor: '#e7f0ff',
-    borderColor: '#007AFF',
-  },
-  tabButtonLabel: {
-    fontSize: 12,
-    color: '#666666',
-    marginTop: 4,
-    fontWeight: '500',
-  },
-  tabButtonLabelActive: {
-    color: '#007AFF',
-  },
-  contentWrapper: {
-    flex: 1,
-  },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
     paddingHorizontal: 15,
-    paddingTop: 15,
   },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 40,
+  },
+  loadingText: {
+    marginTop: 15,
+    fontSize: 16,
+    color: '#666666',
+    fontWeight: '400',
   },
   errorText: {
     marginTop: 15,
@@ -658,6 +476,7 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 16,
     marginBottom: 15,
+    marginTop: 15,
   },
   alertText: {
     color: '#FFFFFF',
@@ -670,6 +489,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 20,
     marginBottom: 20,
+    marginTop: 15,
     borderWidth: 1,
     borderColor: '#FFE082',
   },
@@ -700,10 +520,21 @@ const styles = StyleSheet.create({
     marginTop: 8,
     textAlign: 'center',
   },
+  sectionTitle: {
+    marginTop: 20,
+    marginBottom: 15,
+  },
+  sectionTitleText: {
+    fontSize: 20,
+    fontWeight: '300',
+    color: '#000000',
+    letterSpacing: -0.5,
+  },
   kpiGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     marginHorizontal: -5,
+    marginBottom: 10,
   },
   kpiCard: {
     width: '48%',
@@ -744,6 +575,7 @@ const styles = StyleSheet.create({
   },
   priorityGrid: {
     gap: 12,
+    marginBottom: 10,
   },
   priorityCard: {
     backgroundColor: '#FFFFFF',
@@ -807,6 +639,10 @@ const styles = StyleSheet.create({
     color: '#000000',
     width: 45,
     textAlign: 'right',
+  },
+  categoryGrid: {
+    gap: 12,
+    marginBottom: 10,
   },
   categoryCard: {
     backgroundColor: '#FFFFFF',
@@ -875,11 +711,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#007AFF',
     borderRadius: 4,
   },
+  deadlineGrid: {
+    gap: 12,
+    marginBottom: 15,
+  },
   deadlineItemCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 16,
-    marginBottom: 12,
     borderWidth: 1,
     borderColor: '#e1e5e9',
     shadowColor: '#000000',
@@ -941,6 +780,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#000000',
     marginBottom: 12,
+    marginTop: 10,
   },
   emptyState: {
     alignItems: 'center',
