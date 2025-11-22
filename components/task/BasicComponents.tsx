@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
 import { MaterialIcons, Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { styles } from "./TaskStyles";
 import { getDaysRemainingText, getDaysRemainingColor, getPriorityTextColor } from "./TaskUtils";
 
@@ -25,11 +26,13 @@ export const Checkbox = ({ checked, onPress, isOptimistic = false }) => (
 
 // Componente per visualizzare la data
 export const DateDisplay = ({ date }) => {
+  const { t } = useTranslation();
+
   if (!date) {
     return (
       <View style={styles.dateContainer}>
         <Ionicons name="calendar-clear-outline" size={14} color="#999999" />
-        <Text style={[styles.dateText, { color: '#999999' }]}>Nessuna scadenza</Text>
+        <Text style={[styles.dateText, { color: '#999999' }]}>{t('task.noDeadline')}</Text>
       </View>
     );
   }
