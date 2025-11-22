@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
+import { useTranslation } from "react-i18next";
 import * as authService from "../../services/authService";
 import { NotificationSnackbar } from "../../../components/NotificationSnackbar";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -30,6 +31,7 @@ type RootStackParamList = {
 };
 
 const ProfileScreen = () => {
+  const { t } = useTranslation();
   const [userData, setUserData] = useState({
     username: "",
     email: "",
@@ -153,7 +155,7 @@ const ProfileScreen = () => {
       await authService.logout();
       setNotification({
         isVisible: true,
-        message: "Logout effettuato con successo",
+        message: t('profile.logout.success'),
         isSuccess: true,
         onFinish: () => {
           setNotification((prev) => ({ ...prev, isVisible: false }));
@@ -163,7 +165,7 @@ const ProfileScreen = () => {
     } catch {
       setNotification({
         isVisible: true,
-        message: "Errore durante il logout",
+        message: t('profile.logout.error'),
         isSuccess: false,
         onFinish: () =>
           setNotification((prev) => ({ ...prev, isVisible: false })),
@@ -186,11 +188,11 @@ const ProfileScreen = () => {
                 />
               </View>
               <Text style={styles.username}>{userData.username}</Text>
-              <Text style={styles.userSubtitle}>Utente Mytaskly</Text>
+              <Text style={styles.userSubtitle}>{t('profile.user.subtitle')}</Text>
             </View>
 
             <View style={styles.infoSection}>
-              <Text style={styles.sectionTitle}>Informazioni Account</Text>
+              <Text style={styles.sectionTitle}>{t('profile.accountInfo.title')}</Text>
               
               {infoLoading ? (
                 <View style={styles.loadingContainer}>
@@ -221,7 +223,7 @@ const ProfileScreen = () => {
                       <Ionicons name="mail" size={22} color="#000000" />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.infoLabel}>Email</Text>
+                      <Text style={styles.infoLabel}>{t('profile.accountInfo.email')}</Text>
                       <Text style={styles.infoText}>{userData.email}</Text>
                     </View>
                   </View>
@@ -231,7 +233,7 @@ const ProfileScreen = () => {
                       <Ionicons name="calendar" size={22} color="#000000" />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.infoLabel}>Membro dal</Text>
+                      <Text style={styles.infoLabel}>{t('profile.accountInfo.joinDate')}</Text>
                       <Text style={styles.infoText}>{userData.joinDate}</Text>
                     </View>
                   </View>
@@ -253,7 +255,7 @@ const ProfileScreen = () => {
                     style={styles.buttonIcon}
                   />
                   <Text style={[styles.buttonText, styles.primaryButtonText]}>
-                    Le mie Attività
+                    {t('profile.buttons.myActivities')}
                   </Text>
                 </View>
                 <Ionicons 
@@ -279,7 +281,7 @@ const ProfileScreen = () => {
                     style={styles.buttonIcon}
                   />
                   <Text style={[styles.buttonText, styles.settingsButtonText]}>
-                    Impostazioni
+                    {t('profile.buttons.settings')}
                   </Text>
                 </View>
                 <Ionicons 
@@ -305,7 +307,7 @@ const ProfileScreen = () => {
                     style={styles.buttonIcon}
                   />
                   <Text style={[styles.buttonText, styles.bugReportButtonText]}>
-                    Segnala Bug
+                    {t('profile.buttons.bugReport')}
                   </Text>
                 </View>
                 <Ionicons 
@@ -329,7 +331,7 @@ const ProfileScreen = () => {
                     style={styles.buttonIcon}
                   />
                   <Text style={[styles.buttonText, styles.logoutText]}>
-                    Esci dall&apos;account
+                    {t('profile.buttons.logout')}
                   </Text>
                 </View>
                 <Ionicons 
