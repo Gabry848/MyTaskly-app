@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,8 +7,8 @@ import {
   StatusBar,
   ScrollView,
   RefreshControl,
-  ActivityIndicator,
   TouchableOpacity,
+  Animated,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -30,6 +30,28 @@ export default function Statistics() {
   const [priorityData, setPriorityData] = useState<any>(null);
   const [categoryData, setCategoryData] = useState<any>(null);
   const [deadlineData, setDeadlineData] = useState<any>(null);
+
+  // Animated loading text
+  const loadingOpacity = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (loading) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(loadingOpacity, {
+            toValue: 0.5,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+          Animated.timing(loadingOpacity, {
+            toValue: 1,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    }
+  }, [loading, loadingOpacity]);
 
   const loadAllData = async () => {
     try {
@@ -64,12 +86,12 @@ export default function Statistics() {
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     loadAllData();
-  }, []);
+  }, [loadAllData]);
 
   useFocusEffect(
     useCallback(() => {
       loadAllData();
-    }, [])
+    }, [loadAllData])
   );
 
   if (error && !dashboardData) {
@@ -90,72 +112,21 @@ export default function Statistics() {
     );
   }
 
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
-        <View style={styles.header}>
-          <Text style={styles.mainTitle}>{t('statistics.title')}</Text>
-        </View>
-        <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
-          <Text style={styles.loadingText}>{t('statistics.loading')}</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
   const getTrendIcon = (value: number) => {
     if (value >= 80) return { name: 'trending-up' as const, color: '#34C759' };
     if (value >= 50) return { name: 'remove' as const, color: '#FF9500' };
     return { name: 'trending-down' as const, color: '#FF3B30' };
   };
 
-  const renderKPICard = (
-    icon: string,
-    title: string,
-    value: string | number,
-    subtitle?: string,
-    trend?: { name: any; color: string }
-  ) => (
-    <View style={styles.kpiCard}>
-      <View style={styles.kpiHeader}>
-        <Ionicons name={icon as any} size={24} color="#007AFF" />
-        {trend && <Ionicons name={trend.name} size={20} color={trend.color} />}
-      </View>
-      <Text style={styles.kpiValue}>{value}</Text>
-      <Text style={styles.kpiTitle}>{title}</Text>
-      {subtitle && <Text style={styles.kpiSubtitle}>{subtitle}</Text>}
-    </View>
-  );
+  // Render animated loading text
+  const renderLoadingText = () => {
+    return (
+      <Animated.Text style={[styles.loadingPlaceholder, { opacity: loadingOpacity }]}>
+        Loading...
+      </Animated.Text>
+    );
+  };
 
-  const renderPriorityCard = (
-    priority: string,
-    data: { total_count: number; completed_count: number; completion_rate: number },
-    color: string
-  ) => (
-    <View key={priority} style={styles.priorityCard}>
-      <View style={styles.priorityHeader}>
-        <View style={[styles.priorityDot, { backgroundColor: color }]} />
-        <Text style={styles.priorityName}>{priority}</Text>
-      </View>
-      <View style={styles.priorityStats}>
-        <Text style={styles.priorityCount}>{data.total_count}</Text>
-        <Text style={styles.priorityLabel}>{t('statistics.priority.totalTasks')}</Text>
-      </View>
-      <View style={styles.priorityProgress}>
-        <View style={styles.priorityProgressBg}>
-          <View
-            style={[
-              styles.priorityProgressFill,
-              { width: `${data.completion_rate}%`, backgroundColor: color },
-            ]}
-          />
-        </View>
-        <Text style={styles.priorityRate}>{data.completion_rate.toFixed(0)}%</Text>
-      </View>
-    </View>
-  );
 
   const renderCategoryItem = (category: any) => (
     <View key={category.category_name} style={styles.categoryCard}>
@@ -324,29 +295,64 @@ export default function Statistics() {
           <Text style={styles.sectionTitleText}>Panoramica</Text>
         </View>
         <View style={styles.kpiGrid}>
-          {renderKPICard(
-            'checkmark-circle',
-            t('statistics.kpi.completed'),
-            productivity_overview.completed_tasks,
-            t('statistics.kpi.outOf', { total: productivity_overview.total_tasks }),
-            getTrendIcon(productivity_overview.completion_rate)
-          )}
-          {renderKPICard(
-            'bar-chart',
-            t('statistics.kpi.completionRate'),
-            `${productivity_overview.completion_rate.toFixed(1)}%`
-          )}
-          {renderKPICard(
-            'time',
-            t('statistics.kpi.pending'),
-            productivity_overview.pending_tasks
-          )}
-          {renderKPICard(
-            'calendar',
-            t('statistics.kpi.dailyAverage'),
-            productivity_overview.avg_completed_per_day.toFixed(1),
-            t('statistics.kpi.tasksPerDay')
-          )}
+          <View style={styles.kpiCard}>
+            <View style={styles.kpiHeader}>
+              <Ionicons name="checkmark-circle" size={24} color="#007AFF" />
+              {!loading && productivity_overview && <Ionicons name={getTrendIcon(productivity_overview.completion_rate).name} size={20} color={getTrendIcon(productivity_overview.completion_rate).color} />}
+            </View>
+            {!loading && productivity_overview ? (
+              <>
+                <Text style={styles.kpiValue}>{productivity_overview.completed_tasks}</Text>
+                <Text style={styles.kpiTitle}>{t('statistics.kpi.completed')}</Text>
+                <Text style={styles.kpiSubtitle}>{t('statistics.kpi.outOf', { total: productivity_overview.total_tasks })}</Text>
+              </>
+            ) : (
+              renderLoadingText()
+            )}
+          </View>
+
+          <View style={styles.kpiCard}>
+            <View style={styles.kpiHeader}>
+              <Ionicons name="bar-chart" size={24} color="#007AFF" />
+            </View>
+            {!loading && productivity_overview ? (
+              <>
+                <Text style={styles.kpiValue}>{productivity_overview.completion_rate.toFixed(1)}%</Text>
+                <Text style={styles.kpiTitle}>{t('statistics.kpi.completionRate')}</Text>
+              </>
+            ) : (
+              renderLoadingText()
+            )}
+          </View>
+
+          <View style={styles.kpiCard}>
+            <View style={styles.kpiHeader}>
+              <Ionicons name="time" size={24} color="#007AFF" />
+            </View>
+            {!loading && productivity_overview ? (
+              <>
+                <Text style={styles.kpiValue}>{productivity_overview.pending_tasks}</Text>
+                <Text style={styles.kpiTitle}>{t('statistics.kpi.pending')}</Text>
+              </>
+            ) : (
+              renderLoadingText()
+            )}
+          </View>
+
+          <View style={styles.kpiCard}>
+            <View style={styles.kpiHeader}>
+              <Ionicons name="calendar" size={24} color="#007AFF" />
+            </View>
+            {!loading && productivity_overview ? (
+              <>
+                <Text style={styles.kpiValue}>{productivity_overview.avg_completed_per_day.toFixed(1)}</Text>
+                <Text style={styles.kpiTitle}>{t('statistics.kpi.dailyAverage')}</Text>
+                <Text style={styles.kpiSubtitle}>{t('statistics.kpi.tasksPerDay')}</Text>
+              </>
+            ) : (
+              renderLoadingText()
+            )}
+          </View>
         </View>
 
         {/* Priority Distribution */}
@@ -354,13 +360,93 @@ export default function Statistics() {
           <Text style={styles.sectionTitleText}>Distribuzione Priorità</Text>
         </View>
         <View style={styles.priorityGrid}>
-          {priorityData?.alta && renderPriorityCard(t('statistics.priority.high'), priorityData.alta, '#FF3B30')}
-          {priorityData?.media && renderPriorityCard(t('statistics.priority.medium'), priorityData.media, '#FF9500')}
-          {priorityData?.bassa && renderPriorityCard(t('statistics.priority.low'), priorityData.bassa, '#34C759')}
+          <View key="high" style={styles.priorityCard}>
+            <View style={styles.priorityHeader}>
+              <View style={[styles.priorityDot, { backgroundColor: '#FF3B30' }]} />
+              <Text style={styles.priorityName}>{t('statistics.priority.high')}</Text>
+            </View>
+            {!loading && priorityData?.alta ? (
+              <>
+                <View style={styles.priorityStats}>
+                  <Text style={styles.priorityCount}>{priorityData.alta.total_count}</Text>
+                  <Text style={styles.priorityLabel}>{t('statistics.priority.totalTasks')}</Text>
+                </View>
+                <View style={styles.priorityProgress}>
+                  <View style={styles.priorityProgressBg}>
+                    <View
+                      style={[
+                        styles.priorityProgressFill,
+                        { width: `${priorityData.alta.completion_rate}%`, backgroundColor: '#FF3B30' },
+                      ]}
+                    />
+                  </View>
+                  <Text style={styles.priorityRate}>{priorityData.alta.completion_rate.toFixed(0)}%</Text>
+                </View>
+              </>
+            ) : (
+              <View style={styles.priorityStats}>{renderLoadingText()}</View>
+            )}
+          </View>
+
+          <View key="medium" style={styles.priorityCard}>
+            <View style={styles.priorityHeader}>
+              <View style={[styles.priorityDot, { backgroundColor: '#FF9500' }]} />
+              <Text style={styles.priorityName}>{t('statistics.priority.medium')}</Text>
+            </View>
+            {!loading && priorityData?.media ? (
+              <>
+                <View style={styles.priorityStats}>
+                  <Text style={styles.priorityCount}>{priorityData.media.total_count}</Text>
+                  <Text style={styles.priorityLabel}>{t('statistics.priority.totalTasks')}</Text>
+                </View>
+                <View style={styles.priorityProgress}>
+                  <View style={styles.priorityProgressBg}>
+                    <View
+                      style={[
+                        styles.priorityProgressFill,
+                        { width: `${priorityData.media.completion_rate}%`, backgroundColor: '#FF9500' },
+                      ]}
+                    />
+                  </View>
+                  <Text style={styles.priorityRate}>{priorityData.media.completion_rate.toFixed(0)}%</Text>
+                </View>
+              </>
+            ) : (
+              <View style={styles.priorityStats}>{renderLoadingText()}</View>
+            )}
+          </View>
+
+          <View key="low" style={styles.priorityCard}>
+            <View style={styles.priorityHeader}>
+              <View style={[styles.priorityDot, { backgroundColor: '#34C759' }]} />
+              <Text style={styles.priorityName}>{t('statistics.priority.low')}</Text>
+            </View>
+            {!loading && priorityData?.bassa ? (
+              <>
+                <View style={styles.priorityStats}>
+                  <Text style={styles.priorityCount}>{priorityData.bassa.total_count}</Text>
+                  <Text style={styles.priorityLabel}>{t('statistics.priority.totalTasks')}</Text>
+                </View>
+                <View style={styles.priorityProgress}>
+                  <View style={styles.priorityProgressBg}>
+                    <View
+                      style={[
+                        styles.priorityProgressFill,
+                        { width: `${priorityData.bassa.completion_rate}%`, backgroundColor: '#34C759' },
+                      ]}
+                    />
+                  </View>
+                  <Text style={styles.priorityRate}>{priorityData.bassa.completion_rate.toFixed(0)}%</Text>
+                </View>
+              </>
+            ) : (
+              <View style={styles.priorityStats}>{renderLoadingText()}</View>
+            )}
+          </View>
         </View>
 
         {/* Category Performance */}
-        {categoryData?.categories && categoryData.categories.length > 0 && (
+        {categoryData?.categories && categoryData.categories.length > 0 ? (
           <>
             <View style={styles.sectionTitle}>
               <Text style={styles.sectionTitleText}>Performance per Categoria</Text>
@@ -369,10 +455,30 @@ export default function Statistics() {
               {categoryData.categories.map(renderCategoryItem)}
             </View>
           </>
+        ) : !loading ? (
+          null
+        ) : (
+          <>
+            <View style={styles.sectionTitle}>
+              <Text style={styles.sectionTitleText}>Performance per Categoria</Text>
+            </View>
+            <View style={styles.categoryGrid}>
+              <View style={styles.categoryCard}>
+                <View style={styles.categoryHeader}>
+                  <Animated.Text style={[styles.categoryName, { opacity: loadingOpacity }]}>
+                    Loading...
+                  </Animated.Text>
+                </View>
+                <View style={styles.categoryStats}>
+                  {renderLoadingText()}
+                </View>
+              </View>
+            </View>
+          </>
         )}
 
         {/* Upcoming Deadlines */}
-        {(upcoming7.length > 0 || upcoming14.length > 0) && (
+        {(upcoming7.length > 0 || upcoming14.length > 0) ? (
           <>
             <View style={styles.sectionTitle}>
               <Text style={styles.sectionTitleText}>Scadenze Imminenti</Text>
@@ -398,9 +504,7 @@ export default function Statistics() {
               </>
             )}
           </>
-        )}
-
-        {upcoming7.length === 0 && upcoming14.length === 0 && (
+        ) : (
           <View style={styles.emptyState}>
             <Ionicons name="checkmark-done-circle-outline" size={64} color="#34C759" />
             <Text style={styles.emptyStateText}>Nessuna scadenza imminente!</Text>
@@ -790,5 +894,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666666',
     marginTop: 12,
+  },
+  loadingPlaceholder: {
+    fontSize: 14,
+    color: '#999999',
+    fontWeight: '500',
   },
 });
