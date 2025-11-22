@@ -2,8 +2,10 @@ import { Text } from '@react-navigation/elements';
 import React from 'react';
 import { StyleSheet, View, SafeAreaView, StatusBar, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 export default function Help() {
+  const { t } = useTranslation();
 
   return (
     <SafeAreaView style={styles.container}>
@@ -13,7 +15,7 @@ export default function Help() {
       <ScrollView style={styles.content}>
         {/* App Overview */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Cos'è Mytaskly?</Text>
+          <Text style={styles.sectionTitle}>{t('help.sections.whatIs.title')}</Text>
         </View>
 
         <View style={styles.section}>
@@ -26,7 +28,7 @@ export default function Help() {
 
         {/* Features Section */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Funzionalità principali</Text>
+          <Text style={styles.sectionTitle}>{t('help.sections.features.title')}</Text>
         </View>
 
         <View style={styles.featureItem}>
