@@ -46,6 +46,7 @@ interface DashboardData {
 }
 
 export default function Statistics() {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
