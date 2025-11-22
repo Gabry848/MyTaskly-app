@@ -495,7 +495,14 @@
       "title": "Upcoming deadlines",
       "next7Days": "Next 7 days",
       "next14Days": "Next 14 days",
-      "next30Days": "Next 30 days"
+      "next30Days": "Next 30 days",
+      "noUpcoming": "No upcoming deadlines!"
+    },
+    "categories": {
+      "title": "Categories Performance",
+      "total": "Total",
+      "completed": "Completed",
+      "pending": "Pending"
     },
     "overdue": {
       "alert": "You have {{count}} overdue tasks!"
