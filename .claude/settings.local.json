@@ -31,7 +31,8 @@
       "Bash(npm start -- --clean)",
       "Bash(npm run clean:*)",
       "Bash(npm cache clean:*)",
-      "Bash(nul)"
+      "Bash(nul)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"
