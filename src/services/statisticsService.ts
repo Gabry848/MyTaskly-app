@@ -1,8 +1,4 @@
 import axios from './axiosInterceptor';
-import { getValidToken } from './authService';
-
-// Base URL per le API di statistiche (porta 8080 dedicata)
-const STATISTICS_BASE_URL = 'http://api.mytasklyapp.com:8080';
 
 /**
  * Ottiene il dashboard completo con tutti i KPI principali
@@ -10,17 +6,19 @@ const STATISTICS_BASE_URL = 'http://api.mytasklyapp.com:8080';
  */
 export async function getDashboard() {
   try {
-    const token = await getValidToken();
-    if (!token) {
+    const { checkAndRefreshAuth } = await import('./authService');
+    const authStatus = await checkAndRefreshAuth();
+
+    if (!authStatus.isAuthenticated) {
+      console.log('[STATISTICS_SERVICE] getDashboard: utente non autenticato');
       return {
         success: false,
         message: 'Token di autenticazione non valido',
       };
     }
 
-    const response = await axios.get(`${STATISTICS_BASE_URL}/statistics/dashboard`, {
+    const response = await axios.get('/statistics/dashboard', {
       headers: {
-        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
     });
@@ -46,8 +44,11 @@ export async function getDashboard() {
  */
 export async function getProductivityOverview(days: number = 30) {
   try {
-    const token = await getValidToken();
-    if (!token) {
+    const { checkAndRefreshAuth } = await import('./authService');
+    const authStatus = await checkAndRefreshAuth();
+
+    if (!authStatus.isAuthenticated) {
+      console.log('[STATISTICS_SERVICE] getProductivityOverview: utente non autenticato');
       return {
         success: false,
         message: 'Token di autenticazione non valido',
@@ -55,10 +56,9 @@ export async function getProductivityOverview(days: number = 30) {
     }
 
     const response = await axios.get(
-      `${STATISTICS_BASE_URL}/statistics/productivity-overview?days=${days}`,
+      `/statistics/productivity-overview?days=${days}`,
       {
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       }
@@ -84,17 +84,19 @@ export async function getProductivityOverview(days: number = 30) {
  */
 export async function getPriorityDistribution() {
   try {
-    const token = await getValidToken();
-    if (!token) {
+    const { checkAndRefreshAuth } = await import('./authService');
+    const authStatus = await checkAndRefreshAuth();
+
+    if (!authStatus.isAuthenticated) {
+      console.log('[STATISTICS_SERVICE] getPriorityDistribution: utente non autenticato');
       return {
         success: false,
         message: 'Token di autenticazione non valido',
       };
     }
 
-    const response = await axios.get(`${STATISTICS_BASE_URL}/statistics/priority-distribution`, {
+    const response = await axios.get('/statistics/priority-distribution', {
       headers: {
-        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
     });
@@ -119,17 +121,19 @@ export async function getPriorityDistribution() {
  */
 export async function getUpcomingDeadlines() {
   try {
-    const token = await getValidToken();
-    if (!token) {
+    const { checkAndRefreshAuth } = await import('./authService');
+    const authStatus = await checkAndRefreshAuth();
+
+    if (!authStatus.isAuthenticated) {
+      console.log('[STATISTICS_SERVICE] getUpcomingDeadlines: utente non autenticato');
       return {
         success: false,
         message: 'Token di autenticazione non valido',
       };
     }
 
-    const response = await axios.get(`${STATISTICS_BASE_URL}/statistics/upcoming-deadlines`, {
+    const response = await axios.get('/statistics/upcoming-deadlines', {
       headers: {
-        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
     });
@@ -154,17 +158,19 @@ export async function getUpcomingDeadlines() {
  */
 export async function getOverdueTasks() {
   try {
-    const token = await getValidToken();
-    if (!token) {
+    const { checkAndRefreshAuth } = await import('./authService');
+    const authStatus = await checkAndRefreshAuth();
+
+    if (!authStatus.isAuthenticated) {
+      console.log('[STATISTICS_SERVICE] getOverdueTasks: utente non autenticato');
       return {
         success: false,
         message: 'Token di autenticazione non valido',
       };
     }
 
-    const response = await axios.get(`${STATISTICS_BASE_URL}/statistics/overdue-tasks`, {
+    const response = await axios.get('/statistics/overdue-tasks', {
       headers: {
-        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
     });
@@ -189,17 +195,19 @@ export async function getOverdueTasks() {
  */
 export async function getProductivityStreak() {
   try {
-    const token = await getValidToken();
-    if (!token) {
+    const { checkAndRefreshAuth } = await import('./authService');
+    const authStatus = await checkAndRefreshAuth();
+
+    if (!authStatus.isAuthenticated) {
+      console.log('[STATISTICS_SERVICE] getProductivityStreak: utente non autenticato');
       return {
         success: false,
         message: 'Token di autenticazione non valido',
       };
     }
 
-    const response = await axios.get(`${STATISTICS_BASE_URL}/statistics/productivity-streak`, {
+    const response = await axios.get('/statistics/productivity-streak', {
       headers: {
-        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
     });
@@ -225,8 +233,11 @@ export async function getProductivityStreak() {
  */
 export async function getMonthlySummary(months: number = 12) {
   try {
-    const token = await getValidToken();
-    if (!token) {
+    const { checkAndRefreshAuth } = await import('./authService');
+    const authStatus = await checkAndRefreshAuth();
+
+    if (!authStatus.isAuthenticated) {
+      console.log('[STATISTICS_SERVICE] getMonthlySummary: utente non autenticato');
       return {
         success: false,
         message: 'Token di autenticazione non valido',
@@ -234,10 +245,9 @@ export async function getMonthlySummary(months: number = 12) {
     }
 
     const response = await axios.get(
-      `${STATISTICS_BASE_URL}/statistics/monthly-summary?months=${months}`,
+      `/statistics/monthly-summary?months=${months}`,
       {
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       }
@@ -263,17 +273,19 @@ export async function getMonthlySummary(months: number = 12) {
  */
 export async function getCategoryPerformance() {
   try {
-    const token = await getValidToken();
-    if (!token) {
+    const { checkAndRefreshAuth } = await import('./authService');
+    const authStatus = await checkAndRefreshAuth();
+
+    if (!authStatus.isAuthenticated) {
+      console.log('[STATISTICS_SERVICE] getCategoryPerformance: utente non autenticato');
       return {
         success: false,
         message: 'Token di autenticazione non valido',
       };
     }
 
-    const response = await axios.get(`${STATISTICS_BASE_URL}/statistics/category-performance`, {
+    const response = await axios.get('/statistics/category-performance', {
       headers: {
-        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
     });
@@ -299,8 +311,11 @@ export async function getCategoryPerformance() {
  */
 export async function getProductivityTrend(days: number = 30) {
   try {
-    const token = await getValidToken();
-    if (!token) {
+    const { checkAndRefreshAuth } = await import('./authService');
+    const authStatus = await checkAndRefreshAuth();
+
+    if (!authStatus.isAuthenticated) {
+      console.log('[STATISTICS_SERVICE] getProductivityTrend: utente non autenticato');
       return {
         success: false,
         message: 'Token di autenticazione non valido',
@@ -308,10 +323,9 @@ export async function getProductivityTrend(days: number = 30) {
     }
 
     const response = await axios.get(
-      `${STATISTICS_BASE_URL}/statistics/productivity-trend?days=${days}`,
+      `/statistics/productivity-trend?days=${days}`,
       {
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       }
@@ -338,8 +352,11 @@ export async function getProductivityTrend(days: number = 30) {
  */
 export async function getPeriodComparison(periodType: 'week' | 'month') {
   try {
-    const token = await getValidToken();
-    if (!token) {
+    const { checkAndRefreshAuth } = await import('./authService');
+    const authStatus = await checkAndRefreshAuth();
+
+    if (!authStatus.isAuthenticated) {
+      console.log('[STATISTICS_SERVICE] getPeriodComparison: utente non autenticato');
       return {
         success: false,
         message: 'Token di autenticazione non valido',
@@ -347,10 +364,9 @@ export async function getPeriodComparison(periodType: 'week' | 'month') {
     }
 
     const response = await axios.get(
-      `${STATISTICS_BASE_URL}/statistics/period-comparison?period_type=${periodType}`,
+      `/statistics/period-comparison?period_type=${periodType}`,
       {
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       }
