@@ -389,11 +389,18 @@
   "auth": {
     "login": {
       "title": "Accedi",
+      "username": "Username",
       "email": "Email",
       "password": "Password",
       "button": "Accedi",
+      "loginNow": "Login Now",
+      "continueWithGoogle": "Continua con Google",
+      "signingIn": "Accesso in corso...",
+      "rememberMe": "Ricordami",
       "noAccount": "Non hai un account?",
+      "notMember": "Not a member?",
       "register": "Registrati",
+      "createAccount": "Create account",
       "forgotPassword": "Password dimenticata?"
     },
     "register": {
