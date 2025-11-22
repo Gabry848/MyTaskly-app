@@ -495,7 +495,14 @@
       "title": "Scadenze imminenti",
       "next7Days": "Prossimi 7 giorni",
       "next14Days": "Prossimi 14 giorni",
-      "next30Days": "Prossimi 30 giorni"
+      "next30Days": "Prossimi 30 giorni",
+      "noUpcoming": "Nessuna scadenza imminente!"
+    },
+    "categories": {
+      "title": "Performance per Categoria",
+      "total": "Totali",
+      "completed": "Completati",
+      "pending": "In sospeso"
     },
     "overdue": {
       "alert": "Hai {{count}} task scaduti!"
