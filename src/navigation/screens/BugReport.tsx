@@ -2,12 +2,14 @@ import { Text } from '@react-navigation/elements';
 import React, { useState } from 'react';
 import { StyleSheet, View, TouchableOpacity, SafeAreaView, StatusBar, ScrollView, TextInput, Alert, ActivityIndicator, Platform } from 'react-native';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { RootStackParamList } from '../../types';
 import { Ionicons } from '@expo/vector-icons';
 import { getValidToken } from '../../services/authService';
 import axios from '../../services/axiosInstance';
 
 export default function BugReport() {
+  const { t } = useTranslation();
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -15,7 +17,7 @@ export default function BugReport() {
 
   const handleSubmit = async () => {
     if (!title.trim() || !description.trim()) {
-      Alert.alert('Errore', 'Inserisci sia il titolo che la descrizione del bug');
+      Alert.alert(t('bugReport.errors.title'), t('bugReport.errors.emptyFields'));
       return;
     }
 
@@ -23,7 +25,7 @@ export default function BugReport() {
     try {
       const token = await getValidToken();
       if (!token) {
-        Alert.alert('Errore', 'Token di autenticazione non valido');
+        Alert.alert(t('bugReport.errors.title'), t('bugReport.errors.invalidToken'));
         return;
       }
 
@@ -46,8 +48,8 @@ export default function BugReport() {
 
       if (response.status === 200 || response.status === 201) {
         Alert.alert(
-          'Successo', 
-          'Il bug è stato segnalato con successo. Grazie per il tuo contributo!',
+          t('bugReport.success.title'),
+          t('bugReport.success.message'),
           [
             {
               text: 'OK',
@@ -63,8 +65,8 @@ export default function BugReport() {
     } catch (error: any) {
       console.error('Errore nell\'invio del bug report:', error);
       Alert.alert(
-        'Errore', 
-        'Si è verificato un errore durante l\'invio della segnalazione. Riprova più tardi.'
+        t('bugReport.errors.title'),
+        t('bugReport.errors.submitError')
       );
     } finally {
       setLoading(false);
@@ -78,20 +80,20 @@ export default function BugReport() {
       <ScrollView style={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.headerSection}>
           <Ionicons name="bug-outline" size={48} color="#FF3B30" />
-          <Text style={styles.headerTitle}>Segnala un Bug</Text>
+          <Text style={styles.headerTitle}>{t('bugReport.header.title')}</Text>
           <Text style={styles.headerDescription}>
-            Aiutaci a migliorare l&apos;app segnalando eventuali problemi che hai riscontrato.
+            {t('bugReport.header.description')}
           </Text>
         </View>
 
         <View style={styles.formSection}>
           <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Titolo del bug *</Text>
+            <Text style={styles.inputLabel}>{t('bugReport.form.titleLabel')}</Text>
             <TextInput
               style={styles.titleInput}
               value={title}
               onChangeText={setTitle}
-              placeholder="Breve descrizione del problema"
+              placeholder={t('bugReport.form.titlePlaceholder')}
               placeholderTextColor="#999999"
               maxLength={100}
               multiline={false}
@@ -101,12 +103,12 @@ export default function BugReport() {
           </View>
 
           <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Descrizione dettagliata *</Text>
+            <Text style={styles.inputLabel}>{t('bugReport.form.descriptionLabel')}</Text>
             <TextInput
               style={styles.descriptionInput}
               value={description}
               onChangeText={setDescription}
-              placeholder="Descrivi il problema in dettaglio: cosa stavi facendo quando si è verificato, quale errore hai visto, come riprodurre il problema..."
+              placeholder={t('bugReport.form.descriptionPlaceholder')}
               placeholderTextColor="#999999"
               maxLength={1000}
               multiline={true}
@@ -119,17 +121,14 @@ export default function BugReport() {
           <View style={styles.tipsSection}>
             <View style={styles.tipsHeader}>
               <Ionicons name="information-circle-outline" size={20} color="#007AFF" />
-              <Text style={styles.tipsTitle}>Consigli per una buona segnalazione</Text>
+              <Text style={styles.tipsTitle}>{t('bugReport.tips.title')}</Text>
             </View>
             <Text style={styles.tipsText}>
-              • Sii specifico: descrivi esattamente cosa è successo{'\n'}
-              • Includi i passi per riprodurre il problema{'\n'}
-              • Menciona su quale schermata si è verificato l&apos;errore{'\n'}
-              • Descrivi il comportamento atteso vs quello riscontrato
+              {t('bugReport.tips.content')}
             </Text>
           </View>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.submitButton, loading && styles.submitButtonDisabled]}
             onPress={handleSubmit}
             disabled={loading}
@@ -139,7 +138,7 @@ export default function BugReport() {
             ) : (
               <View style={styles.submitButtonContent}>
                 <Ionicons name="send-outline" size={20} color="#ffffff" />
-                <Text style={styles.submitButtonText}>Invia Segnalazione</Text>
+                <Text style={styles.submitButtonText}>{t('bugReport.form.submitButton')}</Text>
               </View>
             )}
           </TouchableOpacity>
