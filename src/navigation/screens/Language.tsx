@@ -1,13 +1,57 @@
 import { Text } from '@react-navigation/elements';
-import React from 'react';
-import { StyleSheet, View, TouchableOpacity, SafeAreaView, StatusBar, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import { StyleSheet, View, TouchableOpacity, SafeAreaView, StatusBar, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { useTranslation } from 'react-i18next';
+
+interface Language {
+  code: string;
+  name: string;
+  nativeName: string;
+  flag: string;
+  available: boolean;
+}
+
+const LANGUAGES: Language[] = [
+  { code: 'it', name: 'Italian', nativeName: 'Italiano', flag: '🇮🇹', available: true },
+  { code: 'en', name: 'English', nativeName: 'English', flag: '🇺🇸', available: true },
+  { code: 'es', name: 'Spanish', nativeName: 'Español', flag: '🇪🇸', available: false },
+  { code: 'fr', name: 'French', nativeName: 'Français', flag: '🇫🇷', available: false },
+];
 
 export default function Language() {
-  const handleLanguageSelect = (languageCode: string) => {
-    // Placeholder per future implementazioni
-    console.log('Language selected:', languageCode);
+  const { currentLanguage, changeLanguage } = useLanguage();
+  const { t } = useTranslation();
+  const [isChanging, setIsChanging] = useState(false);
+
+  const handleLanguageSelect = async (languageCode: string) => {
+    if (languageCode === currentLanguage || isChanging) {
+      return;
+    }
+
+    try {
+      setIsChanging(true);
+      await changeLanguage(languageCode);
+
+      // Show success message
+      Alert.alert(
+        t('common.messages.success'),
+        t('language.messages.changed')
+      );
+    } catch (error) {
+      console.error('Error changing language:', error);
+      Alert.alert(
+        t('common.messages.error'),
+        t('errors.unknown')
+      );
+    } finally {
+      setIsChanging(false);
+    }
   };
+
+  const availableLanguages = LANGUAGES.filter(lang => lang.available);
+  const comingSoonLanguages = LANGUAGES.filter(lang => !lang.available);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -17,97 +61,84 @@ export default function Language() {
       <ScrollView style={styles.content}>
         {/* Current Language Section */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Lingua attuale</Text>
+          <Text style={styles.sectionTitle}>{t('language.currentLanguage')}</Text>
         </View>
 
-        <TouchableOpacity
-          style={styles.languageItem}
-          onPress={() => handleLanguageSelect('it')}
-        >
-          <View style={styles.languageContent}>
-            <View style={styles.flagContainer}>
-              <Text style={styles.flagEmoji}>🇮🇹</Text>
-            </View>
-            <View style={styles.languageInfo}>
-              <Text style={styles.languageName}>Italiano</Text>
-              <Text style={styles.languageNative}>Italiano</Text>
-            </View>
-          </View>
-          <Ionicons name="checkmark-circle" size={24} color="#28a745" />
-        </TouchableOpacity>
+        {availableLanguages.map((language) => {
+          const isSelected = currentLanguage === language.code;
+
+          return (
+            <TouchableOpacity
+              key={language.code}
+              style={[
+                styles.languageItem,
+                isSelected && styles.selectedLanguageItem
+              ]}
+              onPress={() => handleLanguageSelect(language.code)}
+              disabled={isChanging}
+            >
+              <View style={styles.languageContent}>
+                <View style={styles.flagContainer}>
+                  <Text style={styles.flagEmoji}>{language.flag}</Text>
+                </View>
+                <View style={styles.languageInfo}>
+                  <Text style={styles.languageName}>{language.nativeName}</Text>
+                  <Text style={styles.languageNative}>{language.name}</Text>
+                </View>
+              </View>
+              {isChanging && isSelected ? (
+                <ActivityIndicator size="small" color="#007AFF" />
+              ) : isSelected ? (
+                <Ionicons name="checkmark-circle" size={24} color="#28a745" />
+              ) : null}
+            </TouchableOpacity>
+          );
+        })}
 
         {/* Available Languages Section */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Lingue disponibili</Text>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionSubtitle}>
-            Al momento è disponibile solo la lingua italiana
-          </Text>
-        </View>
-
-        {/* Future Languages */}
-        <View style={styles.futureLanguageItem}>
-          <View style={styles.languageContent}>
-            <View style={styles.flagContainer}>
-              <Text style={styles.flagEmoji}>🇺🇸</Text>
+        {availableLanguages.length > 1 && (
+          <>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>{t('language.availableLanguages')}</Text>
             </View>
-            <View style={styles.languageInfo}>
-              <Text style={[styles.languageName, styles.disabledText]}>English</Text>
-              <Text style={[styles.languageNative, styles.disabledText]}>English</Text>
-            </View>
-          </View>
-          <View style={styles.comingSoonBadge}>
-            <Text style={styles.comingSoonText}>Prossimamente</Text>
-          </View>
-        </View>
 
-        <View style={styles.futureLanguageItem}>
-          <View style={styles.languageContent}>
-            <View style={styles.flagContainer}>
-              <Text style={styles.flagEmoji}>🇪🇸</Text>
+            <View style={styles.section}>
+              <Text style={styles.sectionSubtitle}>
+                {t('language.availableLanguages')} {availableLanguages.length}
+              </Text>
             </View>
-            <View style={styles.languageInfo}>
-              <Text style={[styles.languageName, styles.disabledText]}>Español</Text>
-              <Text style={[styles.languageNative, styles.disabledText]}>Español</Text>
-            </View>
-          </View>
-          <View style={styles.comingSoonBadge}>
-            <Text style={styles.comingSoonText}>Prossimamente</Text>
-          </View>
-        </View>
+          </>
+        )}
 
-        <View style={styles.futureLanguageItem}>
-          <View style={styles.languageContent}>
-            <View style={styles.flagContainer}>
-              <Text style={styles.flagEmoji}>🇫🇷</Text>
+        {/* Coming Soon Languages */}
+        {comingSoonLanguages.length > 0 && (
+          <>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>{t('language.comingSoon')}</Text>
             </View>
-            <View style={styles.languageInfo}>
-              <Text style={[styles.languageName, styles.disabledText]}>Français</Text>
-              <Text style={[styles.languageNative, styles.disabledText]}>Français</Text>
-            </View>
-          </View>
-          <View style={styles.comingSoonBadge}>
-            <Text style={styles.comingSoonText}>Prossimamente</Text>
-          </View>
-        </View>
 
-        {/* Info Section */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Informazioni</Text>
-        </View>
-
-        <View style={styles.infoItem}>
-          <Ionicons name="information-circle-outline" size={24} color="#000000" />
-          <View style={styles.infoTextContainer}>
-            <Text style={styles.infoTitle}>Localizzazione in sviluppo</Text>
-            <Text style={styles.infoDescription}>
-              Stiamo lavorando per aggiungere il supporto a più lingue.
-              Le nuove lingue saranno disponibili nei prossimi aggiornamenti dell'app.
-            </Text>
-          </View>
-        </View>
+            {comingSoonLanguages.map((language) => (
+              <View key={language.code} style={styles.futureLanguageItem}>
+                <View style={styles.languageContent}>
+                  <View style={styles.flagContainer}>
+                    <Text style={styles.flagEmoji}>{language.flag}</Text>
+                  </View>
+                  <View style={styles.languageInfo}>
+                    <Text style={[styles.languageName, styles.disabledText]}>
+                      {language.nativeName}
+                    </Text>
+                    <Text style={[styles.languageNative, styles.disabledText]}>
+                      {language.name}
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.comingSoonBadge}>
+                  <Text style={styles.comingSoonText}>{t('language.comingSoon')}</Text>
+                </View>
+              </View>
+            ))}
+          </>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -155,6 +186,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
+  },
+  selectedLanguageItem: {
+    backgroundColor: '#f8f9fa',
   },
   languageContent: {
     flexDirection: 'row',
@@ -212,33 +246,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#000000',
     fontWeight: '600',
-    fontFamily: 'System',
-  },
-  infoItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  infoTextContainer: {
-    flex: 1,
-    marginLeft: 15,
-  },
-  infoTitle: {
-    fontSize: 17,
-    fontWeight: '400',
-    color: '#000000',
-    fontFamily: 'System',
-    marginBottom: 4,
-  },
-  infoDescription: {
-    fontSize: 14,
-    color: '#6c757d',
-    textAlign: 'left',
-    lineHeight: 20,
     fontFamily: 'System',
   },
 });

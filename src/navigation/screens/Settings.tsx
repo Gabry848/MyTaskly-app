@@ -5,9 +5,11 @@ import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../types';
 import { Ionicons } from '@expo/vector-icons';
 import axiosInstance from '../../services/axiosInstance';
+import { useTranslation } from 'react-i18next';
 
 export default function Settings() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const { t } = useTranslation();
 
   const handleNavigateToAccountSettings = () => {
     navigation.navigate('AccountSettings');
@@ -61,108 +63,108 @@ export default function Settings() {
       <ScrollView style={styles.content}>
         {/* Account Section */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Account</Text>
+          <Text style={styles.sectionTitle}>{t('settings.sections.account')}</Text>
         </View>
-        
-        <TouchableOpacity 
-          style={styles.menuItem} 
+
+        <TouchableOpacity
+          style={styles.menuItem}
           onPress={handleNavigateToAccountSettings}
         >
           <View style={styles.menuItemContent}>
             <Ionicons name="person-outline" size={24} color="#000000" />
-            <Text style={styles.menuItemText}>Gestisci account</Text>
+            <Text style={styles.menuItemText}>{t('settings.menu.manageAccount')}</Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color="#666666" />
         </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={styles.menuItem} 
+        <TouchableOpacity
+          style={styles.menuItem}
           onPress={handleNavigateToChangePassword}
         >
           <View style={styles.menuItemContent}>
             <Ionicons name="key-outline" size={24} color="#000000" />
-            <Text style={styles.menuItemText}>Cambia password</Text>
+            <Text style={styles.menuItemText}>{t('settings.menu.changePassword')}</Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color="#666666" />
         </TouchableOpacity>
 
         {/* Support Section */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Supporto</Text>
+          <Text style={styles.sectionTitle}>{t('settings.sections.support')}</Text>
         </View>
 
-        <TouchableOpacity 
-          style={styles.menuItem} 
+        <TouchableOpacity
+          style={styles.menuItem}
           onPress={handleNavigateToHelp}
         >
           <View style={styles.menuItemContent}>
             <Ionicons name="help-circle-outline" size={24} color="#000000" />
-            <Text style={styles.menuItemText}>Aiuto</Text>
+            <Text style={styles.menuItemText}>{t('settings.menu.help')}</Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color="#666666" />
         </TouchableOpacity>
 
         {/* General Section */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Generale</Text>
+          <Text style={styles.sectionTitle}>{t('settings.sections.general')}</Text>
         </View>
 
-        <TouchableOpacity 
-          style={styles.menuItem} 
+        <TouchableOpacity
+          style={styles.menuItem}
           onPress={handleNavigateToLanguage}
         >
           <View style={styles.menuItemContent}>
             <Ionicons name="language-outline" size={24} color="#000000" />
-            <Text style={styles.menuItemText}>Lingua</Text>
+            <Text style={styles.menuItemText}>{t('settings.menu.language')}</Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color="#666666" />
         </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={styles.menuItem} 
+        <TouchableOpacity
+          style={styles.menuItem}
           onPress={handleNavigateToVoiceSettings}
         >
           <View style={styles.menuItemContent}>
             <Ionicons name="mic-outline" size={24} color="#000000" />
-            <Text style={styles.menuItemText}>Impostazioni vocali</Text>
+            <Text style={styles.menuItemText}>{t('settings.menu.voiceSettings')}</Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color="#666666" />
         </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={styles.menuItem} 
+        <TouchableOpacity
+          style={styles.menuItem}
           onPress={handleNavigateToGoogleCalendar}
         >
           <View style={styles.menuItemContent}>
             <Ionicons name="calendar-outline" size={24} color="#000000" />
-            <Text style={styles.menuItemText}>Google Calendar</Text>
+            <Text style={styles.menuItemText}>{t('settings.menu.googleCalendar')}</Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color="#666666" />
         </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={styles.menuItem} 
+        <TouchableOpacity
+          style={styles.menuItem}
           onPress={handleNavigateToAbout}
         >
           <View style={styles.menuItemContent}>
             <Ionicons name="information-circle-outline" size={24} color="#000000" />
-            <Text style={styles.menuItemText}>Info</Text>
+            <Text style={styles.menuItemText}>{t('settings.menu.about')}</Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color="#666666" />
         </TouchableOpacity>
 
         {/* Development Section */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Development</Text>
+          <Text style={styles.sectionTitle}>{t('settings.sections.development')}</Text>
         </View>
 
-        <TouchableOpacity 
-          style={styles.menuItem} 
+        <TouchableOpacity
+          style={styles.menuItem}
           onPress={testNotification}
         >
           <View style={styles.menuItemContent}>
             <Ionicons name="notifications-outline" size={24} color="#000000" />
-            <Text style={styles.menuItemText}>Test Notifiche (10s)</Text>
+            <Text style={styles.menuItemText}>{t('settings.menu.testNotifications')}</Text>
           </View>
         </TouchableOpacity>
       </ScrollView>
