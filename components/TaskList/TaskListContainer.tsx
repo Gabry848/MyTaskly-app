@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { View, ScrollView, ActivityIndicator, Alert, Animated, Easing } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { styles } from './styles';
 import { Task as TaskType, globalTasksRef } from './types';
 import { TaskListHeader } from './TaskListHeader';
@@ -35,6 +36,7 @@ export const TaskListContainer = ({
   Task,
   taskService
 }: TaskListContainerProps) => {
+  const { t } = useTranslation();
   const [tasks, setTasks] = useState<TaskType[]>([]);
   const [filtroImportanza, setFiltroImportanza] = useState("Tutte");
   const [filtroScadenza, setFiltroScadenza] = useState("Tutte");
@@ -503,8 +505,8 @@ export const TaskListContainer = ({
           />
 
           {/* Sezione task non completati */}
-          <TaskSection 
-            title="Da fare"
+          <TaskSection
+            title={t('taskList.sections.todo')}
             isExpanded={todoSectionExpanded}
             tasks={listaFiltrata}
             animatedHeight={todoSectionHeight}
@@ -531,13 +533,13 @@ export const TaskListContainer = ({
                 />
               );
             }}
-            emptyMessage="Non ci sono task da completare. Aggiungi un nuovo task!"
+            emptyMessage={t('taskList.sections.emptyTodo')}
           />
-          
+
           {/* Sezione task completati */}
           {completedTasks.length > 0 && (
-            <TaskSection 
-              title="Completati"
+            <TaskSection
+              title={t('taskList.sections.completed')}
               isExpanded={completedSectionExpanded}
               tasks={completedTasks}
               animatedHeight={completedSectionHeight}
@@ -563,7 +565,7 @@ export const TaskListContainer = ({
                   />
                 );
               }}
-              emptyMessage="Non ci sono task completati."
+              emptyMessage={t('taskList.sections.emptyCompleted')}
             />
           )}
 
