@@ -13,6 +13,7 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { getDashboard } from '../../services/statisticsService';
+import { useTranslation } from 'react-i18next';
 
 interface DashboardData {
   productivity_overview: {
@@ -58,11 +59,11 @@ export default function Statistics() {
       if (result.success && result.data) {
         setDashboardData(result.data);
       } else {
-        setError(result.message || 'Errore nel caricamento delle statistiche');
+        setError(result.message || t('statistics.errors.loading'));
       }
     } catch (err: any) {
       console.error('Errore nel caricamento delle statistiche:', err);
-      setError('Errore di connessione');
+      setError(t('statistics.errors.connection'));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -121,7 +122,7 @@ export default function Statistics() {
       </View>
       <View style={styles.priorityStats}>
         <Text style={styles.priorityCount}>{data.total_count}</Text>
-        <Text style={styles.priorityLabel}>task totali</Text>
+        <Text style={styles.priorityLabel}>{t('statistics.priority.totalTasks')}</Text>
       </View>
       <View style={styles.priorityProgress}>
         <View style={styles.priorityProgressBg}>
@@ -143,7 +144,7 @@ export default function Statistics() {
         <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color="#007AFF" />
-          <Text style={styles.loadingText}>Caricamento statistiche...</Text>
+          <Text style={styles.loadingText}>{t('statistics.loading')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -154,13 +155,13 @@ export default function Statistics() {
       <SafeAreaView style={styles.container}>
         <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
         <View style={styles.header}>
-          <Text style={styles.mainTitle}>Le tue statistiche</Text>
+          <Text style={styles.mainTitle}>{t('statistics.title')}</Text>
         </View>
         <View style={styles.centerContainer}>
           <Ionicons name="stats-chart-outline" size={64} color="#cccccc" />
-          <Text style={styles.errorText}>{error || 'Nessun dato disponibile'}</Text>
+          <Text style={styles.errorText}>{error || t('statistics.noData')}</Text>
           <TouchableOpacity style={styles.retryButton} onPress={loadStatistics}>
-            <Text style={styles.retryButtonText}>Riprova</Text>
+            <Text style={styles.retryButtonText}>{t('common.buttons.retry')}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -174,7 +175,7 @@ export default function Statistics() {
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
 
       <View style={styles.header}>
-        <Text style={styles.mainTitle}>Le tue statistiche</Text>
+        <Text style={styles.mainTitle}>{t('statistics.title')}</Text>
       </View>
 
       <ScrollView
@@ -189,7 +190,7 @@ export default function Statistics() {
           <View style={styles.alertBanner}>
             <Ionicons name="warning" size={20} color="#FFFFFF" />
             <Text style={styles.alertText}>
-              {overdue_count} {overdue_count === 1 ? 'task scaduto' : 'task scaduti'}
+              {t('statistics.overdue.alert', { count: overdue_count })}
             </Text>
           </View>
         )}
@@ -202,11 +203,11 @@ export default function Statistics() {
               <View style={styles.streakInfo}>
                 <Text style={styles.streakValue}>{current_streak}</Text>
                 <Text style={styles.streakLabel}>
-                  {current_streak === 1 ? 'giorno consecutivo' : 'giorni consecutivi'}
+                  {t('statistics.streak.days', { count: current_streak })}
                 </Text>
               </View>
             </View>
-            <Text style={styles.streakSubtext}>Continua così!</Text>
+            <Text style={styles.streakSubtext}>{t('statistics.streak.keepGoing')}</Text>
           </View>
         )}
 
@@ -214,56 +215,56 @@ export default function Statistics() {
         <View style={styles.kpiGrid}>
           {renderKPICard(
             'checkmark-circle',
-            'Task completati',
+            t('statistics.kpi.completed'),
             productivity_overview.completed_tasks,
-            `su ${productivity_overview.total_tasks} totali`,
+            t('statistics.kpi.outOf', { total: productivity_overview.total_tasks }),
             getTrendIcon(productivity_overview.completion_rate)
           )}
           {renderKPICard(
             'bar-chart',
-            'Tasso completamento',
+            t('statistics.kpi.completionRate'),
             `${productivity_overview.completion_rate.toFixed(1)}%`
           )}
           {renderKPICard(
             'time',
-            'Task in sospeso',
+            t('statistics.kpi.pending'),
             productivity_overview.pending_tasks
           )}
           {renderKPICard(
             'calendar',
-            'Media giornaliera',
+            t('statistics.kpi.dailyAverage'),
             productivity_overview.avg_completed_per_day.toFixed(1),
-            'task completati al giorno'
+            t('statistics.kpi.tasksPerDay')
           )}
         </View>
 
         {/* Priority Distribution */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Distribuzione per priorità</Text>
+          <Text style={styles.sectionTitle}>{t('statistics.priority.title')}</Text>
           <View style={styles.priorityGrid}>
-            {priority_distribution.alta && renderPriorityCard('Alta', priority_distribution.alta, '#FF3B30')}
-            {priority_distribution.media && renderPriorityCard('Media', priority_distribution.media, '#FF9500')}
-            {priority_distribution.bassa && renderPriorityCard('Bassa', priority_distribution.bassa, '#34C759')}
+            {priority_distribution.alta && renderPriorityCard(t('statistics.priority.high'), priority_distribution.alta, '#FF3B30')}
+            {priority_distribution.media && renderPriorityCard(t('statistics.priority.medium'), priority_distribution.media, '#FF9500')}
+            {priority_distribution.bassa && renderPriorityCard(t('statistics.priority.low'), priority_distribution.bassa, '#34C759')}
           </View>
         </View>
 
         {/* Upcoming Deadlines */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Scadenze imminenti</Text>
+          <Text style={styles.sectionTitle}>{t('statistics.deadlines.title')}</Text>
           <View style={styles.deadlinesContainer}>
             <View style={styles.deadlineItem}>
               <Text style={styles.deadlineValue}>{upcoming_deadlines_summary.next_7_days}</Text>
-              <Text style={styles.deadlineLabel}>Prossimi 7 giorni</Text>
+              <Text style={styles.deadlineLabel}>{t('statistics.deadlines.next7Days')}</Text>
             </View>
             <View style={styles.deadlineDivider} />
             <View style={styles.deadlineItem}>
               <Text style={styles.deadlineValue}>{upcoming_deadlines_summary.next_14_days}</Text>
-              <Text style={styles.deadlineLabel}>Prossimi 14 giorni</Text>
+              <Text style={styles.deadlineLabel}>{t('statistics.deadlines.next14Days')}</Text>
             </View>
             <View style={styles.deadlineDivider} />
             <View style={styles.deadlineItem}>
               <Text style={styles.deadlineValue}>{upcoming_deadlines_summary.next_30_days}</Text>
-              <Text style={styles.deadlineLabel}>Prossimi 30 giorni</Text>
+              <Text style={styles.deadlineLabel}>{t('statistics.deadlines.next30Days')}</Text>
             </View>
           </View>
         </View>

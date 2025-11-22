@@ -48,7 +48,7 @@ export default function AccountSettings() {
 
       const token = await getValidToken();
       if (!token) {
-        setError('Token di autenticazione non valido');
+        setError(t('accountSettings.errors.invalidToken'));
         return;
       }
 
@@ -62,7 +62,7 @@ export default function AccountSettings() {
       setUserInfo(response.data);
     } catch (error: any) {
       console.error('Errore nel recupero delle informazioni utente:', error);
-      setError('Errore nel caricamento delle informazioni utente');
+      setError(t('accountSettings.errors.loadingError'));
     } finally {
       setLoading(false);
     }
@@ -90,12 +90,12 @@ export default function AccountSettings() {
     try {
       const success = await sendTestNotification();
       if (success) {
-        Alert.alert('Successo', 'Notifica di test inviata con successo!');
+        Alert.alert(t('common.messages.success'), t('accountSettings.testNotification.success'));
       } else {
-        Alert.alert('Errore', 'Impossibile inviare la notifica di test. Controlla la connessione al server.');
+        Alert.alert(t('common.messages.error'), t('accountSettings.testNotification.failed'));
       }
     } catch {
-      Alert.alert('Errore', 'Si è verificato un errore durante l\'invio della notifica.');
+      Alert.alert(t('common.messages.error'), t('accountSettings.testNotification.error'));
     } finally {
       setTestNotificationLoading(false);
     }
@@ -103,14 +103,14 @@ export default function AccountSettings() {
 
   const handleChangeEmail = async () => {
     if (!newEmail || !emailPassword) {
-      Alert.alert('Attenzione', 'Compila tutti i campi');
+      Alert.alert(t('common.messages.warning'), t('accountSettings.changeEmail.fillAllFields'));
       return;
     }
 
     // Validazione email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(newEmail)) {
-      Alert.alert('Attenzione', 'Inserisci un indirizzo email valido');
+      Alert.alert(t('common.messages.warning'), t('accountSettings.changeEmail.invalidEmail'));
       return;
     }
 
@@ -118,17 +118,17 @@ export default function AccountSettings() {
     try {
       const result = await changeEmail(newEmail, emailPassword);
       if (result.success) {
-        Alert.alert('Successo', result.message);
+        Alert.alert(t('common.messages.success'), result.message);
         setEmailModalVisible(false);
         setNewEmail('');
         setEmailPassword('');
         // Ricarica le informazioni utente
         fetchUserInfo();
       } else {
-        Alert.alert('Errore', result.message);
+        Alert.alert(t('common.messages.error'), result.message);
       }
     } catch (error) {
-      Alert.alert('Errore', 'Si è verificato un errore durante il cambio email');
+      Alert.alert(t('common.messages.error'), t('accountSettings.changeEmail.error'));
     } finally {
       setChangeEmailLoading(false);
     }
@@ -136,12 +136,12 @@ export default function AccountSettings() {
 
   const handleChangeUsername = async () => {
     if (!newUsername) {
-      Alert.alert('Attenzione', 'Inserisci il nuovo username');
+      Alert.alert(t('common.messages.warning'), t('accountSettings.changeUsername.enterUsername'));
       return;
     }
 
     if (newUsername.length < 3) {
-      Alert.alert('Attenzione', 'L\'username deve essere di almeno 3 caratteri');
+      Alert.alert(t('common.messages.warning'), t('accountSettings.changeUsername.minLength'));
       return;
     }
 
@@ -149,16 +149,16 @@ export default function AccountSettings() {
     try {
       const result = await changeUsername(newUsername);
       if (result.success) {
-        Alert.alert('Successo', result.message);
+        Alert.alert(t('common.messages.success'), result.message);
         setUsernameModalVisible(false);
         setNewUsername('');
         // Ricarica le informazioni utente
         fetchUserInfo();
       } else {
-        Alert.alert('Errore', result.message);
+        Alert.alert(t('common.messages.error'), result.message);
       }
     } catch (error) {
-      Alert.alert('Errore', 'Si è verificato un errore durante il cambio username');
+      Alert.alert(t('common.messages.error'), t('accountSettings.changeUsername.error'));
     } finally {
       setChangeUsernameLoading(false);
     }
@@ -171,7 +171,7 @@ export default function AccountSettings() {
 
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#000000" />
-          <Text style={styles.loadingText}>Caricamento...</Text>
+          <Text style={styles.loadingText}>{t('common.messages.loading')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -188,21 +188,21 @@ export default function AccountSettings() {
             <Ionicons name="alert-circle-outline" size={48} color="#000000" />
             <Text style={styles.errorText}>{error}</Text>
             <TouchableOpacity style={styles.retryButton} onPress={handleRefresh}>
-              <Text style={styles.retryButtonText}>Riprova</Text>
+              <Text style={styles.retryButtonText}>{t('common.buttons.retry')}</Text>
             </TouchableOpacity>
           </View>
         ) : userInfo ? (
           <>
             {/* User Info Section */}
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Informazioni account</Text>
+              <Text style={styles.sectionTitle}>{t('accountSettings.sections.accountInfo')}</Text>
             </View>
 
             <View style={styles.infoItem}>
               <View style={styles.infoItemContent}>
                 <Ionicons name="person-outline" size={24} color="#000000" />
                 <View style={styles.infoTextContainer}>
-                  <Text style={styles.infoLabel}>Username</Text>
+                  <Text style={styles.infoLabel}>{t('accountSettings.labels.username')}</Text>
                   <Text style={styles.infoValue}>{userInfo.username}</Text>
                 </View>
               </View>
@@ -212,7 +212,7 @@ export default function AccountSettings() {
               <View style={styles.infoItemContent}>
                 <Ionicons name="mail-outline" size={24} color="#000000" />
                 <View style={styles.infoTextContainer}>
-                  <Text style={styles.infoLabel}>Email</Text>
+                  <Text style={styles.infoLabel}>{t('accountSettings.labels.email')}</Text>
                   <Text style={styles.infoValue}>{userInfo.email}</Text>
                 </View>
               </View>
@@ -222,7 +222,7 @@ export default function AccountSettings() {
               <View style={styles.infoItemContent}>
                 <Ionicons name="calendar-outline" size={24} color="#000000" />
                 <View style={styles.infoTextContainer}>
-                  <Text style={styles.infoLabel}>Data iscrizione</Text>
+                  <Text style={styles.infoLabel}>{t('accountSettings.labels.registrationDate')}</Text>
                   <Text style={styles.infoValue}>{formatDate(userInfo.registration_date)}</Text>
                 </View>
               </View>
@@ -230,7 +230,7 @@ export default function AccountSettings() {
 
             {/* Account Management Section */}
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Gestione account</Text>
+              <Text style={styles.sectionTitle}>{t('accountSettings.sections.accountManagement')}</Text>
             </View>
 
             <TouchableOpacity
@@ -239,7 +239,7 @@ export default function AccountSettings() {
             >
               <View style={styles.menuItemContent}>
                 <Ionicons name="person-outline" size={24} color="#000000" />
-                <Text style={styles.menuItemText}>Cambia username</Text>
+                <Text style={styles.menuItemText}>{t('accountSettings.menu.changeUsername')}</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color="#666666" />
             </TouchableOpacity>
@@ -250,7 +250,7 @@ export default function AccountSettings() {
             >
               <View style={styles.menuItemContent}>
                 <Ionicons name="mail-outline" size={24} color="#000000" />
-                <Text style={styles.menuItemText}>Cambia email</Text>
+                <Text style={styles.menuItemText}>{t('accountSettings.menu.changeEmail')}</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color="#666666" />
             </TouchableOpacity>
@@ -261,14 +261,14 @@ export default function AccountSettings() {
             >
               <View style={styles.menuItemContent}>
                 <Ionicons name="key-outline" size={24} color="#000000" />
-                <Text style={styles.menuItemText}>Cambia password</Text>
+                <Text style={styles.menuItemText}>{t('accountSettings.menu.changePassword')}</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color="#666666" />
             </TouchableOpacity>
 
             {/* Test Notifications Section */}
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Test notifiche</Text>
+              <Text style={styles.sectionTitle}>{t('accountSettings.sections.testNotifications')}</Text>
             </View>
 
             <TouchableOpacity
@@ -280,10 +280,10 @@ export default function AccountSettings() {
                 <Ionicons name="notifications-outline" size={24} color="#000000" />
                 <View style={styles.menuItemTextContainer}>
                   <Text style={styles.menuItemText}>
-                    {testNotificationLoading ? 'Invio in corso...' : 'Invia notifica di test'}
+                    {testNotificationLoading ? t('accountSettings.testNotification.sending') : t('accountSettings.testNotification.send')}
                   </Text>
                   <Text style={styles.menuItemDescription}>
-                    Verifica il funzionamento delle notifiche push
+                    {t('accountSettings.testNotification.description')}
                   </Text>
                 </View>
               </View>
@@ -307,7 +307,7 @@ export default function AccountSettings() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Cambia email</Text>
+              <Text style={styles.modalTitle}>{t('accountSettings.changeEmail.title')}</Text>
               <TouchableOpacity onPress={() => setEmailModalVisible(false)}>
                 <Ionicons name="close" size={28} color="#2c3e50" />
               </TouchableOpacity>
@@ -315,26 +315,26 @@ export default function AccountSettings() {
 
             <View style={styles.modalBody}>
               <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Nuova email</Text>
+                <Text style={styles.inputLabel}>{t('accountSettings.changeEmail.newEmail')}</Text>
                 <TextInput
                   style={styles.input}
                   value={newEmail}
                   onChangeText={setNewEmail}
                   keyboardType="email-address"
                   autoCapitalize="none"
-                  placeholder="esempio@email.com"
+                  placeholder={t('accountSettings.changeEmail.emailPlaceholder')}
                   placeholderTextColor="#adb5bd"
                 />
               </View>
 
               <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Password per conferma</Text>
+                <Text style={styles.inputLabel}>{t('accountSettings.changeEmail.passwordConfirm')}</Text>
                 <TextInput
                   style={styles.input}
                   value={emailPassword}
                   onChangeText={setEmailPassword}
                   secureTextEntry
-                  placeholder="Inserisci la tua password"
+                  placeholder={t('accountSettings.changeEmail.passwordPlaceholder')}
                   placeholderTextColor="#adb5bd"
                 />
               </View>
@@ -347,7 +347,7 @@ export default function AccountSettings() {
                 {changeEmailLoading ? (
                   <ActivityIndicator color="#ffffff" />
                 ) : (
-                  <Text style={styles.modalButtonText}>Aggiorna email</Text>
+                  <Text style={styles.modalButtonText}>{t('accountSettings.changeEmail.updateButton')}</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -365,7 +365,7 @@ export default function AccountSettings() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Cambia username</Text>
+              <Text style={styles.modalTitle}>{t('accountSettings.changeUsername.title')}</Text>
               <TouchableOpacity onPress={() => setUsernameModalVisible(false)}>
                 <Ionicons name="close" size={28} color="#2c3e50" />
               </TouchableOpacity>
@@ -373,13 +373,13 @@ export default function AccountSettings() {
 
             <View style={styles.modalBody}>
               <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Nuovo username</Text>
+                <Text style={styles.inputLabel}>{t('accountSettings.changeUsername.newUsername')}</Text>
                 <TextInput
                   style={styles.input}
                   value={newUsername}
                   onChangeText={setNewUsername}
                   autoCapitalize="none"
-                  placeholder="Minimo 3 caratteri"
+                  placeholder={t('accountSettings.changeUsername.placeholder')}
                   placeholderTextColor="#adb5bd"
                 />
               </View>
@@ -392,7 +392,7 @@ export default function AccountSettings() {
                 {changeUsernameLoading ? (
                   <ActivityIndicator color="#ffffff" />
                 ) : (
-                  <Text style={styles.modalButtonText}>Aggiorna username</Text>
+                  <Text style={styles.modalButtonText}>{t('accountSettings.changeUsername.updateButton')}</Text>
                 )}
               </TouchableOpacity>
             </View>
