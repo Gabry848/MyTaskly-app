@@ -532,8 +532,7 @@ const styles = StyleSheet.create({
   },
   kpiGrid: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginHorizontal: -5,
+    justifyContent: 'space-between',
     marginBottom: 10,
   },
   kpiCard: {
@@ -541,7 +540,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 16,
-    marginHorizontal: '1%',
     marginBottom: 12,
     borderWidth: 1,
     borderColor: '#e1e5e9',
