@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Animated } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons'; // Assicurati di avere questa dipendenza
+import { MaterialIcons } from '@expo/vector-icons';
 import { styles } from './styles';
 import { Task as TaskType } from './types';
 
@@ -39,12 +39,9 @@ export const TaskSection = ({
       
       <Animated.View 
         style={{ 
-          height: animatedHeight.interpolate({
-            inputRange: [0, 1],
-            outputRange: [0, 'auto']
-          }),
           overflow: 'hidden',
-          opacity: animatedHeight // Animazione dell'opacità in base all'altezza
+          opacity: animatedHeight,
+          transform: [{ scaleY: animatedHeight }]
         }}
       >
         {isExpanded && tasks.length > 0 ? (

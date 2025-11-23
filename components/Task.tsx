@@ -340,7 +340,8 @@ const Task = ({
       ]}
       ref={componentRef}
       onLayout={onComponentLayout}
-    >      <Animated.View
+    >
+      <Animated.View
         style={[
           styles.card,
           { 
