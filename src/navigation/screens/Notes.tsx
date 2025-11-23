@@ -12,8 +12,10 @@ import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-na
 import { NotesProvider, useNotesActions, useNotesState } from '../../context/NotesContext';
 import { NotesCanvas } from '../../../components/Notes/NotesCanvas';
 import { Plus } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 
 const NotesContent: React.FC = () => {
+  const { t } = useTranslation();
   const { addNote } = useNotesActions();
   const { isLoading } = useNotesState();
   const scale = useSharedValue(1);
@@ -29,12 +31,12 @@ const NotesContent: React.FC = () => {
     
     if (Platform.OS === 'ios') {
       Alert.prompt(
-        'Nuova Nota',
-        'Inserisci il testo della nota:',
+        t('notes.newNote'),
+        t('notes.newNote'),
         [
-          { text: 'Annulla', style: 'cancel' },
-          { 
-            text: 'Crea', 
+          { text: t('common.buttons.cancel'), style: 'cancel' },
+          {
+            text: t('notes.create'),
             onPress: (text) => {
               if (text && text.trim()) {
                 addNote(text.trim());
@@ -45,7 +47,7 @@ const NotesContent: React.FC = () => {
         'plain-text'
       );
     } else {
-      addNote('Nuova nota');
+      addNote(t('notes.newNote'));
     }
   };
 

@@ -7,15 +7,17 @@ import {
   StatusBar
 } from 'react-native';
 import CalendarView from '../../../components/CalendarView';
+import { useTranslation } from 'react-i18next';
 
 export default function Calendar() {
+  const { t } = useTranslation();
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
 
       {/* Header con titolo principale - stesso stile di Home20 e Categories */}
       <View style={styles.header}>
-        <Text style={styles.mainTitle}>Calendario</Text>
+        <Text style={styles.mainTitle}>{t('calendar.title')}</Text>
       </View>
 
       <View style={styles.content}>

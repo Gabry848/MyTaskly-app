@@ -11,8 +11,10 @@ import CategoryList from '../../../components/CategoryList';
 import AddCategoryButton from "../../../components/AddCategoryButton";
 import SearchTasksButton from "../../../components/SearchTasksButton";
 import GlobalTaskSearch from "../../../components/GlobalTaskSearch";
+import { useTranslation } from 'react-i18next';
 
 export default function Categories() {
+  const { t } = useTranslation();
   const categoryListRef = useRef<{ reloadCategories: () => void } | null>(null);
   const [searchModalVisible, setSearchModalVisible] = useState(false);
 
@@ -45,7 +47,7 @@ export default function Categories() {
       
       {/* Header con titolo principale - stesso stile di Home20 */}
       <View style={styles.header}>
-        <Text style={styles.mainTitle}>Le tue categorie</Text>
+        <Text style={styles.mainTitle}>{t('categories.title')}</Text>
       </View>
 
       <View style={styles.content}>
