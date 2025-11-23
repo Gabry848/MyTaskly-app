@@ -237,13 +237,18 @@ export async function sendTestNotification(): Promise<boolean> {
 /**
  * Hook personalizzato per gestire le notifiche
  */
-export function useNotifications() {
+export function useNotifications(isAuthenticated: boolean = false) {
   const [expoPushToken, setExpoPushToken] = useState<string>('');
   const [notification, setNotification] = useState<Notifications.Notification | null>(null);
   const notificationListener = useRef<Notifications.EventSubscription | null>(null);
   const responseListener = useRef<Notifications.EventSubscription | null>(null);
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      console.log('[NOTIFICATIONS] Skip registration: user not authenticated');
+      return;
+    }
+
     // 🎯 REGISTRA PER LE NOTIFICHE ALL'AVVIO
     registerForPushNotificationsAsync().then(token => {
       if (token) {
@@ -299,7 +304,7 @@ export function useNotifications() {
         responseListener.current.remove();
       }
     };
-  }, []);
+  }, [isAuthenticated]);
 
   return {
     expoPushToken,
@@ -307,3 +312,7 @@ export function useNotifications() {
     sendTestNotification: () => sendTestNotification(),
   };
 }
+
+
+
+

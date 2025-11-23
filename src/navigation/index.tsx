@@ -229,7 +229,7 @@ function AppStack() {
   const [isLoading, setIsLoading] = useState(true); // Controlla lo stato di autenticazione all'avvio
 
   // 🔔 Inizializza il sistema di notifiche quando l'utente è autenticato
-  const { notification } = useNotifications();
+  const { notification } = useNotifications(isAuthenticated === true);
 
   useEffect(() => {
     const checkAuthStatus = async () => {
@@ -455,3 +455,4 @@ export default function Navigation() {
     </GestureHandlerRootView>
   );
 }
+
