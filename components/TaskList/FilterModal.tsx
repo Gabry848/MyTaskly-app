@@ -52,7 +52,8 @@ export const FilterModal = ({
                   label="Tutte"
                   isSelected={filtroImportanza === "Tutte"}
                   onPress={() => setFiltroImportanza("Tutte")}
-                />                <FilterChip
+                />
+                <FilterChip
                   label="Alta"
                   isSelected={filtroImportanza === "Alta"}
                   onPress={() => setFiltroImportanza("Alta")}

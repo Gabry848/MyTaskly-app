@@ -4,8 +4,10 @@ import { StyleSheet, View, TouchableOpacity, SafeAreaView, StatusBar, ScrollView
 import { Ionicons } from '@expo/vector-icons';
 import { changePassword } from '../../services/authService';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 
 export default function ChangePassword() {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -17,17 +19,17 @@ export default function ChangePassword() {
 
   const handleChangePassword = async () => {
     if (!oldPassword || !newPassword || !confirmPassword) {
-      Alert.alert('Attenzione', 'Compila tutti i campi');
+      Alert.alert(t('common.messages.warning'), t('changePassword.errors.fillAllFields'));
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      Alert.alert('Attenzione', 'Le password non corrispondono');
+      Alert.alert(t('common.messages.warning'), t('changePassword.errors.passwordMismatch'));
       return;
     }
 
     if (newPassword.length < 8) {
-      Alert.alert('Attenzione', 'La nuova password deve essere di almeno 8 caratteri');
+      Alert.alert(t('common.messages.warning'), t('changePassword.errors.minLength'));
       return;
     }
 
@@ -35,9 +37,9 @@ export default function ChangePassword() {
     try {
       const result = await changePassword(oldPassword, newPassword);
       if (result.success) {
-        Alert.alert('Successo', result.message, [
+        Alert.alert(t('common.messages.success'), result.message, [
           {
-            text: 'OK',
+            text: t('common.buttons.ok'),
             onPress: () => navigation.goBack()
           }
         ]);
@@ -45,10 +47,10 @@ export default function ChangePassword() {
         setNewPassword('');
         setConfirmPassword('');
       } else {
-        Alert.alert('Errore', result.message);
+        Alert.alert(t('common.messages.error'), result.message);
       }
     } catch (error) {
-      Alert.alert('Errore', 'Si è verificato un errore durante il cambio password');
+      Alert.alert(t('common.messages.error'), t('changePassword.errors.generic'));
     } finally {
       setLoading(false);
     }
@@ -64,20 +66,20 @@ export default function ChangePassword() {
           <View style={styles.instructionsContainer}>
             <Ionicons name="information-circle-outline" size={24} color="#007bff" />
             <Text style={styles.instructionsText}>
-              La password deve essere di almeno 8 caratteri
+              {t('changePassword.instructions')}
             </Text>
           </View>
 
           {/* Old Password */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Password attuale</Text>
+            <Text style={styles.label}>{t('changePassword.labels.currentPassword')}</Text>
             <View style={styles.inputContainer}>
               <TextInput
                 style={styles.input}
                 value={oldPassword}
                 onChangeText={setOldPassword}
                 secureTextEntry={!showOldPassword}
-                placeholder="Inserisci la password attuale"
+                placeholder={t('changePassword.placeholders.currentPassword')}
                 placeholderTextColor="#adb5bd"
                 autoCapitalize="none"
               />
@@ -96,14 +98,14 @@ export default function ChangePassword() {
 
           {/* New Password */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Nuova password</Text>
+            <Text style={styles.label}>{t('changePassword.labels.newPassword')}</Text>
             <View style={styles.inputContainer}>
               <TextInput
                 style={styles.input}
                 value={newPassword}
                 onChangeText={setNewPassword}
                 secureTextEntry={!showNewPassword}
-                placeholder="Minimo 8 caratteri"
+                placeholder={t('changePassword.placeholders.newPassword')}
                 placeholderTextColor="#adb5bd"
                 autoCapitalize="none"
               />
@@ -122,14 +124,14 @@ export default function ChangePassword() {
 
           {/* Confirm Password */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Conferma nuova password</Text>
+            <Text style={styles.label}>{t('changePassword.labels.confirmPassword')}</Text>
             <View style={styles.inputContainer}>
               <TextInput
                 style={styles.input}
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 secureTextEntry={!showConfirmPassword}
-                placeholder="Reinserisci la nuova password"
+                placeholder={t('changePassword.placeholders.confirmPassword')}
                 placeholderTextColor="#adb5bd"
                 autoCapitalize="none"
               />
@@ -157,29 +159,29 @@ export default function ChangePassword() {
             ) : (
               <>
                 <Ionicons name="checkmark-circle-outline" size={20} color="#ffffff" />
-                <Text style={styles.submitButtonText}>Aggiorna password</Text>
+                <Text style={styles.submitButtonText}>{t('changePassword.updateButton')}</Text>
               </>
             )}
           </TouchableOpacity>
 
           {/* Security Tips */}
           <View style={styles.tipsContainer}>
-            <Text style={styles.tipsTitle}>Consigli per una password sicura:</Text>
+            <Text style={styles.tipsTitle}>{t('changePassword.tips.title')}</Text>
             <View style={styles.tipItem}>
               <Ionicons name="checkmark" size={16} color="#28a745" />
-              <Text style={styles.tipText}>Usa almeno 8 caratteri</Text>
+              <Text style={styles.tipText}>{t('changePassword.tips.tip1')}</Text>
             </View>
             <View style={styles.tipItem}>
               <Ionicons name="checkmark" size={16} color="#28a745" />
-              <Text style={styles.tipText}>Combina lettere maiuscole e minuscole</Text>
+              <Text style={styles.tipText}>{t('changePassword.tips.tip2')}</Text>
             </View>
             <View style={styles.tipItem}>
               <Ionicons name="checkmark" size={16} color="#28a745" />
-              <Text style={styles.tipText}>Includi numeri e caratteri speciali</Text>
+              <Text style={styles.tipText}>{t('changePassword.tips.tip3')}</Text>
             </View>
             <View style={styles.tipItem}>
               <Ionicons name="checkmark" size={16} color="#28a745" />
-              <Text style={styles.tipText}>Evita parole comuni o informazioni personali</Text>
+              <Text style={styles.tipText}>{t('changePassword.tips.tip4')}</Text>
             </View>
           </View>
         </View>

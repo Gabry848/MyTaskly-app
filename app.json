@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/icons/ios-light.png",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "scheme": "mytaskly",
     "ios": {
       "supportsTablet": true,
@@ -15,6 +15,7 @@
         "ITSAppUsesNonExemptEncryption": false
       },
       "bundleIdentifier": "com.Gabry848Studio.Mytaskly",
+      "jsEngine": "jsc",
       "icon": {
         "dark": "assets/icons/ios-dark.png",
         "light": "assets/icons/ios-light.png",
@@ -32,7 +33,8 @@
         "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS"
       ],
-      "googleServicesFile": "./google-services.json"
+      "googleServicesFile": "./google-services.json",
+      "jsEngine": "jsc"
     },
     "web": {
       "favicon": "./assets/favicon.png"
