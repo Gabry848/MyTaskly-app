@@ -1,0 +1,529 @@
+{
+  "navigation": {
+    "tabs": {
+      "home": "Home",
+      "categories": "Categorie",
+      "notes": "Note",
+      "calendar": "Calendario",
+      "statistics": "Statistiche"
+    },
+    "screens": {
+      "login": "Accedi",
+      "register": "Registrati",
+      "emailVerification": "Verifica Email",
+      "verificationSuccess": "Verifica Completata",
+      "home": "Home",
+      "taskList": "Lista Task",
+      "categories": "Categorie",
+      "notes": "Note",
+      "calendar": "Calendario",
+      "statistics": "Statistiche",
+      "profile": "Profilo",
+      "settings": "Impostazioni",
+      "accountSettings": "Gestione Account",
+      "changePassword": "Cambia Password",
+      "help": "Aiuto",
+      "about": "Info",
+      "language": "Lingua",
+      "voiceSettings": "Impostazioni Vocali",
+      "googleCalendar": "Google Calendar",
+      "notificationDebug": "Debug Notifiche",
+      "bugReport": "Segnala Bug",
+      "notFound": "Pagina non trovata"
+    }
+  },
+  "settings": {
+    "title": "Impostazioni",
+    "sections": {
+      "account": "Account",
+      "support": "Supporto",
+      "general": "Generale",
+      "info": "Info",
+      "development": "Development"
+    },
+    "menu": {
+      "manageAccount": "Gestisci account",
+      "changePassword": "Cambia password",
+      "help": "Aiuto",
+      "language": "Lingua",
+      "voiceSettings": "Impostazioni vocali",
+      "googleCalendar": "Google Calendar",
+      "about": "Info",
+      "testNotifications": "Test Notifiche (10s)"
+    }
+  },
+  "home": {
+    "title": "Mytaskly",
+    "greeting": "Ciao {{username}},\ncosa vuoi fare oggi?",
+    "greetingDefault": "Ciao Utente,\ncosa vuoi fare oggi?",
+    "chat": {
+      "placeholder": "Scrivi un messaggio...",
+      "botTyping": "Il bot sta scrivendo...",
+      "error": "Mi dispiace, si è verificato un errore. Riprova più tardi.",
+      "suggestedCommand": "💡 Cosa puoi fare?"
+    },
+    "sync": {
+      "syncing": "Sincronizzando...",
+      "offline": "Modalità offline",
+      "pending": "{{count}} modifiche da sincronizzare",
+      "synced": "Sincronizzato"
+    }
+  },
+  "tutorial": {
+    "welcome": {
+      "title": "Benvenuto in MyTaskly!",
+      "description": "Il tuo assistente AI personale per gestire task, note e calendario. Scopri come usare tutte le funzionalità in pochi passaggi.",
+      "startButton": "Inizia il Tour",
+      "skipButton": "Salta il tour"
+    },
+    "steps": {
+      "chat": {
+        "title": "Chat con l'AI",
+        "description": "Scrivi un messaggio o tocca il microfono per chattare vocalmente. L'assistente AI ti aiuterà a gestire le tue attività."
+      },
+      "categories": {
+        "title": "Le tue Categorie",
+        "description": "Organizza le tue attività in categorie. Tieni premuto su una categoria per modificarla o eliminarla."
+      },
+      "tasks": {
+        "title": "Gestisci i Task",
+        "description": "Tocca un task per completarlo. Tieni premuto per modificare, eliminare o impostare promemoria."
+      },
+      "notes": {
+        "title": "Disegna e Annota",
+        "description": "Usa la lavagna per disegnare, prendere appunti o creare schizzi. Tocca il pulsante + per aggiungere una nuova nota."
+      },
+      "calendar": {
+        "title": "Calendario delle Attività",
+        "description": "Visualizza tutti i tuoi task organizzati per data. Tocca un giorno per vedere le attività programmate."
+      },
+      "statistics": {
+        "title": "Le tue Statistiche",
+        "description": "Monitora il tuo progresso con grafici e analitiche. Visualizza il numero di task completati, la distribuzione per categoria e il tuo andamento nel tempo."
+      }
+    },
+    "completion": {
+      "title": "Tutto Pronto!",
+      "description": "Ora sei pronto per utilizzare MyTaskly al meglio! Puoi rivedere questo tutorial in qualsiasi momento dalle Impostazioni.",
+      "primaryButton": "Inizia Ora",
+      "secondaryButton": "Rivedi Tutorial"
+    },
+    "navigation": {
+      "next": "Avanti",
+      "back": "Indietro",
+      "skip": "Salta"
+    }
+  },
+  "help": {
+    "title": "Aiuto",
+    "sections": {
+      "whatIs": {
+        "title": "Cos'è Mytaskly?",
+        "description": "Mytaskly è la tua app personale per la gestione delle attività quotidiane. Organizza le tue task, crea categorie personalizzate e mantieni tutto sotto controllo con un'interfaccia semplice e intuitiva."
+      },
+      "features": {
+        "title": "Funzionalità principali",
+        "taskManagement": {
+          "title": "Gestione Task",
+          "description": "Crea, modifica ed elimina le tue attività con facilità"
+        },
+        "categories": {
+          "title": "Categorie",
+          "description": "Organizza le tue task in categorie personalizzate"
+        },
+        "notes": {
+          "title": "Note",
+          "description": "Aggiungi note e appunti per non dimenticare nulla"
+        },
+        "aiAssistant": {
+          "title": "Assistant AI",
+          "description": "Chatta con l'assistente AI per organizzare meglio le tue attività"
+        },
+        "notifications": {
+          "title": "Notifiche",
+          "description": "Ricevi promemoria per non perdere mai una scadenza"
+        }
+      },
+      "howToUse": {
+        "title": "Come utilizzare l'app",
+        "step1": {
+          "title": "Inizia dalla Home",
+          "description": "La schermata principale ti mostra una panoramica delle tue attività"
+        },
+        "step2": {
+          "title": "Crea le tue categorie",
+          "description": "Vai nella sezione Categorie per organizzare le tue task"
+        },
+        "step3": {
+          "title": "Aggiungi le tue task",
+          "description": "Crea nuove attività e assegnale alle categorie appropriate"
+        },
+        "step4": {
+          "title": "Usa l'AI Assistant",
+          "description": "Chatta con l'assistente per ricevere suggerimenti e organizzare meglio il tuo tempo"
+        },
+        "step5": {
+          "title": "Visualizza le tue statistiche",
+          "description": "Accedi alla sezione Statistiche per monitorare il tuo progresso, visualizzare i grafici e analizzare le tue prestazioni"
+        }
+      },
+      "tips": {
+        "title": "Suggerimenti"
+      }
+    }
+  },
+  "accountSettings": {
+    "title": "Informazioni account",
+    "loading": "Caricamento...",
+    "fields": {
+      "username": "Username",
+      "email": "Email",
+      "registrationDate": "Data iscrizione"
+    },
+    "actions": {
+      "changeEmail": "Cambia Email",
+      "changeUsername": "Cambia Username"
+    },
+    "modals": {
+      "changeEmail": {
+        "title": "Cambia Email",
+        "newEmail": "Nuova Email",
+        "password": "Password",
+        "confirm": "Conferma",
+        "cancel": "Annulla"
+      },
+      "changeUsername": {
+        "title": "Cambia Username",
+        "newUsername": "Nuovo Username",
+        "confirm": "Conferma",
+        "cancel": "Annulla"
+      }
+    },
+    "messages": {
+      "emailChanged": "Email modificata con successo",
+      "usernameChanged": "Username modificato con successo",
+      "error": "Si è verificato un errore"
+    }
+  },
+  "changePassword": {
+    "title": "Cambia Password",
+    "fields": {
+      "currentPassword": "Password attuale",
+      "newPassword": "Nuova password",
+      "confirmPassword": "Conferma password"
+    },
+    "button": "Cambia Password",
+    "messages": {
+      "success": "Password modificata con successo",
+      "error": "Errore durante la modifica della password",
+      "passwordMismatch": "Le password non coincidono"
+    }
+  },
+  "language": {
+    "title": "Lingua",
+    "currentLanguage": "Lingua attuale",
+    "availableLanguages": "Lingue disponibili",
+    "comingSoon": "Prossimamente",
+    "languages": {
+      "it": "Italiano",
+      "en": "English",
+      "es": "Español",
+      "fr": "Français"
+    },
+    "messages": {
+      "changed": "Lingua modificata con successo"
+    }
+  },
+  "voiceSettings": {
+    "title": "Impostazioni Vocali",
+    "fields": {
+      "voiceModel": "Modello voce",
+      "voiceGender": "Genere voce",
+      "voiceQuality": "Qualità voce"
+    },
+    "options": {
+      "male": "Maschile",
+      "female": "Femminile"
+    },
+    "messages": {
+      "saved": "Impostazioni vocali salvate con successo"
+    }
+  },
+  "about": {
+    "title": "Info",
+    "appName": "Mytaskly",
+    "version": "Versione",
+    "aboutApp": "Informazioni sull'app",
+    "appStatus": "Stato dell'app",
+    "inDevelopment": "In sviluppo",
+    "copyright": "© 2024 Mytaskly. Tutti i diritti riservati."
+  },
+  "categories": {
+    "title": "Le tue categorie",
+    "empty": "Nessuna categoria trovata",
+    "addCategory": "Aggiungi Categoria",
+    "editCategory": "Modifica Categoria",
+    "deleteCategory": "Elimina Categoria",
+    "fields": {
+      "title": "Titolo",
+      "description": "Descrizione"
+    },
+    "messages": {
+      "created": "Categoria creata con successo",
+      "updated": "Categoria aggiornata con successo",
+      "deleted": "Categoria eliminata con successo",
+      "error": "Errore",
+      "emptyTitle": "Il nome della categoria non può essere vuoto"
+    }
+  },
+  "tasks": {
+    "addTask": "Aggiungi Task",
+    "editTask": "Modifica Task",
+    "deleteTask": "Elimina Task",
+    "completed": "Completato",
+    "reopened": "Riaperto",
+    "fields": {
+      "title": "Inserisci il titolo",
+      "description": "Descrizione",
+      "dueDate": "Scadenza",
+      "priority": "Priorità",
+      "category": "Categoria"
+    },
+    "priority": {
+      "low": "Bassa",
+      "medium": "Media",
+      "high": "Alta"
+    },
+    "messages": {
+      "created": "Task creato con successo",
+      "updated": "Task aggiornato con successo",
+      "deleted": "Task eliminato con successo",
+      "completed": "Task completato",
+      "reopened": "Task riaperto"
+    }
+  },
+  "notes": {
+    "title": "Note",
+    "newNote": "Nuova Nota",
+    "create": "Crea",
+    "cancel": "Annulla",
+    "messages": {
+      "created": "Nota creata con successo",
+      "deleted": "Nota eliminata con successo"
+    }
+  },
+  "calendar": {
+    "title": "Calendario",
+    "today": "Oggi",
+    "months": {
+      "january": "Gennaio",
+      "february": "Febbraio",
+      "march": "Marzo",
+      "april": "Aprile",
+      "may": "Maggio",
+      "june": "Giugno",
+      "july": "Luglio",
+      "august": "Agosto",
+      "september": "Settembre",
+      "october": "Ottobre",
+      "november": "Novembre",
+      "december": "Dicembre"
+    },
+    "days": {
+      "monday": "Lun",
+      "tuesday": "Mar",
+      "wednesday": "Mer",
+      "thursday": "Gio",
+      "friday": "Ven",
+      "saturday": "Sab",
+      "sunday": "Dom"
+    }
+  },
+  "statistics": {
+    "title": "Statistiche",
+    "overview": "Panoramica",
+    "tasksCompleted": "Task Completati",
+    "tasksInProgress": "Task in Corso",
+    "totalTasks": "Task Totali",
+    "categoryDistribution": "Distribuzione per Categoria",
+    "completionRate": "Tasso di Completamento",
+    "noData": "Nessun dato disponibile"
+  },
+  "common": {
+    "buttons": {
+      "save": "Salva",
+      "cancel": "Annulla",
+      "delete": "Elimina",
+      "edit": "Modifica",
+      "create": "Crea",
+      "confirm": "Conferma",
+      "close": "Chiudi",
+      "back": "Indietro",
+      "next": "Avanti",
+      "done": "Fatto",
+      "retry": "Riprova",
+      "refresh": "Aggiorna"
+    },
+    "messages": {
+      "loading": "Caricamento...",
+      "saving": "Salvataggio...",
+      "success": "Operazione completata con successo",
+      "error": "Si è verificato un errore",
+      "confirmDelete": "Sei sicuro di voler eliminare?",
+      "noConnection": "Nessuna connessione internet",
+      "tryAgain": "Riprova più tardi"
+    },
+    "search": {
+      "placeholder": "Cerca...",
+      "noResults": "Nessun risultato trovato"
+    }
+  },
+  "errors": {
+    "network": "Errore di rete",
+    "server": "Errore del server",
+    "unauthorized": "Non autorizzato",
+    "notFound": "Non trovato",
+    "validation": "Errore di validazione",
+    "unknown": "Errore sconosciuto"
+  },
+  "auth": {
+    "login": {
+      "title": "Accedi",
+      "username": "Username",
+      "email": "Email",
+      "password": "Password",
+      "button": "Accedi",
+      "loginNow": "Login Now",
+      "continueWithGoogle": "Continua con Google",
+      "signingIn": "Accesso in corso...",
+      "rememberMe": "Ricordami",
+      "noAccount": "Non hai un account?",
+      "notMember": "Not a member?",
+      "register": "Registrati",
+      "createAccount": "Create account",
+      "forgotPassword": "Password dimenticata?"
+    },
+    "register": {
+      "title": "Registrati",
+      "username": "Username",
+      "email": "Email",
+      "password": "Password",
+      "confirmPassword": "Conferma Password",
+      "button": "Registrati",
+      "hasAccount": "Hai già un account?",
+      "login": "Accedi"
+    },
+    "messages": {
+      "loginSuccess": "Accesso effettuato con successo",
+      "loginError": "Errore durante l'accesso",
+      "registerSuccess": "Registrazione completata con successo",
+      "registerError": "Errore durante la registrazione",
+      "logoutSuccess": "Logout effettuato con successo"
+    }
+  },
+  "profile": {
+    "user": {
+      "subtitle": "Utente Mytaskly"
+    },
+    "accountInfo": {
+      "title": "Informazioni Account",
+      "email": "Email",
+      "joinDate": "Membro dal"
+    },
+    "buttons": {
+      "myActivities": "Le mie Attività",
+      "settings": "Impostazioni",
+      "bugReport": "Segnala Bug",
+      "logout": "Esci dall'account"
+    },
+    "logout": {
+      "success": "Logout effettuato con successo",
+      "error": "Errore durante il logout"
+    }
+  },
+  "bugReport": {
+    "header": {
+      "title": "Segnala un Bug",
+      "description": "Aiutaci a migliorare l'app segnalando eventuali problemi che hai riscontrato."
+    },
+    "form": {
+      "titleLabel": "Titolo del bug *",
+      "titlePlaceholder": "Breve descrizione del problema",
+      "descriptionLabel": "Descrizione dettagliata *",
+      "descriptionPlaceholder": "Descrivi il problema in dettaglio: cosa stavi facendo quando si è verificato, quale errore hai visto, come riprodurre il problema...",
+      "submitButton": "Invia Segnalazione"
+    },
+    "tips": {
+      "title": "Consigli per una buona segnalazione",
+      "content": "• Sii specifico: descrivi esattamente cosa è successo\n• Includi i passi per riprodurre il problema\n• Menciona su quale schermata si è verificato l'errore\n• Descrivi il comportamento atteso vs quello riscontrato"
+    },
+    "errors": {
+      "title": "Errore",
+      "emptyFields": "Inserisci sia il titolo che la descrizione del bug",
+      "invalidToken": "Token di autenticazione non valido",
+      "submitError": "Si è verificato un errore durante l'invio della segnalazione. Riprova più tardi."
+    },
+    "success": {
+      "title": "Successo",
+      "message": "Il bug è stato segnalato con successo. Grazie per il tuo contributo!"
+    }
+  },
+  "statistics": {
+    "title": "Statistiche",
+    "loading": "Caricamento statistiche...",
+    "noData": "Nessun dato disponibile",
+    "errors": {
+      "loading": "Errore nel caricamento delle statistiche",
+      "connection": "Errore di connessione. Controlla la tua connessione internet."
+    },
+    "kpi": {
+      "completed": "Completati",
+      "completionRate": "Tasso di completamento",
+      "pending": "In sospeso",
+      "dailyAverage": "Media giornaliera",
+      "tasksPerDay": "task al giorno",
+      "outOf": "su {{total}}"
+    },
+    "priority": {
+      "title": "Distribuzione per Priorità",
+      "high": "Alta",
+      "medium": "Media",
+      "low": "Bassa",
+      "totalTasks": "task totali"
+    },
+    "deadlines": {
+      "title": "Scadenze imminenti",
+      "next7Days": "Prossimi 7 giorni",
+      "next14Days": "Prossimi 14 giorni",
+      "next30Days": "Prossimi 30 giorni",
+      "noUpcoming": "Nessuna scadenza imminente!"
+    },
+    "categories": {
+      "title": "Performance per Categoria",
+      "total": "Totali",
+      "completed": "Completati",
+      "pending": "In sospeso"
+    },
+    "overdue": {
+      "alert": "Hai {{count}} task scaduti!"
+    },
+    "streak": {
+      "days": "giorni di fila",
+      "keepGoing": "Continua così! 💪"
+    }
+  },
+  "taskList": {
+    "sections": {
+      "todo": "Da fare",
+      "completed": "Completati",
+      "emptyTodo": "Non ci sono task da completare. Aggiungi un nuovo task!",
+      "emptyCompleted": "Non ci sono task completati."
+    },
+    "filters": {
+      "active": "Filtri attivi:"
+    }
+  },
+  "task": {
+    "noDeadline": "Nessuna scadenza"
+  }
+}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,62 +7,76 @@ import {
   StatusBar,
   ScrollView,
   RefreshControl,
-  ActivityIndicator,
   TouchableOpacity,
+  Animated,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { getDashboard } from '../../services/statisticsService';
-
-interface DashboardData {
-  productivity_overview: {
-    total_tasks: number;
-    completed_tasks: number;
-    pending_tasks: number;
-    cancelled_tasks: number;
-    completion_rate: number;
-    avg_tasks_per_day: number;
-    avg_completed_per_day: number;
-  };
-  priority_distribution: {
-    bassa?: { total_count: number; completed_count: number; completion_rate: number };
-    media?: { total_count: number; completed_count: number; completion_rate: number };
-    alta?: { total_count: number; completed_count: number; completion_rate: number };
-  };
-  status_distribution: {
-    total_tasks: number;
-    in_sospeso?: { count: number; percentage: number };
-    completato?: { count: number; percentage: number };
-    annullato?: { count: number; percentage: number };
-  };
-  upcoming_deadlines_summary: {
-    next_7_days: number;
-    next_14_days: number;
-    next_30_days: number;
-  };
-  overdue_count: number;
-  current_streak: number;
-}
+import { useTranslation } from 'react-i18next';
+import {
+  getDashboard,
+  getPriorityDistribution,
+  getCategoryPerformance,
+  getUpcomingDeadlines,
+} from '../../services/statisticsService';
 
 export default function Statistics() {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const loadStatistics = async () => {
+  const [dashboardData, setDashboardData] = useState<any>(null);
+  const [priorityData, setPriorityData] = useState<any>(null);
+  const [categoryData, setCategoryData] = useState<any>(null);
+  const [deadlineData, setDeadlineData] = useState<any>(null);
+
+  // Animated loading text
+  const loadingOpacity = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (loading) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(loadingOpacity, {
+            toValue: 0.5,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+          Animated.timing(loadingOpacity, {
+            toValue: 1,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    }
+  }, [loading, loadingOpacity]);
+
+  const loadAllData = async () => {
     try {
       setError(null);
-      const result = await getDashboard();
+      setLoading(true);
 
-      if (result.success && result.data) {
-        setDashboardData(result.data);
-      } else {
-        setError(result.message || 'Errore nel caricamento delle statistiche');
+      // Load all data in parallel
+      const [dashboard, priority, category, deadlines] = await Promise.all([
+        getDashboard(),
+        getPriorityDistribution(),
+        getCategoryPerformance(),
+        getUpcomingDeadlines(),
+      ]);
+
+      if (dashboard.success) setDashboardData(dashboard.data);
+      if (priority.success) setPriorityData(priority.data);
+      if (category.success) setCategoryData(category.data);
+      if (deadlines.success) setDeadlineData(deadlines.data);
+
+      if (!dashboard.success) {
+        setError(dashboard.message || t('statistics.errors.loading'));
       }
     } catch (err: any) {
       console.error('Errore nel caricamento delle statistiche:', err);
-      setError('Errore di connessione');
+      setError(t('statistics.errors.connection'));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -71,19 +85,32 @@ export default function Statistics() {
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    loadStatistics();
-  }, []);
+    loadAllData();
+  }, [loadAllData]);
 
-  // Carica le statistiche quando la schermata viene visualizzata
   useFocusEffect(
     useCallback(() => {
-      loadStatistics();
-    }, [])
+      loadAllData();
+    }, [loadAllData])
   );
 
-  useEffect(() => {
-    loadStatistics();
-  }, []);
+  if (error && !dashboardData) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+        <View style={styles.header}>
+          <Text style={styles.mainTitle}>{t('statistics.title')}</Text>
+        </View>
+        <View style={styles.centerContainer}>
+          <Ionicons name="alert-circle-outline" size={64} color="#cccccc" />
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={loadAllData}>
+            <Text style={styles.retryButtonText}>{t('common.buttons.retry')}</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   const getTrendIcon = (value: number) => {
     if (value >= 80) return { name: 'trending-up' as const, color: '#34C759' };
@@ -91,90 +118,143 @@ export default function Statistics() {
     return { name: 'trending-down' as const, color: '#FF3B30' };
   };
 
-  const renderKPICard = (
-    icon: string,
-    title: string,
-    value: string | number,
-    subtitle?: string,
-    trend?: { name: any; color: string }
-  ) => (
-    <View style={styles.kpiCard}>
-      <View style={styles.kpiHeader}>
-        <Ionicons name={icon as any} size={24} color="#007AFF" />
-        {trend && <Ionicons name={trend.name} size={20} color={trend.color} />}
-      </View>
-      <Text style={styles.kpiValue}>{value}</Text>
-      <Text style={styles.kpiTitle}>{title}</Text>
-      {subtitle && <Text style={styles.kpiSubtitle}>{subtitle}</Text>}
-    </View>
-  );
+  // Render animated loading text
+  const renderLoadingText = () => {
+    return (
+      <Animated.Text style={[styles.loadingPlaceholder, { opacity: loadingOpacity }]}>
+        Loading...
+      </Animated.Text>
+    );
+  };
 
-  const renderPriorityCard = (
-    priority: string,
-    data: { total_count: number; completed_count: number; completion_rate: number },
-    color: string
-  ) => (
-    <View style={styles.priorityCard}>
-      <View style={styles.priorityHeader}>
-        <View style={[styles.priorityDot, { backgroundColor: color }]} />
-        <Text style={styles.priorityName}>{priority}</Text>
-      </View>
-      <View style={styles.priorityStats}>
-        <Text style={styles.priorityCount}>{data.total_count}</Text>
-        <Text style={styles.priorityLabel}>task totali</Text>
-      </View>
-      <View style={styles.priorityProgress}>
-        <View style={styles.priorityProgressBg}>
-          <View
+
+  const renderCategoryItem = (category: any) => (
+    <View key={category.category_name} style={styles.categoryCard}>
+      <View style={styles.categoryHeader}>
+        <Text style={styles.categoryName}>{category.category_name}</Text>
+        <View
+          style={[
+            styles.categoryBadge,
+            {
+              backgroundColor:
+                category.completion_rate >= 80
+                  ? '#E8F5E9'
+                  : category.completion_rate >= 60
+                  ? '#FFF3E0'
+                  : '#FFEBEE',
+            },
+          ]}
+        >
+          <Text
             style={[
-              styles.priorityProgressFill,
-              { width: `${data.completion_rate}%`, backgroundColor: color },
+              styles.categoryBadgeText,
+              {
+                color:
+                  category.completion_rate >= 80
+                    ? '#34C759'
+                    : category.completion_rate >= 60
+                    ? '#FF9500'
+                    : '#FF3B30',
+              },
             ]}
-          />
+          >
+            {category.completion_rate.toFixed(0)}%
+          </Text>
         </View>
-        <Text style={styles.priorityRate}>{data.completion_rate.toFixed(0)}%</Text>
+      </View>
+
+      <View style={styles.categoryStats}>
+        <View style={styles.categoryStatItem}>
+          <Text style={styles.categoryStatLabel}>Totali</Text>
+          <Text style={styles.categoryStatValue}>{category.total_tasks}</Text>
+        </View>
+        <View style={styles.categoryStatDivider} />
+        <View style={styles.categoryStatItem}>
+          <Text style={styles.categoryStatLabel}>Completati</Text>
+          <Text style={styles.categoryStatValue}>{category.completed_tasks}</Text>
+        </View>
+        <View style={styles.categoryStatDivider} />
+        <View style={styles.categoryStatItem}>
+          <Text style={styles.categoryStatLabel}>In sospeso</Text>
+          <Text style={styles.categoryStatValue}>{category.pending_tasks}</Text>
+        </View>
+      </View>
+
+      <View style={styles.categoryProgressBg}>
+        <View
+          style={[
+            styles.categoryProgressFill,
+            { width: `${category.completion_rate}%` },
+          ]}
+        />
       </View>
     </View>
   );
 
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
-        <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
-          <Text style={styles.loadingText}>Caricamento statistiche...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
+  const renderDeadlineItem = (task: any, index: number) => {
+    const daysUntil = task.days_until_deadline;
+    const getUrgencyColor = () => {
+      if (daysUntil < 3) return '#FF3B30';
+      if (daysUntil < 7) return '#FF9500';
+      return '#34C759';
+    };
 
-  if (error || !dashboardData) {
     return (
-      <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
-        <View style={styles.header}>
-          <Text style={styles.mainTitle}>Le tue statistiche</Text>
+      <View key={`deadline-${index}`} style={styles.deadlineItemCard}>
+        <View style={styles.deadlineItemHeader}>
+          <View style={styles.deadlineItemLeft}>
+            <View
+              style={[styles.deadlineIndicator, { backgroundColor: getUrgencyColor() }]}
+            />
+            <View style={styles.deadlineItemInfo}>
+              <Text style={styles.deadlineItemTitle} numberOfLines={1}>
+                {task.title}
+              </Text>
+              <Text style={styles.deadlineItemCategory}>{task.category_name}</Text>
+            </View>
+          </View>
+          <View
+            style={[styles.deadlineBadge, { backgroundColor: getUrgencyColor() + '20' }]}
+          >
+            <Text style={[styles.deadlineBadgeText, { color: getUrgencyColor() }]}>
+              {daysUntil}d
+            </Text>
+          </View>
         </View>
-        <View style={styles.centerContainer}>
-          <Ionicons name="stats-chart-outline" size={64} color="#cccccc" />
-          <Text style={styles.errorText}>{error || 'Nessun dato disponibile'}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={loadStatistics}>
-            <Text style={styles.retryButtonText}>Riprova</Text>
-          </TouchableOpacity>
+        <View style={styles.deadlineItemPriority}>
+          <Ionicons
+            name={
+              task.priority === 'Alta'
+                ? 'alert-circle'
+                : task.priority === 'Media'
+                ? 'alert'
+                : 'checkmark-circle'
+            }
+            size={16}
+            color={
+              task.priority === 'Alta'
+                ? '#FF3B30'
+                : task.priority === 'Media'
+                ? '#FF9500'
+                : '#34C759'
+            }
+          />
+          <Text style={styles.deadlineItemPriorityText}>{task.priority}</Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
-  }
+  };
 
-  const { productivity_overview, priority_distribution, upcoming_deadlines_summary, overdue_count, current_streak } = dashboardData;
+  const { productivity_overview, overdue_count, current_streak } = dashboardData || {};
+  const upcoming7 = deadlineData?.next_7_days || [];
+  const upcoming14 = deadlineData?.next_14_days || [];
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
 
       <View style={styles.header}>
-        <Text style={styles.mainTitle}>Le tue statistiche</Text>
+        <Text style={styles.mainTitle}>{t('statistics.title')}</Text>
       </View>
 
       <ScrollView
@@ -189,7 +269,7 @@ export default function Statistics() {
           <View style={styles.alertBanner}>
             <Ionicons name="warning" size={20} color="#FFFFFF" />
             <Text style={styles.alertText}>
-              {overdue_count} {overdue_count === 1 ? 'task scaduto' : 'task scaduti'}
+              {t('statistics.overdue.alert', { count: overdue_count })}
             </Text>
           </View>
         )}
@@ -202,73 +282,235 @@ export default function Statistics() {
               <View style={styles.streakInfo}>
                 <Text style={styles.streakValue}>{current_streak}</Text>
                 <Text style={styles.streakLabel}>
-                  {current_streak === 1 ? 'giorno consecutivo' : 'giorni consecutivi'}
+                  {t('statistics.streak.days', { count: current_streak })}
                 </Text>
               </View>
             </View>
-            <Text style={styles.streakSubtext}>Continua così!</Text>
+            <Text style={styles.streakSubtext}>{t('statistics.streak.keepGoing')}</Text>
           </View>
         )}
 
         {/* KPI Cards Grid */}
+        <View style={styles.sectionTitle}>
+          <Text style={styles.sectionTitleText}>Panoramica</Text>
+        </View>
         <View style={styles.kpiGrid}>
-          {renderKPICard(
-            'checkmark-circle',
-            'Task completati',
-            productivity_overview.completed_tasks,
-            `su ${productivity_overview.total_tasks} totali`,
-            getTrendIcon(productivity_overview.completion_rate)
-          )}
-          {renderKPICard(
-            'bar-chart',
-            'Tasso completamento',
-            `${productivity_overview.completion_rate.toFixed(1)}%`
-          )}
-          {renderKPICard(
-            'time',
-            'Task in sospeso',
-            productivity_overview.pending_tasks
-          )}
-          {renderKPICard(
-            'calendar',
-            'Media giornaliera',
-            productivity_overview.avg_completed_per_day.toFixed(1),
-            'task completati al giorno'
-          )}
+          <View style={styles.kpiCard}>
+            <View style={styles.kpiHeader}>
+              <Ionicons name="checkmark-circle" size={24} color="#007AFF" />
+              {!loading && productivity_overview && <Ionicons name={getTrendIcon(productivity_overview.completion_rate).name} size={20} color={getTrendIcon(productivity_overview.completion_rate).color} />}
+            </View>
+            {!loading && productivity_overview ? (
+              <>
+                <Text style={styles.kpiValue}>{productivity_overview.completed_tasks}</Text>
+                <Text style={styles.kpiTitle}>{t('statistics.kpi.completed')}</Text>
+                <Text style={styles.kpiSubtitle}>{t('statistics.kpi.outOf', { total: productivity_overview.total_tasks })}</Text>
+              </>
+            ) : (
+              renderLoadingText()
+            )}
+          </View>
+
+          <View style={styles.kpiCard}>
+            <View style={styles.kpiHeader}>
+              <Ionicons name="bar-chart" size={24} color="#007AFF" />
+            </View>
+            {!loading && productivity_overview ? (
+              <>
+                <Text style={styles.kpiValue}>{productivity_overview.completion_rate.toFixed(1)}%</Text>
+                <Text style={styles.kpiTitle}>{t('statistics.kpi.completionRate')}</Text>
+              </>
+            ) : (
+              renderLoadingText()
+            )}
+          </View>
+
+          <View style={styles.kpiCard}>
+            <View style={styles.kpiHeader}>
+              <Ionicons name="time" size={24} color="#007AFF" />
+            </View>
+            {!loading && productivity_overview ? (
+              <>
+                <Text style={styles.kpiValue}>{productivity_overview.pending_tasks}</Text>
+                <Text style={styles.kpiTitle}>{t('statistics.kpi.pending')}</Text>
+              </>
+            ) : (
+              renderLoadingText()
+            )}
+          </View>
+
+          <View style={styles.kpiCard}>
+            <View style={styles.kpiHeader}>
+              <Ionicons name="calendar" size={24} color="#007AFF" />
+            </View>
+            {!loading && productivity_overview ? (
+              <>
+                <Text style={styles.kpiValue}>{productivity_overview.avg_completed_per_day.toFixed(1)}</Text>
+                <Text style={styles.kpiTitle}>{t('statistics.kpi.dailyAverage')}</Text>
+                <Text style={styles.kpiSubtitle}>{t('statistics.kpi.tasksPerDay')}</Text>
+              </>
+            ) : (
+              renderLoadingText()
+            )}
+          </View>
         </View>
 
         {/* Priority Distribution */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Distribuzione per priorità</Text>
-          <View style={styles.priorityGrid}>
-            {priority_distribution.alta && renderPriorityCard('Alta', priority_distribution.alta, '#FF3B30')}
-            {priority_distribution.media && renderPriorityCard('Media', priority_distribution.media, '#FF9500')}
-            {priority_distribution.bassa && renderPriorityCard('Bassa', priority_distribution.bassa, '#34C759')}
+        <View style={styles.sectionTitle}>
+          <Text style={styles.sectionTitleText}>Distribuzione Priorità</Text>
+        </View>
+        <View style={styles.priorityGrid}>
+          <View key="high" style={styles.priorityCard}>
+            <View style={styles.priorityHeader}>
+              <View style={[styles.priorityDot, { backgroundColor: '#FF3B30' }]} />
+              <Text style={styles.priorityName}>{t('statistics.priority.high')}</Text>
+            </View>
+            {!loading && priorityData?.alta ? (
+              <>
+                <View style={styles.priorityStats}>
+                  <Text style={styles.priorityCount}>{priorityData.alta.total_count}</Text>
+                  <Text style={styles.priorityLabel}>{t('statistics.priority.totalTasks')}</Text>
+                </View>
+                <View style={styles.priorityProgress}>
+                  <View style={styles.priorityProgressBg}>
+                    <View
+                      style={[
+                        styles.priorityProgressFill,
+                        { width: `${priorityData.alta.completion_rate}%`, backgroundColor: '#FF3B30' },
+                      ]}
+                    />
+                  </View>
+                  <Text style={styles.priorityRate}>{priorityData.alta.completion_rate.toFixed(0)}%</Text>
+                </View>
+              </>
+            ) : (
+              <View style={styles.priorityStats}>{renderLoadingText()}</View>
+            )}
+          </View>
+
+          <View key="medium" style={styles.priorityCard}>
+            <View style={styles.priorityHeader}>
+              <View style={[styles.priorityDot, { backgroundColor: '#FF9500' }]} />
+              <Text style={styles.priorityName}>{t('statistics.priority.medium')}</Text>
+            </View>
+            {!loading && priorityData?.media ? (
+              <>
+                <View style={styles.priorityStats}>
+                  <Text style={styles.priorityCount}>{priorityData.media.total_count}</Text>
+                  <Text style={styles.priorityLabel}>{t('statistics.priority.totalTasks')}</Text>
+                </View>
+                <View style={styles.priorityProgress}>
+                  <View style={styles.priorityProgressBg}>
+                    <View
+                      style={[
+                        styles.priorityProgressFill,
+                        { width: `${priorityData.media.completion_rate}%`, backgroundColor: '#FF9500' },
+                      ]}
+                    />
+                  </View>
+                  <Text style={styles.priorityRate}>{priorityData.media.completion_rate.toFixed(0)}%</Text>
+                </View>
+              </>
+            ) : (
+              <View style={styles.priorityStats}>{renderLoadingText()}</View>
+            )}
+          </View>
+
+          <View key="low" style={styles.priorityCard}>
+            <View style={styles.priorityHeader}>
+              <View style={[styles.priorityDot, { backgroundColor: '#34C759' }]} />
+              <Text style={styles.priorityName}>{t('statistics.priority.low')}</Text>
+            </View>
+            {!loading && priorityData?.bassa ? (
+              <>
+                <View style={styles.priorityStats}>
+                  <Text style={styles.priorityCount}>{priorityData.bassa.total_count}</Text>
+                  <Text style={styles.priorityLabel}>{t('statistics.priority.totalTasks')}</Text>
+                </View>
+                <View style={styles.priorityProgress}>
+                  <View style={styles.priorityProgressBg}>
+                    <View
+                      style={[
+                        styles.priorityProgressFill,
+                        { width: `${priorityData.bassa.completion_rate}%`, backgroundColor: '#34C759' },
+                      ]}
+                    />
+                  </View>
+                  <Text style={styles.priorityRate}>{priorityData.bassa.completion_rate.toFixed(0)}%</Text>
+                </View>
+              </>
+            ) : (
+              <View style={styles.priorityStats}>{renderLoadingText()}</View>
+            )}
           </View>
         </View>
+
+        {/* Category Performance */}
+        {categoryData?.categories && categoryData.categories.length > 0 ? (
+          <>
+            <View style={styles.sectionTitle}>
+              <Text style={styles.sectionTitleText}>Performance per Categoria</Text>
+            </View>
+            <View style={styles.categoryGrid}>
+              {categoryData.categories.map(renderCategoryItem)}
+            </View>
+          </>
+        ) : !loading ? (
+          null
+        ) : (
+          <>
+            <View style={styles.sectionTitle}>
+              <Text style={styles.sectionTitleText}>Performance per Categoria</Text>
+            </View>
+            <View style={styles.categoryGrid}>
+              <View style={styles.categoryCard}>
+                <View style={styles.categoryHeader}>
+                  <Animated.Text style={[styles.categoryName, { opacity: loadingOpacity }]}>
+                    Loading...
+                  </Animated.Text>
+                </View>
+                <View style={styles.categoryStats}>
+                  {renderLoadingText()}
+                </View>
+              </View>
+            </View>
+          </>
+        )}
 
         {/* Upcoming Deadlines */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Scadenze imminenti</Text>
-          <View style={styles.deadlinesContainer}>
-            <View style={styles.deadlineItem}>
-              <Text style={styles.deadlineValue}>{upcoming_deadlines_summary.next_7_days}</Text>
-              <Text style={styles.deadlineLabel}>Prossimi 7 giorni</Text>
+        {(upcoming7.length > 0 || upcoming14.length > 0) ? (
+          <>
+            <View style={styles.sectionTitle}>
+              <Text style={styles.sectionTitleText}>Scadenze Imminenti</Text>
             </View>
-            <View style={styles.deadlineDivider} />
-            <View style={styles.deadlineItem}>
-              <Text style={styles.deadlineValue}>{upcoming_deadlines_summary.next_14_days}</Text>
-              <Text style={styles.deadlineLabel}>Prossimi 14 giorni</Text>
-            </View>
-            <View style={styles.deadlineDivider} />
-            <View style={styles.deadlineItem}>
-              <Text style={styles.deadlineValue}>{upcoming_deadlines_summary.next_30_days}</Text>
-              <Text style={styles.deadlineLabel}>Prossimi 30 giorni</Text>
-            </View>
-          </View>
-        </View>
 
-        {/* Bottom Spacing */}
+            {upcoming7.length > 0 && (
+              <>
+                <Text style={styles.deadlineSectionTitle}>🔴 Prossimi 7 giorni</Text>
+                <View style={styles.deadlineGrid}>
+                  {upcoming7.map((task: any, idx: number) => renderDeadlineItem(task, idx))}
+                </View>
+              </>
+            )}
+
+            {upcoming14.length > upcoming7.length && (
+              <>
+                <Text style={styles.deadlineSectionTitle}>🟡 Prossimi 14 giorni</Text>
+                <View style={styles.deadlineGrid}>
+                  {upcoming14
+                    .slice(upcoming7.length)
+                    .map((task: any, idx: number) => renderDeadlineItem(task, idx + 100))}
+                </View>
+              </>
+            )}
+          </>
+        ) : (
+          <View style={styles.emptyState}>
+            <Ionicons name="checkmark-done-circle-outline" size={64} color="#34C759" />
+            <Text style={styles.emptyStateText}>Nessuna scadenza imminente!</Text>
+          </View>
+        )}
+
         <View style={{ height: 40 }} />
       </ScrollView>
     </SafeAreaView>
@@ -338,6 +580,7 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 16,
     marginBottom: 15,
+    marginTop: 15,
   },
   alertText: {
     color: '#FFFFFF',
@@ -350,6 +593,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 20,
     marginBottom: 20,
+    marginTop: 15,
     borderWidth: 1,
     borderColor: '#FFE082',
   },
@@ -380,18 +624,28 @@ const styles = StyleSheet.create({
     marginTop: 8,
     textAlign: 'center',
   },
+  sectionTitle: {
+    marginTop: 20,
+    marginBottom: 15,
+  },
+  sectionTitleText: {
+    fontSize: 20,
+    fontWeight: '300',
+    color: '#000000',
+    letterSpacing: -0.5,
+  },
   kpiGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginHorizontal: -5,
+    justifyContent: 'space-between',
+    marginBottom: 10,
+    gap: 12,
   },
   kpiCard: {
     width: '48%',
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 16,
-    marginHorizontal: '1%',
-    marginBottom: 12,
     borderWidth: 1,
     borderColor: '#e1e5e9',
     shadowColor: '#000000',
@@ -422,19 +676,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#999999',
   },
-  section: {
-    marginTop: 10,
-    marginBottom: 20,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '300',
-    color: '#000000',
-    marginBottom: 15,
-    letterSpacing: -0.5,
-  },
   priorityGrid: {
     gap: 12,
+    marginBottom: 10,
   },
   priorityCard: {
     backgroundColor: '#FFFFFF',
@@ -499,11 +743,15 @@ const styles = StyleSheet.create({
     width: 45,
     textAlign: 'right',
   },
-  deadlinesContainer: {
-    flexDirection: 'row',
+  categoryGrid: {
+    gap: 12,
+    marginBottom: 10,
+  },
+  categoryCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    padding: 20,
+    padding: 16,
+    marginBottom: 12,
     borderWidth: 1,
     borderColor: '#e1e5e9',
     shadowColor: '#000000',
@@ -512,24 +760,144 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
-  deadlineItem: {
+  categoryHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  categoryName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000000',
+  },
+  categoryBadge: {
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+  },
+  categoryBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  categoryStats: {
+    flexDirection: 'row',
+    marginBottom: 12,
+  },
+  categoryStatItem: {
     flex: 1,
     alignItems: 'center',
   },
-  deadlineValue: {
-    fontSize: 28,
-    fontWeight: '600',
-    color: '#007AFF',
+  categoryStatLabel: {
+    fontSize: 12,
+    color: '#999999',
     marginBottom: 4,
   },
-  deadlineLabel: {
-    fontSize: 12,
-    color: '#666666',
-    textAlign: 'center',
+  categoryStatValue: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#000000',
   },
-  deadlineDivider: {
+  categoryStatDivider: {
     width: 1,
     backgroundColor: '#e1e5e9',
-    marginHorizontal: 10,
+    marginHorizontal: 12,
+  },
+  categoryProgressBg: {
+    height: 8,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  categoryProgressFill: {
+    height: '100%',
+    backgroundColor: '#007AFF',
+    borderRadius: 4,
+  },
+  deadlineGrid: {
+    gap: 12,
+    marginBottom: 15,
+  },
+  deadlineItemCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#e1e5e9',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  deadlineItemHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  deadlineItemLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  deadlineIndicator: {
+    width: 4,
+    height: 50,
+    borderRadius: 2,
+    marginRight: 12,
+  },
+  deadlineItemInfo: {
+    flex: 1,
+  },
+  deadlineItemTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#000000',
+  },
+  deadlineItemCategory: {
+    fontSize: 12,
+    color: '#999999',
+    marginTop: 2,
+  },
+  deadlineBadge: {
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+  },
+  deadlineBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  deadlineItemPriority: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  deadlineItemPriorityText: {
+    fontSize: 12,
+    color: '#666666',
+    marginLeft: 6,
+  },
+  deadlineSectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000000',
+    marginBottom: 12,
+    marginTop: 10,
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+  },
+  emptyStateText: {
+    fontSize: 16,
+    color: '#666666',
+    marginTop: 12,
+  },
+  loadingPlaceholder: {
+    fontSize: 14,
+    color: '#999999',
+    fontWeight: '500',
   },
 });

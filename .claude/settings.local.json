@@ -27,7 +27,13 @@
       "Bash(node:*)",
       "WebSearch",
       "Bash(findstr:*)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(npm start -- --clean)",
+      "Bash(npm run clean:*)",
+      "Bash(npm cache clean:*)",
+      "Bash(nul)",
+      "Bash(git commit:*)",
+      "Bash(npm run lint:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"

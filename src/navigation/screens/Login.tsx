@@ -21,11 +21,13 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { STORAGE_KEYS } from "../../constants/authConstants";
 
 import { NotificationSnackbar } from "../../../components/NotificationSnackbar";
+import { useTranslation } from 'react-i18next';
 
 const { width } = Dimensions.get("window");
 
 const LoginScreen = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const { t } = useTranslation();
 
   const [username, setUsername] = React.useState("");
   const [password, setPassword] = React.useState("");
@@ -62,7 +64,7 @@ const LoginScreen = () => {
   const handleUsernameChange = (text: string) => {
     const trimmedText = text.trim();
     if (containsSpecialChars(trimmedText)) {
-      showNotification("Lo username non può contenere caratteri speciali", false);
+      showNotification(t('errors.validation'), false);
       return;
     }
     setUsername(trimmedText);
@@ -108,7 +110,7 @@ const LoginScreen = () => {
         await AsyncStorage.setItem(STORAGE_KEYS.SUGGESTED_COMMAND_SHOWN, 'false');
         setLoginSuccess(true); // Imposta il login come riuscito
         eventEmitter.emit("loginSuccess"); // Emetti evento per aggiornare lo stato di autenticazione
-        showNotification("Login con Google effettuato con successo", true);
+        showNotification(t('auth.messages.loginSuccess'), true);
       } else {
         console.error('❌ Failed to initiate Google login:', result.message);
         showNotification(
@@ -139,7 +141,7 @@ const LoginScreen = () => {
         await AsyncStorage.setItem(STORAGE_KEYS.SUGGESTED_COMMAND_SHOWN, 'false');
         setLoginSuccess(true); // Imposta il login come riuscito
         eventEmitter.emit("loginSuccess"); // Emetti evento per aggiornare lo stato di autenticazione
-        showNotification("Login effettuato con successo", true);
+        showNotification(t('auth.messages.loginSuccess'), true);
       } else if (login_data.requiresEmailVerification) {
         // Email non verificata - naviga alla schermata di verifica
         showNotification(
@@ -263,7 +265,7 @@ const LoginScreen = () => {
         <TextInput
           value={username || ""}
           onChangeText={handleUsernameChange}
-          placeholder="Username"
+          placeholder={t('auth.login.username')}
           placeholderTextColor="#999999"
           style={[styles.input, { width: width * 0.75 }]}
         />
@@ -276,7 +278,7 @@ const LoginScreen = () => {
           style={styles.icon}
         />
         <TextInput
-          placeholder="Password"
+          placeholder={t('auth.login.password')}
           placeholderTextColor="#999999"
           style={[styles.input, { width: width * 0.65 }]}
           secureTextEntry={!showPassword}
@@ -300,7 +302,7 @@ const LoginScreen = () => {
           handleLogin();
         }}
       >
-        <Text style={styles.loginText}>Login Now</Text>
+        <Text style={styles.loginText}>{t('auth.login.loginNow')}</Text>
       </TouchableOpacity>
       
       <View style={styles.dividerContainer}>
@@ -326,25 +328,25 @@ const LoginScreen = () => {
           )}
         </View>
         <Text style={styles.googleButtonText}>
-          {isGoogleLoading ? 'Accesso in corso...' : 'Continua con Google'}
+          {isGoogleLoading ? t('auth.login.signingIn') : t('auth.login.continueWithGoogle')}
         </Text>
       </TouchableOpacity>
       <View style={[styles.optionsContainer, { width: width * 0.9 }]}>
         <TouchableOpacity>
-          <Text style={styles.optionText}>Remember me</Text>
+          <Text style={styles.optionText}>{t('auth.login.rememberMe')}</Text>
         </TouchableOpacity>
         <TouchableOpacity>
-          <Text style={styles.optionText}>Forgot password?</Text>
+          <Text style={styles.optionText}>{t('auth.login.forgotPassword')}</Text>
         </TouchableOpacity>
       </View>
-      <Text style={styles.signUpText}>Not a member?</Text>
+      <Text style={styles.signUpText}>{t('auth.login.notMember')}</Text>
       <TouchableOpacity
         style={styles.signUpButton}
         onPress={() => {
           navigation.navigate("Register");
         }}
       >
-        <Text style={styles.signUpButtonText}>Create account</Text>
+        <Text style={styles.signUpButtonText}>{t('auth.login.createAccount')}</Text>
       </TouchableOpacity>
       
       <NotificationSnackbar

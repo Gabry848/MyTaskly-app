@@ -40,6 +40,9 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { STORAGE_KEYS } from "../constants/authConstants";
 import { TutorialProvider } from "../contexts/TutorialContext";
 import { TutorialManager } from "../components/Tutorial";
+import { LanguageProvider } from "../contexts/LanguageContext";
+import "../services/i18n"; // Initialize i18n
+import { useTranslation } from 'react-i18next';
 
 // Definizione del tipo per le route dello Stack principale
 export type RootStackParamList = {
@@ -81,6 +84,7 @@ const Tab = createBottomTabNavigator<TabParamList>();
 // Tab Navigator per le schermate principali
 function HomeTabs() {
   const navigation = useNavigation<NavigationProp<TabParamList>>();
+  const { t } = useTranslation();
 
   return (
     <>
@@ -120,27 +124,27 @@ function HomeTabs() {
         <Tab.Screen
           name="Home"
           component={HomeScreen}
-          options={{ title: "Home" }}
+          options={{ title: t('navigation.tabs.home') }}
         />
         <Tab.Screen
           name="Categories"
           component={CategoriesScreen}
-          options={{ title: "Categorie" }}
+          options={{ title: t('navigation.tabs.categories') }}
         />
         <Tab.Screen
           name="Notes"
           component={NotesScreen}
-          options={{ title: "Note" }}
+          options={{ title: t('navigation.tabs.notes') }}
         />
         <Tab.Screen
           name="Calendar"
           component={CalendarScreen}
-          options={{ title: "Calendario" }}
+          options={{ title: t('navigation.tabs.calendar') }}
         />
         <Tab.Screen
           name="Statistics"
           component={StatisticsScreen}
-          options={{ title: "Statistiche" }}
+          options={{ title: t('navigation.tabs.statistics') }}
         />
       </Tab.Navigator>
 
@@ -220,9 +224,10 @@ function NavigationHandler() {
 
 // Stack Navigator separato con controllo autenticazione
 function AppStack() {
+  const { t } = useTranslation();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(true); // Controlla lo stato di autenticazione all'avvio
-  
+
   // 🔔 Inizializza il sistema di notifiche quando l'utente è autenticato
   const { notification } = useNotifications();
 
@@ -370,53 +375,65 @@ function AppStack() {
           component={HomeTabs}
           options={{ headerShown: false }}
         />
-        <Stack.Screen name="TaskList" component={TaskListScreen} />
-        <Stack.Screen name="Profile" component={ProfileScreen} />
-        <Stack.Screen name="Settings" component={SettingsScreen} />
-        <Stack.Screen 
-          name="AccountSettings" 
+        <Stack.Screen
+          name="TaskList"
+          component={TaskListScreen}
+          options={{ title: t('navigation.screens.taskList') }}
+        />
+        <Stack.Screen
+          name="Profile"
+          component={ProfileScreen}
+          options={{ title: t('navigation.screens.profile') }}
+        />
+        <Stack.Screen
+          name="Settings"
+          component={SettingsScreen}
+          options={{ title: t('navigation.screens.settings') }}
+        />
+        <Stack.Screen
+          name="AccountSettings"
           component={AccountSettingsScreen}
-          options={{ title: 'Gestisci account' }}
+          options={{ title: t('navigation.screens.accountSettings') }}
         />
-        <Stack.Screen 
-          name="ChangePassword" 
+        <Stack.Screen
+          name="ChangePassword"
           component={ChangePasswordScreen}
-          options={{ title: 'Cambia password' }}
+          options={{ title: t('navigation.screens.changePassword') }}
         />
-        <Stack.Screen 
-          name="Help" 
+        <Stack.Screen
+          name="Help"
           component={HelpScreen}
-          options={{ title: 'Aiuto' }}
+          options={{ title: t('navigation.screens.help') }}
         />
-        <Stack.Screen 
-          name="About" 
+        <Stack.Screen
+          name="About"
           component={AboutScreen}
-          options={{ title: 'Info' }}
+          options={{ title: t('navigation.screens.about') }}
         />
-        <Stack.Screen 
-          name="Language" 
+        <Stack.Screen
+          name="Language"
           component={LanguageScreen}
-          options={{ title: 'Lingua' }}
+          options={{ title: t('navigation.screens.language') }}
         />
-        <Stack.Screen 
-          name="VoiceSettings" 
+        <Stack.Screen
+          name="VoiceSettings"
           component={VoiceSettingsScreen}
-          options={{ title: 'Impostazioni Vocali' }}
+          options={{ title: t('navigation.screens.voiceSettings') }}
         />
-        <Stack.Screen 
-          name="GoogleCalendar" 
+        <Stack.Screen
+          name="GoogleCalendar"
           component={GoogleCalendarScreen}
-          options={{ title: 'Google Calendar' }}
+          options={{ title: t('navigation.screens.googleCalendar') }}
         />
-        <Stack.Screen 
-          name="NotificationDebug" 
+        <Stack.Screen
+          name="NotificationDebug"
           component={NotificationDebugScreen}
-          options={{ title: 'Debug Notifiche' }}
+          options={{ title: t('navigation.screens.notificationDebug') }}
         />
-        <Stack.Screen 
-          name="BugReport" 
+        <Stack.Screen
+          name="BugReport"
           component={BugReportScreen}
-          options={{ title: 'Segnala Bug' }}
+          options={{ title: t('navigation.screens.bugReport') }}
         />
         <Stack.Screen name="NotFound" component={NotFoundScreen} />
       </Stack.Navigator>
@@ -428,11 +445,13 @@ function AppStack() {
 export default function Navigation() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <TutorialProvider>
-        <NavigationContainer>
-          <AppStack />
-        </NavigationContainer>
-      </TutorialProvider>
+      <LanguageProvider>
+        <TutorialProvider>
+          <NavigationContainer>
+            <AppStack />
+          </NavigationContainer>
+        </TutorialProvider>
+      </LanguageProvider>
     </GestureHandlerRootView>
   );
 }
