@@ -1,7 +1,7 @@
 <div align="center">
 
 <!-- Add your logo here -->
-<img src="./assets/readme/logo.png" alt="MyTaskly Logo" width="200"/>
+<img src="./assets/icons/ios-dark.png" alt="MyTaskly Logo" width="200"/>
 
 # MyTaskly
 
