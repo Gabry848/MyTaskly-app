@@ -1,0 +1,16 @@
+{
+  "entryPoints": ["./src"],
+  "entryPointStrategy": "expand",
+  "out": "docs/docs/api",
+  "plugin": ["typedoc-plugin-markdown"],
+  "exclude": [
+    "**/*test.ts",
+    "**/*test.tsx",
+    "**/__tests__/**",
+    "**/node_modules/**"
+  ],
+  "excludePrivate": true,
+  "excludeProtected": true,
+  "readme": "none",
+  "hideGenerator": true
+}
