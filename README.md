@@ -27,14 +27,14 @@
 
 ## 🌟 Why MyTaskly?
 
-- **🤖 AI That Understands You** - Natural language conversations, voice commands, and smart suggestions
+- **🤖 AI That Understands You** - Natural language conversations, voice commands
 - **⚡ Incredibly Fast** - Real-time syncing with zero lag
-- **🎨 Beautiful Design** - Minimalist UI with dark mode support
+- **🎨 Beautiful Design** - Minimalist UI
 - **🔐 Privacy-First** - Your data is encrypted and always under your control
-- **🌐 Multi-Platform** - iOS, Android, and Web with seamless sync
+- **🌐 Multi-Platform** - Android (iOS and web in development)
 - **🎓 Easy to Use** - Interactive tutorial guides you through everything
 
-**Built by Gabriel, a 16-year-old developer** over 11+ months of learning, coding, and iterating. [Read the story →](https://github.com/Gabry848)
+**Built by Gabriel, a 16-year-old developer** over 11+ months of learning, coding, and iterating. [Read the story →](https://mytasklyapp.com/about)
 
 ---
 
@@ -46,10 +46,10 @@
 | **📝 Task Management** | Rich editor • Custom categories • Shared tasks • Permission controls • Task templates |
 | **📅 Calendar** | Built-in calendar view • Google Calendar sync • Smart scheduling |
 | **🔔 Notifications** | Push reminders • Customizable alerts • Cross-device sync |
-| **🎨 Design** | Minimalist UI • Dark mode • Smooth animations • Responsive layout |
+| **🎨 Design** | Minimalist UI •  Smooth animations • Responsive layout |
 | **🔐 Security** | Google Sign-In • Account management • End-to-end encryption |
 | **🎓 Onboarding** | Interactive tutorial • Contextual help • Progress tracking |
-| **🌐 Platform** | iOS • Android • Web (PWA) |
+| **🌐 Platform** Android (iOS coming soon)
 
 ---
 
@@ -138,7 +138,7 @@ eas build --platform all       # Both platforms
 
 ### Sharing Categories
 
-1. **Open a Category**: Select the category you want to share
+1. **Long press on a Category**: Select the category you want to share
 2. **Tap Share**: Use the share button
 3. **Invite Users**: Enter email addresses or usernames
 4. **Set Permissions**: Choose view-only or edit access
