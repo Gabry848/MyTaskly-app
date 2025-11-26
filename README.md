@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="./assets/readme/logo.png" alt="MyTaskly Logo" width="200"/>
+<img src="./assets/icons/ios-light.png" alt="MyTaskly Logo" width="200"/>
 
 # MyTaskly
 
