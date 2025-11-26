@@ -1,203 +1,121 @@
 <div align="center">
 
-<!-- Add your logo here -->
 <img src="./assets/readme/logo.png" alt="MyTaskly Logo" width="200"/>
 
 # MyTaskly
 
-### The Intelligent Task Management App with AI-Powered Voice Assistant
+## The Intelligent Task Management App with AI-Powered Voice Assistant
 
 [![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/Gabry848/MyTaskly-app)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](./LICENSE.md)
 [![React Native](https://img.shields.io/badge/React%20Native-0.79.5-blue.svg)](https://reactnative.dev/)
 [![Expo](https://img.shields.io/badge/Expo-~53.0-000020.svg)](https://expo.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue.svg)](https://www.typescriptlang.org/)
-[![Made with Love](https://img.shields.io/badge/Made%20with-❤️-red.svg)](https://github.com/Gabry848)
+[![GitHub Stars](https://img.shields.io/github/stars/Gabry848/MyTaskly-app.svg?style=social)](https://github.com/Gabry848/MyTaskly-app)
 
-[Features](#features) • [Demo](#demo) • [Installation](#installation) • [Usage](#usage) • [Contributing](#contributing) • [License](#license)
+[Quick Start](#quick-start-5-minutes) • [Features](#features) • [Screenshots](#screenshots) • [Docs](./docs) • [Contributing](#contributing) • [License](#license)
 
 </div>
 
 ---
 
-## 🎯 About
+> 🤖 **Talk to your tasks.** MyTaskly combines intelligent AI assistance with powerful task management, letting you work smarter, not harder.
 
-**MyTaskly** is a next-generation task management application that combines the simplicity of traditional to-do apps with the power of artificial intelligence. Built entirely by a 16-year-old developer over 11+ months, this app showcases what passion and dedication can achieve.
+![MyTaskly Demo](./assets/readme/hero-demo.png)
 
-With MyTaskly, you don't just organize your tasks—you have an intelligent AI assistant that helps you stay productive through natural conversations, voice commands, and smart suggestions.
+---
 
-<!-- Add demo video here -->
-### 📹 Demo
+## 🌟 Why MyTaskly?
 
-> **[Add your demo video here]**
->
-> A video demonstration showing the main features of MyTaskly in action.
+- **🤖 AI That Understands You** - Natural language conversations, voice commands, and smart suggestions
+- **⚡ Incredibly Fast** - Real-time syncing with zero lag
+- **🎨 Beautiful Design** - Minimalist UI with dark mode support
+- **🔐 Privacy-First** - Your data is encrypted and always under your control
+- **🌐 Multi-Platform** - iOS, Android, and Web with seamless sync
+- **🎓 Easy to Use** - Interactive tutorial guides you through everything
+
+**Built by Gabriel, a 16-year-old developer** over 11+ months of learning, coding, and iterating. [Read the story →](https://github.com/Gabry848)
 
 ---
 
 ## ✨ Features
 
-### 🤖 AI-Powered Assistant
-- **Intelligent Chat Interface**: Natural language conversations with an AI assistant that understands your tasks
-- **Voice Chat**: Hands-free interaction with advanced Voice Activity Detection (VAD)
-- **Smart Suggestions**: Get contextual recommendations based on your tasks and habits
-- **Real-time Streaming**: Fast, responsive AI responses powered by modern LLM technology
-
-### 📝 Advanced Task Management
-- **Rich Task Editor**: Create detailed tasks with descriptions, due dates, and priorities
-- **Category Organization**: Organize tasks into customizable categories with color coding
-- **Shared Categories**: Collaborate by sharing categories and tasks with other users
-- **Permission System**: Fine-grained control over who can view, edit, or delete tasks
-- **Task Templates**: Quickly create recurring tasks with predefined templates
-
-### 📅 Calendar Integration
-- **Built-in Calendar**: Visualize your tasks in a beautiful calendar view
-- **Google Calendar Sync**: Seamless two-way synchronization with your Google Calendar
-- **Smart Scheduling**: AI-assisted task scheduling and time management
-
-### 🔔 Smart Notifications
-- **Push Notifications**: Never miss a deadline with timely reminders
-- **Customizable Alerts**: Configure notification preferences for different task types
-- **Cross-device Sync**: Get notifications on all your devices
-
-### 🎨 Beautiful UI/UX
-- **Minimalist Design**: Clean, modern interface with white/grey/black color palette
-- **Dark Mode**: Full support for light and dark themes
-- **Smooth Animations**: Polished interactions with React Native Reanimated
-- **Edge-to-Edge Display**: Immersive full-screen experience on modern devices
-- **Responsive Design**: Optimized for phones, tablets, and web
-
-### 🔐 Secure Authentication
-- **Google Sign-In**: Fast and secure authentication with your Google account
-- **Account Management**: Change username, email, and password with ease
-- **Privacy First**: Your data is encrypted and securely stored
-
-### 🎓 Interactive Tutorial
-- **Guided Onboarding**: Step-by-step tutorial for new users
-- **Contextual Help**: Learn features as you use them
-- **Progress Tracking**: Visual indicators showing tutorial completion
-
-### 🌐 Multi-Platform Support
-- **iOS**: Native iOS app with platform-specific optimizations
-- **Android**: Smooth Android experience with Material Design principles
-- **Web**: Progressive Web App (PWA) support for desktop access
+| Category | Features |
+|----------|----------|
+| **🤖 AI Assistant** | Natural language chat • Voice commands with VAD • Smart suggestions • Real-time streaming responses |
+| **📝 Task Management** | Rich editor • Custom categories • Shared tasks • Permission controls • Task templates |
+| **📅 Calendar** | Built-in calendar view • Google Calendar sync • Smart scheduling |
+| **🔔 Notifications** | Push reminders • Customizable alerts • Cross-device sync |
+| **🎨 Design** | Minimalist UI • Dark mode • Smooth animations • Responsive layout |
+| **🔐 Security** | Google Sign-In • Account management • End-to-end encryption |
+| **🎓 Onboarding** | Interactive tutorial • Contextual help • Progress tracking |
+| **🌐 Platform** | iOS • Android • Web (PWA) |
 
 ---
 
-## 🖼️ Screenshots
+## Screenshots
 
-<div align="center">
-
-<!-- Add your screenshots here -->
-<table>
-  <tr>
-    <td><img src="./assets/readme/screenshot-1.png" alt="Home Screen" width="250"/></td>
-    <td><img src="./assets/readme/screenshot-2.png" alt="Task List" width="250"/></td>
-    <td><img src="./assets/readme/screenshot-3.png" alt="AI Chat" width="250"/></td>
-  </tr>
-  <tr>
-    <td align="center"><b>AI Assistant</b></td>
-    <td align="center"><b>Task Management</b></td>
-    <td align="center"><b>Voice Chat</b></td>
-  </tr>
-  <tr>
-    <td><img src="./assets/readme/screenshot-4.png" alt="Calendar" width="250"/></td>
-    <td><img src="./assets/readme/screenshot-5.png" alt="Categories" width="250"/></td>
-    <td><img src="./assets/readme/screenshot-6.png" alt="Settings" width="250"/></td>
-  </tr>
-  <tr>
-    <td align="center"><b>Calendar View</b></td>
-    <td align="center"><b>Category Management</b></td>
-    <td align="center"><b>Settings</b></td>
-  </tr>
-</table>
-
-</div>
+| AI Assistant | Task Management | Voice Chat |
+|:---:|:---:|:---:|
+| ![AI Assistant](./assets/readme/screenshot-1.png) | ![Task List](./assets/readme/screenshot-2.png) | ![AI Chat](./assets/readme/screenshot-3.png) |
+| **Smart Conversations** | **Powerful Organization** | **Voice Commands** |
+| Calendar View | Category Management | Settings |
+| ![Calendar](./assets/readme/screenshot-4.png) | ![Categories](./assets/readme/screenshot-5.png) | ![Settings](./assets/readme/screenshot-6.png) |
+| **Visual Planning** | **Flexible Sharing** | **Full Control** |
 
 ---
 
 ## 🚀 Getting Started
 
-### Prerequisites
-
-Before you begin, ensure you have the following installed:
-
-- **Node.js** (v18 or higher)
-- **npm** or **yarn**
-- **Expo CLI**: `npm install -g expo-cli`
-- **Git**
-
-For mobile development:
-- **iOS**: macOS with Xcode 14+
-- **Android**: Android Studio with SDK 33+
-
-### Installation
-
-1. **Clone the repository**
+### Quick Start (5 minutes)
 
 ```bash
 git clone https://github.com/Gabry848/MyTaskly-app.git
-cd MyTaskly-app
+cd MyTaskly-app && npm install
+cp .env.example .env && npm start
 ```
 
-2. **Install dependencies**
+### Prerequisites
 
-```bash
-npm install
-```
+- **Node.js** v18+ • **npm** or **yarn**
+- **Expo CLI**: `npm install -g expo-cli` • **Git**
+- **iOS**: macOS + Xcode 14+ (optional)
+- **Android**: Android Studio + SDK 33+ (optional)
 
-3. **Configure environment variables**
+### Configuration
 
-Create a `.env` file in the root directory:
+Create `.env` file:
 
 ```env
-# API Keys (replace with your own)
 API_KEY=your_api_key_here
-
-# Backend URL
 API_URL=your_backend_url_here
-
-# Google OAuth (optional for Google Sign-In)
-GOOGLE_WEB_CLIENT_ID=your_google_client_id_here
+GOOGLE_WEB_CLIENT_ID=your_google_client_id
+GOOGLE_ANDROID_CLIENT_ID=your_google_android_client_id
 ```
 
-4. **Setup Google Services** (for Firebase and Google Sign-In)
+Place these files in root directory:
 
-- Place your `google-services.json` in the root directory (Android)
-- Configure your `GoogleService-Info.plist` for iOS (if needed)
+- `google-services.json` (Android)
+- `GoogleService-Info.plist` (iOS, in ios folder)
 
-### Running the App
+### Run the App
 
-#### Development Mode
+| Platform | Command | Notes |
+|----------|---------|-------|
+| **Web** | `npm run web` | Instant preview |
+| **iOS** | `npm run ios` | Requires macOS + Xcode |
+| **Android** | `npm run android` | Requires Android Studio |
+| **Interactive** | `npm start` | Choose platform from menu |
+
+### Production Build
 
 ```bash
-# Start the Expo development server
-npm start
-
-# Run on iOS simulator
-npm run ios
-
-# Run on Android emulator
-npm run android
-
-# Run in web browser
-npm run web
+eas build --platform ios       # iOS only
+eas build --platform android   # Android only
+eas build --platform all       # Both platforms
 ```
 
-#### Production Build
-
-```bash
-# Build for iOS (requires macOS)
-eas build --platform ios
-
-# Build for Android
-eas build --platform android
-
-# Build for both platforms
-eas build --platform all
-```
-
-For more details on building, see the [Expo EAS Build documentation](https://docs.expo.dev/build/introduction/).
+📚 [Expo EAS Documentation](https://docs.expo.dev/build/introduction/)
 
 ---
 
@@ -274,6 +192,7 @@ MyTaskly-app/
 We love contributions! MyTaskly is an open-source project, and we welcome contributions from developers of all skill levels.
 
 Please read our [CONTRIBUTING.md](./CONTRIBUTING.md) for details on:
+
 - Code of Conduct
 - Development workflow
 - How to submit pull requests
@@ -292,6 +211,7 @@ See [CHANGELOG.md](./CHANGELOG.md) for a detailed list of changes and version hi
 This project is licensed under the **MIT License** - see the [LICENSE.md](./LICENSE.md) file for details.
 
 The MIT License allows you to:
+
 - ✅ Use commercially
 - ✅ Modify
 - ✅ Distribute
@@ -350,6 +270,7 @@ For more detailed documentation, check out:
 ## 🐛 Known Issues & Roadmap
 
 Check our [GitHub Issues](https://github.com/Gabry848/MyTaskly-app/issues) for:
+
 - Current bugs and issues
 - Feature requests
 - Planned improvements
