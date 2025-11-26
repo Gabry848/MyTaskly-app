@@ -13,7 +13,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue.svg)](https://www.typescriptlang.org/)
 [![GitHub Stars](https://img.shields.io/github/stars/Gabry848/MyTaskly-app.svg?style=social)](https://github.com/Gabry848/MyTaskly-app)
 
-[Quick Start](#quick-start-5-minutes) • [Features](#features) • [Screenshots](#screenshots) • [Docs](./docs) • [Contributing](#contributing) • [License](#license)
+[Quick Start](#quick-start-5-minutes) • [Features](#features) • [Screenshots](#screenshots) • [Docs](./docs) • [Contributing](#contributing) • [License](LICENSE.md)
 
 </div>
 
@@ -38,7 +38,7 @@
 
 ---
 
-## ✨ Features
+## Features
 
 | Category | Features |
 |----------|----------|
@@ -187,7 +187,7 @@ MyTaskly-app/
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 We love contributions! MyTaskly is an open-source project, and we welcome contributions from developers of all skill levels.
 
