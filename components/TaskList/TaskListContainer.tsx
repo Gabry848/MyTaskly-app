@@ -115,7 +115,7 @@ export const TaskListContainer = ({
       const normalizedTasks = data.map(task => ({
         ...task,
         id: task.id || task.task_id,  // Assicura che id sia sempre presente
-        task_id: task.task_id || task.id  // Assicura che task_id sia sempre presente
+        task_id: Number(task.task_id || task.id)  // Assicura che task_id sia sempre presente come numero
       }));
 
       setTasks(normalizedTasks);
@@ -154,7 +154,7 @@ export const TaskListContainer = ({
         const normalizedTask = {
           ...newTask,
           id: newTask.id || newTask.task_id,
-          task_id: newTask.task_id || newTask.id
+          task_id: Number(newTask.task_id || newTask.id)
         };
 
         setTasks(prevTasks => {
@@ -177,7 +177,7 @@ export const TaskListContainer = ({
       const normalizedUpdatedTask = {
         ...updatedTask,
         id: updatedTask.id || updatedTask.task_id,
-        task_id: updatedTask.task_id || updatedTask.id
+        task_id: Number(updatedTask.task_id || updatedTask.id)
       };
 
       console.log('[TASK_LIST_CONTAINER] Updated task:', {
