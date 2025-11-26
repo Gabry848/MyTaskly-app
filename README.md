@@ -14,11 +14,13 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue.svg)](https://www.typescriptlang.org/)
 [![Made with Love](https://img.shields.io/badge/Made%20with-❤️-red.svg)](https://github.com/Gabry848)
 
+[Features](#features) • [Demo](#demo) • [Installation](#installation) • [Usage](#usage) • [Contributing](#contributing) • [License](#license)
+
+
 </div>
 
-<img src="./assets/readme/presentation.png" alt="Presentation"/>
 
-[Features](#features) • [Demo](#demo) • [Installation](#installation) • [Usage](#usage) • [Contributing](#contributing) • [License](#license)
+<img src="./assets/readme/presentation.png" alt="Presentation"/>
 
 ---
 
@@ -93,9 +95,9 @@ With MyTaskly, you don't just organize your tasks—you have an intelligent AI a
 <!-- Add your screenshots here -->
 <table>
   <tr>
-    <td><img src="./assets/readme/screenshot-1.png" alt="Home Screen" width="250"/></td>
-    <td><img src="./assets/readme/screenshot-2.png" alt="Task List" width="250"/></td>
-    <td><img src="./assets/readme/screenshot-3.png" alt="AI Chat" width="250"/></td>
+    <td><img src="./assets/readme/Home.png" alt="Home Screen" width="250"/></td>
+    <td><img src="./assets/readme/Lista Task.png" alt="Task List" width="250"/></td>
+    <td><img src="./assets/readme/Chat testuale.png" alt="AI Chat" width="250"/></td>
   </tr>
   <tr>
     <td align="center"><b>AI Assistant</b></td>
@@ -103,9 +105,9 @@ With MyTaskly, you don't just organize your tasks—you have an intelligent AI a
     <td align="center"><b>Voice Chat</b></td>
   </tr>
   <tr>
-    <td><img src="./assets/readme/screenshot-4.png" alt="Calendar" width="250"/></td>
-    <td><img src="./assets/readme/screenshot-5.png" alt="Categories" width="250"/></td>
-    <td><img src="./assets/readme/screenshot-6.png" alt="Settings" width="250"/></td>
+    <td><img src="./assets/readme/Calendario.png" alt="Calendar" width="250"/></td>
+    <td><img src="./assets/readme/Categorie.png" alt="Categories" width="250"/></td>
+    <td><img src="./assets/readme/Info.png" alt="Settings" width="250"/></td>
   </tr>
   <tr>
     <td align="center"><b>Calendar View</b></td>
