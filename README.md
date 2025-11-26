@@ -21,7 +21,7 @@
 
 > 🤖 **Talk to your tasks.** MyTaskly combines intelligent AI assistance with powerful task management, letting you work smarter, not harder.
 
-![MyTaskly Demo](./assets/readme/hero-demo.png)
+![MyTaskly Demo](./assets/readme/presentation.png)
 
 ---
 
@@ -57,10 +57,10 @@
 
 | AI Assistant | Task Management | Voice Chat |
 |:---:|:---:|:---:|
-| ![AI Assistant](./assets/readme/screenshot-1.png) | ![Task List](./assets/readme/screenshot-2.png) | ![AI Chat](./assets/readme/screenshot-3.png) |
+| ![AI Assistant](./assets/readme/Chat%20testuale.png) | ![Task List](./assets/readme/Lista%20Task.png) | ![AI Chat](./assets/readme/Assistente%20vocale.png) |
 | **Smart Conversations** | **Powerful Organization** | **Voice Commands** |
 | Calendar View | Category Management | Settings |
-| ![Calendar](./assets/readme/screenshot-4.png) | ![Categories](./assets/readme/screenshot-5.png) | ![Settings](./assets/readme/screenshot-6.png) |
+| ![Calendar](./assets/readme/Calendario.png) | ![Categories](./assets/readme/Categorie.png) | ![Settings](./assets/readme/Info.png) |
 | **Visual Planning** | **Flexible Sharing** | **Full Control** |
 
 ---
