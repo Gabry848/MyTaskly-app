@@ -10,7 +10,8 @@ export interface Task {
   end_time: string;
   completed?: boolean;
   status_code?: number;
-  task_id?: number;
+  task_id: number;
+  category_id?: number | string;
   category_name?: string;
   isOptimistic?: boolean;
 }

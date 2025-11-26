@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
-import { useNavigation, NavigationProp } from "@react-navigation/native";
-import { RootStackParamList } from "../src/types";
+import { useNavigation, NavigationProp, CompositeNavigationProp } from "@react-navigation/native";
+import { RootStackParamList, TabParamList } from "../src/types";
 import { getTasks, Task } from "../src/services/taskService";
 
 interface CategoryProps {
@@ -17,12 +17,12 @@ interface CategoryOverviewProps {
   onCategoryPress: (categoryId: number | string) => void;
 }
 
-const CategoryOverview: React.FC<CategoryOverviewProps> = ({ 
-  categories, 
-  onCategoryPress 
+const CategoryOverview: React.FC<CategoryOverviewProps> = ({
+  categories,
+  onCategoryPress
 }) => {
   // Aggiunto il navigation hook per navigare alla schermata Categories
-  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const navigation = useNavigation<NavigationProp<TabParamList>>();
   
   // Aggiungiamo uno stato per tenere traccia dei conteggi effettivi
   const [categoriesWithActualCounts, setCategoriesWithActualCounts] = useState<CategoryProps[]>([]);
