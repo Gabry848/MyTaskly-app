@@ -31,7 +31,7 @@ export interface CategoryType {
 
 const CategoryList = forwardRef((props, ref) => {
   const [refreshKey, setRefreshKey] = useState(0);
-  const categoryViewRef = React.useRef<{ fetchCategories: () => void } | null>(null);
+  const categoryViewRef = React.useRef<{ fetchCategories: (forceRefresh?: boolean) => void } | null>(null);
 
   // Forza l'aggiornamento del componente e ricarica dal server
   const refreshComponent = () => {

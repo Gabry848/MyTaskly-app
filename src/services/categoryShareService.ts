@@ -29,7 +29,7 @@ export interface UserShareInfo {
   user_id: number;
   name: string;
   email: string;
-  permission_level: "READ_ONLY" | "READ_WRITE";
+  permission_level: "READ_ONLY" | "READ_WRITE" | "OWNER";
   shared_at: string; // ISO 8601 datetime
 }
 
