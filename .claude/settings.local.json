@@ -33,7 +33,10 @@
       "Bash(npm cache clean:*)",
       "Bash(nul)",
       "Bash(git commit:*)",
-      "Bash(npm run lint:*)"
+      "Bash(npm run lint:*)",
+      "Bash(node_modules/.bin/tsc:*)",
+      "Bash(cat:*)",
+      "Bash(npm run docs:generate:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"
