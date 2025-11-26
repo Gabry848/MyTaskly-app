@@ -100,7 +100,7 @@ class StorageManager {
 
       return {
         totalSize,
-        keys,
+        keys: [...keys],
         usage
       };
     } catch (error) {

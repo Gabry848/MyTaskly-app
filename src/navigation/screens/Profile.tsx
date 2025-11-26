@@ -28,6 +28,8 @@ type RootStackParamList = {
   Login: undefined;
   Home: undefined;
   Profile: undefined;
+  Settings: undefined;
+  BugReport: undefined;
 };
 
 const ProfileScreen = () => {
