@@ -220,6 +220,47 @@ export const handleGoogleLoginError = (url: string) => {
 };
 
 /**
+ * Sign out from Google (placeholder for compatibility)
+ */
+export const signOutFromGoogle = async (): Promise<void> => {
+  try {
+    await clearWebBrowserSession();
+    console.log('✅ Signed out from Google');
+  } catch (error) {
+    console.error('❌ Error signing out from Google:', error);
+  }
+};
+
+/**
+ * Check if user is signed in with Google (placeholder for compatibility)
+ */
+export const isGoogleSignedIn = async (): Promise<boolean> => {
+  // Since we use server-side authentication, we check if there's a bearer token
+  // This is handled by the auth service
+  return false; // Placeholder - actual check should be done in auth service
+};
+
+/**
+ * Get current Google user (placeholder for compatibility)
+ */
+export const getCurrentGoogleUser = async (): Promise<any | null> => {
+  // Since we use server-side authentication, user info is stored in auth service
+  return null; // Placeholder - actual user should be fetched from auth service
+};
+
+/**
+ * Revoke Google access (placeholder for compatibility)
+ */
+export const revokeGoogleAccess = async (): Promise<void> => {
+  try {
+    await signOutFromGoogle();
+    console.log('✅ Google access revoked');
+  } catch (error) {
+    console.error('❌ Error revoking Google access:', error);
+  }
+};
+
+/**
  * Aliases for backward compatibility
  */
 export const initiateGoogleLogin = signInWithGoogleServerSide;
