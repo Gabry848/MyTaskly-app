@@ -175,52 +175,29 @@
   "accountSettings": {
     "title": "Informazioni account",
     "loading": "Caricamento...",
-    "sections": {
-      "accountInfo": "Informazioni account",
-      "accountManagement": "Gestione account",
-      "testNotifications": "Test notifiche"
-    },
-    "labels": {
+    "fields": {
       "username": "Username",
       "email": "Email",
-      "registrationDate": "Data di registrazione"
+      "registrationDate": "Data iscrizione"
     },
-    "menu": {
-      "changeUsername": "Cambia username",
-      "changeEmail": "Cambia email",
-      "changePassword": "Cambia password"
+    "actions": {
+      "changeEmail": "Cambia Email",
+      "changeUsername": "Cambia Username"
     },
-    "testNotification": {
-      "send": "Invia notifica di test",
-      "sending": "Invio notifica di test...",
-      "success": "Notifica inviata con successo",
-      "failed": "Invio notifica non riuscito",
-      "error": "Errore durante l'invio della notifica",
-      "description": "Invia una notifica di test per verificare le impostazioni del dispositivo"
-    },
-    "changeEmail": {
-      "title": "Cambia email",
-      "newEmail": "Nuova email",
-      "passwordConfirm": "Conferma password",
-      "emailPlaceholder": "Inserisci la tua nuova email",
-      "passwordPlaceholder": "Inserisci la tua password",
-      "fillAllFields": "Compila tutti i campi",
-      "invalidEmail": "Inserisci un indirizzo email valido",
-      "error": "Si è verificato un errore durante l'aggiornamento dell'email",
-      "updateButton": "Aggiorna email"
-    },
-    "changeUsername": {
-      "title": "Cambia username",
-      "newUsername": "Nuovo username",
-      "placeholder": "Inserisci il nuovo username",
-      "enterUsername": "Inserisci uno username",
-      "minLength": "Lo username deve avere almeno 3 caratteri",
-      "error": "Si è verificato un errore durante l'aggiornamento dello username",
-      "updateButton": "Aggiorna username"
-    },
-    "errors": {
-      "invalidToken": "Token di autenticazione non valido",
-      "loadingError": "Impossibile caricare le informazioni dell'account"
+    "modals": {
+      "changeEmail": {
+        "title": "Cambia Email",
+        "newEmail": "Nuova Email",
+        "password": "Password",
+        "confirm": "Conferma",
+        "cancel": "Annulla"
+      },
+      "changeUsername": {
+        "title": "Cambia Username",
+        "newUsername": "Nuovo Username",
+        "confirm": "Conferma",
+        "cancel": "Annulla"
+      }
     },
     "messages": {
       "emailChanged": "Email modificata con successo",
@@ -230,31 +207,12 @@
   },
   "changePassword": {
     "title": "Cambia Password",
-    "instructions": "Inserisci la password attuale e scegline una nuova di almeno 8 caratteri.",
-    "labels": {
+    "fields": {
       "currentPassword": "Password attuale",
       "newPassword": "Nuova password",
       "confirmPassword": "Conferma password"
     },
-    "placeholders": {
-      "currentPassword": "Inserisci la password attuale",
-      "newPassword": "Inserisci la nuova password",
-      "confirmPassword": "Conferma la nuova password"
-    },
-    "errors": {
-      "fillAllFields": "Compila tutti i campi",
-      "passwordMismatch": "Le password non coincidono",
-      "minLength": "La nuova password deve avere almeno 8 caratteri",
-      "generic": "Si è verificato un errore durante l'aggiornamento della password"
-    },
-    "updateButton": "Aggiorna password",
-    "tips": {
-      "title": "Consigli per una password sicura",
-      "tip1": "Usa una combinazione di lettere, numeri e simboli",
-      "tip2": "Evita informazioni personali ovvie",
-      "tip3": "Non riutilizzare password di altri servizi",
-      "tip4": "Aggiorna regolarmente la tua password"
-    },
+    "button": "Cambia Password",
     "messages": {
       "success": "Password modificata con successo",
       "error": "Errore durante la modifica della password",
@@ -296,30 +254,8 @@
     "appName": "Mytaskly",
     "version": "Versione",
     "aboutApp": "Informazioni sull'app",
-    "description1": "Mytaskly ti aiuta a organizzare task, note e calendario in un unico posto con il supporto di un assistente AI.",
-    "description2": "Pianifica la giornata, monitora i progressi e rimani concentrato grazie a promemoria smart e un'interfaccia pulita.",
-    "developer": {
-      "title": "Sviluppatore",
-      "name": "Gabriele Cipriani",
-      "role": "Fondatore e sviluppatore",
-      "description": "Appassionato di strumenti di produttività e design centrato sull'utente. Lavora continuamente per migliorare Mytaskly."
-    },
-    "status": {
-      "title": "Stato dell'app",
-      "betaBadge": "Beta",
-      "betaDescription": "Mytaskly è attualmente in beta. Alcune funzionalità potrebbero cambiare mentre perfezioniamo l'esperienza.",
-      "betaNote": "Grazie per provare l'app e inviare feedback!"
-    },
-    "inDevelopment": {
-      "title": "In sviluppo",
-      "cloudSync": "Sincronizzazione cloud sicura tra dispositivi",
-      "advancedNotifications": "Notifiche più intelligenti e contestuali",
-      "customThemes": "Temi personalizzati e opzioni di personalizzazione",
-      "advancedStatistics": "Analitiche di produttività più dettagliate"
-    },
-    "rightsReserved": "Tutti i diritti riservati.",
     "appStatus": "Stato dell'app",
-    "inDevelopmentLabel": "In sviluppo",
+    "inDevelopment": "In sviluppo",
     "copyright": "© 2024 Mytaskly. Tutti i diritti riservati."
   },
   "categories": {
