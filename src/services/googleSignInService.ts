@@ -222,12 +222,14 @@ export const handleGoogleLoginError = (url: string) => {
 /**
  * Sign out from Google (placeholder for compatibility)
  */
-export const signOutFromGoogle = async (): Promise<void> => {
+export const signOutFromGoogle = async (): Promise<{ success: boolean; message?: string }> => {
   try {
     await clearWebBrowserSession();
     console.log('✅ Signed out from Google');
-  } catch (error) {
+    return { success: true };
+  } catch (error: any) {
     console.error('❌ Error signing out from Google:', error);
+    return { success: false, message: error.message || 'Error signing out' };
   }
 };
 
@@ -251,12 +253,14 @@ export const getCurrentGoogleUser = async (): Promise<any | null> => {
 /**
  * Revoke Google access (placeholder for compatibility)
  */
-export const revokeGoogleAccess = async (): Promise<void> => {
+export const revokeGoogleAccess = async (): Promise<{ success: boolean; message?: string }> => {
   try {
-    await signOutFromGoogle();
+    const result = await signOutFromGoogle();
     console.log('✅ Google access revoked');
-  } catch (error) {
+    return result;
+  } catch (error: any) {
     console.error('❌ Error revoking Google access:', error);
+    return { success: false, message: error.message || 'Error revoking access' };
   }
 };
 

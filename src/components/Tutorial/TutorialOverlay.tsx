@@ -6,17 +6,31 @@ import { NavigationControls } from './NavigationControls';
 import { ProgressIndicator } from './ProgressIndicator';
 import { ElementMeasurement } from '../../hooks/useTutorial';
 
-interface TutorialOverlayProps {
+/**
+ * Props for TutorialOverlay component
+ */
+export interface TutorialOverlayProps {
+  /** Measurement of target element */
   targetMeasurement: ElementMeasurement | null;
+  /** Current step index */
   currentStepIndex: number;
+  /** Total number of steps */
   totalSteps: number;
+  /** Step title */
   title: string;
+  /** Step description */
   description: string;
+  /** Icon name to display */
   icon?: string;
+  /** Whether back navigation is allowed */
   canGoBack: boolean;
+  /** Whether next navigation is allowed */
   canGoNext: boolean;
+  /** Callback for back button */
   onBack: () => void;
+  /** Callback for next button */
   onNext: () => void;
+  /** Callback for skip button */
   onSkip: () => void;
 }
 

@@ -1,9 +1,15 @@
 import { useState, useEffect } from 'react';
 import { checkAndRefreshAuth, check_login } from '../services/authService';
 
-interface AuthState {
+/**
+ * Auth State
+ */
+export interface AuthState {
+  /** Whether user is authenticated */
   isAuthenticated: boolean;
+  /** Whether auth check is in progress */
   isLoading: boolean;
+  /** Function to check authentication */
   checkAuth: () => Promise<void>;
 }
 

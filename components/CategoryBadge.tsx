@@ -11,7 +11,7 @@ const CategoryBadge: React.FC<CategoryBadgeProps> = ({ type }) => {
     switch (type) {
       case 'shared':
         return {
-          icon: 'people-outline' as const,
+          icon: 'people' as const,
           iconColor: '#424242',
           ariaLabel: 'Categoria condivisa con altri',
           backgroundColor: '#F5F5F5',
@@ -19,7 +19,7 @@ const CategoryBadge: React.FC<CategoryBadgeProps> = ({ type }) => {
         };
       case 'readOnly':
         return {
-          icon: 'lock-outline' as const,
+          icon: 'lock-closed' as const,
           iconColor: '#000000',
           ariaLabel: 'Sola lettura - non puoi modificare',
           backgroundColor: '#F5F5F5',
@@ -27,7 +27,7 @@ const CategoryBadge: React.FC<CategoryBadgeProps> = ({ type }) => {
         };
       case 'canEdit':
         return {
-          icon: 'edit-outline' as const,
+          icon: 'pencil' as const,
           iconColor: '#424242',
           ariaLabel: 'Puoi modificare questa categoria',
           backgroundColor: '#FFFFFF',

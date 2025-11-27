@@ -13,9 +13,15 @@ export interface ElementMeasurement {
   pageY: number;
 }
 
-interface UseTutorialProps {
+/**
+ * Props for useTutorial hook
+ */
+export interface UseTutorialProps {
+  /** Navigation prop */
   navigation: NavigationProp<RootStackParamList> | NavigationProp<TabParamList>;
+  /** Callback when tutorial completes */
   onComplete?: () => void;
+  /** Callback when tutorial is skipped */
   onSkip?: () => void;
 }
 

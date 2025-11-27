@@ -89,7 +89,7 @@ const config: Config = {
         },
         {to: '/blog', label: 'Blog', position: 'left'},
         {
-          href: 'https://github.com/Gabry848/MyTaskly',
+          href: 'https://github.com/Gabry848/MyTaskly-app',
           label: 'GitHub',
           position: 'right',
         },

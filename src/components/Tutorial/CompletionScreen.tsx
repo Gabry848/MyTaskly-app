@@ -4,8 +4,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { tutorialStyles } from './styles';
 import { TUTORIAL_CONTENT } from '../../constants/tutorialContent';
 
-interface CompletionScreenProps {
+/**
+ * Props for CompletionScreen component
+ */
+export interface CompletionScreenProps {
+  /** Callback when completion is confirmed */
   onComplete: () => void;
+  /** Callback to review tutorial */
   onReview: () => void;
 }
 

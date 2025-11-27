@@ -1,13 +1,22 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CACHE_KEYS } from './TaskCacheService';
 
-interface StorageInfo {
+/**
+ * Storage information
+ */
+export interface StorageInfo {
+  /** Total storage size */
   totalSize: number;
+  /** Storage keys */
   keys: string[];
+  /** Usage per key */
   usage: { [key: string]: number };
 }
 
-class StorageManager {
+/**
+ * Storage Manager for handling application storage
+ */
+export class StorageManager {
   private static instance: StorageManager;
   private maxCacheSize = 50 * 1024 * 1024; // 50MB limit
   private maxAge = 7 * 24 * 60 * 60 * 1000; // 7 giorni

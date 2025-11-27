@@ -1,5 +1,7 @@
-// Custom EventEmitter per React Native (senza dipendenza dal modulo Node.js 'events')
-class CustomEventEmitter {
+/**
+ * Custom EventEmitter per React Native (senza dipendenza dal modulo Node.js 'events')
+ */
+export class CustomEventEmitter {
   listeners: Record<string, Function[]>;
 
   constructor() {

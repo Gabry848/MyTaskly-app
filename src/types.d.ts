@@ -47,3 +47,10 @@ export type TabParamList = {
   Notes: undefined;
   BotChat: undefined;
 };
+
+/**
+ * Re-export Task type and addTaskToList function for API documentation
+ * @see {@link Task}
+ */
+export type { Task } from '../components/TaskList/types';
+export { addTaskToList } from '../components/TaskList/types';

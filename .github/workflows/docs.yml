@@ -1,4 +1,4 @@
-name: Deploy Documentation
+name: Update Documentation
 
 on:
   push:
@@ -6,36 +6,48 @@ on:
   workflow_dispatch:
 
 jobs:
-  deploy-docs:
+  update-docs:
     runs-on: ubuntu-latest
     
     steps:
-    - name: Checkout code
+    - name: Checkout MyTaskly
       uses: actions/checkout@v4
       
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '18'
-        cache: 'npm'
         
     - name: Install dependencies
       run: npm ci
       
-    - name: Generate API docs with TypeDoc
+    - name: Generate API docs
       run: npm run docs:generate
       
-    - name: Install Docusaurus dependencies
-      run: cd docs && npm ci
-      
-    - name: Build Docusaurus site
-      run: cd docs && npm run build
-      
-    - name: Deploy to Vercel
-      uses: amondnet/vercel-action@v25
+    - name: Checkout docs repo
+      uses: actions/checkout@v4
       with:
-        vercel-token: ${{ secrets.VERCEL_TOKEN }}
-        vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-        vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-        working-directory: ./docs/build
-        vercel-args: '--prod'
+        repository: Gabry848/mytaskly-docs
+        token: ${{ secrets.DOCS_REPO_TOKEN }}
+        path: docs-repo
+        
+    - name: Copy generated docs
+      run: |
+        rm -rf docs-repo/docs/api
+        cp -r docs/docs/api docs-repo/docs/
+    
+    # NUOVO: Genera CHANGELOG da GitHub Releases
+    - name: Generate CHANGELOG from releases
+      run: |
+        curl -s https://api.github.com/repos/Gabry848/MyTaskly-app/releases \
+          | jq -r '.[] | "## \(.name)\n\n**Data:** \(.published_at[:10])\n\n\(.body)\n\n---\n"' \
+          > docs-repo/docs/CHANGELOG.md
+        
+    - name: Commit and push to docs repo
+      run: |
+        cd docs-repo
+        git config user.name "GitHub Actions"
+        git config user.email "actions@github.com"
+        git add .
+        git diff --quiet && git diff --staged --quiet || git commit -m "Update API docs and CHANGELOG from main repo"
+        git push

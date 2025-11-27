@@ -3,11 +3,19 @@ import { Task, getAllTasks } from '../services/taskService';
 import { TaskCacheService } from '../services/TaskCacheService';
 import SyncManager, { SyncStatus } from '../services/SyncManager';
 
-interface UseTaskCacheReturn {
+/**
+ * Return type for useTaskCache hook
+ */
+export interface UseTaskCacheReturn {
+  /** Cached tasks */
   tasks: Task[];
+  /** Whether tasks are loading */
   isLoading: boolean;
+  /** Current sync status */
   syncStatus: SyncStatus | null;
+  /** Refresh tasks from cache */
   refreshTasks: () => Promise<void>;
+  /** Get cache statistics */
   getCachedStats: () => Promise<{
     taskCount: number;
     categoryCount: number;
@@ -15,7 +23,9 @@ interface UseTaskCacheReturn {
     offlineChanges: number;
     cacheSize: number;
   }>;
+  /** Clear the cache */
   clearCache: () => Promise<void>;
+  /** Force synchronization */
   forceSync: () => Promise<void>;
 }
 

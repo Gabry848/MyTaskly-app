@@ -370,6 +370,7 @@ const CalendarView: React.FC = () => {
     const category = categoryNameParam || "Calendario";
     const newTask = {
       id: Date.now(),
+      task_id: Date.now(),
       title: title.trim(),
       description: description || "",
       start_time: dayjs(selectedDate).toISOString(),

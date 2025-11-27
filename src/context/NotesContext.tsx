@@ -1,15 +1,25 @@
 import React, { createContext, useContext, ReactNode } from 'react';
 import { useNotes, NotesState, NotesActions } from '../hooks/useNotes';
 
-interface NotesContextValue {
+/**
+ * Context value for Notes
+ */
+export interface NotesContextValue {
+  /** Notes state */
   state: NotesState;
+  /** Notes actions */
   actions: NotesActions;
 }
 
 const NotesContext = createContext<NotesContextValue | undefined>(undefined);
 
-interface NotesProviderProps {
+/**
+ * Props for NotesProvider
+ */
+export interface NotesProviderProps {
+  /** Provider children */
   children: ReactNode;
+  /** Auto refresh on focus */
   autoRefreshOnFocus?: boolean;
 }
 

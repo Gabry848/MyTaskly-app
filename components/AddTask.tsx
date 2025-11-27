@@ -135,6 +135,7 @@ const AddTask: React.FC<AddTaskProps> = ({
 
     const taskObject = {
       id: Date.now(),
+      task_id: Date.now(),
       title: title.trim(),
       description: description.trim() || "", // Assicurarsi che description non sia mai null
       end_time: dueDate || null, // Se non c'è una data di scadenza, imposta null

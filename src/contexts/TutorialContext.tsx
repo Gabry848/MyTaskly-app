@@ -2,12 +2,21 @@ import React, { createContext, useContext, useState, useCallback, useRef } from 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { TUTORIAL_STORAGE_KEY } from '../constants/tutorialContent';
 
-interface TutorialContextType {
+/**
+ * Tutorial Context Type
+ */
+export interface TutorialContextType {
+  /** Whether tutorial is visible */
   isTutorialVisible: boolean;
+  /** Whether tutorial should auto-start */
   shouldAutoStart: boolean;
+  /** Start tutorial */
   startTutorial: () => void;
+  /** Close tutorial */
   closeTutorial: () => void;
+  /** Register element ref */
   registerElementRef: (key: string, ref: any) => void;
+  /** Get element ref */
   getElementRef: (key: string) => any;
 }
 

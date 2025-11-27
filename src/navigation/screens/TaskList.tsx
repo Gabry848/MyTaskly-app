@@ -1,13 +1,21 @@
 import React from "react";
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../types';
-import { TaskListContainer, addTaskToList } from "../../../components/TaskList";
+import { TaskListContainer } from "../../../components/TaskList";
+import { addTaskToList } from "../../types";
 import Task from "../../../components/Task";
 import { getTasks, addTask, deleteTask, updateTask, completeTask, disCompleteTask } from "../../services/taskService";
 
-type TaskListRouteProp = RouteProp<RootStackParamList, 'TaskList'>;
+/**
+ * Route prop type for TaskList screen
+ */
+export type TaskListRouteProp = RouteProp<RootStackParamList, 'TaskList'>;
 
-type Props = {
+/**
+ * Props for TaskList screen component
+ */
+export type Props = {
+  /** Route prop with task list parameters */
   route: TaskListRouteProp;
 };
 

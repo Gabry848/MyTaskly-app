@@ -316,6 +316,7 @@ export const TaskListContainer = ({
 
     const newTask: TaskType = {
       id: `new_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      task_id: Date.now(),
       title,
       description: description || "", // Assicurarsi che description non sia null
       end_time: dueDate && dueDate.trim() ? new Date(dueDate).toISOString() : null, // Supporta task senza scadenza

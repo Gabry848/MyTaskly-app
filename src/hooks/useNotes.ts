@@ -16,7 +16,11 @@ const COLORS = [
   '#C8E6C9', // Verde chiaro
 ];
 
-interface UseNotesOptions {
+/**
+ * Options for useNotes hook
+ */
+export interface UseNotesOptions {
+  /** Auto refresh notes when screen gains focus */
   autoRefreshOnFocus?: boolean;
 }
 

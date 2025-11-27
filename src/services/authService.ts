@@ -88,7 +88,7 @@ async function updateAuthData(data: any) {
 /**
  * Esegue il login dell'utente
  *
- * @param {string} email - L'email dell'utente
+ * @param {string} username - L'username dell'utente
  * @param {string} password - La password dell'utente
  * @returns {Promise<Object>} - Un oggetto che contiene lo stato del login e i token
  */

@@ -3,12 +3,21 @@ import { View, Text, Pressable } from 'react-native';
 import { tutorialStyles } from './styles';
 import { TUTORIAL_CONTENT } from '../../constants/tutorialContent';
 
-interface NavigationControlsProps {
+/**
+ * Props for NavigationControls component
+ */
+export interface NavigationControlsProps {
+  /** Whether back button should be enabled */
   canGoBack: boolean;
+  /** Whether next button should be enabled */
   canGoNext: boolean;
+  /** Callback for back button */
   onBack: () => void;
+  /** Callback for next button */
   onNext: () => void;
+  /** Callback for skip button */
   onSkip: () => void;
+  /** Whether to show skip button */
   showSkip?: boolean;
 }
 

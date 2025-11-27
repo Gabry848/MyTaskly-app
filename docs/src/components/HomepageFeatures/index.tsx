@@ -1,4 +1,4 @@
-import type {ReactNode} from 'react';
+import React, { type ReactNode } from 'react';
 import clsx from 'clsx';
 import Heading from '@theme/Heading';
 import styles from './styles.module.css';
@@ -11,32 +11,32 @@ type FeatureItem = {
 
 const FeatureList: FeatureItem[] = [
   {
-    title: 'Easy to Use',
+    title: 'Voice-Powered',
     Svg: require('@site/static/img/undraw_docusaurus_mountain.svg').default,
     description: (
       <>
-        Docusaurus was designed from the ground up to be easily installed and
-        used to get your website up and running quickly.
+        Create and manage tasks using natural voice commands. MyTaskly understands
+        your speech and transforms it into organized, actionable tasks.
       </>
     ),
   },
   {
-    title: 'Focus on What Matters',
+    title: 'AI-Assisted Organization',
     Svg: require('@site/static/img/undraw_docusaurus_tree.svg').default,
     description: (
       <>
-        Docusaurus lets you focus on your docs, and we&apos;ll do the chores. Go
-        ahead and move your docs into the <code>docs</code> directory.
+        Get intelligent suggestions for organizing your tasks. The AI helps you
+        prioritize, categorize, and schedule your work efficiently.
       </>
     ),
   },
   {
-    title: 'Powered by React',
+    title: 'Multi-Platform & Cloud Sync',
     Svg: require('@site/static/img/undraw_docusaurus_react.svg').default,
     description: (
       <>
-        Extend or customize your website layout by reusing React. Docusaurus can
-        be extended while reusing the same header and footer.
+        Works seamlessly across Android, iOS, and web. Your tasks stay synchronized
+        across all your devices in real-time.
       </>
     ),
   },

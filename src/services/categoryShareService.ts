@@ -1,5 +1,10 @@
 import axios from "./axiosInterceptor";
 
+/**
+ * @typedef {Object} CategoryShareService
+ * Category sharing service for API interactions
+ */
+
 // TypeScript interfaces for category sharing
 export interface Category {
   category_id: number;
@@ -57,7 +62,7 @@ export interface SharedWithMeCategory {
 /**
  * Service for managing category sharing functionality
  */
-class CategoryShareService {
+export class CategoryShareService {
   /**
    * Share a category with another user
    * @param categoryId - ID of the category to share

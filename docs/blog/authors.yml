@@ -1,3 +1,12 @@
+gabry:
+  name: Gabriele
+  title: MyTaskly Creator & Lead Developer
+  url: https://github.com/Gabry848
+  image_url: https://github.com/Gabry848.png
+  page: true
+  socials:
+    github: Gabry848
+
 yangshun:
   name: Yangshun Tay
   title: Ex-Meta Staff Engineer, Co-founder GreatFrontEnd

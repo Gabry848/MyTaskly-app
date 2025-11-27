@@ -2,46 +2,58 @@
 sidebar_position: 1
 ---
 
-# Tutorial Intro
+# Welcome to MyTaskly Documentation
 
-Let's discover **Docusaurus in less than 5 minutes**.
+Welcome to the official documentation for **MyTaskly** – the intelligent task management app that lets you organize your work through voice commands.
 
-## Getting Started
+## What is MyTaskly?
 
-Get started by **creating a new site**.
+MyTaskly is a React Native application that combines:
 
-Or **try Docusaurus immediately** with **[docusaurus.new](https://docusaurus.new)**.
+- **Voice-powered task management** – Speak naturally to create, organize, and manage tasks
+- **AI-powered suggestions** – Get smart recommendations for organizing your work
+- **Multi-language support** – Supports multiple languages for global users
+- **Cloud synchronization** – Seamlessly sync your tasks across devices
+- **Intuitive UI** – Beautiful, easy-to-use interface designed for productivity
 
-### What you'll need
+## Quick Start
 
-- [Node.js](https://nodejs.org/en/download/) version 20.0 or above:
-  - When installing Node.js, you are recommended to check all checkboxes related to dependencies.
+### For Users
 
-## Generate a new site
+- Learn how to create and manage tasks with voice commands
+- Explore task categories, calendar views, and filtering options
+- Integrate with Google Calendar for better scheduling
+- Set up notifications and reminders
 
-Generate a new Docusaurus site using the **classic template**.
+### For Developers
 
-The classic template will automatically be added to your project after you run the command:
+- Check out the [API Reference](/docs/api/README) for detailed component and hook documentation
+- Explore our custom hooks and context providers
+- Understand the app's architecture and state management
+- Contribute to MyTaskly development
 
-```bash
-npm init docusaurus@latest my-website classic
-```
+## Key Features
 
-You can type this command into Command Prompt, Powershell, Terminal, or any other integrated terminal of your code editor.
+📱 **Voice Commands** – Control your tasks hands-free with natural language processing
 
-The command also installs all necessary dependencies you need to run Docusaurus.
+🤖 **AI Assistant** – Get intelligent suggestions for task organization and priorities
 
-## Start your site
+📅 **Calendar Integration** – Sync with Google Calendar for seamless scheduling
 
-Run the development server:
+🌍 **Multi-language** – Available in multiple languages with i18n support
 
-```bash
-cd my-website
-npm run start
-```
+🔔 **Smart Notifications** – Stay on top of your tasks with timely reminders
 
-The `cd` command changes the directory you're working with. In order to work with your newly created Docusaurus site, you'll need to navigate the terminal there.
+☁️ **Cloud Sync** – Keep your tasks synchronized across all your devices
 
-The `npm run start` command builds your website locally and serves it through a development server, ready for you to view at http://localhost:3000/.
+## Documentation Structure
 
-Open `docs/intro.md` (this page) and edit some lines: the site **reloads automatically** and displays your changes.
+- **API Reference** – Complete API documentation including hooks, contexts, and components
+- **Getting Started** – Setup instructions and first steps guide
+- **User Guide** – Comprehensive guide for using MyTaskly features
+
+## Need Help?
+
+- Check the [GitHub Issues](https://github.com/Gabry848/MyTaskly/issues) for known issues
+- Read through our API Reference for developer questions
+- Visit our [GitHub Repository](https://github.com/Gabry848/MyTaskly) for more information

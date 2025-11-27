@@ -12,5 +12,10 @@
   "excludePrivate": true,
   "excludeProtected": true,
   "readme": "none",
-  "hideGenerator": true
+  "hideGenerator": true,
+  "outputFileStrategy": "modules",
+  "mergeReadme": true,
+  "githubPages": false,
+  "expandObjects": true,
+  "expandParameters": false
 }

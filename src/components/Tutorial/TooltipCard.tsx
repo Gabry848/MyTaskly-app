@@ -4,10 +4,17 @@ import { Ionicons } from '@expo/vector-icons';
 import { tutorialStyles } from './styles';
 import { ElementMeasurement } from '../../hooks/useTutorial';
 
-interface TooltipCardProps {
+/**
+ * Props for TooltipCard component
+ */
+export interface TooltipCardProps {
+  /** Tooltip title */
   title: string;
+  /** Tooltip description */
   description: string;
+  /** Icon name to display */
   icon?: string;
+  /** Measurement of target element */
   targetMeasurement?: ElementMeasurement | null;
 }
 

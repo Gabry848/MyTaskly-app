@@ -4,8 +4,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { tutorialStyles } from './styles';
 import { TUTORIAL_CONTENT } from '../../constants/tutorialContent';
 
-interface WelcomeScreenProps {
+/**
+ * Props for WelcomeScreen component
+ */
+export interface WelcomeScreenProps {
+  /** Callback when tutorial starts */
   onStart: () => void;
+  /** Callback when tutorial is skipped */
   onSkip: () => void;
 }
 

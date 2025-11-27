@@ -5,9 +5,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const LANGUAGE_STORAGE_KEY = '@mytaskly:language';
 
-interface LanguageContextType {
+/**
+ * Language Context Type
+ */
+export interface LanguageContextType {
+  /** Current language code */
   currentLanguage: string;
+  /** Function to change language */
   changeLanguage: (language: string) => Promise<void>;
+  /** Available languages */
   availableLanguages: { code: string; name: string }[];
 }
 
@@ -21,7 +27,11 @@ export const useLanguage = () => {
   return context;
 };
 
-interface LanguageProviderProps {
+/**
+ * Props for LanguageProvider
+ */
+export interface LanguageProviderProps {
+  /** Provider children */
   children: ReactNode;
 }
 
