@@ -15,7 +15,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
 import * as authService from "../../services/authService";
-import { NotificationSnackbar } from "../../../components/NotificationSnackbar";
+import { NotificationSnackbar } from "../../components/UI/NotificationSnackbar";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { STORAGE_KEYS } from "../../constants/authConstants";
 import eventEmitter from "../../utils/eventEmitter";

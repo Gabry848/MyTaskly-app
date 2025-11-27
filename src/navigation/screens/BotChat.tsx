@@ -7,7 +7,7 @@ import {
   ChatList, 
   Message,
   chatStyles 
-} from '../../../components/BotChat';
+} from '../../components/BotChat';
 
 const BotChat: React.FC = () => {
   // Stati

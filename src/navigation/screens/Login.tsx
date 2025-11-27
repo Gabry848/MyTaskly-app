@@ -20,7 +20,7 @@ import { initiateGoogleLogin } from "../../services/googleSignInService";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { STORAGE_KEYS } from "../../constants/authConstants";
 
-import { NotificationSnackbar } from "../../../components/NotificationSnackbar";
+import { NotificationSnackbar } from "../../components/UI/NotificationSnackbar";
 import { useTranslation } from 'react-i18next';
 
 const { width } = Dimensions.get("window");

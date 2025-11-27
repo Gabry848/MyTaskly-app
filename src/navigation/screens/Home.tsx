@@ -17,13 +17,13 @@ import {
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scrollview";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { ChatList, Message } from "../../../components/BotChat";
+import { ChatList, Message } from "../../components/BotChat";
 import { sendMessageToBot, formatMessage, clearChatHistory, StreamingCallback } from "../../services/botservice";
 import { STORAGE_KEYS } from "../../constants/authConstants";
 import { TaskCacheService } from '../../services/TaskCacheService';
 import SyncManager, { SyncStatus } from '../../services/SyncManager';
-import Badge from "../../../components/Badge";
-import VoiceChatModal from "../../../components/VoiceChatModal";
+import Badge from "../../components/UI/Badge";
+import VoiceChatModal from "../../components/BotChat/VoiceChatModal";
 import { useTutorialContext } from "../../contexts/TutorialContext";
 import { useTranslation } from 'react-i18next';
 

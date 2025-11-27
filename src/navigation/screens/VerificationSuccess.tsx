@@ -14,7 +14,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "../../types";
 import * as authService from "../../services/authService";
-import { NotificationSnackbar } from "../../../components/NotificationSnackbar";
+import { NotificationSnackbar } from "../../components/UI/NotificationSnackbar";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { STORAGE_KEYS } from "../../constants/authConstants";
 
