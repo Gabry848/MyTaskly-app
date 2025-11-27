@@ -112,10 +112,14 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style }) => {
   const renderMessageContent = () => {
     if (isBot) {
       // Per i messaggi del bot, usa il rendering Markdown
+      // Assicura che il testo non sia vuoto o null
+      const textContent = message.text || '';
       return (
-        <Markdown style={markdownStyles}>
-          {message.text}
-        </Markdown>
+        <View>
+          <Markdown style={markdownStyles}>
+            {textContent}
+          </Markdown>
+        </View>
       );
     } else {
       // Per i messaggi dell'utente, usa il testo normale
@@ -248,6 +252,13 @@ const styles = StyleSheet.create({
 
 // Stili personalizzati per il rendering Markdown
 const markdownStyles = {
+  text: {
+    fontSize: 16,
+    lineHeight: 24,
+    fontFamily: 'System',
+    fontWeight: '400' as const,
+    color: '#1a1a1a',
+  },
   body: {
     fontSize: 16,
     lineHeight: 24,

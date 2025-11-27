@@ -126,7 +126,7 @@ const AddCategoryButton: React.FC<AddCategoryButtonProps> = ({ onCategoryAdded }
   return (
     <View style={styles.container}>
       <TouchableOpacity style={styles.addButton} onPress={toggleForm}>
-        <Image source={require('../src/assets/plus.png')} style={styles.addButtonIcon} />
+        <Image source={require('../../assets/plus.png')} style={styles.addButtonIcon} />
       </TouchableOpacity>
 
       <Modal visible={formVisible} transparent animationType="fade">

@@ -447,13 +447,6 @@ const HomeScreen = () => {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
 
-      <KeyboardAwareScrollView
-        style={styles.keyboardAwareScrollView}
-        contentContainerStyle={styles.scrollViewContent}
-        enableOnAndroid={true}
-        extraScrollHeight={20}
-        keyboardShouldPersistTaps="handled"
-      >
         {/* Header con titolo principale e indicatori sync */}
         <View style={styles.header}>
         <View style={styles.titleSection}>
@@ -696,7 +689,6 @@ const HomeScreen = () => {
             </View>          </Animated.View>
         )}
       </View>
-      </KeyboardAwareScrollView>
 
       {/* Voice Chat Modal */}
       <VoiceChatModal
