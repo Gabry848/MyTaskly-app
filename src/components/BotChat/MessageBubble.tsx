@@ -110,17 +110,31 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style }) => {
   
   // Funzione per renderizzare il contenuto del messaggio
   const renderMessageContent = () => {
+    const textContent = message.text || '';
+
     if (isBot) {
-      // Per i messaggi del bot, usa il rendering Markdown
-      // Assicura che il testo non sia vuoto o null
-      const textContent = message.text || '';
-      return (
-        <View>
-          <Markdown style={markdownStyles}>
+      // Per i messaggi del bot, usa il rendering Markdown solo se contiene markdown
+      const hasMarkdown = /[*_`#\[\]()]/g.test(textContent);
+
+      if (hasMarkdown) {
+        return (
+          <View>
+            <Markdown style={markdownStyles}>
+              {textContent}
+            </Markdown>
+          </View>
+        );
+      } else {
+        // Se non c'è markdown, usa Text direttamente per evitare problemi
+        return (
+          <Text style={[
+            styles.messageText,
+            styles.botText
+          ]}>
             {textContent}
-          </Markdown>
-        </View>
-      );
+          </Text>
+        );
+      }
     } else {
       // Per i messaggi dell'utente, usa il testo normale
       return (
@@ -128,7 +142,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style }) => {
           styles.messageText,
           styles.userText
         ]}>
-          {message.text}
+          {textContent}
         </Text>
       );
     }
