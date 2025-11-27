@@ -7,10 +7,10 @@ import {
   StatusBar
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import CategoryList from '../../../components/CategoryList';
-import AddCategoryButton from "../../../components/AddCategoryButton";
-import SearchTasksButton from "../../../components/SearchTasksButton";
-import GlobalTaskSearch from "../../../components/GlobalTaskSearch";
+import CategoryList from '../../components/Category/CategoryList';
+import AddCategoryButton from "../../components/Category/AddCategoryButton";
+import SearchTasksButton from "../../components/UI/SearchTasksButton";
+import GlobalTaskSearch from "../../components/Task/GlobalTaskSearch";
 import { useTranslation } from 'react-i18next';
 
 export default function Categories() {

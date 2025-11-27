@@ -1,8 +1,8 @@
 import React from "react";
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../types';
-import { TaskListContainer, addTaskToList } from "../../../components/TaskList";
-import Task from "../../../components/Task";
+import { TaskListContainer, addTaskToList } from "../../components/TaskList";
+import Task from "../../components/Task/Task";
 import { getTasks, addTask, deleteTask, updateTask, completeTask, disCompleteTask } from "../../services/taskService";
 
 type TaskListRouteProp = RouteProp<RootStackParamList, 'TaskList'>;

@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { NotificationManager } from '../../../components/NotificationManager';
+import { NotificationManager } from '../../components/Debug/NotificationManager';
 import { sendTestNotification, getAllScheduledNotifications } from '../../services/notificationService';
 import { useTaskNotifications } from '../../services/taskNotificationService';
 
