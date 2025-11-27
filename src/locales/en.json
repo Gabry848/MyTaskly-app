@@ -175,52 +175,29 @@
   "accountSettings": {
     "title": "Account information",
     "loading": "Loading...",
-    "sections": {
-      "accountInfo": "Account info",
-      "accountManagement": "Account management",
-      "testNotifications": "Test notifications"
-    },
-    "labels": {
+    "fields": {
       "username": "Username",
       "email": "Email",
       "registrationDate": "Registration date"
     },
-    "menu": {
-      "changeUsername": "Change username",
-      "changeEmail": "Change email",
-      "changePassword": "Change password"
+    "actions": {
+      "changeEmail": "Change Email",
+      "changeUsername": "Change Username"
     },
-    "testNotification": {
-      "send": "Send test notification",
-      "sending": "Sending test notification...",
-      "success": "Notification sent successfully",
-      "failed": "Failed to send notification",
-      "error": "An error occurred while sending the notification",
-      "description": "Send a test notification to verify your device settings"
-    },
-    "changeEmail": {
-      "title": "Change email",
-      "newEmail": "New email",
-      "passwordConfirm": "Password confirmation",
-      "emailPlaceholder": "Enter your new email",
-      "passwordPlaceholder": "Enter your password",
-      "fillAllFields": "Please fill in all fields",
-      "invalidEmail": "Please enter a valid email address",
-      "error": "An error occurred while updating the email",
-      "updateButton": "Update email"
-    },
-    "changeUsername": {
-      "title": "Change username",
-      "newUsername": "New username",
-      "placeholder": "Enter your new username",
-      "enterUsername": "Please enter a username",
-      "minLength": "Username must be at least 3 characters",
-      "error": "An error occurred while updating the username",
-      "updateButton": "Update username"
-    },
-    "errors": {
-      "invalidToken": "Authentication token is invalid",
-      "loadingError": "Unable to load account information"
+    "modals": {
+      "changeEmail": {
+        "title": "Change Email",
+        "newEmail": "New Email",
+        "password": "Password",
+        "confirm": "Confirm",
+        "cancel": "Cancel"
+      },
+      "changeUsername": {
+        "title": "Change Username",
+        "newUsername": "New Username",
+        "confirm": "Confirm",
+        "cancel": "Cancel"
+      }
     },
     "messages": {
       "emailChanged": "Email changed successfully",
@@ -230,31 +207,12 @@
   },
   "changePassword": {
     "title": "Change Password",
-    "instructions": "Enter your current password and choose a new one with at least 8 characters.",
-    "labels": {
+    "fields": {
       "currentPassword": "Current password",
       "newPassword": "New password",
       "confirmPassword": "Confirm password"
     },
-    "placeholders": {
-      "currentPassword": "Enter your current password",
-      "newPassword": "Enter your new password",
-      "confirmPassword": "Confirm your new password"
-    },
-    "errors": {
-      "fillAllFields": "Please fill in all fields",
-      "passwordMismatch": "Passwords don't match",
-      "minLength": "The new password must be at least 8 characters",
-      "generic": "An error occurred while updating the password"
-    },
-    "updateButton": "Update password",
-    "tips": {
-      "title": "Tips for a strong password",
-      "tip1": "Use a mix of letters, numbers and symbols",
-      "tip2": "Avoid using obvious personal information",
-      "tip3": "Do not reuse passwords from other services",
-      "tip4": "Update your password regularly"
-    },
+    "button": "Change Password",
     "messages": {
       "success": "Password changed successfully",
       "error": "Error changing password",
@@ -296,31 +254,9 @@
     "appName": "Mytaskly",
     "version": "Version",
     "aboutApp": "About the app",
-    "description1": "Mytaskly helps you organize tasks, notes and calendar in one place with the support of an AI assistant.",
-    "description2": "Plan your day, track progress and stay focused thanks to smart reminders and a clean interface.",
-    "developer": {
-      "title": "Developer",
-      "name": "Gabriele Cipriani",
-      "role": "Founder & Developer",
-      "description": "Passionate about productivity tools and user-centered design. Always working on new features to make Mytaskly better."
-    },
-    "status": {
-      "title": "App status",
-      "betaBadge": "Beta",
-      "betaDescription": "Mytaskly is currently in beta. Some features may change while we polish the experience.",
-      "betaNote": "Thank you for testing and sharing feedback!"
-    },
-    "inDevelopment": {
-      "title": "In development",
-      "cloudSync": "Secure cloud sync across devices",
-      "advancedNotifications": "Smarter, context-aware notifications",
-      "customThemes": "Custom themes and personalization",
-      "advancedStatistics": "More detailed productivity analytics"
-    },
-    "rightsReserved": "All rights reserved.",
     "appStatus": "App status",
-    "inDevelopmentLabel": "In development",
-    "copyright": "(c) 2024 Mytaskly. All rights reserved."
+    "inDevelopment": "In development",
+    "copyright": "© 2024 Mytaskly. All rights reserved."
   },
   "categories": {
     "title": "Your categories",
