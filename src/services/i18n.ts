@@ -26,7 +26,8 @@ const getStoredLanguage = async (): Promise<string> => {
   }
 
   // Se non c'è lingua salvata, usa quella del dispositivo
-  const deviceLanguage = Localization.locale.split('-')[0];
+  const locales = Localization.getLocales();
+  const deviceLanguage = locales[0]?.languageCode?.split('-')[0] || 'it';
   return deviceLanguage === 'it' || deviceLanguage === 'en' ? deviceLanguage : 'it';
 };
 
@@ -43,7 +44,6 @@ export const saveLanguage = async (language: string): Promise<void> => {
 i18n
   .use(initReactI18next)
   .init({
-    compatibilityJSON: 'v3',
     resources,
     lng: 'it', // Lingua di default
     fallbackLng: 'it',

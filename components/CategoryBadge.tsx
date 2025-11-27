@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 
 interface CategoryBadgeProps {
   type: 'shared' | 'readOnly' | 'canEdit';
@@ -51,7 +51,7 @@ const CategoryBadge: React.FC<CategoryBadgeProps> = ({ type }) => {
       accessibilityLabel={config.ariaLabel}
       accessibilityRole="text"
     >
-      <MaterialIcons
+      <Ionicons
         name={config.icon}
         size={12}
         color={config.iconColor}
