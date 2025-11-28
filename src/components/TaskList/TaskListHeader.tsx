@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { styles } from './styles';
 
-interface TaskListHeaderProps {
+export interface TaskListHeaderProps {
   title: string;
   onFilterPress: () => void;
 }

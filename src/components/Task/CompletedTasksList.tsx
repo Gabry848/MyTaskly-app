@@ -2,13 +2,13 @@ import React, { useState } from "react";
 import { View, Text, StyleSheet, FlatList, TouchableOpacity } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 
-interface CompletedTaskProps {
+export interface CompletedTaskProps {
   id: number | string;
   title: string;
   completedDate: string;
 }
 
-interface CompletedTasksListProps {
+export interface CompletedTasksListProps {
   tasks: CompletedTaskProps[];
   onTaskPress: (taskId: number | string) => void;
 }

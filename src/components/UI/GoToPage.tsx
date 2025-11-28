@@ -1,8 +1,14 @@
 import React, { useEffect } from "react";
-import { StyleSheet, View, Text, TouchableOpacity, Dimensions } from "react-native";
+import {
+  StyleSheet,
+  View,
+  Text,
+  TouchableOpacity,
+  Dimensions,
+} from "react-native";
 import Icon from "react-native-vector-icons/Entypo";
 
-type Props = {
+export type Props = {
   text: string;
   onPress: () => void;
 };
@@ -58,7 +64,7 @@ const styles = StyleSheet.create({
   icon: {
     color: "rgba(13,12,12,1)",
     fontSize: 20,
-  }
+  },
 });
 
 export default GoToPage;

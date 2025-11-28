@@ -5,7 +5,7 @@ import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import { useNotifications, registerForPushNotificationsAsync } from '../../services/notificationService';
 
-interface NotificationManagerProps {
+export interface NotificationManagerProps {
   showDebugInfo?: boolean;
 }
 

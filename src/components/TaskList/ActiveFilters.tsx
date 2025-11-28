@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { styles } from './styles';
 
-interface ActiveFiltersProps {
+export interface ActiveFiltersProps {
   importanceFilter: string;
   deadlineFilter: string;
   onClearImportanceFilter: () => void;

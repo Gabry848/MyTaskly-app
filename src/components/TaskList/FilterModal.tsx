@@ -3,7 +3,7 @@ import { View, Text, Modal, TouchableOpacity, ScrollView } from 'react-native';
 import { styles } from './styles';
 import { FilterChip } from './FilterChip';
 
-interface FilterModalProps {
+export interface FilterModalProps {
   visible: boolean;
   onClose: () => void;
   filtroImportanza: string;

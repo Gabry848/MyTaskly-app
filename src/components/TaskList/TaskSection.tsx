@@ -4,7 +4,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { styles } from './styles';
 import { Task as TaskType } from './types';
 
-interface TaskSectionProps {
+export interface TaskSectionProps {
   title: string;
   isExpanded: boolean;
   tasks: TaskType[];

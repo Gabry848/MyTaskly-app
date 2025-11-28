@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import dayjs from 'dayjs';
 import { Task } from '../../services/taskService';
 
-interface TaskCardProps {
+export interface TaskCardProps {
   task: Task;
   onPress?: (task: Task) => void;
 }

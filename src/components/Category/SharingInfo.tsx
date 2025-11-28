@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 
-interface SharingInfoProps {
+export interface SharingInfoProps {
   isOwned: boolean;
   ownerName?: string;
   permissionLevel?: 'READ_ONLY' | 'READ_WRITE';

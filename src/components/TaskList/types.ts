@@ -10,7 +10,7 @@ export interface Task {
   end_time: string;
   completed?: boolean;
   status_code?: number;
-  task_id: number;
+  task_id?: number;
   category_id?: number | string;
   category_name?: string;
   isOptimistic?: boolean;
@@ -24,6 +24,11 @@ export let globalTasksRef = {
 
 // Funzione globale per aggiungere task
 export const addTaskToList = (task: Task, categoryName: string) => {
-  console.log("addTaskToList called directly with:", task, "for category:", categoryName);
+  console.log(
+    "addTaskToList called directly with:",
+    task,
+    "for category:",
+    categoryName
+  );
   globalTasksRef.addTask(task, categoryName);
 };

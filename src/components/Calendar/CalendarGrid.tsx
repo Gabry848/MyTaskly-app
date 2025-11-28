@@ -5,7 +5,7 @@ import dayjs from 'dayjs';
 import CalendarDay from './CalendarDay';
 import { Task } from '../../services/taskService';
 
-interface CalendarGridProps {
+export interface CalendarGridProps {
   selectedDate: string;
   tasks: Task[];
   onSelectDate: (date: string) => void;

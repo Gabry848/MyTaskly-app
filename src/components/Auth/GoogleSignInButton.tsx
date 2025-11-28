@@ -12,7 +12,7 @@ import { useGoogleSignIn } from '../../hooks/useGoogleSignIn';
 
 const { width } = Dimensions.get('window');
 
-interface GoogleSignInButtonProps {
+export interface GoogleSignInButtonProps {
   onSignInSuccess?: (user: any) => void;
   onSignInError?: (error: string) => void;
   style?: any;

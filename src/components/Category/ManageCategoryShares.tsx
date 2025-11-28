@@ -14,7 +14,7 @@ import categoryShareService, {
   UserShareInfo,
 } from "../../services/categoryShareService";
 
-interface ManageCategorySharesProps {
+export interface ManageCategorySharesProps {
   visible: boolean;
   categoryId: number;
   categoryName: string;

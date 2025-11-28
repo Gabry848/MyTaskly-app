@@ -15,7 +15,7 @@ import { getAllTasks, Task as TaskType } from "../../services/taskService";
 import Task from "./Task";
 import eventEmitter, { EVENTS } from '../../utils/eventEmitter';
 
-interface GlobalTaskSearchProps {
+export interface GlobalTaskSearchProps {
   visible: boolean;
   onClose: () => void;
 }

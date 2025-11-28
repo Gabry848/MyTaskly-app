@@ -2,7 +2,7 @@ import React from "react";
 import { Pressable, StyleSheet, Platform } from "react-native";
 import { MaterialIcons } from '@expo/vector-icons';
 
-interface AddTaskButtonProps {
+export interface AddTaskButtonProps {
   onPress: () => void;
   screenWidth: number;
   categoryTitle?: string;

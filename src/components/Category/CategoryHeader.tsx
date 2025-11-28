@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Image } from "react-native";
 import { MaterialIcons } from '@expo/vector-icons';
 import CategoryBadge from './CategoryBadge';
 
-interface CategoryHeaderProps {
+export interface CategoryHeaderProps {
   title: string;
   imageUrl?: string;
   taskCount: number;

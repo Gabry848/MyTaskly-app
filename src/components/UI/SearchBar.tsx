@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { View, TextInput, StyleSheet, TouchableOpacity } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 
-interface SearchBarProps {
+export interface SearchBarProps {
   onSearch: (text: string) => void;
   placeholder?: string;
 }

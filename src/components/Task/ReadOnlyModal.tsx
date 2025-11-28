@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, Modal } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { styles } from "./TaskStyles";
 
-interface ReadOnlyModalProps {
+export interface ReadOnlyModalProps {
   visible: boolean;
   onClose: () => void;
   taskTitle: string;

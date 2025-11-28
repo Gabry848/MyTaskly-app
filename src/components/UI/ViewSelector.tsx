@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 export type ViewModeType = 'categories' | 'calendar';
 
-interface ViewSelectorProps {
+export interface ViewSelectorProps {
   viewMode: ViewModeType;
   onViewModeChange: (mode: ViewModeType) => void;
 }

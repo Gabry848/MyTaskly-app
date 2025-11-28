@@ -1,5 +1,5 @@
 // Custom EventEmitter per React Native (senza dipendenza dal modulo Node.js 'events')
-class CustomEventEmitter {
+export class CustomEventEmitter {
   listeners: Record<string, Function[]>;
 
   constructor() {
@@ -15,10 +15,10 @@ class CustomEventEmitter {
 
   off(event: string, callback?: Function): void {
     if (!this.listeners[event]) return;
-    
+
     if (callback) {
       this.listeners[event] = this.listeners[event].filter(
-        listener => listener !== callback
+        (listener) => listener !== callback
       );
     } else {
       delete this.listeners[event];
@@ -27,8 +27,8 @@ class CustomEventEmitter {
 
   emit(event: string, ...args: any[]): void {
     if (!this.listeners[event]) return;
-    
-    this.listeners[event].forEach(callback => {
+
+    this.listeners[event].forEach((callback) => {
       callback(...args);
     });
   }
@@ -49,14 +49,14 @@ const globalEventEmitter = new CustomEventEmitter();
 
 // Definisco i tipi di eventi disponibili
 export const EVENTS = {
-  CATEGORY_ADDED: 'CATEGORY_ADDED',
-  CATEGORY_UPDATED: 'CATEGORY_UPDATED',
-  CATEGORY_DELETED: 'CATEGORY_DELETED',
-  TASK_ADDED: 'TASK_ADDED',
-  TASK_UPDATED: 'TASK_UPDATED',
-  TASK_DELETED: 'TASK_DELETED',
-  TASKS_SYNCED: 'TASKS_SYNCED',
-  SCREEN_CHANGE: 'SCREEN_CHANGE',
+  CATEGORY_ADDED: "CATEGORY_ADDED",
+  CATEGORY_UPDATED: "CATEGORY_UPDATED",
+  CATEGORY_DELETED: "CATEGORY_DELETED",
+  TASK_ADDED: "TASK_ADDED",
+  TASK_UPDATED: "TASK_UPDATED",
+  TASK_DELETED: "TASK_DELETED",
+  TASKS_SYNCED: "TASKS_SYNCED",
+  SCREEN_CHANGE: "SCREEN_CHANGE",
 };
 
 // Funzioni helper per emettere eventi

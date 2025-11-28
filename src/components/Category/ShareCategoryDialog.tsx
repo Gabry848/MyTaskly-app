@@ -15,7 +15,7 @@ import categoryShareService from "../../services/categoryShareService";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { STORAGE_KEYS } from "../../constants/authConstants";
 
-interface ShareCategoryDialogProps {
+export interface ShareCategoryDialogProps {
   visible: boolean;
   categoryId: number;
   categoryName: string;

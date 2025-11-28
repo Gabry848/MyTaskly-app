@@ -14,7 +14,7 @@ import {
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useVoiceChat, VoiceChatState } from '../../hooks/useVoiceChat';
 
-interface VoiceChatModalProps {
+export interface VoiceChatModalProps {
   visible: boolean;
   onClose: () => void;
   isRecording?: boolean;

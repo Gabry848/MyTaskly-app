@@ -1,7 +1,16 @@
-import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, TextInput, PanResponder, Image } from 'react-native';
+import React, { useState, useRef } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Animated,
+  TextInput,
+  PanResponder,
+  Image,
+} from "react-native";
 
-interface Note {
+export interface Note {
   id: string;
   text: string;
   position: {
@@ -12,7 +21,7 @@ interface Note {
   zIndex: number;
 }
 
-interface DraggableNoteProps {
+export interface DraggableNoteProps {
   note: Note;
   onDelete: (id: string) => void;
   onUpdateText: (id: string, text: string) => void;
@@ -29,29 +38,31 @@ const DraggableNote: React.FC<DraggableNoteProps> = ({
   onDelete,
   onUpdateText,
   onUpdatePosition,
-  onBringToFront
+  onBringToFront,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [isDraggable, setIsDraggable] = useState(false);
   // Assicuriamoci che editText sia sempre una stringa valida
   const [editText, setEditText] = useState(() => {
-    return typeof note.text === 'string' ? note.text : '';
+    return typeof note.text === "string" ? note.text : "";
   });
-  
+
   // Aggiorna editText quando note.text cambia, assicurandoci che sia sempre una stringa
   React.useEffect(() => {
     if (!isEditing) {
-      const newText = typeof note.text === 'string' ? note.text : '';
+      const newText = typeof note.text === "string" ? note.text : "";
       setEditText(newText);
     }
   }, [note.text, isEditing]);
-  
+
   // Creiamo un panResponder locale se non ne viene fornito uno
-  const position = useRef(new Animated.ValueXY({
-    x: note.position.x,
-    y: note.position.y
-  })).current;
-    // Se non viene fornito un panResponder, creiamone uno localmente
+  const position = useRef(
+    new Animated.ValueXY({
+      x: note.position.x,
+      y: note.position.y,
+    })
+  ).current;
+  // Se non viene fornito un panResponder, creiamone uno localmente
   const localPanResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
@@ -64,7 +75,7 @@ const DraggableNote: React.FC<DraggableNoteProps> = ({
 
         position.setOffset({
           x: currentX,
-          y: currentY
+          y: currentY,
         });
         position.setValue({ x: 0, y: 0 });
 
@@ -88,7 +99,7 @@ const DraggableNote: React.FC<DraggableNoteProps> = ({
 
           onUpdatePosition(note.id, {
             x: currentX,
-            y: currentY
+            y: currentY,
           });
         }
       },
@@ -100,11 +111,11 @@ const DraggableNote: React.FC<DraggableNoteProps> = ({
   const activePan = pan || position;
   const handleLongPress = () => {
     setIsEditing(true);
-    setEditText(note.text || '');
+    setEditText(note.text || "");
   };
 
   const handleSave = () => {
-    if (editText.trim() !== '') {
+    if (editText.trim() !== "") {
       onUpdateText(note.id, editText);
     }
     setIsEditing(false);
@@ -119,23 +130,27 @@ const DraggableNote: React.FC<DraggableNoteProps> = ({
           backgroundColor: note.color,
           left: note.position.x,
           top: note.position.y,
-          transform: panResponder ?
-            [{ translateX: activePan.x }, { translateY: activePan.y }] :
-            [],
+          transform: panResponder
+            ? [{ translateX: activePan.x }, { translateY: activePan.y }]
+            : [],
           zIndex: note.zIndex,
           elevation: note.zIndex,
           borderWidth: isDraggable ? 4 : 0,
-          borderColor: '#4285F4',
+          borderColor: "#4285F4",
           opacity: isDraggable ? 0.95 : 1,
         },
       ]}
-    >      <TouchableOpacity 
-        style={styles.deleteButton} 
+    >
+      {" "}
+      <TouchableOpacity
+        style={styles.deleteButton}
         onPress={() => onDelete(note.id)}
       >
-        <Image source={require('../src/assets/x.png')} style={styles.deleteIcon} />
+        <Image
+          source={require("../src/assets/x.png")}
+          style={styles.deleteIcon}
+        />
       </TouchableOpacity>
-      
       {isEditing ? (
         <View style={styles.editContainer}>
           <TextInput
@@ -144,15 +159,24 @@ const DraggableNote: React.FC<DraggableNoteProps> = ({
             onChangeText={setEditText}
             multiline
             autoFocus
-          />          <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-            <Image source={require('../src/assets/ceck.png')} style={styles.saveIcon} />
+          />{" "}
+          <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+            <Image
+              source={require("../src/assets/ceck.png")}
+              style={styles.saveIcon}
+            />
           </TouchableOpacity>
-        </View>        ) : (        <TouchableOpacity
+        </View>
+      ) : (
+        <TouchableOpacity
           onLongPress={handleLongPress}
           delayLongPress={300}
-          activeOpacity={0.7}        >
+          activeOpacity={0.7}
+        >
           <Text style={styles.noteText}>
-            {typeof editText === 'string' && editText.trim() !== '' ? editText : 'Testo nota...'}
+            {typeof editText === "string" && editText.trim() !== ""
+              ? editText
+              : "Testo nota..."}
           </Text>
         </TouchableOpacity>
       )}
@@ -162,12 +186,12 @@ const DraggableNote: React.FC<DraggableNoteProps> = ({
 
 const styles = StyleSheet.create({
   note: {
-    position: 'absolute',
+    position: "absolute",
     width: 200,
     minHeight: 120,
     padding: 15,
     borderRadius: 10,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 2,
@@ -179,23 +203,24 @@ const styles = StyleSheet.create({
   },
   noteText: {
     fontSize: 16,
-    color: '#333',
-  },  deleteButton: {
-    position: 'absolute',
+    color: "#333",
+  },
+  deleteButton: {
+    position: "absolute",
     top: 5,
     right: 5,
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(255, 255, 255, 0.7)",
+    justifyContent: "center",
+    alignItems: "center",
     zIndex: 10,
   },
   deleteIcon: {
     width: 14,
     height: 14,
-    tintColor: '#555',
+    tintColor: "#555",
   },
   editContainer: {
     flex: 1,
@@ -205,25 +230,26 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 80,
     fontSize: 16,
-    color: '#333',
-    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    color: "#333",
+    backgroundColor: "rgba(255, 255, 255, 0.5)",
     borderRadius: 6,
     padding: 8,
-  },  saveButton: {
-    position: 'absolute',
+  },
+  saveButton: {
+    position: "absolute",
     bottom: 5,
     right: 5,
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: '#4CAF50',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#4CAF50",
+    justifyContent: "center",
+    alignItems: "center",
   },
   saveIcon: {
     width: 14,
     height: 14,
-    tintColor: '#fff',
+    tintColor: "#fff",
   },
 });
 

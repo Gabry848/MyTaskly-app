@@ -12,7 +12,7 @@ import { AddTaskButton } from './AddTaskButton';
 import { filterTasksByDay } from './TaskUtils';
 import AddTask from '../Task/AddTask';
 
-interface TaskListContainerProps {
+export interface TaskListContainerProps {
   categoryName: string;
   categoryId: string;
   isOwned?: boolean;

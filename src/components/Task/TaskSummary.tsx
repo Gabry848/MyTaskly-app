@@ -2,7 +2,7 @@ import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 
-interface TaskSummaryProps {
+export interface TaskSummaryProps {
   todayTasks: number;
   overdueTasks: number;
   completedThisWeek: number;

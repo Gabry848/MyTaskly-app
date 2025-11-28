@@ -1,13 +1,20 @@
 import React from "react";
-import { RouteProp } from '@react-navigation/native';
-import { RootStackParamList } from '../../types';
+import { RouteProp } from "@react-navigation/native";
+import { RootStackParamList } from "../../types";
 import { TaskListContainer, addTaskToList } from "../../components/TaskList";
 import Task from "../../components/Task/Task";
-import { getTasks, addTask, deleteTask, updateTask, completeTask, disCompleteTask } from "../../services/taskService";
+import {
+  getTasks,
+  addTask,
+  deleteTask,
+  updateTask,
+  completeTask,
+  disCompleteTask,
+} from "../../services/taskService";
 
-type TaskListRouteProp = RouteProp<RootStackParamList, 'TaskList'>;
+export type TaskListRouteProp = RouteProp<RootStackParamList, "TaskList">;
 
-type Props = {
+export type Props = {
   route: TaskListRouteProp;
 };
 
@@ -30,7 +37,7 @@ export function TaskList({ route }: Props) {
         deleteTask,
         updateTask,
         completeTask,
-        disCompleteTask
+        disCompleteTask,
       }}
     />
   );

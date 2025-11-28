@@ -10,7 +10,7 @@ import ManageCategoryShares from './ManageCategoryShares';
 import eventEmitter, { emitCategoryDeleted, emitCategoryUpdated, emitTaskAdded , EVENTS } from '../../utils/eventEmitter';
 
 
-interface CategoryProps {
+export interface CategoryProps {
   title: string;
   description?: string;
   imageUrl?: string;

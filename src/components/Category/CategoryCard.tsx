@@ -12,7 +12,7 @@ type CategoryScreenNavigationProp = StackNavigationProp<
   'TaskList'
 >;
 
-interface CategoryCardProps {
+export interface CategoryCardProps {
   title: string;
   categoryId?: string | number;
   imageUrl?: string;
