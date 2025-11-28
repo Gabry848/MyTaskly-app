@@ -4,13 +4,26 @@ import { MaterialIcons } from "@expo/vector-icons";
 
 interface SearchTasksButtonProps {
   onPress: () => void;
+  style?: any;
 }
 
-const SearchTasksButton: React.FC<SearchTasksButtonProps> = ({ onPress }) => {
+const SearchTasksButton: React.FC<SearchTasksButtonProps> = ({
+  onPress,
+  style,
+}) => {
   return (
-    <TouchableOpacity style={styles.container} onPress={onPress} activeOpacity={0.7}>
+    <TouchableOpacity
+      style={[styles.container, style]}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
       <View style={styles.content}>
-        <MaterialIcons name="search" size={20} color="#666666" style={styles.icon} />
+        <MaterialIcons
+          name="search"
+          size={20}
+          color="#666666"
+          style={styles.icon}
+        />
         <Text style={styles.text}>Cerca tra tutti i task</Text>
         <MaterialIcons name="arrow-forward-ios" size={16} color="#cccccc" />
       </View>

@@ -31,17 +31,20 @@ export interface CategoryType {
 
 const CategoryList = forwardRef((props, ref) => {
   const [refreshKey, setRefreshKey] = useState(0);
-  const categoryViewRef = React.useRef<{ fetchCategories: (forceRefresh?: boolean) => void } | null>(null);
+  const categoryViewRef = React.useRef<{
+    fetchCategories: (forceRefresh?: boolean, silent?: boolean) => void;
+    hardReload: () => void;
+  } | null>(null);
 
   // Forza l'aggiornamento del componente e ricarica dal server
   const refreshComponent = () => {
-    setRefreshKey(prevKey => prevKey + 1);
+    setRefreshKey((prevKey) => prevKey + 1);
     // Se abbiamo il ref di CategoryView, chiamiamo il fetch
     if (categoryViewRef.current && categoryViewRef.current.fetchCategories) {
       categoryViewRef.current.fetchCategories();
     }
   };
-  
+
   // Configura i listener per gli eventi globali
   useEffect(() => {
     // Aggiungi listener per gli eventi delle categorie
@@ -52,7 +55,7 @@ const CategoryList = forwardRef((props, ref) => {
         categoryViewRef.current.fetchCategories(true);
       }
     };
-    
+
     const categoryUpdatedListener = () => {
       console.log("Evento CATEGORY_UPDATED ricevuto, aggiornamento vista");
       // Forza il ricaricamento delle categorie dal server per mostrare i cambiamenti
@@ -60,37 +63,63 @@ const CategoryList = forwardRef((props, ref) => {
         categoryViewRef.current.fetchCategories(true);
       }
     };
-    
+
     const categoryDeletedListener = () => {
       console.log("Evento CATEGORY_DELETED ricevuto, aggiornamento vista");
       refreshComponent();
     };
 
     // Aggiungi i listener all'EventEmitter
-    globalEventEmitter.addListener(EVENTS.CATEGORY_ADDED, categoryAddedListener);
-    globalEventEmitter.addListener(EVENTS.CATEGORY_UPDATED, categoryUpdatedListener);
-    globalEventEmitter.addListener(EVENTS.CATEGORY_DELETED, categoryDeletedListener);
-    
+    globalEventEmitter.addListener(
+      EVENTS.CATEGORY_ADDED,
+      categoryAddedListener
+    );
+    globalEventEmitter.addListener(
+      EVENTS.CATEGORY_UPDATED,
+      categoryUpdatedListener
+    );
+    globalEventEmitter.addListener(
+      EVENTS.CATEGORY_DELETED,
+      categoryDeletedListener
+    );
+
     // Rimuovi i listener quando il componente viene smontato
     return () => {
-      globalEventEmitter.removeListener(EVENTS.CATEGORY_ADDED, categoryAddedListener);
-      globalEventEmitter.removeListener(EVENTS.CATEGORY_UPDATED, categoryUpdatedListener);
-      globalEventEmitter.removeListener(EVENTS.CATEGORY_DELETED, categoryDeletedListener);
+      globalEventEmitter.removeListener(
+        EVENTS.CATEGORY_ADDED,
+        categoryAddedListener
+      );
+      globalEventEmitter.removeListener(
+        EVENTS.CATEGORY_UPDATED,
+        categoryUpdatedListener
+      );
+      globalEventEmitter.removeListener(
+        EVENTS.CATEGORY_DELETED,
+        categoryDeletedListener
+      );
     };
   }, []);
 
   // Funzione per ricaricare le categorie (esposta tramite ref)
-  const reloadCategories = () => {
-    console.log("Ricarico le categorie");
+  const reloadCategories = (silent: boolean = false) => {
+    console.log("Ricarico le categorie", silent ? "(silent)" : "");
     // Chiama direttamente fetchCategories invece di refreshComponent
     if (categoryViewRef.current && categoryViewRef.current.fetchCategories) {
-      categoryViewRef.current.fetchCategories();
+      categoryViewRef.current.fetchCategories(false, silent);
+    }
+  };
+
+  const hardReload = () => {
+    console.log("Hard reload categorie");
+    if (categoryViewRef.current && categoryViewRef.current.hardReload) {
+      categoryViewRef.current.hardReload();
     }
   };
 
   // Esponi la funzione reloadCategories tramite ref
   useImperativeHandle(ref, () => ({
-    reloadCategories
+    reloadCategories,
+    hardReload,
   }));
   // Il gestore dell'aggiunta della categoria
   const handleCategoryAdded = (newCategory: CategoryType) => {
@@ -126,7 +155,7 @@ const CategoryList = forwardRef((props, ref) => {
   );
 });
 
-CategoryList.displayName = 'CategoryList';
+CategoryList.displayName = "CategoryList";
 
 const styles = StyleSheet.create({
   container: {

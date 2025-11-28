@@ -1,11 +1,27 @@
-import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialIcons';
-import { useNavigation, NavigationProp , useFocusEffect } from '@react-navigation/native';
-import { RootStackParamList } from '../../types';
+import React, {
+  useState,
+  useEffect,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  Dimensions,
+} from "react-native";
+import Icon from "react-native-vector-icons/MaterialIcons";
+import {
+  useNavigation,
+  NavigationProp,
+  useFocusEffect,
+} from "@react-navigation/native";
+import { RootStackParamList } from "../../types";
 
-import { getCategories } from '../../services/taskService';
-import Category from './Category';
+import { getCategories } from "../../services/taskService";
+import Category from "./Category";
 
 interface CategoryType {
   id: string | number;
@@ -30,157 +46,157 @@ interface CategoryViewProps {
 }
 
 interface CategoryViewRef {
-  fetchCategories: (forceRefresh?: boolean) => void;
+  fetchCategories: (forceRefresh?: boolean, silent?: boolean) => void;
+  hardReload: () => void;
 }
 
-const CategoryView = forwardRef<CategoryViewRef, CategoryViewProps>(({
-  onCategoryAdded,
-  onCategoryDeleted,
-  onCategoryEdited,
-  reloadCategories
-}, ref) => {
-  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
-  const [categories, setCategories] = useState<CategoryType[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [isReloading, setIsReloading] = useState<boolean>(false);
-  const previousCategoriesRef = React.useRef<CategoryType[]>([]);
+const CategoryView = forwardRef<CategoryViewRef, CategoryViewProps>(
+  (
+    { onCategoryAdded, onCategoryDeleted, onCategoryEdited, reloadCategories },
+    ref
+  ) => {
+    const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+    const [categories, setCategories] = useState<CategoryType[]>([]);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [isReloading, setIsReloading] = useState<boolean>(false);
+    const previousCategoriesRef = React.useRef<CategoryType[]>([]);
 
-  const categoriesAreEqual = (cat1: CategoryType[], cat2: CategoryType[]): boolean => {
-    if (cat1.length !== cat2.length) return false;
+    const categoriesAreEqual = (
+      cat1: CategoryType[],
+      cat2: CategoryType[]
+    ): boolean => {
+      if (cat1.length !== cat2.length) return false;
 
-    return cat1.every(c1 =>
-      cat2.some(c2 =>
-        c1.id === c2.id &&
-        c1.name === c2.name &&
-        c1.description === c2.description &&
-        c1.category_id === c2.category_id
-      )
-    );
-  };
+      return cat1.every((c1) =>
+        cat2.some(
+          (c2) =>
+            c1.id === c2.id &&
+            c1.name === c2.name &&
+            c1.description === c2.description &&
+            c1.category_id === c2.category_id
+        )
+      );
+    };
 
-  const fetchCategories = async (forceRefresh: boolean = false) => {
-    try {
-      const categoriesData = await getCategories(!forceRefresh);
-      if (Array.isArray(categoriesData)) {
-        setCategories(categoriesData);
-      } else {
-        console.error("getCategories non ha restituito un array:", categoriesData);
+    const fetchCategories = async (
+      forceRefresh: boolean = false,
+      silent: boolean = false
+    ) => {
+      if (!silent) {
+        setLoading(true);
       }
-    } catch (error) {
-      console.error("Errore nel recupero delle categorie:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const reloadCategoriesAsync = async () => {
-    setIsReloading(true);
-    setCategories([]); // Nasconde tutte le categorie
-    try {
-      const categoriesData = await getCategories(false); // Force refresh
-      if (Array.isArray(categoriesData)) {
-        // Confronta le categorie con le precedenti
-        if (!categoriesAreEqual(categoriesData, previousCategoriesRef.current)) {
+      try {
+        const categoriesData = await getCategories(!forceRefresh);
+        if (Array.isArray(categoriesData)) {
           setCategories(categoriesData);
-          previousCategoriesRef.current = categoriesData;
-          console.log("Categorie aggiornate - differenze rilevate");
         } else {
-          // Se non ci sono differenze, mostra comunque le categorie
-          setCategories(categoriesData);
-          console.log("Categorie ricaricate - nessuna differenza");
+          console.error(
+            "getCategories non ha restituito un array:",
+            categoriesData
+          );
         }
-      } else {
-        console.error("getCategories non ha restituito un array:", categoriesData);
+      } catch (error) {
+        console.error("Errore nel recupero delle categorie:", error);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("Errore nel ricaricamento delle categorie:", error);
-      // Ripristina le categorie precedenti in caso di errore
-      setCategories(previousCategoriesRef.current);
-    } finally {
-      setIsReloading(false);
-    }
-  };
+    };
 
-  useFocusEffect(
-    React.useCallback(() => {
-      // Al focus, ricarica le categorie in modo asincrono
-      reloadCategoriesAsync();
-    }, [])
-  );
+    const hardReload = async () => {
+      setIsReloading(true);
+      setCategories([]); // Nasconde tutte le categorie
+      try {
+        const categoriesData = await getCategories(false); // Force refresh
+        if (Array.isArray(categoriesData)) {
+          // Confronta le categorie con le precedenti
+          if (
+            !categoriesAreEqual(categoriesData, previousCategoriesRef.current)
+          ) {
+            setCategories(categoriesData);
+            previousCategoriesRef.current = categoriesData;
+            console.log("Categorie aggiornate - differenze rilevate");
+          } else {
+            // Se non ci sono differenze, mostra comunque le categorie
+            setCategories(categoriesData);
+            console.log("Categorie ricaricate - nessuna differenza");
+          }
+        } else {
+          console.error(
+            "getCategories non ha restituito un array:",
+            categoriesData
+          );
+        }
+      } catch (error) {
+        console.error("Errore nel ricaricamento delle categorie:", error);
+        // Ripristina le categorie precedenti in caso di errore
+        setCategories(previousCategoriesRef.current);
+      } finally {
+        setIsReloading(false);
+      }
+    };
 
-  useEffect(() => {
-    fetchCategories();
-  }, []);
+    useEffect(() => {
+      fetchCategories();
+    }, []);
 
-  // Esponi fetchCategories tramite ref
-  useImperativeHandle(ref, () => ({
-    fetchCategories
-  }));
+    // Esponi fetchCategories e hardReload tramite ref
+    useImperativeHandle(ref, () => ({
+      fetchCategories,
+      hardReload,
+    }));
 
-  return (
-    <ScrollView style={styles.container}>
-      {/* Header container con pulsante ricarica */}
-      <View style={styles.headerContainer}>
-        <TouchableOpacity
-          style={styles.refreshButton}
-          onPress={() => reloadCategoriesAsync()}
-          disabled={isReloading}
-        >
-          <Icon
-            name="refresh"
-            size={24}
-            color={isReloading ? "#cccccc" : "#000000"}
-          />
-        </TouchableOpacity>
-      </View>
-      {/* Mostra le categorie solo se non stiamo ricaricando */}
-      {!isReloading && categories && categories.length > 0
-        ? categories.map((category, index) => (
-            <Category
-              key={`${category.id || category.name}-${index}`}
-              title={category.name}
-              description={category.description}
-              imageUrl={category.imageUrl}
-              categoryId={category.category_id || category.id}
-              isShared={category.is_shared}
-              isOwned={category.is_owned}
-              ownerName={category.owner_name}
-              permissionLevel={category.permission_level}
-              onDelete={onCategoryDeleted}
-              onEdit={onCategoryEdited}
-            />
-          ))
-        : !loading && !isReloading && (
-            <View style={styles.noCategoriesContainer}>
-              <Text style={styles.noCategoriesMessage}>
-                Aggiungi la tua prima categoria per iniziare!{"\n"}
-              </Text>
-              <Text
-                style={[
-                  styles.noCategoriesMessage,
-                  { padding: 5, fontSize: 16, color: "black" },
-                ]}
-              >
-                oppure{"\n"}
-              </Text>
-              <TouchableOpacity
-                style={[styles.reloadButton, styles.goToLoginButton]}
-                onPress={() => {
-                  navigation.navigate("Login");
-                }}
-              >
-                <Text style={[styles.reloadButtonText]}>Vai al login</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-      {(loading || isReloading) && (
-        <View style={styles.loadingSpinner}>
-          <View style={styles.spinner}></View>
-        </View>
-      )}
-    </ScrollView>
-  );
-});
+    return (
+      <ScrollView style={styles.container}>
+        {/* Mostra le categorie solo se non stiamo ricaricando */}
+        {!isReloading && categories && categories.length > 0
+          ? categories.map((category, index) => (
+              <Category
+                key={`${category.id || category.name}-${index}`}
+                title={category.name}
+                description={category.description}
+                imageUrl={category.imageUrl}
+                categoryId={category.category_id || category.id}
+                isShared={category.is_shared}
+                isOwned={category.is_owned}
+                ownerName={category.owner_name}
+                permissionLevel={category.permission_level}
+                onDelete={onCategoryDeleted}
+                onEdit={onCategoryEdited}
+              />
+            ))
+          : !loading &&
+            !isReloading && (
+              <View style={styles.noCategoriesContainer}>
+                <Text style={styles.noCategoriesMessage}>
+                  Aggiungi la tua prima categoria per iniziare!{"\n"}
+                </Text>
+                <Text
+                  style={[
+                    styles.noCategoriesMessage,
+                    { padding: 5, fontSize: 16, color: "black" },
+                  ]}
+                >
+                  oppure{"\n"}
+                </Text>
+                <TouchableOpacity
+                  style={[styles.reloadButton, styles.goToLoginButton]}
+                  onPress={() => {
+                    navigation.navigate("Login");
+                  }}
+                >
+                  <Text style={[styles.reloadButtonText]}>Vai al login</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+        {(loading || isReloading) && (
+          <View style={styles.loadingSpinner}>
+            <View style={styles.spinner}></View>
+          </View>
+        )}
+      </ScrollView>
+    );
+  }
+);
 
 const styles = StyleSheet.create({
   container: {
@@ -281,6 +297,6 @@ const styles = StyleSheet.create({
   },
 });
 
-CategoryView.displayName = 'CategoryView';
+CategoryView.displayName = "CategoryView";
 
 export default CategoryView;
