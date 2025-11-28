@@ -6,6 +6,56 @@ import * as FileSystem from 'expo-file-system';
  * Include registrazione, conversione base64, e riproduzione
  */
 
+/**
+ * Converte una stringa base64 in Uint8Array
+ * Implementazione nativa per React Native (no atob/btoa)
+ */
+function decodeBase64(base64: string): Uint8Array {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+  const bytes: number[] = [];
+  let i = 0;
+
+  while (i < base64.length) {
+    const a = chars.indexOf(base64[i++]);
+    const b = chars.indexOf(base64[i++]);
+    const c = chars.indexOf(base64[i++]);
+    const d = chars.indexOf(base64[i++]);
+
+    const bitmap = (a << 18) | (b << 12) | (c << 6) | d;
+
+    bytes.push((bitmap >> 16) & 0xff);
+    if (c !== 64) bytes.push((bitmap >> 8) & 0xff);
+    if (d !== 64) bytes.push(bitmap & 0xff);
+  }
+
+  return new Uint8Array(bytes);
+}
+
+/**
+ * Converte Uint8Array in stringa base64
+ * Implementazione nativa per React Native (no atob/btoa)
+ */
+function encodeBase64(bytes: Uint8Array): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+  let result = '';
+  let i = 0;
+
+  while (i < bytes.length) {
+    const a = bytes[i++];
+    const b = i < bytes.length ? bytes[i++] : 0;
+    const c = i < bytes.length ? bytes[i++] : 0;
+
+    const bitmap = (a << 16) | (b << 8) | c;
+
+    result += chars.charAt((bitmap >> 18) & 0x3f);
+    result += chars.charAt((bitmap >> 12) & 0x3f);
+    result += i - 2 < bytes.length ? chars.charAt((bitmap >> 6) & 0x3f) : '=';
+    result += i - 1 < bytes.length ? chars.charAt(bitmap & 0x3f) : '=';
+  }
+
+  return result;
+}
+
 // Configurazioni audio
 export const AUDIO_CONFIG = {
   SAMPLE_RATE: 16000,
@@ -256,7 +306,7 @@ export class AudioRecorder {
       const fullBase64 = await FileSystem.readAsStringAsync(audioUri, {
         encoding: FileSystem.EncodingType.Base64,
       });
-      
+
       // Prendiamo solo i primi ~16 caratteri base64 (corrispondenti a ~12 bytes)
       const headerBase64 = fullBase64.substring(0, 16);
       const headerBytes = this.base64ToBytes(headerBase64);
@@ -272,12 +322,7 @@ export class AudioRecorder {
    */
   private base64ToBytes(base64: string): Uint8Array {
     try {
-      const binaryString = atob(base64);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-      return bytes;
+      return decodeBase64(base64);
     } catch (error) {
       console.error('Errore conversione base64 to bytes:', error);
       return new Uint8Array(0);
@@ -417,12 +462,7 @@ export class AudioPlayer {
    */
   private base64ToBytes(base64: string): Uint8Array {
     try {
-      const binaryString = atob(base64);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-      return bytes;
+      return decodeBase64(base64);
     } catch (error) {
       console.error('Errore conversione base64 to bytes:', error);
       return new Uint8Array(0);
@@ -434,11 +474,7 @@ export class AudioPlayer {
    */
   private bytesToBase64(bytes: Uint8Array): string {
     try {
-      let binary = '';
-      for (let i = 0; i < bytes.byteLength; i++) {
-        binary += String.fromCharCode(bytes[i]);
-      }
-      return btoa(binary);
+      return encodeBase64(bytes);
     } catch (error) {
       console.error('Errore conversione bytes to base64:', error);
       return '';
@@ -735,22 +771,14 @@ export class AudioPlayer {
  */
 export function arrayBufferToBase64(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);
-  let binary = '';
-  for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return btoa(binary);
+  return encodeBase64(bytes);
 }
 
 /**
  * Utility per convertire base64 in ArrayBuffer
  */
 export function base64ToArrayBuffer(base64: string): ArrayBuffer {
-  const binaryString = atob(base64);
-  const bytes = new Uint8Array(binaryString.length);
-  for (let i = 0; i < binaryString.length; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
+  const bytes = decodeBase64(base64);
   return bytes.buffer;
 }
 
