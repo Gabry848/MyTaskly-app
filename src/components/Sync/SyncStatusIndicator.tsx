@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import SyncManager, { SyncStatus } from '../../services/SyncManager';
 
-interface SyncStatusIndicatorProps {
+export interface SyncStatusIndicatorProps {
   compact?: boolean;
   showWhenOnline?: boolean;
 }

@@ -2,7 +2,7 @@ import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Modal } from "react-native";
 import { MaterialIcons } from '@expo/vector-icons';
 
-interface CategoryMenuProps {
+export interface CategoryMenuProps {
   visible: boolean;
   onClose: () => void;
   onEdit: () => void;

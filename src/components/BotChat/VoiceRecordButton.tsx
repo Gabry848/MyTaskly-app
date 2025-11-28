@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { StyleSheet, TouchableOpacity, View, Text, Animated } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 
-interface VoiceRecordButtonProps {
+export interface VoiceRecordButtonProps {
   isRecording: boolean;
   recordingDuration: number;
   onStartRecording: () => void;

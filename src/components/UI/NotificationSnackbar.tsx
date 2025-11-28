@@ -9,7 +9,7 @@ import Animated, {
 
 const { width } = Dimensions.get("window");
 
-interface NotificationSnackbarProps {
+export interface NotificationSnackbarProps {
   isVisible: boolean;
   message: string;
   isSuccess?: boolean;

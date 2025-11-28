@@ -4,7 +4,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { ChatInputProps } from './types';
 import VoiceRecordButton from './VoiceRecordButton';
 
-interface ExtendedChatInputProps extends ChatInputProps {
+export interface ExtendedChatInputProps extends ChatInputProps {
   modelType?: 'base' | 'advanced';
 }
 

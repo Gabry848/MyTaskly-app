@@ -1,14 +1,14 @@
-import React, { createContext, useContext, ReactNode } from 'react';
-import { useNotes, NotesState, NotesActions } from '../hooks/useNotes';
+import React, { createContext, useContext, ReactNode } from "react";
+import { useNotes, NotesState, NotesActions } from "../hooks/useNotes";
 
-interface NotesContextValue {
+export interface NotesContextValue {
   state: NotesState;
   actions: NotesActions;
 }
 
 const NotesContext = createContext<NotesContextValue | undefined>(undefined);
 
-interface NotesProviderProps {
+export interface NotesProviderProps {
   children: ReactNode;
   autoRefreshOnFocus?: boolean;
 }
@@ -25,16 +25,16 @@ export const NotesProvider: React.FC<NotesProviderProps> = ({
   };
 
   return (
-    <NotesContext.Provider value={value}>
-      {children}
-    </NotesContext.Provider>
+    <NotesContext.Provider value={value}>{children}</NotesContext.Provider>
   );
 };
 
 export const useNotesContext = (): NotesContextValue => {
   const context = useContext(NotesContext);
   if (!context) {
-    throw new Error('useNotesContext deve essere usato all\'interno di un NotesProvider');
+    throw new Error(
+      "useNotesContext deve essere usato all'interno di un NotesProvider"
+    );
   }
   return context;
 };

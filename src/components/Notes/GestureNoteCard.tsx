@@ -12,7 +12,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Note as NoteInterface } from '../../services/noteService';
 
-interface GestureNoteCardProps {
+export interface GestureNoteCardProps {
   note: NoteInterface;
   onUpdatePosition: (id: string, position: { x: number; y: number }) => void;
   onDelete: (id: string) => void;

@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Modal, TextInput } from "react-native";
 
-interface EditCategoryModalProps {
+export interface EditCategoryModalProps {
   visible: boolean;
   onClose: () => void;
   onSave: () => void;

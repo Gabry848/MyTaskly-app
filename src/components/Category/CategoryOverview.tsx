@@ -5,14 +5,14 @@ import { useNavigation, NavigationProp, CompositeNavigationProp } from "@react-n
 import { RootStackParamList, TabParamList } from "../../types";
 import { getTasks, Task } from "../../services/taskService";
 
-interface CategoryProps {
+export interface CategoryProps {
   id: number | string;
   name: string;
   taskCount: number;
   color?: string;
 }
 
-interface CategoryOverviewProps {
+export interface CategoryOverviewProps {
   categories: CategoryProps[];
   onCategoryPress: (categoryId: number | string) => void;
 }

@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
-import { checkAndRefreshAuth, check_login } from '../services/authService';
+import { useState, useEffect } from "react";
+import { checkAndRefreshAuth, check_login } from "../services/authService";
 
-interface AuthState {
+export interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   checkAuth: () => Promise<void>;
@@ -9,7 +9,7 @@ interface AuthState {
 
 /**
  * Hook personalizzato per gestire l'autenticazione con refresh automatico del token
- * 
+ *
  * @returns {AuthState} Oggetto contenente lo stato di autenticazione e funzioni di utilità
  */
 export const useAuth = (): AuthState => {
@@ -21,7 +21,7 @@ export const useAuth = (): AuthState => {
     try {
       const authResult = await checkAndRefreshAuth();
       setIsAuthenticated(authResult.isAuthenticated);
-      
+
       if (!authResult.isAuthenticated && authResult.needsLogin) {
         console.log("Utente non autenticato:", authResult.message);
       }
@@ -47,7 +47,7 @@ export const useAuth = (): AuthState => {
 /**
  * Hook che controlla solo lo stato di autenticazione senza refresh automatico
  * Utile per controlli veloci senza modificare lo stato dei token
- * 
+ *
  * @returns {Object} Oggetto contenente lo stato di autenticazione dettagliato
  */
 export const useAuthStatus = () => {

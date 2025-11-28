@@ -8,7 +8,7 @@ import { CompletionScreen } from './CompletionScreen';
 import { TutorialOverlay } from './TutorialOverlay';
 import { RootStackParamList, TabParamList } from '../../navigation';
 
-interface TutorialManagerProps {
+export interface TutorialManagerProps {
   navigation: NavigationProp<RootStackParamList> | NavigationProp<TabParamList>;
   onComplete?: () => void;
   autoStart?: boolean;

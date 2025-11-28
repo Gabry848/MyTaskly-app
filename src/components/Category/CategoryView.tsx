@@ -23,7 +23,7 @@ import { RootStackParamList } from "../../types";
 import { getCategories } from "../../services/taskService";
 import Category from "./Category";
 
-interface CategoryType {
+export interface CategoryType {
   id: string | number;
   name: string;
   description?: string;
@@ -38,14 +38,14 @@ interface CategoryType {
   permission_level?: "READ_ONLY" | "READ_WRITE";
 }
 
-interface CategoryViewProps {
+export interface CategoryViewProps {
   onCategoryAdded: (category: CategoryType) => void;
   onCategoryDeleted: () => void;
   onCategoryEdited: () => void;
   reloadCategories: () => void;
 }
 
-interface CategoryViewRef {
+export interface CategoryViewRef {
   fetchCategories: (forceRefresh?: boolean, silent?: boolean) => void;
   hardReload: () => void;
 }

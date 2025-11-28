@@ -36,7 +36,7 @@ const COLORS = [
   '#F3E5F5', // Violetto chiaro
 ];
 
-interface StickyNoteProps {
+export interface StickyNoteProps {
   note: Note;
   canvasScale: SharedValue<number>;
 }

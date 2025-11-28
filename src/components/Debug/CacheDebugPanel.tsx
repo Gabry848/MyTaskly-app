@@ -16,7 +16,7 @@ import SyncManager from '../../services/SyncManager';
 import { TaskCacheService } from '../../services/TaskCacheService';
 import StorageManager from '../../services/StorageManager';
 
-interface CacheDebugPanelProps {
+export interface CacheDebugPanelProps {
   visible: boolean;
   onClose: () => void;
 }

@@ -2,7 +2,7 @@ import React from "react";
 import { TouchableOpacity, StyleSheet, Animated } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 
-interface QuickAddButtonProps {
+export interface QuickAddButtonProps {
   onPress: () => void;
 }
 

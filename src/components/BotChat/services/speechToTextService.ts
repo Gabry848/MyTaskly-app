@@ -3,15 +3,15 @@ export interface SpeechToTextService {
   transcribeAudio: (audioUri: string) => Promise<string>;
 }
 
-class MockSpeechToTextService implements SpeechToTextService {
+export class MockSpeechToTextService implements SpeechToTextService {
   async transcribeAudio(audioUri: string): Promise<string> {
-    // Questo è un mock - in un'implementazione reale, dovresti inviare 
+    // Questo è un mock - in un'implementazione reale, dovresti inviare
     // l'audio a un servizio di trascrizione come Google Speech-to-Text,
     // Azure Speech, AWS Transcribe, o OpenAI Whisper
-    
+
     // Simula una delay per la trascrizione
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
     // Per ora restituiamo un messaggio placeholder
     return "Messaggio vocale trascritto (implementazione placeholder)";
   }

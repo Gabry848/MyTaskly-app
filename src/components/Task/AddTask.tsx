@@ -9,8 +9,8 @@ import {
   Alert,
   ScrollView,
 } from "react-native";
-import { Picker } from '@react-native-picker/picker';
-import DateTimePickerModal from 'react-native-modal-datetime-picker';
+import { Picker } from "@react-native-picker/picker";
+import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { Ionicons } from "@expo/vector-icons";
 import Animated, {
   useSharedValue,
@@ -18,10 +18,10 @@ import Animated, {
   withSpring,
 } from "react-native-reanimated";
 import { addTaskToList } from "../TaskList/types";
-import { getCategories } from '../../services/taskService';
+import { getCategories } from "../../services/taskService";
 import dayjs from "dayjs";
 
-type AddTaskProps = {
+export type AddTaskProps = {
   visible: boolean;
   onClose: () => void;
   onSave?: (
@@ -36,16 +36,20 @@ type AddTaskProps = {
   allowCategorySelection?: boolean; // Abilita campo categoria
 };
 
-const AddTask: React.FC<AddTaskProps> = ({ 
-  visible, 
-  onClose, 
-  onSave, 
+const AddTask: React.FC<AddTaskProps> = ({
+  visible,
+  onClose,
+  onSave,
   categoryName,
   initialDate,
   allowCategorySelection = false,
 }) => {
-  const [categoriesOptions, setCategoriesOptions] = useState<{label:string,value:string}[]>([]);
-  const [localCategory, setLocalCategory] = useState<string>(categoryName || "");
+  const [categoriesOptions, setCategoriesOptions] = useState<
+    { label: string; value: string }[]
+  >([]);
+  const [localCategory, setLocalCategory] = useState<string>(
+    categoryName || ""
+  );
   const [categoryError, setCategoryError] = useState<string>("");
   const animationValue = useSharedValue(0);
   const [priority, setPriority] = useState<number>(1);
@@ -57,13 +61,13 @@ const AddTask: React.FC<AddTaskProps> = ({
   const [dateError, setDateError] = useState<string>("");
   const [date, setDate] = useState(new Date());
   const [isPickerVisible, setPickerVisible] = useState(false);
-  const [pickerMode, setPickerMode] = useState<'date'|'time'>('date');
+  const [pickerMode, setPickerMode] = useState<"date" | "time">("date");
 
   // Gestisce l'animazione all'apertura del modale
   useEffect(() => {
     if (visible) {
       animationValue.value = withSpring(1, { damping: 12 });
-      
+
       // Se initialDate è fornito, imposta la data iniziale
       if (initialDate) {
         initializeWithDate(initialDate);
@@ -77,17 +81,23 @@ const AddTask: React.FC<AddTaskProps> = ({
   useEffect(() => {
     if (allowCategorySelection && visible) {
       getCategories()
-        .then(data => {
+        .then((data) => {
           // assume data è array di oggetti con proprietà name
-          setCategoriesOptions(data.map(cat => ({ label: cat.name, value: cat.name })));
+          setCategoriesOptions(
+            data.map((cat) => ({ label: cat.name, value: cat.name }))
+          );
         })
-        .catch(err => console.error('Errore caricamento categorie:', err));
+        .catch((err) => console.error("Errore caricamento categorie:", err));
     }
   }, [allowCategorySelection, visible]);
 
   // Inizializza la data del task con quella fornita
   const initializeWithDate = (dateStr: string) => {
-    const initialDateTime = dayjs(dateStr).hour(12).minute(0).second(0).toDate();
+    const initialDateTime = dayjs(dateStr)
+      .hour(12)
+      .minute(0)
+      .second(0)
+      .toDate();
     setSelectedDateTime(initialDateTime);
     setDueDate(initialDateTime.toISOString());
     setDate(initialDateTime);
@@ -131,7 +141,8 @@ const AddTask: React.FC<AddTaskProps> = ({
       return;
     }
 
-    const priorityString = priority === 1 ? "Bassa" : priority === 2 ? "Media" : "Alta";
+    const priorityString =
+      priority === 1 ? "Bassa" : priority === 2 ? "Media" : "Alta";
 
     const taskObject = {
       id: Date.now(),
@@ -141,18 +152,29 @@ const AddTask: React.FC<AddTaskProps> = ({
       start_time: new Date().toISOString(),
       priority: priorityString,
       status: "In sospeso", // Aggiornato per coerenza con altri componenti
-      category_name: allowCategorySelection ? localCategory : (categoryName || ""), // Aggiungere il nome della categoria
+      category_name: allowCategorySelection
+        ? localCategory
+        : categoryName || "", // Aggiungere il nome della categoria
       user: "", // Campo richiesto dal server
-      completed: false
+      completed: false,
     };
 
     try {
       if (onSave) {
         // Se c'è onSave, usa quello (TaskListContainer gestirà la chiamata al server)
-        onSave(title, description, dueDate, priority, allowCategorySelection ? localCategory : categoryName);
+        onSave(
+          title,
+          description,
+          dueDate,
+          priority,
+          allowCategorySelection ? localCategory : categoryName
+        );
       } else if (categoryName) {
         // Solo se non c'è onSave, usa addTaskToList per compatibilità
-        console.log("Direct call to addTaskToList from AddTask with category:", categoryName);
+        console.log(
+          "Direct call to addTaskToList from AddTask with category:",
+          categoryName
+        );
         addTaskToList(taskObject, categoryName);
       }
     } catch (error) {
@@ -170,7 +192,10 @@ const AddTask: React.FC<AddTaskProps> = ({
 
     if (selectedDateTime) {
       const newDateTime = new Date(currentDate);
-      newDateTime.setHours(selectedDateTime.getHours(), selectedDateTime.getMinutes());
+      newDateTime.setHours(
+        selectedDateTime.getHours(),
+        selectedDateTime.getMinutes()
+      );
       setSelectedDateTime(newDateTime);
       setDueDate(newDateTime.toISOString());
     } else {
@@ -196,8 +221,14 @@ const AddTask: React.FC<AddTaskProps> = ({
   };
 
   const hidePicker = () => setPickerVisible(false);
-  const showDatepicker = () => { setPickerMode('date'); setPickerVisible(true); };
-  const showTimepicker = () => { setPickerMode('time'); setPickerVisible(true); };
+  const showDatepicker = () => {
+    setPickerMode("date");
+    setPickerVisible(true);
+  };
+  const showTimepicker = () => {
+    setPickerMode("time");
+    setPickerVisible(true);
+  };
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: animationValue.value }],
@@ -219,7 +250,12 @@ const AddTask: React.FC<AddTaskProps> = ({
             {allowCategorySelection && (
               <>
                 <Text style={styles.inputLabel}>Categoria *</Text>
-                <View style={[styles.dropdown, categoryError ? styles.inputError : null]}>
+                <View
+                  style={[
+                    styles.dropdown,
+                    categoryError ? styles.inputError : null,
+                  ]}
+                >
                   <Picker
                     selectedValue={localCategory}
                     onValueChange={(itemValue) => {
@@ -230,11 +266,17 @@ const AddTask: React.FC<AddTaskProps> = ({
                   >
                     <Picker.Item label="Seleziona categoria" value="" />
                     {categoriesOptions.map((option, index) => (
-                      <Picker.Item key={index} label={option.label} value={option.value} />
+                      <Picker.Item
+                        key={index}
+                        label={option.label}
+                        value={option.value}
+                      />
                     ))}
                   </Picker>
                 </View>
-                {categoryError ? <Text style={styles.errorText}>{categoryError}</Text> : null}
+                {categoryError ? (
+                  <Text style={styles.errorText}>{categoryError}</Text>
+                ) : null}
               </>
             )}
             <Text style={styles.inputLabel}>Titolo *</Text>
@@ -247,7 +289,9 @@ const AddTask: React.FC<AddTaskProps> = ({
                 if (text.trim()) setTitleError("");
               }}
             />
-            {titleError ? <Text style={styles.errorText}>{titleError}</Text> : null}
+            {titleError ? (
+              <Text style={styles.errorText}>{titleError}</Text>
+            ) : null}
 
             <Text style={styles.inputLabel}>Descrizione</Text>
             <TextInput
@@ -259,31 +303,49 @@ const AddTask: React.FC<AddTaskProps> = ({
               value={description}
               onChangeText={setDescription}
             />
-            
-            <Text style={styles.inputLabel}>Data e ora di scadenza (opzionale)</Text>
+
+            <Text style={styles.inputLabel}>
+              Data e ora di scadenza (opzionale)
+            </Text>
             <View style={styles.dateTimeContainer}>
               <TouchableOpacity
                 style={[styles.datePickerButton, styles.dateButton]}
                 onPress={showDatepicker}
               >
                 <Text style={styles.datePickerText}>
-                  {selectedDateTime ? selectedDateTime.toLocaleDateString('it-IT') : 'Nessuna scadenza'}
+                  {selectedDateTime
+                    ? selectedDateTime.toLocaleDateString("it-IT")
+                    : "Nessuna scadenza"}
                 </Text>
                 <Ionicons name="calendar-outline" size={20} color="#666" />
               </TouchableOpacity>
-              
+
               <TouchableOpacity
                 style={[styles.datePickerButton, styles.timeButton]}
                 onPress={showTimepicker}
                 disabled={!selectedDateTime}
               >
-                <Text style={[styles.datePickerText, !selectedDateTime && styles.disabledText]}>
-                  {selectedDateTime ? selectedDateTime.toLocaleTimeString('it-IT', {hour: '2-digit', minute:'2-digit'}) : 'Seleziona ora'}
+                <Text
+                  style={[
+                    styles.datePickerText,
+                    !selectedDateTime && styles.disabledText,
+                  ]}
+                >
+                  {selectedDateTime
+                    ? selectedDateTime.toLocaleTimeString("it-IT", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
+                    : "Seleziona ora"}
                 </Text>
-                <Ionicons name="time-outline" size={20} color={selectedDateTime ? "#666" : "#ccc"} />
+                <Ionicons
+                  name="time-outline"
+                  size={20}
+                  color={selectedDateTime ? "#666" : "#ccc"}
+                />
               </TouchableOpacity>
             </View>
-            
+
             {selectedDateTime && (
               <TouchableOpacity
                 style={styles.clearDateButton}
@@ -296,8 +358,10 @@ const AddTask: React.FC<AddTaskProps> = ({
                 <Text style={styles.clearDateText}>Rimuovi scadenza</Text>
               </TouchableOpacity>
             )}
-            
-            {dateError ? <Text style={styles.errorText}>{dateError}</Text> : null}
+
+            {dateError ? (
+              <Text style={styles.errorText}>{dateError}</Text>
+            ) : null}
 
             <Text style={styles.inputLabel}>Priorità</Text>
             <View style={styles.priorityContainer}>
@@ -305,49 +369,58 @@ const AddTask: React.FC<AddTaskProps> = ({
                 style={[
                   styles.priorityButton,
                   styles.priorityButtonLow,
-                  priority === 1 && styles.priorityButtonActive
+                  priority === 1 && styles.priorityButtonActive,
                 ]}
                 onPress={() => setPriority(1)}
               >
-                <Text style={[
-                  styles.priorityButtonText,
-                  priority === 1 && styles.priorityButtonTextActive
-                ]}>Bassa</Text>
+                <Text
+                  style={[
+                    styles.priorityButtonText,
+                    priority === 1 && styles.priorityButtonTextActive,
+                  ]}
+                >
+                  Bassa
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[
                   styles.priorityButton,
                   styles.priorityButtonMedium,
-                  priority === 2 && styles.priorityButtonActive
+                  priority === 2 && styles.priorityButtonActive,
                 ]}
                 onPress={() => setPriority(2)}
               >
-                <Text style={[
-                  styles.priorityButtonText,
-                  priority === 2 && styles.priorityButtonTextActive
-                ]}>Media</Text>
+                <Text
+                  style={[
+                    styles.priorityButtonText,
+                    priority === 2 && styles.priorityButtonTextActive,
+                  ]}
+                >
+                  Media
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[
                   styles.priorityButton,
                   styles.priorityButtonHigh,
-                  priority === 3 && styles.priorityButtonActive
+                  priority === 3 && styles.priorityButtonActive,
                 ]}
                 onPress={() => setPriority(3)}
               >
-                <Text style={[
-                  styles.priorityButtonText,
-                  priority === 3 && styles.priorityButtonTextActive
-                ]}>Alta</Text>
+                <Text
+                  style={[
+                    styles.priorityButtonText,
+                    priority === 3 && styles.priorityButtonTextActive,
+                  ]}
+                >
+                  Alta
+                </Text>
               </TouchableOpacity>
             </View>
           </ScrollView>
 
           <View style={styles.formFooter}>
-            <TouchableOpacity
-              style={styles.saveButton}
-              onPress={handleSave}
-            >
+            <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
               <Text style={styles.saveButtonText}>Salva</Text>
             </TouchableOpacity>
           </View>
@@ -356,7 +429,7 @@ const AddTask: React.FC<AddTaskProps> = ({
             mode={pickerMode}
             date={selectedDateTime || date}
             onConfirm={(picked) => {
-              if (pickerMode === 'date') onChange(null, picked);
+              if (pickerMode === "date") onChange(null, picked);
               else onTimeChange(null, picked);
               hidePicker();
             }}
@@ -396,19 +469,19 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   formHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     padding: 24,
     borderBottomWidth: 1,
-    borderBottomColor: '#e1e5e9',
-    backgroundColor: '#ffffff',
+    borderBottomColor: "#e1e5e9",
+    backgroundColor: "#ffffff",
   },
   formTitle: {
     fontSize: 24,
-    fontWeight: '300',
-    color: '#000000',
-    fontFamily: 'System',
+    fontWeight: "300",
+    color: "#000000",
+    fontFamily: "System",
     letterSpacing: -0.5,
   },
   formContent: {
@@ -417,27 +490,27 @@ const styles = StyleSheet.create({
   formFooter: {
     padding: 24,
     borderTopWidth: 1,
-    borderTopColor: '#e1e5e9',
-    alignItems: 'center',
+    borderTopColor: "#e1e5e9",
+    alignItems: "center",
   },
   inputLabel: {
     fontSize: 16,
-    fontWeight: '400',
+    fontWeight: "400",
     marginBottom: 12,
-    color: '#000000',
-    fontFamily: 'System',
+    color: "#000000",
+    fontFamily: "System",
   },
   input: {
     borderWidth: 1.5,
-    borderColor: '#e1e5e9',
+    borderColor: "#e1e5e9",
     borderRadius: 16,
     padding: 16,
     marginBottom: 20,
     fontSize: 17,
-    backgroundColor: '#ffffff',
-    fontFamily: 'System',
-    fontWeight: '400',
-    color: '#000000',
+    backgroundColor: "#ffffff",
+    fontFamily: "System",
+    fontWeight: "400",
+    color: "#000000",
   },
   textArea: {
     height: 120,
@@ -451,22 +524,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginBottom: 12,
     marginTop: -8,
-    fontFamily: 'System',
+    fontFamily: "System",
   },
   dateTimeContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginBottom: 20,
   },
   datePickerButton: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     borderWidth: 1.5,
-    borderColor: '#e1e5e9',
+    borderColor: "#e1e5e9",
     borderRadius: 16,
     padding: 16,
-    backgroundColor: '#ffffff',
+    backgroundColor: "#ffffff",
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
@@ -485,13 +558,13 @@ const styles = StyleSheet.create({
   },
   datePickerText: {
     fontSize: 17,
-    color: '#000000',
-    fontFamily: 'System',
-    fontWeight: '400',
+    color: "#000000",
+    fontFamily: "System",
+    fontWeight: "400",
   },
   priorityContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginBottom: 32,
   },
   priorityButton: {
@@ -499,7 +572,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 16,
     marginHorizontal: 10,
-    alignItems: 'center',
+    alignItems: "center",
     borderWidth: 1.5,
     shadowColor: "#000",
     shadowOffset: {
@@ -511,39 +584,39 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   priorityButtonLow: {
-    borderColor: '#e1e5e9',
-    backgroundColor: '#ffffff',
+    borderColor: "#e1e5e9",
+    backgroundColor: "#ffffff",
   },
   priorityButtonMedium: {
-    borderColor: '#e1e5e9',
-    backgroundColor: '#ffffff',
+    borderColor: "#e1e5e9",
+    backgroundColor: "#ffffff",
   },
   priorityButtonHigh: {
-    borderColor: '#e1e5e9',
-    backgroundColor: '#ffffff',
+    borderColor: "#e1e5e9",
+    backgroundColor: "#ffffff",
   },
   priorityButtonActive: {
     borderWidth: 2,
-    borderColor: '#000000',
-    backgroundColor: '#f8f8f8',
+    borderColor: "#000000",
+    backgroundColor: "#f8f8f8",
   },
   priorityButtonText: {
-    fontWeight: '400',
+    fontWeight: "400",
     fontSize: 16,
-    color: '#666666',
-    fontFamily: 'System',
+    color: "#666666",
+    fontFamily: "System",
   },
   priorityButtonTextActive: {
-    fontWeight: '500',
-    color: '#000000',
+    fontWeight: "500",
+    color: "#000000",
   },
   saveButton: {
-    backgroundColor: '#000000',
+    backgroundColor: "#000000",
     paddingVertical: 16,
     paddingHorizontal: 32,
     borderRadius: 24,
-    width: '100%',
-    alignItems: 'center',
+    width: "100%",
+    alignItems: "center",
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
@@ -554,17 +627,17 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   saveButtonText: {
-    color: 'white',
-    fontWeight: '400',
+    color: "white",
+    fontWeight: "400",
     fontSize: 17,
-    fontFamily: 'System',
+    fontFamily: "System",
   },
   dropdown: {
     borderWidth: 1.5,
-    borderColor: '#e1e5e9',
+    borderColor: "#e1e5e9",
     borderRadius: 16,
     marginBottom: 20,
-    backgroundColor: '#ffffff',
+    backgroundColor: "#ffffff",
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
@@ -576,23 +649,23 @@ const styles = StyleSheet.create({
   },
   picker: {
     height: 50,
-    color: '#000000',
+    color: "#000000",
   },
   disabledText: {
-    color: '#ccc',
+    color: "#ccc",
   },
   clearDateButton: {
-    alignSelf: 'center',
+    alignSelf: "center",
     marginTop: -12,
     marginBottom: 20,
     paddingVertical: 8,
     paddingHorizontal: 16,
   },
   clearDateText: {
-    color: '#FF5252',
+    color: "#FF5252",
     fontSize: 14,
-    fontFamily: 'System',
-    textDecorationLine: 'underline',
+    fontFamily: "System",
+    textDecorationLine: "underline",
   },
 });
 

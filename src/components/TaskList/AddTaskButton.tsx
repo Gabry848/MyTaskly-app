@@ -3,7 +3,7 @@ import { TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { styles } from './styles';
 
-interface AddTaskButtonProps {
+export interface AddTaskButtonProps {
   onPress: () => void;
 }
 
