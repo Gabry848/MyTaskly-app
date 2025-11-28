@@ -252,6 +252,7 @@ const HomeScreen = () => {
   };
 
   const handleSubmit = async () => {
+    console.log('[HOME] handleSubmit triggered. Raw message:', message);
     const trimmedMessage = message.trim();
     if (!trimmedMessage || isLoading) return;
 
@@ -268,7 +269,11 @@ const HomeScreen = () => {
     }
 
     // Aggiungi il messaggio dell'utente
-    setMessages((prev) => [...prev, userMessage]);
+    setMessages((prev) => {
+      const next = [...prev, userMessage];
+      console.log('[HOME] Added user message. Count:', next.length);
+      return next;
+    });
 
     // Resetta l'input immediatamente per una migliore UX
     setMessage("");
@@ -290,12 +295,20 @@ const HomeScreen = () => {
     };
 
     // Aggiungi il messaggio del bot vuoto per iniziare lo streaming
-    setMessages((prev) => [...prev, initialBotMessage]);
+    setMessages((prev) => {
+      const next = [...prev, initialBotMessage];
+      console.log('[HOME] Added initial bot message (streaming). Count:', next.length, 'botMessageId:', botMessageId);
+      return next;
+    });
     setIsLoading(false);
 
     try {
       // Callback per gestire lo streaming
       const onStreamChunk: StreamingCallback = (chunk: string, isComplete: boolean) => {
+        if (typeof chunk !== 'string') {
+          console.warn('[HOME] onStreamChunk received non-string chunk:', chunk);
+        }
+        console.log('[HOME] onStreamChunk', { isComplete, chunkPreview: typeof chunk === 'string' ? chunk.slice(0, 40) : chunk });
         if (isComplete) {
           // Lo streaming è completato, rimuovi l'indicatore
           setMessages((prev) =>
@@ -327,6 +340,7 @@ const HomeScreen = () => {
 
       // Formatta la risposta completa del bot per il supporto Markdown
       const formattedBotResponse = formatMessage(botResponse);
+      console.log('[HOME] Final bot response length:', formattedBotResponse?.length ?? 0);
 
       // Aggiorna il messaggio con la risposta formattata finale
       setMessages((prev) =>
@@ -343,7 +357,7 @@ const HomeScreen = () => {
       );
 
     } catch (error) {
-      console.error("Errore nell'invio del messaggio:", error);
+      console.error("[HOME] Errore nell'invio del messaggio:", error);
 
       // Aggiorna il messaggio del bot con un errore
       setMessages((prev) =>
@@ -596,7 +610,8 @@ const HomeScreen = () => {
             </View>
           )}
           {/* Lista dei messaggi - visibile quando la chat inizia */}
-          {chatStarted && (            <Animated.View
+          {chatStarted && (
+            <Animated.View
               style={[
                 styles.chatSection,
                 {
@@ -686,7 +701,8 @@ const HomeScreen = () => {
                   />
                 </TouchableOpacity>
               )}
-            </View>          </Animated.View>
+            </View>
+          </Animated.View>
         )}
       </View>
 
