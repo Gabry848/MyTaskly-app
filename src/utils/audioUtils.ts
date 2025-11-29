@@ -56,15 +56,18 @@ function encodeBase64(bytes: Uint8Array): string {
 
   while (i < bytes.length) {
     const a = bytes[i++];
-    const b = i < bytes.length ? bytes[i++] : 0;
-    const c = i < bytes.length ? bytes[i++] : 0;
+    // Traccia quanti byte veri abbiamo per questo gruppo
+    const hasB = i < bytes.length;
+    const b = hasB ? bytes[i++] : 0;
+    const hasC = i < bytes.length;
+    const c = hasC ? bytes[i++] : 0;
 
     const bitmap = (a << 16) | (b << 8) | c;
 
     result += chars.charAt((bitmap >> 18) & 0x3f);
     result += chars.charAt((bitmap >> 12) & 0x3f);
-    result += i - 2 < bytes.length ? chars.charAt((bitmap >> 6) & 0x3f) : '=';
-    result += i - 1 < bytes.length ? chars.charAt(bitmap & 0x3f) : '=';
+    result += hasB ? chars.charAt((bitmap >> 6) & 0x3f) : '=';
+    result += hasC ? chars.charAt(bitmap & 0x3f) : '=';
   }
 
   return result;
@@ -728,14 +731,25 @@ export class AudioPlayer {
         return false;
       }
 
-      console.log('AudioPlayer: Step 1, concatenazione chunk (base64?binario?base64)...');
+      console.log('AudioPlayer: Step 1, decodifica chunk base64 e concatenazione binari...');
 
+      // Decodifica OGNI chunk base64 completamente a binario
       const binaryChunks: Uint8Array[] = [];
       for (const chunk of playbackQueue) {
         const binaryData = this.base64ToBytes(chunk.data);
-        binaryChunks.push(binaryData);
+        if (binaryData.length > 0) {
+          binaryChunks.push(binaryData);
+          console.log(`  Chunk decodificato: ${binaryData.length} bytes`);
+        }
       }
 
+      if (binaryChunks.length === 0) {
+        console.warn('AudioPlayer: Nessun chunk valido da decodificare');
+        this.clearChunks();
+        return false;
+      }
+
+      // Concatena i binari usando Uint8Array.set()
       const totalBinaryLength = binaryChunks.reduce((acc, chunk) => acc + chunk.length, 0);
       const totalBinaryData = new Uint8Array(totalBinaryLength);
       let offset = 0;
@@ -745,6 +759,8 @@ export class AudioPlayer {
         offset += chunk.length;
       });
 
+      console.log(`AudioPlayer: Step 1 completato (${totalBinaryData.length} bytes binari da ${binaryChunks.length} chunk)`);
+
       const detectedFormat = this.detectAudioFormat(totalBinaryData);
       const extension = detectedFormat === 'unknown' ? 'm4a' : detectedFormat;
       if (detectedFormat === 'unknown') {
@@ -753,13 +769,15 @@ export class AudioPlayer {
         console.log(`AudioPlayer: Formato audio rilevato -> ${detectedFormat}`);
       }
 
-      const concatenatedBase64 = this.bytesToBase64(totalBinaryData);
-      console.log(`AudioPlayer: Step 1 completato (${concatenatedBase64.length} caratteri base64, ${totalBinaryData.length} bytes)`);
+      console.log(`AudioPlayer: Dati audio decodificati (${totalBinaryData.length} bytes)`);
 
       console.log('AudioPlayer: Step 2, salvataggio file audio concatenato...');
       const finalAudioPath = `${FileSystem.documentDirectory}final_audio_${Date.now()}.${extension}`;
 
-      await FileSystem.writeAsStringAsync(finalAudioPath, concatenatedBase64, {
+      // Riencodifica a base64 per scrivere il file (richiesto da FileSystem)
+      const finalBase64 = this.bytesToBase64(totalBinaryData);
+
+      await FileSystem.writeAsStringAsync(finalAudioPath, finalBase64, {
         encoding: FileSystem.EncodingType.Base64,
       });
       console.log(`AudioPlayer: Step 2 completato (file: ${finalAudioPath.split('/').pop()})`);
@@ -867,24 +885,28 @@ export class AudioPlayer {
         return false;
       }
 
-      console.log('AudioPlayer: Concatenazione chunk base64...');
-      const binaryChunks: Uint8Array[] = [];
+      console.log('AudioPlayer: Decodifica chunk base64 e concatenazione binari...');
 
-      playbackQueue.forEach((chunk, position) => {
+      // Decodifica OGNI chunk base64 completamente a binario
+      const binaryChunks: Uint8Array[] = [];
+      let processedChunkCount = 0;
+
+      for (const chunk of playbackQueue) {
         try {
           const binaryData = this.base64ToBytes(chunk.data);
 
-          if (!binaryData.length) {
-            console.warn(`AudioPlayer: Chunk ${chunk.index ?? position} vuoto o non valido, ignorato`);
-            return;
+          if (binaryData.length === 0) {
+            console.warn(`AudioPlayer: Chunk ${chunk.index ?? processedChunkCount} vuoto, ignorato`);
+            continue;
           }
 
           binaryChunks.push(binaryData);
-          console.log(`AudioPlayer: Chunk ${chunk.index ?? position} concatenato (${binaryData.length} bytes)`);
+          processedChunkCount++;
+          console.log(`AudioPlayer: Chunk ${chunk.index ?? processedChunkCount} decodificato (${binaryData.length} bytes)`);
         } catch (chunkError) {
-          console.warn(`AudioPlayer: Errore decodifica chunk ${chunk.index ?? position}:`, chunkError);
+          console.warn(`AudioPlayer: Errore decodifica chunk ${chunk.index ?? processedChunkCount}:`, chunkError);
         }
-      });
+      }
 
       if (binaryChunks.length === 0) {
         console.warn('AudioPlayer: Nessun chunk audio valido dopo la decodifica');
@@ -892,6 +914,7 @@ export class AudioPlayer {
         return false;
       }
 
+      // Concatena i binari usando Uint8Array.set()
       const totalBinaryLength = binaryChunks.reduce((acc, chunk) => acc + chunk.length, 0);
       const totalBinaryData = new Uint8Array(totalBinaryLength);
       let offset = 0;
