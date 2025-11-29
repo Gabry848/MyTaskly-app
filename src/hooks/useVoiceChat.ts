@@ -46,6 +46,10 @@ export function useVoiceChat() {
   const [isReceivingAudio, setIsReceivingAudio] = useState<boolean>(false);
   const [chunksReceived, setChunksReceived] = useState<number>(0);
 
+  // Chunk timing diagnostics
+  const lastChunkTimeRef = useRef<number>(0);
+  const chunkTimingsRef = useRef<number[]>([]);
+
   // VAD states (sempre attivo di default)
   const [vadEnabled, setVadEnabled] = useState<boolean>(true);
   const [audioLevel, setAudioLevel] = useState<number>(-160);
@@ -146,10 +150,20 @@ export function useVoiceChat() {
           console.log('✅ Pipeline completa!');
           setIsReceivingAudio(false);
           lastChunkIndexRef.current = null;
+
+          // Reset chunk timing per prossimo ciclo
+          lastChunkTimeRef.current = 0;
+          chunkTimingsRef.current = [];
+
           if (audioPlayerRef.current && audioPlayerRef.current.getChunksCount() > 0) {
-            console.log('🔊 Riproduzione audio chunks...');
+            const bufferedCount = audioPlayerRef.current.getBufferedChunksCount();
+            console.log(`🔊 Ricevuti ${bufferedCount} chunk totali. Avvio riproduzione sequenziale...`);
+
             setState('speaking');
-            audioPlayerRef.current.playAllChunks(() => {
+
+            // Riproduci i chunk uno dopo l'altro (sequenzialmente)
+            // Questo evita problemi di concatenazione MP3
+            audioPlayerRef.current.playChunksSequentially(() => {
               console.log('🔊 Riproduzione completata, riavvio registrazione...');
               setState('connected');
               // Riavvia automaticamente la registrazione per la prossima domanda
@@ -170,6 +184,19 @@ export function useVoiceChat() {
     },
 
     onAudioChunk: (audioData: string, chunkIndex?: number) => {
+      const currentTime = Date.now();
+
+      // Traccia timing inter-arrival
+      if (lastChunkTimeRef.current > 0) {
+        const interArrivalMs = currentTime - lastChunkTimeRef.current;
+        chunkTimingsRef.current.push(interArrivalMs);
+
+        if (interArrivalMs < 10) {
+          console.warn(`🔊 ⚡ Chunk burst: ${interArrivalMs}ms tra chunk #${(lastChunkIndexRef.current ?? -1) + 1} e #${chunkIndex}`);
+        }
+      }
+      lastChunkTimeRef.current = currentTime;
+
       console.log(`🔊 Ricevuto chunk audio ${typeof chunkIndex === 'number' ? `#${chunkIndex}` : '(senza indice)'}`);
 
       if (!audioPlayerRef.current) {
