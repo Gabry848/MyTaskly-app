@@ -3,10 +3,15 @@ import { Platform, Alert } from 'react-native';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import axiosInstance from './axiosInstance';
+import eventEmitter from '../utils/eventEmitter';
 
 // Controllo se siamo in Expo Go o Development Build
 const isExpoGo = Constants.appOwnership === 'expo';
+
+// Chiave per salvare il token pendente in AsyncStorage
+const PENDING_TOKEN_KEY = '@MyTaskly:pendingNotificationToken';
 
 // ⚙️ CONFIGURA COME GESTIRE LE NOTIFICHE
 Notifications.setNotificationHandler({
@@ -123,22 +128,86 @@ export async function registerForPushNotificationsAsync(): Promise<string | unde
 
 /**
  * Funzione per inviare il token al backend
+ * Se l'invio fallisce, salva il token in AsyncStorage per ritentare successivamente
  */
-export async function sendTokenToBackend(token: string): Promise<boolean> {
+export async function sendTokenToBackend(token: string, isAuthenticated: boolean = false): Promise<boolean> {
+  // Verifica se l'utente è autenticato prima di inviare
+  if (!isAuthenticated) {
+    console.log('⏸️ Utente non autenticato, salvataggio token per invio successivo');
+    try {
+      await AsyncStorage.setItem(PENDING_TOKEN_KEY, token);
+      console.log('💾 Token salvato in AsyncStorage');
+    } catch (error) {
+      console.error('❌ Errore nel salvare il token:', error);
+    }
+    return false;
+  }
+
   try {
+    console.log('📤 Tentativo di invio token al backend...');
     const response = await axiosInstance.post('/notifications/token', {
       token: token
     });
 
     if (response.status === 200) {
       console.log('✅ Token inviato al backend con successo');
+      // Rimuovi il token pendente se l'invio ha successo
+      try {
+        await AsyncStorage.removeItem(PENDING_TOKEN_KEY);
+        console.log('🗑️ Token pendente rimosso da AsyncStorage');
+      } catch (error) {
+        console.error('❌ Errore nella rimozione del token pendente:', error);
+      }
       return true;
     } else {
       console.error('❌ Errore nell\'invio del token al backend');
+      // Salva il token per ritentare successivamente
+      await AsyncStorage.setItem(PENDING_TOKEN_KEY, token);
       return false;
     }
   } catch (error) {
     console.error('❌ Errore nella richiesta:', error);
+    // Salva il token per ritentare successivamente
+    try {
+      await AsyncStorage.setItem(PENDING_TOKEN_KEY, token);
+      console.log('💾 Token salvato per retry futuro');
+    } catch (storageError) {
+      console.error('❌ Errore nel salvare il token per retry:', storageError);
+    }
+    return false;
+  }
+}
+
+/**
+ * Funzione per ritentare l'invio di un token pendente al backend
+ * Viene chiamata quando l'utente effettua il login o all'avvio dell'app se è autenticato
+ */
+export async function retryPendingTokenSend(isAuthenticated: boolean): Promise<boolean> {
+  if (!isAuthenticated) {
+    console.log('⏸️ Utente non autenticato, skip retry token');
+    return false;
+  }
+
+  try {
+    const pendingToken = await AsyncStorage.getItem(PENDING_TOKEN_KEY);
+    
+    if (pendingToken) {
+      console.log('🔄 Trovato token pendente, tentativo di invio al backend...');
+      const success = await sendTokenToBackend(pendingToken, isAuthenticated);
+      
+      if (success) {
+        console.log('✅ Token pendente inviato con successo');
+        return true;
+      } else {
+        console.log('❌ Retry invio token fallito, verrà ritentato al prossimo login');
+        return false;
+      }
+    } else {
+      console.log('ℹ️ Nessun token pendente da inviare');
+      return true;
+    }
+  } catch (error) {
+    console.error('❌ Errore nel retry del token pendente:', error);
     return false;
   }
 }
@@ -240,6 +309,7 @@ export async function sendTestNotification(): Promise<boolean> {
 export function useNotifications() {
   const [expoPushToken, setExpoPushToken] = useState<string>('');
   const [notification, setNotification] = useState<Notifications.Notification | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const notificationListener = useRef<Notifications.EventSubscription | null>(null);
   const responseListener = useRef<Notifications.EventSubscription | null>(null);
 
@@ -248,19 +318,60 @@ export function useNotifications() {
     registerForPushNotificationsAsync().then(token => {
       if (token) {
         setExpoPushToken(token);
-        // Invia il token al backend solo se abbiamo un token valido
-        sendTokenToBackend(token).then(success => {
-          if (success) {
-            console.log('✅ Token inviato al backend con successo');
-          } else {
-            console.error('❌ Errore nell\'invio del token al backend');
-          }
-        });
+        console.log('🔔 Token ottenuto, attendendo autenticazione per l\'invio al backend');
+        // Il token verrà inviato solo dopo il login tramite il listener loginSuccess
       } else if (isExpoGo) {
         // In Expo Go, modalità silenziosa
         console.log('ℹ️ Modalità Expo Go attiva');
       }
     });
+
+    // 🔄 Controlla e ritenta l'invio del token pendente all'avvio se l'utente è già autenticato
+    const checkAuthAndRetry = async () => {
+      try {
+        const { checkAndRefreshAuth } = await import('./authService');
+        const authResult = await checkAndRefreshAuth();
+        
+        if (authResult.isAuthenticated) {
+          setIsAuthenticated(true);
+          console.log('✅ Utente già autenticato all\'avvio');
+          
+          // Riprova a inviare il token pendente se esiste
+          await retryPendingTokenSend(true);
+        }
+      } catch (error) {
+        console.error('❌ Errore nel controllo autenticazione:', error);
+      }
+    };
+    
+    checkAuthAndRetry();
+
+    // 👂 ASCOLTA EVENTI DI LOGIN per inviare il token quando l'utente si autentica
+    const handleLoginSuccess = async () => {
+      console.log('🔐 Login riuscito, tentativo di invio token al backend...');
+      setIsAuthenticated(true);
+      
+      // Invia il token corrente se disponibile
+      if (expoPushToken) {
+        const success = await sendTokenToBackend(expoPushToken, true);
+        if (success) {
+          console.log('✅ Token inviato al backend dopo il login');
+        } else {
+          console.error('❌ Errore nell\'invio del token dopo il login');
+        }
+      }
+      
+      // Riprova anche con eventuali token pendenti
+      await retryPendingTokenSend(true);
+    };
+
+    const handleLogoutSuccess = () => {
+      console.log('🔓 Logout effettuato');
+      setIsAuthenticated(false);
+    };
+
+    eventEmitter.on('loginSuccess', handleLoginSuccess);
+    eventEmitter.on('logoutSuccess', handleLogoutSuccess);
 
     // 📨 ASCOLTA NOTIFICHE RICEVUTE (quando l'app è aperta)
     notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
@@ -298,8 +409,10 @@ export function useNotifications() {
       if (responseListener.current) {
         responseListener.current.remove();
       }
+      eventEmitter.off('loginSuccess', handleLoginSuccess);
+      eventEmitter.off('logoutSuccess', handleLogoutSuccess);
     };
-  }, []);
+  }, [expoPushToken]); // Dipendenza da expoPushToken per avere sempre il token aggiornato nel listener
 
   return {
     expoPushToken,
