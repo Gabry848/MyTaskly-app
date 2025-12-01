@@ -27,7 +27,7 @@ interface LanguageProviderProps {
 
 export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) => {
   const { i18n } = useTranslation();
-  const [currentLanguage, setCurrentLanguage] = useState<string>(i18n.language || 'it');
+  const [currentLanguage, setCurrentLanguage] = useState<string>(i18n.language || 'en');
 
   const availableLanguages = [
     { code: 'it', name: 'Italiano' },
