@@ -37,7 +37,8 @@
       "Bash(node_modules/.bin/tsc:*)",
       "Bash(cat:*)",
       "Bash(npm run docs:generate:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(gh pr create:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"
