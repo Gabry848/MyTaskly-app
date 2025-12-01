@@ -60,6 +60,12 @@ getStoredLanguage().then((language) => {
   if (i18n.language !== language) {
     i18n.changeLanguage(language);
   }
+  // Salva la lingua in AsyncStorage se non esiste (primo avvio)
+  AsyncStorage.getItem(LANGUAGE_STORAGE_KEY).then((saved) => {
+    if (!saved) {
+      saveLanguage('en');
+    }
+  });
 });
 
 export default i18n;
