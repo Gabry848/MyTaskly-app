@@ -46,4 +46,8 @@ google-services.json
 /ios
 /android
 
-/docs
+docs/
+
+# Firebase secrets
+
+*firebase-adminsdk*.json
