@@ -168,13 +168,26 @@
         }
       },
       "tips": {
-        "title": "Suggerimenti"
+        "title": "Suggerimenti",
+        "tip1": "Imposta promemoria per i tuoi task importanti per stare al passo",
+        "tip2": "Usa le categorie per organizzare i tuoi task per progetto o area della vita",
+        "tip3": "Rivedi regolarmente il tuo progresso per migliorare la tua produttività"
       }
     }
   },
   "accountSettings": {
     "title": "Informazioni account",
     "loading": "Caricamento...",
+    "sections": {
+      "accountInfo": "Informazioni Account",
+      "accountManagement": "Gestione Account",
+      "testNotifications": "Test Notifiche"
+    },
+    "labels": {
+      "username": "Username",
+      "email": "Email",
+      "registrationDate": "Data iscrizione"
+    },
     "fields": {
       "username": "Username",
       "email": "Email",
@@ -183,6 +196,11 @@
     "actions": {
       "changeEmail": "Cambia Email",
       "changeUsername": "Cambia Username"
+    },
+    "menu": {
+      "changeUsername": "Cambia Username",
+      "changeEmail": "Cambia Email",
+      "changePassword": "Cambia Password"
     },
     "modals": {
       "changeEmail": {
@@ -199,6 +217,38 @@
         "cancel": "Annulla"
       }
     },
+    "changeEmail": {
+      "title": "Cambia Email",
+      "newEmail": "Nuova Email",
+      "passwordConfirm": "Conferma Password",
+      "emailPlaceholder": "Inserisci nuova email",
+      "passwordPlaceholder": "Inserisci la tua password",
+      "updateButton": "Aggiorna Email",
+      "fillAllFields": "Compila tutti i campi",
+      "invalidEmail": "Inserisci un indirizzo email valido",
+      "error": "Errore durante la modifica dell'email"
+    },
+    "changeUsername": {
+      "title": "Cambia Username",
+      "newUsername": "Nuovo Username",
+      "placeholder": "Inserisci nuovo username",
+      "updateButton": "Aggiorna Username",
+      "enterUsername": "Inserisci uno username",
+      "minLength": "Lo username deve contenere almeno 3 caratteri",
+      "error": "Errore durante la modifica dell'username"
+    },
+    "testNotification": {
+      "send": "Invia Notifica di Test",
+      "sending": "Invio notifica di test...",
+      "description": "Invia una notifica di test per verificare le tue impostazioni",
+      "success": "Notifica di test inviata con successo",
+      "failed": "Errore nell'invio della notifica di test",
+      "error": "Errore durante l'invio della notifica di test"
+    },
+    "errors": {
+      "invalidToken": "Token di autenticazione non valido",
+      "loadingError": "Errore nel caricamento delle informazioni account"
+    },
     "messages": {
       "emailChanged": "Email modificata con successo",
       "usernameChanged": "Username modificato con successo",
@@ -207,16 +257,41 @@
   },
   "changePassword": {
     "title": "Cambia Password",
+    "instructions": "Per motivi di sicurezza, inserisci la password attuale e imposta una nuova con almeno 8 caratteri.",
     "fields": {
       "currentPassword": "Password attuale",
       "newPassword": "Nuova password",
       "confirmPassword": "Conferma password"
     },
+    "labels": {
+      "currentPassword": "Password Attuale",
+      "newPassword": "Nuova Password",
+      "confirmPassword": "Conferma Password"
+    },
+    "placeholders": {
+      "currentPassword": "Inserisci la tua password attuale",
+      "newPassword": "Inserisci nuova password (min 8 caratteri)",
+      "confirmPassword": "Conferma la nuova password"
+    },
     "button": "Cambia Password",
+    "updateButton": "Aggiorna Password",
     "messages": {
       "success": "Password modificata con successo",
       "error": "Errore durante la modifica della password",
       "passwordMismatch": "Le password non coincidono"
+    },
+    "errors": {
+      "fillAllFields": "Compila tutti i campi della password",
+      "passwordMismatch": "Le password non coincidono",
+      "minLength": "La password deve contenere almeno 8 caratteri",
+      "generic": "Si è verificato un errore durante la modifica della password"
+    },
+    "tips": {
+      "title": "Consigli di Sicurezza",
+      "tip1": "Usa una combinazione di lettere maiuscole, minuscole, numeri e caratteri speciali",
+      "tip2": "Evita password facilmente indovinabili come data di nascita o nome",
+      "tip3": "Non usare la stessa password di altri account",
+      "tip4": "Cambia la tua password regolarmente per una maggiore sicurezza"
     }
   },
   "language": {
@@ -254,9 +329,29 @@
     "appName": "Mytaskly",
     "version": "Versione",
     "aboutApp": "Informazioni sull'app",
-    "appStatus": "Stato dell'app",
-    "inDevelopment": "In sviluppo",
-    "copyright": "© 2024 Mytaskly. Tutti i diritti riservati."
+    "description1": "Mytaskly è un'applicazione moderna di gestione dei task personali progettata per aiutarti a organizzare le tue attività quotidiane in modo efficiente.",
+    "description2": "Con un assistente AI integrato, un'interfaccia bellissima e statistiche complete, Mytaskly rende la gestione dei task semplice e piacevole.",
+    "developer": {
+      "title": "Sviluppatore",
+      "name": "Gabry848",
+      "role": "Creatore di Mytaskly",
+      "description": "Dedicato alla creazione di strumenti che aiutano le persone a gestire meglio il loro tempo e la loro produttività."
+    },
+    "status": {
+      "title": "Stato dell'App",
+      "betaBadge": "Beta",
+      "betaDescription": "Mytaskly è attualmente in fase beta. Stiamo continuamente migliorando l'app in base ai tuoi commenti.",
+      "betaNote": "Alcune funzioni potrebbero cambiare o non essere disponibili."
+    },
+    "inDevelopment": {
+      "title": "Funzioni in Sviluppo",
+      "cloudSync": "Sincronizzazione cloud tra i dispositivi",
+      "advancedNotifications": "Programmazione avanzata delle notifiche",
+      "customThemes": "Temi personalizzati e personalizzazione",
+      "advancedStatistics": "Analitiche avanzate e insights"
+    },
+    "copyright": "© 2024 Mytaskly. Tutti i diritti riservati.",
+    "rightsReserved": "Tutti i diritti riservati."
   },
   "categories": {
     "title": "Le tue categorie",
@@ -362,13 +457,15 @@
       "next": "Avanti",
       "done": "Fatto",
       "retry": "Riprova",
-      "refresh": "Aggiorna"
+      "refresh": "Aggiorna",
+      "ok": "OK"
     },
     "messages": {
       "loading": "Caricamento...",
       "saving": "Salvataggio...",
       "success": "Operazione completata con successo",
       "error": "Si è verificato un errore",
+      "warning": "Avviso",
       "confirmDelete": "Sei sicuro di voler eliminare?",
       "noConnection": "Nessuna connessione internet",
       "tryAgain": "Riprova più tardi"
