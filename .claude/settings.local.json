@@ -36,7 +36,8 @@
       "Bash(npm run lint:*)",
       "Bash(node_modules/.bin/tsc:*)",
       "Bash(cat:*)",
-      "Bash(npm run docs:generate:*)"
+      "Bash(npm run docs:generate:*)",
+      "Bash(git checkout:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"

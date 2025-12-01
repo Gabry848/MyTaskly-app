@@ -11,6 +11,8 @@ import { TaskSection } from './TaskSection';
 import { AddTaskButton } from './AddTaskButton';
 import { filterTasksByDay } from './TaskUtils';
 import AddTask from '../AddTask';
+import SmartFiltersCarousel from '../SmartFilters/SmartFiltersCarousel';
+import { SmartFilterService } from '../../src/services/SmartFilterService';
 
 interface TaskListContainerProps {
   categoryName: string;
@@ -44,7 +46,8 @@ export const TaskListContainer = ({
   const [isLoading, setIsLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [formVisible, setFormVisible] = useState(false);
-  
+  const [selectedSmartFilterId, setSelectedSmartFilterId] = useState<string | undefined>();
+
   // Stati per le sezioni collassabili
   const [todoSectionExpanded, setTodoSectionExpanded] = useState(true);
   const [completedSectionExpanded, setCompletedSectionExpanded] = useState(true);
@@ -275,6 +278,11 @@ export const TaskListContainer = ({
 
   // Funzione per applicare i filtri e ordinare solo sui task non completati
   const listaFiltrata = useMemo(() => {
+    // Se è selezionato uno smart filter, usalo
+    if (selectedSmartFilterId) {
+      return SmartFilterService.applySmartFilter(selectedSmartFilterId, tasks);
+    }
+
     // Prima filtra per importanza
     let filteredTasks = incompleteTasks.filter((task) => {
       const matchesImportanza =
@@ -282,15 +290,15 @@ export const TaskListContainer = ({
         (filtroImportanza === "Alta" && task.priority === "Alta") ||
         (filtroImportanza === "Media" && task.priority === "Media") ||
         (filtroImportanza === "Bassa" && task.priority === "Bassa");
-      
+
       return matchesImportanza;
     });
-    
+
     // Poi applica il filtro per data
     if (filtroScadenza !== "Tutte") {
       filteredTasks = filterTasksByDay(filteredTasks, filtroScadenza);
     }
-    
+
     // Infine ordina
     return filteredTasks.sort((a, b) => {
       // I task senza scadenza vanno sempre in fondo
@@ -304,7 +312,7 @@ export const TaskListContainer = ({
         return new Date(a.end_time).getTime() - new Date(b.end_time).getTime();
       }
     });
-  }, [incompleteTasks, filtroImportanza, filtroScadenza, ordineScadenza]);
+  }, [incompleteTasks, filtroImportanza, filtroScadenza, ordineScadenza, selectedSmartFilterId, tasks]);
 
   const handleAddTask = async (
     title: string,
@@ -484,24 +492,47 @@ export const TaskListContainer = ({
         <ActivityIndicator size="large" color="#10e0e0" />
       ) : (
         <ScrollView style={styles.scrollContainer}>
+          {/* Smart Filters Carousel */}
+          <SmartFiltersCarousel
+            tasks={tasks}
+            onFilterSelect={(filterId) => {
+              setSelectedSmartFilterId(filterId);
+              setFiltroImportanza("Tutte");
+              setFiltroScadenza("Tutte");
+            }}
+            selectedFilterId={selectedSmartFilterId}
+          />
+
           {/* Modal dei filtri */}
-          <FilterModal 
+          <FilterModal
             visible={modalVisible}
             onClose={() => setModalVisible(false)}
             filtroImportanza={filtroImportanza}
-            setFiltroImportanza={setFiltroImportanza}
+            setFiltroImportanza={(value) => {
+              setFiltroImportanza(value);
+              setSelectedSmartFilterId(undefined);
+            }}
             filtroScadenza={filtroScadenza}
-            setFiltroScadenza={setFiltroScadenza}
+            setFiltroScadenza={(value) => {
+              setFiltroScadenza(value);
+              setSelectedSmartFilterId(undefined);
+            }}
             ordineScadenza={ordineScadenza}
             setOrdineScadenza={setOrdineScadenza}
           />
 
           {/* Visualizzazione filtri attivi */}
-          <ActiveFilters 
+          <ActiveFilters
             importanceFilter={filtroImportanza}
             deadlineFilter={filtroScadenza}
-            onClearImportanceFilter={() => setFiltroImportanza("Tutte")}
-            onClearDeadlineFilter={() => setFiltroScadenza("Tutte")}
+            onClearImportanceFilter={() => {
+              setFiltroImportanza("Tutte");
+              setSelectedSmartFilterId(undefined);
+            }}
+            onClearDeadlineFilter={() => {
+              setFiltroScadenza("Tutte");
+              setSelectedSmartFilterId(undefined);
+            }}
           />
 
           {/* Sezione task non completati */}
