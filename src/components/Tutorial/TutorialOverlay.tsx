@@ -6,7 +6,7 @@ import { NavigationControls } from './NavigationControls';
 import { ProgressIndicator } from './ProgressIndicator';
 import { ElementMeasurement } from '../../hooks/useTutorial';
 
-interface TutorialOverlayProps {
+export interface TutorialOverlayProps {
   targetMeasurement: ElementMeasurement | null;
   currentStepIndex: number;
   totalSteps: number;

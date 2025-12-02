@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { tutorialStyles } from './styles';
 import { TUTORIAL_CONTENT } from '../../constants/tutorialContent';
 
-interface WelcomeScreenProps {
+export interface WelcomeScreenProps {
   onStart: () => void;
   onSkip: () => void;
 }

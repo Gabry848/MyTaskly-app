@@ -10,7 +10,7 @@ import {
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { NotesProvider, useNotesActions, useNotesState } from '../../context/NotesContext';
-import { NotesCanvas } from '../../../components/Notes/NotesCanvas';
+import { NotesCanvas } from '../../components/Notes/NotesCanvas';
 import { Plus } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 

@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { Task, getAllTasks } from '../services/taskService';
-import { TaskCacheService } from '../services/TaskCacheService';
-import SyncManager, { SyncStatus } from '../services/SyncManager';
+import { useState, useEffect, useCallback, useRef } from "react";
+import { Task, getAllTasks } from "../services/taskService";
+import { TaskCacheService } from "../services/TaskCacheService";
+import SyncManager, { SyncStatus } from "../services/SyncManager";
 
-interface UseTaskCacheReturn {
+export interface UseTaskCacheReturn {
   tasks: Task[];
   isLoading: boolean;
   syncStatus: SyncStatus | null;
@@ -23,7 +23,7 @@ export const useTaskCache = (): UseTaskCacheReturn => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null);
-  
+
   const cacheService = useRef(TaskCacheService.getInstance()).current;
   const syncManager = useRef(SyncManager.getInstance()).current;
 
@@ -45,7 +45,7 @@ export const useTaskCache = (): UseTaskCacheReturn => {
   const refreshTasks = useCallback(async () => {
     try {
       setIsLoading(true);
-      
+
       // Prima carica dalla cache per UI immediata
       const cachedTasks = await cacheService.getCachedTasks();
       if (cachedTasks.length > 0) {
@@ -59,8 +59,8 @@ export const useTaskCache = (): UseTaskCacheReturn => {
         setTasks(allTasks);
       }
     } catch (error) {
-      console.error('[useTaskCache] Errore nel caricamento task:', error);
-      
+      console.error("[useTaskCache] Errore nel caricamento task:", error);
+
       // Fallback alla cache in caso di errore
       const cachedTasks = await cacheService.getCachedTasks();
       if (cachedTasks.length > 0) {
@@ -101,6 +101,6 @@ export const useTaskCache = (): UseTaskCacheReturn => {
     refreshTasks,
     getCachedStats,
     clearCache,
-    forceSync
+    forceSync,
   };
 };

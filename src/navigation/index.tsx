@@ -126,6 +126,7 @@ function HomeTabs() {
           component={HomeScreen}
           options={{ title: t('navigation.tabs.home') }}
         />
+        {/* Categories tab disabled */}
         <Tab.Screen
           name="Categories"
           component={CategoriesScreen}
@@ -141,11 +142,11 @@ function HomeTabs() {
           component={CalendarScreen}
           options={{ title: t('navigation.tabs.calendar') }}
         />
-        <Tab.Screen
+        {/* <Tab.Screen
           name="Statistics"
           component={StatisticsScreen}
           options={{ title: t('navigation.tabs.statistics') }}
-        />
+        /> */}
       </Tab.Navigator>
 
       {/* Tutorial Manager */}

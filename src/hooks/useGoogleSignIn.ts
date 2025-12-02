@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react';
-import { 
-  initializeGoogleSignIn, 
-  signInWithGoogle, 
-  signOutFromGoogle, 
+import { useState, useEffect } from "react";
+import {
+  initializeGoogleSignIn,
+  signInWithGoogle,
+  signOutFromGoogle,
   isGoogleSignedIn,
   getCurrentGoogleUser,
-  revokeGoogleAccess 
-} from '../services/googleSignInService';
+  revokeGoogleAccess,
+} from "../services/googleSignInService";
 
 export interface GoogleUser {
   id: string;
@@ -43,13 +43,13 @@ export const useGoogleSignIn = (): UseGoogleSignInResult => {
     try {
       setIsLoading(true);
       setError(null);
-      
+
       await initializeGoogleSignIn();
-      
+
       // Controlla se l'utente è già loggato
       const signedIn = await isGoogleSignedIn();
       setIsSignedIn(signedIn);
-      
+
       if (signedIn) {
         const currentUserResult = await getCurrentGoogleUser();
         if (currentUserResult.success && currentUserResult.userInfo) {
@@ -64,10 +64,9 @@ export const useGoogleSignIn = (): UseGoogleSignInResult => {
           });
         }
       }
-      
     } catch (err: any) {
-      console.error('❌ Errore nell\'inizializzazione di Google Sign-In:', err);
-      setError(err.message || 'Errore nell\'inizializzazione');
+      console.error("❌ Errore nell'inizializzazione di Google Sign-In:", err);
+      setError(err.message || "Errore nell'inizializzazione");
     } finally {
       setIsLoading(false);
     }
@@ -77,19 +76,18 @@ export const useGoogleSignIn = (): UseGoogleSignInResult => {
     try {
       setIsLoading(true);
       setError(null);
-      
+
       const result = await signInWithGoogle();
-      
+
       if (result.success) {
         setIsSignedIn(true);
         setUser(result.userInfo as GoogleUser);
       } else {
-        setError(result.message || 'Errore durante il login');
+        setError(result.message || "Errore durante il login");
       }
-      
     } catch (err: any) {
-      console.error('❌ Errore nel login con Google:', err);
-      setError(err.message || 'Errore durante il login');
+      console.error("❌ Errore nel login con Google:", err);
+      setError(err.message || "Errore durante il login");
     } finally {
       setIsLoading(false);
     }
@@ -99,19 +97,14 @@ export const useGoogleSignIn = (): UseGoogleSignInResult => {
     try {
       setIsLoading(true);
       setError(null);
-      
-      const result = await signOutFromGoogle();
-      
-      if (result.success) {
-        setIsSignedIn(false);
-        setUser(null);
-      } else {
-        setError(result.message || 'Errore durante il logout');
-      }
-      
+
+      await signOutFromGoogle();
+
+      setIsSignedIn(false);
+      setUser(null);
     } catch (err: any) {
-      console.error('❌ Errore nel logout da Google:', err);
-      setError(err.message || 'Errore durante il logout');
+      console.error("❌ Errore nel logout da Google:", err);
+      setError(err.message || "Errore durante il logout");
     } finally {
       setIsLoading(false);
     }
@@ -121,19 +114,14 @@ export const useGoogleSignIn = (): UseGoogleSignInResult => {
     try {
       setIsLoading(true);
       setError(null);
-      
-      const result = await revokeGoogleAccess();
-      
-      if (result.success) {
-        setIsSignedIn(false);
-        setUser(null);
-      } else {
-        setError(result.message || 'Errore nella revoca dell\'accesso');
-      }
-      
+
+      await revokeGoogleAccess();
+
+      setIsSignedIn(false);
+      setUser(null);
     } catch (err: any) {
-      console.error('❌ Errore nella revoca dell\'accesso Google:', err);
-      setError(err.message || 'Errore nella revoca dell\'accesso');
+      console.error("❌ Errore nella revoca dell'accesso Google:", err);
+      setError(err.message || "Errore nella revoca dell'accesso");
     } finally {
       setIsLoading(false);
     }

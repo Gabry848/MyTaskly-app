@@ -6,7 +6,7 @@ import {
   SafeAreaView,
   StatusBar
 } from 'react-native';
-import CalendarView from '../../../components/CalendarView';
+import CalendarView from '../../components/Calendar/CalendarView';
 import { useTranslation } from 'react-i18next';
 
 export default function Calendar() {
@@ -51,5 +51,6 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+    justifyContent: 'space-between',
   },
 });

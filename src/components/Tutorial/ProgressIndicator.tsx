@@ -2,7 +2,7 @@ import React from 'react';
 import { View } from 'react-native';
 import { tutorialStyles } from './styles';
 
-interface ProgressIndicatorProps {
+export interface ProgressIndicatorProps {
   totalSteps: number;
   currentStep: number;
 }

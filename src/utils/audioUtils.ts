@@ -6,6 +6,73 @@ import * as FileSystem from 'expo-file-system';
  * Include registrazione, conversione base64, e riproduzione
  */
 
+/**
+ * Converte una stringa base64 in Uint8Array
+ * Implementazione nativa per React Native (no atob/btoa)
+ */
+function decodeBase64(base64: string): Uint8Array {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+  // Rimuove eventuali caratteri non-base64 (es. newline)
+  const sanitized = base64.replace(/[^A-Za-z0-9+/=]/g, '');
+  // Padding per lunghezza non multipla di 4 (comportamento analogo a Buffer.from)
+  const padLength = (4 - (sanitized.length % 4)) % 4;
+  const padded = sanitized.padEnd(sanitized.length + padLength, '=');
+
+  // Calcola la lunghezza del buffer tenendo conto del padding
+  let bufferLength = padded.length * 0.75;
+  if (padded.endsWith('==')) bufferLength -= 2;
+  else if (padded.endsWith('=')) bufferLength -= 1;
+
+  const bytes = new Uint8Array(bufferLength);
+  let byteIndex = 0;
+
+  for (let i = 0; i < padded.length; i += 4) {
+    const a = chars.indexOf(padded[i]);
+    const b = chars.indexOf(padded[i + 1]);
+    const cChar = padded[i + 2];
+    const dChar = padded[i + 3];
+
+    const c = cChar === '=' ? 64 : chars.indexOf(cChar);
+    const d = dChar === '=' ? 64 : chars.indexOf(dChar);
+
+    const bitmap = (a << 18) | (b << 12) | ((c & 0x3f) << 6) | (d & 0x3f);
+
+    bytes[byteIndex++] = (bitmap >> 16) & 0xff;
+    if (c !== 64) bytes[byteIndex++] = (bitmap >> 8) & 0xff;
+    if (d !== 64) bytes[byteIndex++] = bitmap & 0xff;
+  }
+
+  return bytes.subarray(0, byteIndex);
+}
+
+/**
+ * Converte Uint8Array in stringa base64
+ * Implementazione nativa per React Native (no atob/btoa)
+ */
+function encodeBase64(bytes: Uint8Array): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+  let result = '';
+  let i = 0;
+
+  while (i < bytes.length) {
+    const a = bytes[i++];
+    // Traccia quanti byte veri abbiamo per questo gruppo
+    const hasB = i < bytes.length;
+    const b = hasB ? bytes[i++] : 0;
+    const hasC = i < bytes.length;
+    const c = hasC ? bytes[i++] : 0;
+
+    const bitmap = (a << 16) | (b << 8) | c;
+
+    result += chars.charAt((bitmap >> 18) & 0x3f);
+    result += chars.charAt((bitmap >> 12) & 0x3f);
+    result += hasB ? chars.charAt((bitmap >> 6) & 0x3f) : '=';
+    result += hasC ? chars.charAt(bitmap & 0x3f) : '=';
+  }
+
+  return result;
+}
+
 // Configurazioni audio
 export const AUDIO_CONFIG = {
   SAMPLE_RATE: 16000,
@@ -29,6 +96,21 @@ export const VAD_CONFIG = {
 export const AUDIO_LEVEL_CONFIG = {
   MIN_DB: -80,  // Livello di silenzio tipico
   MAX_DB: -10,  // Livello di voce forte
+};
+
+// Configurazione per voice chat chunk flow control
+export const VOICE_CHUNK_CONFIG = {
+  // Minimum chunks to buffer before starting playback
+  MIN_CHUNKS_BEFORE_PLAYBACK: 3,
+
+  // Maximum wait time for chunks (ms) before starting with available
+  MAX_BUFFER_WAIT_MS: 2000,
+
+  // Burst detection threshold (inter-arrival time < this = burst)
+  BURST_DETECTION_THRESHOLD_MS: 10,
+
+  // Warning threshold for low buffer during playback
+  LOW_BUFFER_WARNING_THRESHOLD: 1,
 };
 
 /**
@@ -56,8 +138,6 @@ export class AudioRecorder {
   private vadEnabled: boolean = false;
   private vadCallbacks: VADCallbacks = {};
   private isSpeechDetected: boolean = false;
-
-  constructor() {}
 
   /**
    * Inizializza e avvia la registrazione audio
@@ -256,7 +336,7 @@ export class AudioRecorder {
       const fullBase64 = await FileSystem.readAsStringAsync(audioUri, {
         encoding: FileSystem.EncodingType.Base64,
       });
-      
+
       // Prendiamo solo i primi ~16 caratteri base64 (corrispondenti a ~12 bytes)
       const headerBase64 = fullBase64.substring(0, 16);
       const headerBytes = this.base64ToBytes(headerBase64);
@@ -272,12 +352,7 @@ export class AudioRecorder {
    */
   private base64ToBytes(base64: string): Uint8Array {
     try {
-      const binaryString = atob(base64);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-      return bytes;
+      return decodeBase64(base64);
     } catch (error) {
       console.error('Errore conversione base64 to bytes:', error);
       return new Uint8Array(0);
@@ -410,6 +485,12 @@ export class AudioPlayer {
   private isPlaying: boolean = false;
   private onCompleteCallback: (() => void) | null = null;
 
+  // Buffer state tracking per diagnostica
+  private lastChunkReceivedTime: number = 0;
+  private chunkArrivalTimes: number[] = [];
+  private bufferStartTime: number = 0;
+  private isBufferingStarted: boolean = false;
+
   constructor() {}
 
   /**
@@ -417,12 +498,7 @@ export class AudioPlayer {
    */
   private base64ToBytes(base64: string): Uint8Array {
     try {
-      const binaryString = atob(base64);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-      return bytes;
+      return decodeBase64(base64);
     } catch (error) {
       console.error('Errore conversione base64 to bytes:', error);
       return new Uint8Array(0);
@@ -434,15 +510,103 @@ export class AudioPlayer {
    */
   private bytesToBase64(bytes: Uint8Array): string {
     try {
-      let binary = '';
-      for (let i = 0; i < bytes.byteLength; i++) {
-        binary += String.fromCharCode(bytes[i]);
-      }
-      return btoa(binary);
+      return encodeBase64(bytes);
     } catch (error) {
       console.error('Errore conversione bytes to base64:', error);
       return '';
     }
+  }
+
+  /**
+   * Tenta di individuare il formato audio dai primi bytes
+   */
+  private detectAudioFormat(data: Uint8Array): 'wav' | 'mp3' | 'm4a' | 'ogg' | 'unknown' {
+    if (data.length < 12) return 'unknown';
+
+    // RIFF/WAVE
+    if (
+      data[0] === 0x52 && data[1] === 0x49 && data[2] === 0x46 && data[3] === 0x46 &&
+      data[8] === 0x57 && data[9] === 0x41 && data[10] === 0x56 && data[11] === 0x45
+    ) {
+      return 'wav';
+    }
+
+    // MP3 (ID3 tag o frame sync 0xfff*)
+    if (
+      (data[0] === 0x49 && data[1] === 0x44 && data[2] === 0x33) || // ID3
+      (data[0] === 0xff && (data[1] & 0xe0) === 0xe0) // frame sync
+    ) {
+      return 'mp3';
+    }
+
+    // OGG
+    if (data[0] === 0x4f && data[1] === 0x67 && data[2] === 0x67 && data[3] === 0x53) {
+      return 'ogg';
+    }
+
+    // MP4/M4A (ftyp atom)
+    if (
+      data[4] === 0x66 && data[5] === 0x74 && data[6] === 0x79 && data[7] === 0x70 &&
+      data[8] === 0x4d && data[9] === 0x34 && data[10] === 0x41
+    ) {
+      return 'm4a';
+    }
+
+    return 'unknown';
+  }
+
+  /**
+   * Controlla se il buffer è pronto per la riproduzione
+   * Ritorna true se abbiamo almeno MIN_CHUNKS_BEFORE_PLAYBACK chunk
+   */
+  isReadyToPlay(): boolean {
+    const bufferedCount = this.getBufferedChunksCount();
+    const isReady = bufferedCount >= VOICE_CHUNK_CONFIG.MIN_CHUNKS_BEFORE_PLAYBACK;
+
+    if (!isReady && bufferedCount > 0) {
+      console.log(`🔊 Buffer non pronto: ${bufferedCount}/${VOICE_CHUNK_CONFIG.MIN_CHUNKS_BEFORE_PLAYBACK} chunk`);
+    }
+
+    return isReady;
+  }
+
+  /**
+   * Ottiene il numero di chunk attualmente nel buffer
+   */
+  getBufferedChunksCount(): number {
+    return this.chunkBuffer.length;
+  }
+
+  /**
+   * Ottiene statistiche sull'arrivo dei chunk
+   */
+  getChunkArrivalStatistics(): {
+    totalReceived: number;
+    averageInterArrivalMs: number;
+    minInterArrivalMs: number;
+    maxInterArrivalMs: number;
+    bursts: number;
+  } | null {
+    if (this.chunkArrivalTimes.length < 2) return null;
+
+    const interArrivals: number[] = [];
+    for (let i = 1; i < this.chunkArrivalTimes.length; i++) {
+      interArrivals.push(this.chunkArrivalTimes[i] - this.chunkArrivalTimes[i - 1]);
+    }
+
+    const burstCount = interArrivals.filter(
+      time => time < VOICE_CHUNK_CONFIG.BURST_DETECTION_THRESHOLD_MS
+    ).length;
+
+    const avgInterArrival = interArrivals.reduce((a, b) => a + b, 0) / interArrivals.length;
+
+    return {
+      totalReceived: this.chunkArrivalTimes.length,
+      averageInterArrivalMs: avgInterArrival,
+      minInterArrivalMs: Math.min(...interArrivals),
+      maxInterArrivalMs: Math.max(...interArrivals),
+      bursts: burstCount,
+    };
   }
 
   /**
@@ -490,6 +654,29 @@ export class AudioPlayer {
    * Aggiunge un chunk alla collezione
    */
   addChunk(base64Data: string, chunkIndex?: number): boolean {
+    const currentTime = Date.now();
+
+    // Traccia timing arrivo chunk (per prima volta)
+    if (!this.isBufferingStarted) {
+      this.isBufferingStarted = true;
+      this.bufferStartTime = currentTime;
+      console.log(`🔊 ⏱️ INIZIO BUFFERING chunk audio`);
+    }
+
+    // Traccia inter-arrival time
+    if (this.lastChunkReceivedTime > 0) {
+      const interArrivalMs = currentTime - this.lastChunkReceivedTime;
+      this.chunkArrivalTimes.push(currentTime);
+
+      if (interArrivalMs < VOICE_CHUNK_CONFIG.BURST_DETECTION_THRESHOLD_MS) {
+        console.warn(`🔊 ⚡ BURST RILEVATO: ${interArrivalMs}ms tra chunk`);
+      }
+    } else {
+      this.chunkArrivalTimes.push(currentTime);
+    }
+
+    this.lastChunkReceivedTime = currentTime;
+
     if (typeof chunkIndex === 'number') {
       if (this.seenChunkIndexes.has(chunkIndex)) {
         console.warn(`🔊 Chunk duplicato ricevuto (indice ${chunkIndex}) - ignorato`);
@@ -509,26 +696,168 @@ export class AudioPlayer {
     }
 
     this.chunkBuffer.push({ index: chunkIndex, data: base64Data });
-    console.log(`🔊 Chunk aggiunto. Totale chunks: ${this.getChunksCount()}`);
+    const bufferedCount = this.getChunksCount();
+    console.log(`🔊 Chunk #${typeof chunkIndex === 'number' ? chunkIndex : '?'} aggiunto. Buffer: ${bufferedCount}/${VOICE_CHUNK_CONFIG.MIN_CHUNKS_BEFORE_PLAYBACK}`);
+
     return true;
   }
 
   /**
+   * Unisce TUTTI i chunk in un singolo file, poi lo riproduce
+   * Salva il file concatenato su disco prima di riprodurre
+   */
+  
+  async playChunksSequentially(onComplete?: () => void): Promise<boolean> {
+    const totalChunks = this.getChunksCount();
+
+    if (totalChunks === 0) {
+      console.log('AudioPlayer: Nessun chunk da riprodurre');
+      return false;
+    }
+
+    console.log(`AudioPlayer: Unione di ${totalChunks} chunk in corso...`);
+
+    try {
+      const indexedChunks = this.chunkBuffer
+        .filter(chunk => typeof chunk.index === 'number')
+        .sort((a, b) => (a.index as number) - (b.index as number));
+      const nonIndexedChunks = this.chunkBuffer.filter(chunk => typeof chunk.index !== 'number');
+
+      const playbackQueue = [...indexedChunks, ...nonIndexedChunks];
+
+      if (playbackQueue.length === 0) {
+        console.warn('AudioPlayer: Nessun chunk valido da riprodurre');
+        this.clearChunks();
+        return false;
+      }
+
+      console.log('AudioPlayer: Step 1, decodifica chunk base64 e concatenazione binari...');
+
+      // Decodifica OGNI chunk base64 completamente a binario
+      const binaryChunks: Uint8Array[] = [];
+      for (const chunk of playbackQueue) {
+        const binaryData = this.base64ToBytes(chunk.data);
+        if (binaryData.length > 0) {
+          binaryChunks.push(binaryData);
+          console.log(`  Chunk decodificato: ${binaryData.length} bytes`);
+        }
+      }
+
+      if (binaryChunks.length === 0) {
+        console.warn('AudioPlayer: Nessun chunk valido da decodificare');
+        this.clearChunks();
+        return false;
+      }
+
+      // Concatena i binari usando Uint8Array.set()
+      const totalBinaryLength = binaryChunks.reduce((acc, chunk) => acc + chunk.length, 0);
+      const totalBinaryData = new Uint8Array(totalBinaryLength);
+      let offset = 0;
+
+      binaryChunks.forEach((chunk) => {
+        totalBinaryData.set(chunk, offset);
+        offset += chunk.length;
+      });
+
+      console.log(`AudioPlayer: Step 1 completato (${totalBinaryData.length} bytes binari da ${binaryChunks.length} chunk)`);
+
+      const detectedFormat = this.detectAudioFormat(totalBinaryData);
+      const extension = detectedFormat === 'unknown' ? 'm4a' : detectedFormat;
+      if (detectedFormat === 'unknown') {
+        console.warn('AudioPlayer: Formato audio non rilevato, uso fallback .m4a');
+      } else {
+        console.log(`AudioPlayer: Formato audio rilevato -> ${detectedFormat}`);
+      }
+
+      console.log(`AudioPlayer: Dati audio decodificati (${totalBinaryData.length} bytes)`);
+
+      console.log('AudioPlayer: Step 2, salvataggio file audio concatenato...');
+      const finalAudioPath = `${FileSystem.documentDirectory}final_audio_${Date.now()}.${extension}`;
+
+      // Riencodifica a base64 per scrivere il file (richiesto da FileSystem)
+      const finalBase64 = this.bytesToBase64(totalBinaryData);
+
+      await FileSystem.writeAsStringAsync(finalAudioPath, finalBase64, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      console.log(`AudioPlayer: Step 2 completato (file: ${finalAudioPath.split('/').pop()})`);
+
+      console.log('AudioPlayer: Step 3, avvio riproduzione file concatenato...');
+
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: false,
+        playsInSilentModeIOS: true,
+        staysActiveInBackground: true,
+        shouldDuckAndroid: true,
+        playThroughEarpieceAndroid: false,
+      });
+
+      const { sound } = await Audio.Sound.createAsync({ uri: finalAudioPath });
+      this.currentSound = sound;
+
+      this.currentSound.setOnPlaybackStatusUpdate(async (status) => {
+        if (status.isLoaded && status.didJustFinish) {
+          console.log('AudioPlayer: Riproduzione completata');
+          try {
+            await this.currentSound?.unloadAsync();
+          } catch (e) {
+            console.warn('AudioPlayer: Errore unload audio');
+          }
+
+          try {
+            await FileSystem.deleteAsync(finalAudioPath);
+            console.log('AudioPlayer: File temporaneo eliminato');
+          } catch (e) {
+            console.warn('AudioPlayer: Errore eliminazione file temporaneo');
+          }
+
+          this.clearChunks();
+          onComplete?.();
+        }
+      });
+
+      await this.currentSound.playAsync();
+      this.isPlaying = true;
+      console.log('AudioPlayer: Step 3 completato, riproduzione avviata');
+
+      return true;
+    } catch (error) {
+      console.error('AudioPlayer: Errore durante la riproduzione concatenata:', error);
+      this.clearChunks();
+      return false;
+    }
+  }
+
+  /**
    * Concatena tutti i chunk e li riproduce
+
    * Salva i chunk in un singolo file e lo riproduce
    */
+  
   async playAllChunks(onComplete?: () => void): Promise<boolean> {
     const totalChunks = this.getChunksCount();
 
     if (totalChunks === 0) {
-      console.log('🔊 Nessun chunk da riprodurre');
+      console.log('AudioPlayer: Nessun chunk da riprodurre');
       return false;
     }
 
-    console.log(`🔊 Inizio concatenazione di ${totalChunks} chunks...`);
+    const stats = this.getChunkArrivalStatistics();
+    console.log('AudioPlayer: Stato buffer per playback');
+    console.log(`  - Total chunks: ${totalChunks}`);
+    if (stats) {
+      console.log(`  - Avg inter-arrival: ${stats.averageInterArrivalMs.toFixed(2)}ms`);
+      console.log(`  - Min/Max: ${stats.minInterArrivalMs}ms / ${stats.maxInterArrivalMs}ms`);
+      console.log(`  - Burst events: ${stats.bursts}`);
+    }
+    if (this.isBufferingStarted) {
+      const bufferDuration = this.lastChunkReceivedTime - this.bufferStartTime;
+      console.log(`  - Buffer duration: ${bufferDuration}ms`);
+    }
+
+    console.log(`AudioPlayer: Inizio concatenazione di ${totalChunks} chunks...`);
 
     try {
-      console.log('🔊 Preparazione sequenza chunks per la riproduzione...');
       const indexedChunks = this.chunkBuffer
         .filter(chunk => typeof chunk.index === 'number')
         .sort((a, b) => (a.index as number) - (b.index as number));
@@ -540,9 +869,9 @@ export class AudioPlayer {
           const expected = sortedIndexes[i - 1] + 1;
           if (sortedIndexes[i] !== expected) {
             if (sortedIndexes[i] < expected) {
-              console.warn(`🔊 Ordine chunk non crescente: indice ${sortedIndexes[i]} dopo ${sortedIndexes[i - 1]}`);
+              console.warn(`AudioPlayer: Ordine chunk non crescente: indice ${sortedIndexes[i]} dopo ${sortedIndexes[i - 1]}`);
             } else {
-              console.warn(`🔊 Mancano ${sortedIndexes[i] - expected} chunk audio prima dell'indice ${sortedIndexes[i]}`);
+              console.warn(`AudioPlayer: Mancano ${sortedIndexes[i] - expected} chunk audio prima dell'indice ${sortedIndexes[i]}`);
             }
           }
         }
@@ -551,36 +880,41 @@ export class AudioPlayer {
       const playbackQueue = [...indexedChunks, ...nonIndexedChunks];
 
       if (playbackQueue.length === 0) {
-        console.warn('🔊 Nessun chunk valido da riprodurre dopo il filtraggio');
+        console.warn('AudioPlayer: Nessun chunk valido da riprodurre dopo il filtraggio');
         this.clearChunks();
         return false;
       }
 
-      console.log('🔊 Concatenazione chunks base64...');
-      const binaryChunks: Uint8Array[] = [];
+      console.log('AudioPlayer: Decodifica chunk base64 e concatenazione binari...');
 
-      playbackQueue.forEach((chunk, position) => {
+      // Decodifica OGNI chunk base64 completamente a binario
+      const binaryChunks: Uint8Array[] = [];
+      let processedChunkCount = 0;
+
+      for (const chunk of playbackQueue) {
         try {
           const binaryData = this.base64ToBytes(chunk.data);
 
-          if (!binaryData.length) {
-            console.warn(`🔊 Chunk ${chunk.index ?? position} vuoto o non valido, ignorato`);
-            return;
+          if (binaryData.length === 0) {
+            console.warn(`AudioPlayer: Chunk ${chunk.index ?? processedChunkCount} vuoto, ignorato`);
+            continue;
           }
 
           binaryChunks.push(binaryData);
-          console.log(`🔊 Chunk ${chunk.index ?? position} concatenato: ${binaryData.length} bytes aggiunti`);
+          processedChunkCount++;
+          console.log(`AudioPlayer: Chunk ${chunk.index ?? processedChunkCount} decodificato (${binaryData.length} bytes)`);
         } catch (chunkError) {
-          console.warn(`🔊 Errore decodifica chunk ${chunk.index ?? position}:`, chunkError);
+          console.warn(`AudioPlayer: Errore decodifica chunk ${chunk.index ?? processedChunkCount}:`, chunkError);
         }
-      });
+      }
 
       if (binaryChunks.length === 0) {
-        console.warn('🔊 Nessun chunk audio valido dopo la decodifica');
+        console.warn('AudioPlayer: Nessun chunk audio valido dopo la decodifica');
         this.clearChunks();
         return false;
       }
 
+      // Concatena i binari usando Uint8Array.set()
       const totalBinaryLength = binaryChunks.reduce((acc, chunk) => acc + chunk.length, 0);
       const totalBinaryData = new Uint8Array(totalBinaryLength);
       let offset = 0;
@@ -590,14 +924,22 @@ export class AudioPlayer {
         offset += chunk.length;
       });
 
-      const finalAudioPath = `${FileSystem.documentDirectory}final_audio_${Date.now()}.m4a`;
+      const detectedFormat = this.detectAudioFormat(totalBinaryData);
+      const extension = detectedFormat === 'unknown' ? 'm4a' : detectedFormat;
+      if (detectedFormat === 'unknown') {
+        console.warn('AudioPlayer: Formato audio non rilevato, uso fallback .m4a');
+      } else {
+        console.log(`AudioPlayer: Formato audio rilevato -> ${detectedFormat}`);
+      }
+
+      const finalAudioPath = `${FileSystem.documentDirectory}final_audio_${Date.now()}.${extension}`;
       const completeAudioBase64 = this.bytesToBase64(totalBinaryData);
 
-      console.log('🔊 Audio concatenato:');
+      console.log('AudioPlayer: Audio concatenato pronto:');
       console.log(`  - Chunks elaborati: ${binaryChunks.length}`);
       console.log(`  - Dimensione binaria: ${totalBinaryData.length} bytes`);
       console.log(`  - Dimensione base64: ${completeAudioBase64.length} caratteri`);
-      console.log(`🔊 Salvataggio file audio finale: ${finalAudioPath.split('/').pop()}`);
+      console.log(`  - Salvataggio file: ${finalAudioPath.split('/').pop()}`);
 
       await FileSystem.writeAsStringAsync(finalAudioPath, completeAudioBase64, {
         encoding: FileSystem.EncodingType.Base64,
@@ -605,7 +947,7 @@ export class AudioPlayer {
 
       this.clearChunks();
 
-      console.log('🔊 Riproduzione file audio...');
+      console.log('AudioPlayer: Riproduzione file audio...');
 
       try {
         await Audio.setAudioModeAsync({
@@ -621,28 +963,28 @@ export class AudioPlayer {
 
         this.currentSound.setOnPlaybackStatusUpdate((status) => {
           if (status.isLoaded && status.didJustFinish) {
-            console.log('🔊 Riproduzione completata');
+            console.log('AudioPlayer: Riproduzione completata');
             this.onPlaybackComplete(onComplete, finalAudioPath);
           }
         });
 
         await this.currentSound.playAsync();
         this.isPlaying = true;
-        console.log('🔊 Riproduzione audio iniziata');
+        console.log('AudioPlayer: Riproduzione audio iniziata');
         return true;
       } catch (error) {
-        console.error('🔊 Errore riproduzione:', error);
+        console.error('AudioPlayer: Errore riproduzione:', error);
 
         try {
           await FileSystem.deleteAsync(finalAudioPath);
         } catch {
-          console.warn('🔊 Errore eliminazione file fallito');
+          console.warn('AudioPlayer: Errore eliminazione file temporaneo');
         }
         return false;
       }
 
     } catch (error) {
-      console.error('🔊 Errore concatenazione:', error);
+      console.error('AudioPlayer: Errore concatenazione:', error);
       this.clearChunks();
       return false;
     }
@@ -650,12 +992,20 @@ export class AudioPlayer {
 
   /**
    * Svuota i chunk accumulati
+
    */
   clearChunks(): void {
     this.chunkBuffer = [];
     this.seenChunkIndexes.clear();
     this.highestIndexedChunk = -1;
-    console.log('🔊 Chunks svuotati');
+
+    // Reset timing per prossimo ciclo
+    this.lastChunkReceivedTime = 0;
+    this.chunkArrivalTimes = [];
+    this.bufferStartTime = 0;
+    this.isBufferingStarted = false;
+
+    console.log('🔊 Chunks svuotati e timing reset');
   }
 
   /**
@@ -735,22 +1085,14 @@ export class AudioPlayer {
  */
 export function arrayBufferToBase64(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);
-  let binary = '';
-  for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return btoa(binary);
+  return encodeBase64(bytes);
 }
 
 /**
  * Utility per convertire base64 in ArrayBuffer
  */
 export function base64ToArrayBuffer(base64: string): ArrayBuffer {
-  const binaryString = atob(base64);
-  const bytes = new Uint8Array(binaryString.length);
-  for (let i = 0; i < binaryString.length; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
+  const bytes = decodeBase64(base64);
   return bytes.buffer;
 }
 
