@@ -1,7 +1,11 @@
 import dayjs from "dayjs";
 import axios from "./axiosInstance";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { STORAGE_KEYS, DEFAULT_BASE_URL, API_ENDPOINTS } from "../constants/authConstants";
+import {
+  STORAGE_KEYS,
+  DEFAULT_BASE_URL,
+  API_ENDPOINTS,
+} from "../constants/authConstants";
 
 // Inizializzazione dell'app
 async function initializeAuth() {
@@ -66,7 +70,10 @@ async function updateAuthData(data: any) {
       await AsyncStorage.setItem(STORAGE_KEYS.USER_EMAIL, data.email);
     }
     if (data.utente_id) {
-      await AsyncStorage.setItem(STORAGE_KEYS.USER_ID, data.utente_id.toString());
+      await AsyncStorage.setItem(
+        STORAGE_KEYS.USER_ID,
+        data.utente_id.toString()
+      );
     }
     if (data.password) {
       await AsyncStorage.setItem(STORAGE_KEYS.USER_PASSWORD, data.password);
@@ -76,7 +83,6 @@ async function updateAuthData(data: any) {
     const userData = (await getUserData()) || {};
     const updatedUserData = { ...userData, ...data };
     await setUserData(updatedUserData);
-
   } catch (error) {
     console.error(
       "Errore durante l'aggiornamento dei dati di autenticazione:",
@@ -88,7 +94,7 @@ async function updateAuthData(data: any) {
 /**
  * Esegue il login dell'utente
  *
- * @param {string} email - L'email dell'utente
+ * @param {string} username - L'email o username dell'utente
  * @param {string} password - La password dell'utente
  * @returns {Promise<Object>} - Un oggetto che contiene lo stato del login e i token
  */
@@ -97,14 +103,14 @@ async function login(username: any, password: any) {
     // Pulisci i token esistenti prima del nuovo login per evitare interferenze
     await AsyncStorage.multiRemove([
       STORAGE_KEYS.BEARER_TOKEN,
-      STORAGE_KEYS.REFRESH_TOKEN
+      STORAGE_KEYS.REFRESH_TOKEN,
     ]);
-    console.log('🧹 Token precedenti rimossi prima del nuovo login');
-    
+    console.log("🧹 Token precedenti rimossi prima del nuovo login");
+
     // Prima controlla se l'email è verificata (assumendo che username sia l'email o che l'API accetti username)
     // Se username non è email, dobbiamo fare una call separata o modificare l'API
     // Per ora procediamo con il login normale e controlliamo dopo
-    
+
     // Esegui la richiesta di login e gestisci gli errori
     const response = await axios.post(
       API_ENDPOINTS.SIGNIN,
@@ -120,25 +126,34 @@ async function login(username: any, password: any) {
     );
 
     // Estrai i dati dalla risposta
-    const { bearer_token, refresh_token, bearer_duration, refresh_duration, email } =
-      response.data;
+    const {
+      bearer_token,
+      refresh_token,
+      bearer_duration,
+      refresh_duration,
+      email,
+    } = response.data;
 
     // Se abbiamo l'email nella risposta, controlla lo stato di verifica
     if (email) {
       try {
         const verificationResult = await checkEmailVerificationStatus(email);
-        
+
         if (verificationResult.success && !verificationResult.isVerified) {
           return {
             success: false,
-            message: "Email non verificata. Verifica la tua email prima di effettuare il login.",
+            message:
+              "Email non verificata. Verifica la tua email prima di effettuare il login.",
             requiresEmailVerification: true,
             email: email,
             username: username,
           };
         }
       } catch (verificationError) {
-        console.warn("⚠️ Errore nel controllo verifica email durante il login:", verificationError);
+        console.warn(
+          "⚠️ Errore nel controllo verifica email durante il login:",
+          verificationError
+        );
         // Continua con il login normale se il controllo fallisce
       }
     }
@@ -218,7 +233,8 @@ async function register(username: string, email: string, password: string) {
     return {
       success: true,
       utente_id: user_id,
-      message: "Registrazione effettuata con successo. Ti abbiamo inviato un'email di verifica.",
+      message:
+        "Registrazione effettuata con successo. Ti abbiamo inviato un'email di verifica.",
       emailSent: true,
     };
   } catch (error: any) {
@@ -457,62 +473,61 @@ export async function getValidToken(): Promise<string | null> {
 /**
  * Controlla l'autenticazione e tenta automaticamente il refresh del token se necessario
  * Questa funzione è utile per essere chiamata all'avvio dell'app o quando si accede a risorse protette
- * 
+ *
  * @returns {Promise<Object>} Un oggetto che indica se l'utente è autenticato dopo eventuali tentativi di refresh
  */
-async function checkAndRefreshAuth(): Promise<{ 
-  isAuthenticated: boolean; 
-  message: string; 
+async function checkAndRefreshAuth(): Promise<{
+  isAuthenticated: boolean;
+  message: string;
   needsLogin: boolean;
 }> {
   try {
     const authStatus = await check_login();
-    
+
     // Se l'utente è già autenticato, restituisci true
     if (authStatus.isAuthenticated) {
       return {
         isAuthenticated: true,
         message: "Utente già autenticato",
-        needsLogin: false
+        needsLogin: false,
       };
     }
-    
+
     // Se il bearer token è scaduto ma il refresh token è ancora valido
     if (authStatus.canRefresh && !authStatus.refreshTokenExpired) {
       console.log("Bearer token scaduto, tentativo di refresh automatico...");
-      
+
       const refreshResult = await refreshToken();
-      
+
       if (refreshResult.success) {
         console.log("Token aggiornato con successo tramite refresh");
         return {
           isAuthenticated: true,
           message: "Token aggiornato con successo",
-          needsLogin: false
+          needsLogin: false,
         };
       } else {
         console.log("Refresh token fallito");
         return {
           isAuthenticated: false,
           message: "Refresh token scaduto o non valido",
-          needsLogin: true
+          needsLogin: true,
         };
       }
     }
-    
+
     // Se entrambi i token sono scaduti
     return {
       isAuthenticated: false,
       message: "Sessione scaduta, è necessario effettuare nuovamente il login",
-      needsLogin: true
+      needsLogin: true,
     };
-    
   } catch (error) {
     console.error("Errore nel controllo autenticazione:", error);
     return {
       isAuthenticated: false,
       message: "Errore nel controllo autenticazione",
-      needsLogin: true
+      needsLogin: true,
     };
   }
 }
@@ -524,7 +539,10 @@ async function checkAndRefreshAuth(): Promise<{
  * @param {string} emailType - Il tipo di email da inviare ("email_verification", "welcome", "password_reset", etc.)
  * @returns {Promise<Object>} - Un oggetto che contiene lo stato dell'invio
  */
-async function sendVerificationEmail(email: string, emailType: string = "email_verification") {
+async function sendVerificationEmail(
+  email: string,
+  emailType: string = "email_verification"
+) {
   try {
     const response = await axios.post(
       API_ENDPOINTS.SEND_VERIFICATION,
@@ -545,7 +563,10 @@ async function sendVerificationEmail(email: string, emailType: string = "email_v
       data: response.data,
     };
   } catch (error: any) {
-    console.error("❌ Errore durante l'invio dell'email di verifica:", error.message);
+    console.error(
+      "❌ Errore durante l'invio dell'email di verifica:",
+      error.message
+    );
     if (error.response) {
       console.error("Dettagli errore:", error.response.data);
       console.error("Status code:", error.response.status);
@@ -553,7 +574,9 @@ async function sendVerificationEmail(email: string, emailType: string = "email_v
 
     return {
       success: false,
-      message: error.response?.data?.message || "Errore durante l'invio dell'email di verifica",
+      message:
+        error.response?.data?.message ||
+        "Errore durante l'invio dell'email di verifica",
       statusCode: error.response?.status,
       error: error,
     };
@@ -580,11 +603,15 @@ async function checkEmailVerificationStatus(email: string) {
     return {
       success: true,
       isVerified: response.data.is_verified,
-      message: response.data.message || "Stato verifica recuperato con successo",
+      message:
+        response.data.message || "Stato verifica recuperato con successo",
       data: response.data,
     };
   } catch (error: any) {
-    console.error("❌ Errore durante il controllo dello stato di verifica:", error.message);
+    console.error(
+      "❌ Errore durante il controllo dello stato di verifica:",
+      error.message
+    );
     if (error.response) {
       console.error("Dettagli errore:", error.response.data);
       console.error("Status code:", error.response.status);
@@ -593,7 +620,9 @@ async function checkEmailVerificationStatus(email: string) {
     return {
       success: false,
       isVerified: false,
-      message: error.response?.data?.message || "Errore durante il controllo dello stato di verifica",
+      message:
+        error.response?.data?.message ||
+        "Errore durante il controllo dello stato di verifica",
       statusCode: error.response?.status,
       error: error,
     };
@@ -629,7 +658,10 @@ async function checkAvailability(username: string, email: string) {
       data: response.data,
     };
   } catch (error: any) {
-    console.error("❌ Errore durante il controllo della disponibilità:", error.message);
+    console.error(
+      "❌ Errore durante il controllo della disponibilità:",
+      error.message
+    );
     if (error.response) {
       console.error("Dettagli errore:", error.response.data);
       console.error("Status code:", error.response.status);
@@ -639,7 +671,9 @@ async function checkAvailability(username: string, email: string) {
       success: false,
       nameAvailable: false,
       emailAvailable: false,
-      message: error.response?.data?.message || "Errore durante il controllo della disponibilità",
+      message:
+        error.response?.data?.message ||
+        "Errore durante il controllo della disponibilità",
       statusCode: error.response?.status,
       error: error,
     };
@@ -671,7 +705,7 @@ async function changePassword(oldPassword: string, newPassword: string) {
       },
       {
         headers: {
-          "Authorization": `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
       }
@@ -693,7 +727,8 @@ async function changePassword(oldPassword: string, newPassword: string) {
 
     return {
       success: false,
-      message: error.response?.data?.message || "Errore durante il cambio password",
+      message:
+        error.response?.data?.message || "Errore durante il cambio password",
       statusCode: error.response?.status,
       error: error,
     };
@@ -725,7 +760,7 @@ async function changeEmail(newEmail: string, password: string) {
       },
       {
         headers: {
-          "Authorization": `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
       }
@@ -747,7 +782,8 @@ async function changeEmail(newEmail: string, password: string) {
 
     return {
       success: false,
-      message: error.response?.data?.message || "Errore durante il cambio email",
+      message:
+        error.response?.data?.message || "Errore durante il cambio email",
       statusCode: error.response?.status,
       error: error,
     };
@@ -777,7 +813,7 @@ async function changeUsername(newUsername: string) {
       },
       {
         headers: {
-          "Authorization": `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
       }
@@ -799,7 +835,8 @@ async function changeUsername(newUsername: string) {
 
     return {
       success: false,
-      message: error.response?.data?.message || "Errore durante il cambio username",
+      message:
+        error.response?.data?.message || "Errore durante il cambio username",
       statusCode: error.response?.status,
       error: error,
     };

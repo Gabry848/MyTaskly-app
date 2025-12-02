@@ -57,7 +57,7 @@ export interface SharedWithMeCategory {
 /**
  * Service for managing category sharing functionality
  */
-class CategoryShareService {
+export class CategoryShareService {
   /**
    * Share a category with another user
    * @param categoryId - ID of the category to share
@@ -107,7 +107,10 @@ class CategoryShareService {
    * @param categoryId - ID of the category
    * @param shareUserId - ID of the user to remove access from
    */
-  async removeShare(categoryId: number, shareUserId: number): Promise<{ message: string }> {
+  async removeShare(
+    categoryId: number,
+    shareUserId: number
+  ): Promise<{ message: string }> {
     try {
       const response = await axios.delete(
         `/categories/${categoryId}/share/${shareUserId}`,
@@ -214,7 +217,10 @@ class CategoryShareService {
   /**
    * Validate share request
    */
-  validateShareRequest(email: string, currentUserEmail: string): { valid: boolean; error?: string } {
+  validateShareRequest(
+    email: string,
+    currentUserEmail: string
+  ): { valid: boolean; error?: string } {
     if (!email || email.trim() === "") {
       return { valid: false, error: "Email richiesta" };
     }

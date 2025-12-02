@@ -168,13 +168,26 @@
         }
       },
       "tips": {
-        "title": "Tips"
+        "title": "Tips",
+        "tip1": "Set reminders for your important tasks to stay on track",
+        "tip2": "Use categories to organize your tasks by project or area of life",
+        "tip3": "Review your progress regularly to improve your productivity"
       }
     }
   },
   "accountSettings": {
     "title": "Account information",
     "loading": "Loading...",
+    "sections": {
+      "accountInfo": "Account Information",
+      "accountManagement": "Account Management",
+      "testNotifications": "Test Notifications"
+    },
+    "labels": {
+      "username": "Username",
+      "email": "Email",
+      "registrationDate": "Registration date"
+    },
     "fields": {
       "username": "Username",
       "email": "Email",
@@ -183,6 +196,11 @@
     "actions": {
       "changeEmail": "Change Email",
       "changeUsername": "Change Username"
+    },
+    "menu": {
+      "changeUsername": "Change Username",
+      "changeEmail": "Change Email",
+      "changePassword": "Change Password"
     },
     "modals": {
       "changeEmail": {
@@ -199,6 +217,38 @@
         "cancel": "Cancel"
       }
     },
+    "changeEmail": {
+      "title": "Change Email",
+      "newEmail": "New Email",
+      "passwordConfirm": "Password Confirmation",
+      "emailPlaceholder": "Enter new email",
+      "passwordPlaceholder": "Enter your password",
+      "updateButton": "Update Email",
+      "fillAllFields": "Please fill in all fields",
+      "invalidEmail": "Please enter a valid email address",
+      "error": "Error changing email"
+    },
+    "changeUsername": {
+      "title": "Change Username",
+      "newUsername": "New Username",
+      "placeholder": "Enter new username",
+      "updateButton": "Update Username",
+      "enterUsername": "Please enter a username",
+      "minLength": "Username must be at least 3 characters",
+      "error": "Error changing username"
+    },
+    "testNotification": {
+      "send": "Send Test Notification",
+      "sending": "Sending test notification...",
+      "description": "Send a test notification to verify your settings",
+      "success": "Test notification sent successfully",
+      "failed": "Failed to send test notification",
+      "error": "Error sending test notification"
+    },
+    "errors": {
+      "invalidToken": "Invalid authentication token",
+      "loadingError": "Error loading account information"
+    },
     "messages": {
       "emailChanged": "Email changed successfully",
       "usernameChanged": "Username changed successfully",
@@ -207,16 +257,41 @@
   },
   "changePassword": {
     "title": "Change Password",
+    "instructions": "For security reasons, enter your current password and set a new one with at least 8 characters.",
     "fields": {
       "currentPassword": "Current password",
       "newPassword": "New password",
       "confirmPassword": "Confirm password"
     },
+    "labels": {
+      "currentPassword": "Current Password",
+      "newPassword": "New Password",
+      "confirmPassword": "Confirm Password"
+    },
+    "placeholders": {
+      "currentPassword": "Enter your current password",
+      "newPassword": "Enter new password (min 8 characters)",
+      "confirmPassword": "Confirm new password"
+    },
     "button": "Change Password",
+    "updateButton": "Update Password",
     "messages": {
       "success": "Password changed successfully",
       "error": "Error changing password",
       "passwordMismatch": "Passwords don't match"
+    },
+    "errors": {
+      "fillAllFields": "Please fill in all password fields",
+      "passwordMismatch": "Passwords don't match",
+      "minLength": "Password must be at least 8 characters",
+      "generic": "An error occurred while changing password"
+    },
+    "tips": {
+      "title": "Security Tips",
+      "tip1": "Use a combination of uppercase, lowercase, numbers and special characters",
+      "tip2": "Avoid using easily guessable passwords like birthdate or name",
+      "tip3": "Don't use the same password as other accounts",
+      "tip4": "Change your password regularly for better security"
     }
   },
   "language": {
@@ -254,9 +329,29 @@
     "appName": "Mytaskly",
     "version": "Version",
     "aboutApp": "About the app",
-    "appStatus": "App status",
-    "inDevelopment": "In development",
-    "copyright": "© 2024 Mytaskly. All rights reserved."
+    "description1": "Mytaskly is a modern personal task management application designed to help you organize your daily activities efficiently.",
+    "description2": "With an integrated AI assistant, beautiful interface, and comprehensive statistics, Mytaskly makes task management simple and enjoyable.",
+    "developer": {
+      "title": "Developer",
+      "name": "Gabry848",
+      "role": "Creator of Mytaskly",
+      "description": "Dedicated to creating tools that help people manage their time and productivity better."
+    },
+    "status": {
+      "title": "App Status",
+      "betaBadge": "Beta",
+      "betaDescription": "Mytaskly is currently in beta. We're continuously improving the app based on your feedback.",
+      "betaNote": "Some features may change or be unavailable."
+    },
+    "inDevelopment": {
+      "title": "Features in Development",
+      "cloudSync": "Cloud synchronization across devices",
+      "advancedNotifications": "Advanced notification scheduling",
+      "customThemes": "Custom themes and personalization",
+      "advancedStatistics": "Advanced analytics and insights"
+    },
+    "copyright": "© 2024 Mytaskly. All rights reserved.",
+    "rightsReserved": "All rights reserved."
   },
   "categories": {
     "title": "Your categories",
@@ -362,13 +457,15 @@
       "next": "Next",
       "done": "Done",
       "retry": "Retry",
-      "refresh": "Refresh"
+      "refresh": "Refresh",
+      "ok": "OK"
     },
     "messages": {
       "loading": "Loading...",
       "saving": "Saving...",
       "success": "Operation completed successfully",
       "error": "An error occurred",
+      "warning": "Warning",
       "confirmDelete": "Are you sure you want to delete?",
       "noConnection": "No internet connection",
       "tryAgain": "Try again later"

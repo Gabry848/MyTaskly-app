@@ -13,7 +13,7 @@ export interface ElementMeasurement {
   pageY: number;
 }
 
-interface UseTutorialProps {
+export interface UseTutorialProps {
   navigation: NavigationProp<RootStackParamList> | NavigationProp<TabParamList>;
   onComplete?: () => void;
   onSkip?: () => void;

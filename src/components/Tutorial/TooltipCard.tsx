@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { tutorialStyles } from './styles';
 import { ElementMeasurement } from '../../hooks/useTutorial';
 
-interface TooltipCardProps {
+export interface TooltipCardProps {
   title: string;
   description: string;
   icon?: string;

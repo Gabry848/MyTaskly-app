@@ -45,8 +45,8 @@ i18n
   .use(initReactI18next)
   .init({
     resources,
-    lng: 'it', // Lingua di default
-    fallbackLng: 'it',
+    lng: 'en', // Lingua di default
+    fallbackLng: 'en',
     interpolation: {
       escapeValue: false,
     },

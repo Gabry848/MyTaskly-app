@@ -3,7 +3,7 @@ import { View, Text, Pressable } from 'react-native';
 import { tutorialStyles } from './styles';
 import { TUTORIAL_CONTENT } from '../../constants/tutorialContent';
 
-interface NavigationControlsProps {
+export interface NavigationControlsProps {
   canGoBack: boolean;
   canGoNext: boolean;
   onBack: () => void;

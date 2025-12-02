@@ -7,7 +7,8 @@
     "**/*test.ts",
     "**/*test.tsx",
     "**/__tests__/**",
-    "**/node_modules/**"
+    "**/node_modules/**",
+    "**/docs/**"
   ],
   "excludePrivate": true,
   "excludeProtected": true,
