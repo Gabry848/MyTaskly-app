@@ -649,5 +649,70 @@
   },
   "task": {
     "noDeadline": "No deadline"
+  },
+  "recurring": {
+    "title": "Recurring Task",
+    "toggle": "Make this task recurring",
+    "patterns": {
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "monthly": "Monthly"
+    },
+    "interval": {
+      "label": "Repeat every",
+      "daily": "{{count}} day",
+      "daily_plural": "{{count}} days",
+      "weekly": "{{count}} week",
+      "weekly_plural": "{{count}} weeks",
+      "monthly": "{{count}} month",
+      "monthly_plural": "{{count}} months"
+    },
+    "daysOfWeek": {
+      "label": "Repeat on",
+      "monday": "Mon",
+      "tuesday": "Tue",
+      "wednesday": "Wed",
+      "thursday": "Thu",
+      "friday": "Fri",
+      "saturday": "Sat",
+      "sunday": "Sun"
+    },
+    "dayOfMonth": {
+      "label": "Day of month",
+      "placeholder": "Select day (1-31)"
+    },
+    "endType": {
+      "label": "Ends",
+      "never": "Never",
+      "after_count": "After",
+      "on_date": "On date"
+    },
+    "endCount": {
+      "label": "Number of occurrences",
+      "placeholder": "Enter number"
+    },
+    "endDate": {
+      "label": "End date",
+      "placeholder": "Select end date"
+    },
+    "validation": {
+      "patternRequired": "Please select a recurrence pattern",
+      "intervalRequired": "Interval must be at least 1",
+      "daysOfWeekRequired": "Select at least one day",
+      "dayOfMonthInvalid": "Day must be between 1 and 31",
+      "endCountRequired": "Enter number of occurrences",
+      "endDateRequired": "Select an end date",
+      "endDateInvalid": "End date must be in the future"
+    },
+    "messages": {
+      "created": "Recurring task created successfully",
+      "error": "Error creating recurring task"
+    },
+    "badge": {
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "monthly": "Monthly",
+      "instance": "Part of recurring series"
+    }
   }
 }

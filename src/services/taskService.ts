@@ -32,6 +32,9 @@ export interface Task {
   category_id?: string | number; // Nuovo campo preferito
   user?: string;
   isOptimistic?: boolean; // Per indicare se il task è in stato ottimistico (in attesa di conferma server)
+  is_generated_instance?: boolean; // Indicates if this task is a generated instance from a recurring template
+  parent_template_id?: number; // ID of the parent recurring template (if this is an instance)
+  recurrence_pattern?: string; // Recurrence pattern (for display purposes: "daily", "weekly", "monthly")
   [key: string]: any; // per proprietà aggiuntive
 }
 
