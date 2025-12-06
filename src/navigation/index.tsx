@@ -29,7 +29,7 @@ import GoogleCalendarScreen from "./screens/GoogleCalendar";
 import CalendarScreen from "./screens/Calendar";
 import NotificationDebugScreen from "./screens/NotificationDebug";
 import BugReportScreen from "./screens/BugReport";
-import StatisticsScreen from "./screens/Statistics";
+//import StatisticsScreen from "./screens/Statistics";
 import { NotFound as NotFoundScreen } from "./screens/NotFound";
 import eventEmitter, { emitScreenChange, EVENTS } from "../utils/eventEmitter";
 import { useNotifications } from "../services/notificationService";

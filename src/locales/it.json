@@ -490,14 +490,14 @@
       "email": "Email",
       "password": "Password",
       "button": "Accedi",
-      "loginNow": "Login Now",
+      "loginNow": "Accedi ora",
       "continueWithGoogle": "Continua con Google",
       "signingIn": "Accesso in corso...",
       "rememberMe": "Ricordami",
       "noAccount": "Non hai un account?",
-      "notMember": "Not a member?",
+      "notMember": "Non sei ancora membro?",
       "register": "Registrati",
-      "createAccount": "Create account",
+      "createAccount": "Crea account",
       "forgotPassword": "Password dimenticata?"
     },
     "register": {
@@ -507,8 +507,35 @@
       "password": "Password",
       "confirmPassword": "Conferma Password",
       "button": "Registrati",
+      "next": "Avanti",
+      "alreadyHaveAccount": "Hai già un account?",
+      "loginButton": "Accedi",
       "hasAccount": "Hai già un account?",
-      "login": "Accedi"
+      "login": "Accedi",
+      "success": "Registrazione completata con successo! Verifica la tua email.",
+      "errors": {
+        "passwordMismatch": "Le password non coincidono",
+        "availabilityCheck": "Errore durante il controllo di disponibilità username/email",
+        "usernameTaken": "Username già in uso",
+        "emailTaken": "Email già registrata",
+        "generic": "Errore durante la registrazione. Riprova."
+      }
+    },
+    "emailVerification": {
+      "title": "Verifica la tua email",
+      "confirmTitle": "Conferma il tuo indirizzo email",
+      "emailSent": "Email inviata!",
+      "checking": "Controllo in corso...",
+      "checkingMessage": "Stiamo controllando se hai verificato la tua email. Controlla la tua casella di posta e clicca sul link di verifica.",
+      "description": "Invieremo un'email di verifica al tuo indirizzo. Clicca sul link nell'email per completare la registrazione.",
+      "sentDescription": "Controlla la tua casella di posta e clicca sul link di verifica.",
+      "sendButton": "Invia email di verifica",
+      "resendButton": "Invia di nuovo",
+      "helpText": "Non hai ricevuto nessuna email?",
+      "backButton": "Torna indietro a modificarla",
+      "success": "Email di verifica inviata! Controlla la tua casella di posta.",
+      "error": "Errore nell'invio dell'email di verifica",
+      "connectionError": "Errore di connessione. Riprova più tardi."
     },
     "messages": {
       "loginSuccess": "Accesso effettuato con successo",

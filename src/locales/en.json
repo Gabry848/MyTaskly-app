@@ -507,8 +507,35 @@
       "password": "Password",
       "confirmPassword": "Confirm Password",
       "button": "Register",
+      "next": "Next",
+      "alreadyHaveAccount": "Already have an account?",
+      "loginButton": "Login",
       "hasAccount": "Already have an account?",
-      "login": "Login"
+      "login": "Login",
+      "success": "Registration completed successfully! Please verify your email.",
+      "errors": {
+        "passwordMismatch": "Passwords don't match",
+        "availabilityCheck": "Error checking username/email availability",
+        "usernameTaken": "Username is already taken",
+        "emailTaken": "Email is already registered",
+        "generic": "Error during registration. Please try again."
+      }
+    },
+    "emailVerification": {
+      "title": "Verify your email",
+      "confirmTitle": "Confirm your email address",
+      "emailSent": "Email sent!",
+      "checking": "Checking...",
+      "checkingMessage": "We're checking if you verified your email. Check your inbox and click the verification link.",
+      "description": "We will send a verification email to your address. Click the link in the email to complete registration.",
+      "sentDescription": "Check your inbox and click the verification link.",
+      "sendButton": "Send verification email",
+      "resendButton": "Send again",
+      "helpText": "Didn't receive any email?",
+      "backButton": "Go back to change it",
+      "success": "Verification email sent! Check your inbox.",
+      "error": "Error sending verification email",
+      "connectionError": "Connection error. Try again later."
     },
     "messages": {
       "loginSuccess": "Login successful",
