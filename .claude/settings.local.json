@@ -38,7 +38,8 @@
       "Bash(cat:*)",
       "Bash(npm run docs:generate:*)",
       "Bash(powershell -Command \"Get-ChildItem -Path . -Recurse | Select-Object -ExpandProperty FullName | Sort-Object\")",
-      "Bash(git log:*)"
+      "Bash(git log:*)",
+      "Bash(grep:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"

@@ -310,10 +310,52 @@ export const TaskListContainer = ({
     title: string,
     description: string,
     dueDate: string,
-    priority: number
+    priority: number,
+    categoryName?: string,
+    recurrence?: any
   ) => {
     const priorityString = priority === 1 ? "Bassa" : priority === 2 ? "Media" : "Alta";
 
+    // If this is a recurring task, use the recurring task service
+    if (recurrence) {
+      try {
+        const { createRecurringTask } = await import('../../services/recurringTaskService');
+
+        const taskData = {
+          title,
+          description: description || "",
+          start_time: dueDate ? new Date(dueDate).toISOString() : new Date().toISOString(),
+          end_time: dueDate ? new Date(dueDate).toISOString() : undefined,
+          priority: priorityString,
+          category_id: parseInt(categoryId as string) || 0,
+        };
+
+        const result = await createRecurringTask(taskData, recurrence);
+
+        if (result.success) {
+          Alert.alert(
+            "Success",
+            "Recurring task created successfully! Instances have been generated for the next 7 days."
+          );
+          // Reload tasks to show the newly created instances
+          reloadTasks();
+        } else {
+          Alert.alert(
+            "Error",
+            result.message || "Error creating recurring task"
+          );
+        }
+      } catch (error) {
+        console.error("Error creating recurring task:", error);
+        Alert.alert(
+          "Error",
+          "An error occurred while creating the recurring task"
+        );
+      }
+      return;
+    }
+
+    // Regular (non-recurring) task creation
     const newTask: TaskType = {
       id: `new_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       title,
@@ -324,7 +366,7 @@ export const TaskListContainer = ({
       status: "In sospeso", // Impostare un valore predefinito per status
       start_time: new Date().toISOString() // Impostare start_time al momento attuale
     };
-    
+
     try {
       // Attempt to save to backend
       const response = await taskService.addTask({

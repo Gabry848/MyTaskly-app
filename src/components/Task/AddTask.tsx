@@ -8,6 +8,7 @@ import {
   Modal,
   Alert,
   ScrollView,
+  Switch,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
@@ -20,6 +21,9 @@ import Animated, {
 import { addTaskToList } from "../TaskList/types";
 import { getCategories } from "../../services/taskService";
 import dayjs from "dayjs";
+import { useTranslation } from "react-i18next";
+import { RecurrenceConfig as RecurrenceConfigType } from "../../types/recurringTask";
+import RecurrenceConfig from "./RecurrenceConfig";
 
 export type AddTaskProps = {
   visible: boolean;
@@ -29,7 +33,8 @@ export type AddTaskProps = {
     description: string,
     dueDate: string,
     priority: number,
-    categoryName?: string
+    categoryName?: string,
+    recurrence?: RecurrenceConfigType
   ) => void;
   categoryName?: string;
   initialDate?: string; // Nuova prop per la data iniziale
@@ -44,6 +49,7 @@ const AddTask: React.FC<AddTaskProps> = ({
   initialDate,
   allowCategorySelection = false,
 }) => {
+  const { t } = useTranslation();
   const [categoriesOptions, setCategoriesOptions] = useState<
     { label: string; value: string }[]
   >([]);
@@ -62,6 +68,14 @@ const AddTask: React.FC<AddTaskProps> = ({
   const [date, setDate] = useState(new Date());
   const [isPickerVisible, setPickerVisible] = useState(false);
   const [pickerMode, setPickerMode] = useState<"date" | "time">("date");
+
+  // Recurring task state
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurrenceConfig, setRecurrenceConfig] = useState<RecurrenceConfigType>({
+    pattern: "daily",
+    interval: 1,
+    end_type: "never",
+  });
 
   // Gestisce l'animazione all'apertura del modale
   useEffect(() => {
@@ -120,6 +134,12 @@ const AddTask: React.FC<AddTaskProps> = ({
     setDateError("");
     setLocalCategory(categoryName || "");
     setCategoryError("");
+    setIsRecurring(false);
+    setRecurrenceConfig({
+      pattern: "daily",
+      interval: 1,
+      end_type: "never",
+    });
   };
 
   const handleSave = () => {
@@ -167,7 +187,8 @@ const AddTask: React.FC<AddTaskProps> = ({
           description,
           dueDate,
           priority,
-          allowCategorySelection ? localCategory : categoryName
+          allowCategorySelection ? localCategory : categoryName,
+          isRecurring ? recurrenceConfig : undefined
         );
       } else if (categoryName) {
         // Solo se non c'è onSave, usa addTaskToList per compatibilità
@@ -417,6 +438,28 @@ const AddTask: React.FC<AddTaskProps> = ({
                 </Text>
               </TouchableOpacity>
             </View>
+
+            {/* Recurring Task Toggle */}
+            <View style={styles.recurringToggleContainer}>
+              <Text style={styles.inputLabel}>{t('recurring.toggle')}</Text>
+              <Switch
+                value={isRecurring}
+                onValueChange={setIsRecurring}
+                trackColor={{ false: "#e1e5e9", true: "#000000" }}
+                thumbColor={isRecurring ? "#ffffff" : "#f4f3f4"}
+                ios_backgroundColor="#e1e5e9"
+              />
+            </View>
+
+            {/* Recurring Configuration */}
+            {isRecurring && (
+              <View style={styles.recurringConfigContainer}>
+                <RecurrenceConfig
+                  value={recurrenceConfig}
+                  onChange={setRecurrenceConfig}
+                />
+              </View>
+            )}
           </ScrollView>
 
           <View style={styles.formFooter}>
@@ -666,6 +709,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "System",
     textDecorationLine: "underline",
+  },
+  recurringToggleContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+    paddingVertical: 8,
+  },
+  recurringConfigContainer: {
+    marginTop: 8,
+    marginBottom: 16,
+    padding: 16,
+    backgroundColor: "#f8f8f8",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#e1e5e9",
   },
 });
 
