@@ -12,6 +12,7 @@ export const STORAGE_KEYS = {
   USER_ID: "auth.userId",
   USER_PASSWORD: "auth.userPassword",
   SUGGESTED_COMMAND_SHOWN: "ui.suggestedCommandShown",
+  WELCOME_CAROUSEL_COMPLETED: "@mytaskly:welcome_carousel_completed",
 };
 
 // URL di default per l'API

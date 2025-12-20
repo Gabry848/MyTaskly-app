@@ -714,5 +714,24 @@
       "monthly": "Monthly",
       "instance": "Part of recurring series"
     }
+  },
+  "welcomeCarousel": {
+    "slide1": {
+      "headline": "Your Personal AI Assistant",
+      "subheadline": "Chat with AI. Use your voice. Manage tasks effortlessly."
+    },
+    "slide2": {
+      "headline": "Smart Tasks, Always Synced",
+      "subheadline": "Organize by categories. Works offline. Auto-sync everywhere."
+    },
+    "slide3": {
+      "headline": "Sync Everything in One Place",
+      "subheadline": "Google Calendar now available. Outlook, Apple Calendar coming soon."
+    },
+    "navigation": {
+      "skip": "Skip",
+      "next": "Next",
+      "getStarted": "Get Started"
+    }
   }
 }
