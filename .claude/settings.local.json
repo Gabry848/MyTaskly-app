@@ -39,7 +39,9 @@
       "Bash(npm run docs:generate:*)",
       "Bash(powershell -Command \"Get-ChildItem -Path . -Recurse | Select-Object -ExpandProperty FullName | Sort-Object\")",
       "Bash(git log:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(powershell -Command \"Get-Content ''e:\\\\MyTaskly\\\\MyTaskly-app\\\\src\\\\locales\\\\en.json'' | Select-Object -Last 20\")",
+      "Bash(powershell -Command \"Get-Content ''e:\\\\MyTaskly\\\\MyTaskly-app\\\\src\\\\locales\\\\it.json'' | Select-Object -Last 20\")"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"

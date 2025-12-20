@@ -6,10 +6,10 @@ import {
   TouchableOpacity,
   StyleSheet,
   Dimensions,
-  Image,
   StatusBar,
   SafeAreaView,
   AppState,
+  Image,
 } from "react-native";
 import { FontAwesome } from "@expo/vector-icons";
 import * as authService from "../../services/authService";
@@ -249,10 +249,10 @@ const LoginScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
-      <View style={styles.avatar}>
+      <View style={styles.logoContainer}>
         <Image
-          source={require("../../../assets/circle-user.png")}
-          style={styles.avatarImage}
+          source={require("../../../assets/icons/adaptive-icon.png")}
+          style={styles.logoImage}
         />
       </View>
       <View style={[styles.inputContainer, { width: width * 0.9 }]}>
@@ -332,12 +332,6 @@ const LoginScreen = () => {
         </Text>
       </TouchableOpacity>
       <View style={[styles.optionsContainer, { width: width * 0.9 }]}>
-        <TouchableOpacity>
-          <Text style={styles.optionText}>{t('auth.login.rememberMe')}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity>
-          <Text style={styles.optionText}>{t('auth.login.forgotPassword')}</Text>
-        </TouchableOpacity>
       </View>
       <Text style={styles.signUpText}>{t('auth.login.notMember')}</Text>
       <TouchableOpacity
@@ -367,120 +361,112 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     width: "100%",
   },
-  avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: "#f8f9fa",
-    marginBottom: 30,
-    justifyContent: "center",
+  logoContainer: {
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
+    marginTop: 20,
+    marginBottom: 32,
   },
-  avatarImage: {
-    width: "100%",
-    height: "100%",
-    //tintColor: "#666666",
+  logoImage: {
+    width: 140,
+    height: 140,
+    resizeMode: "contain",
   },
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#ffffff",
+    backgroundColor: "#F8F9FA",
     borderRadius: 16,
     paddingHorizontal: 20,
-    marginBottom: 16,
+    marginBottom: 14,
     borderWidth: 1.5,
-    borderColor: "#e1e5e9",
+    borderColor: "#E8EBED",
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 1,
     },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 1,
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 0.5,
   },
   icon: {
-    marginRight: 15,
+    marginRight: 14,
+    opacity: 0.6,
   },
   input: {
     flex: 1,
     color: "#000000",
-    height: 54,
+    height: 56,
     fontSize: 16,
     fontFamily: "System",
-    fontWeight: "400",
+    fontWeight: "500",
   },
   eyeIcon: {
     padding: 8,
   },
   loginButton: {
     backgroundColor: "#000000",
-    paddingVertical: 16,
-    borderRadius: 16,
+    paddingVertical: 18,
+    borderRadius: 28,
     alignItems: "center",
-    marginBottom: 20,
+    marginTop: 8,
+    marginBottom: 24,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 3,
+      height: 4,
     },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 4,
   },
   loginText: {
     color: "#ffffff",
     fontSize: 17,
-    fontWeight: "500",
+    fontWeight: "600",
     fontFamily: "System",
+    letterSpacing: 0.3,
   },
   optionsContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 30,
+    marginBottom: 32,
   },
   optionText: {
     color: "#666666",
-    fontSize: 15,
+    fontSize: 14,
     fontFamily: "System",
-    fontWeight: "400",
+    fontWeight: "500",
   },
   signUpText: {
     color: "#666666",
-    fontSize: 16,
-    marginBottom: 12,
+    fontSize: 15,
+    marginBottom: 14,
     fontFamily: "System",
-    fontWeight: "400",
+    fontWeight: "500",
   },
   signUpButton: {
     borderWidth: 1.5,
-    borderColor: "#e1e5e9",
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 16,
+    borderColor: "#E8EBED",
+    paddingVertical: 14,
+    paddingHorizontal: 28,
+    borderRadius: 28,
     backgroundColor: "#ffffff",
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 1,
+      height: 2,
     },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 1,
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 1.5,
   },
   signUpButtonText: {
     color: "#000000",
-    fontSize: 15,
-    fontWeight: "500",
+    fontSize: 16,
+    fontWeight: "600",
     fontFamily: "System",
+    letterSpacing: 0.2,
   },
   modalOverlay: {
     flex: 1,
@@ -560,19 +546,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     width: width * 0.9,
-    marginVertical: 20,
+    marginVertical: 16,
   },
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#e1e5e9',
+    backgroundColor: '#E8EBED',
   },
   dividerText: {
-    marginHorizontal: 15,
-    color: '#666666',
-    fontSize: 14,
+    marginHorizontal: 16,
+    color: '#999999',
+    fontSize: 13,
     fontFamily: 'System',
-    fontWeight: '400',
+    fontWeight: '500',
+    letterSpacing: 0.5,
   },
   googleButton: {
     flexDirection: 'row',
@@ -580,18 +567,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#ffffff',
     paddingVertical: 16,
-    borderRadius: 16,
-    marginBottom: 20,
+    borderRadius: 28,
+    marginBottom: 28,
     borderWidth: 1.5,
-    borderColor: '#e1e5e9',
+    borderColor: '#E8EBED',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
       height: 2,
     },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 1,
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 2,
   },
   googleIconContainer: {
     width: 24,
@@ -611,8 +598,9 @@ const styles = StyleSheet.create({
   googleButtonText: {
     color: '#000000',
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '600',
     fontFamily: 'System',
+    letterSpacing: 0.2,
   },
   disabledButton: {
     opacity: 0.5,
