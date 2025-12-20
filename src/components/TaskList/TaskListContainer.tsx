@@ -316,91 +316,59 @@ export const TaskListContainer = ({
   ) => {
     const priorityString = priority === 1 ? "Bassa" : priority === 2 ? "Media" : "Alta";
 
-    // If this is a recurring task, use the recurring task service
-    if (recurrence) {
-      try {
-        const { createRecurringTask } = await import('../../services/recurringTaskService');
+    try {
+      const taskData: any = {
+        title,
+        description: description || "",
+        start_time: dueDate ? new Date(dueDate).toISOString() : new Date().toISOString(),
+        end_time: dueDate ? new Date(dueDate).toISOString() : undefined,
+        priority: priorityString,
+        category_id: parseInt(categoryId as string) || 0,
+        status: "In sospeso",
+      };
 
-        const taskData = {
-          title,
-          description: description || "",
-          start_time: dueDate ? new Date(dueDate).toISOString() : new Date().toISOString(),
-          end_time: dueDate ? new Date(dueDate).toISOString() : undefined,
-          priority: priorityString,
-          category_id: parseInt(categoryId as string) || 0,
-        };
+      // Add recurring task fields if this is a recurring task (NEW API v2.2.0)
+      if (recurrence) {
+        taskData.is_recurring = true;
+        taskData.recurrence_pattern = recurrence.pattern;
+        taskData.recurrence_interval = recurrence.interval || 1;
+        taskData.recurrence_end_type = recurrence.end_type || "never";
 
-        const result = await createRecurringTask(taskData, recurrence);
+        // Add pattern-specific fields
+        if (recurrence.pattern === "weekly" && recurrence.days_of_week) {
+          taskData.recurrence_days_of_week = recurrence.days_of_week;
+        }
+        if (recurrence.pattern === "monthly" && recurrence.day_of_month) {
+          taskData.recurrence_day_of_month = recurrence.day_of_month;
+        }
 
-        if (result.success) {
+        // Add end-type-specific fields
+        if (recurrence.end_type === "on_date" && recurrence.end_date) {
+          taskData.recurrence_end_date = recurrence.end_date;
+        }
+        if (recurrence.end_type === "after_count" && recurrence.end_count) {
+          taskData.recurrence_end_count = recurrence.end_count;
+        }
+      }
+
+      // Use the standard addTask service (works for both regular and recurring tasks)
+      const result = await taskService.addTask(taskData);
+
+      if (result) {
+        if (recurrence) {
           Alert.alert(
-            "Success",
-            "Recurring task created successfully! Instances have been generated for the next 7 days."
-          );
-          // Reload tasks to show the newly created instances
-          reloadTasks();
-        } else {
-          Alert.alert(
-            "Error",
-            result.message || "Error creating recurring task"
+            t('success') || "Success",
+            t('recurring.taskCreated') || "Recurring task created successfully!"
           );
         }
-      } catch (error) {
-        console.error("Error creating recurring task:", error);
-        Alert.alert(
-          "Error",
-          "An error occurred while creating the recurring task"
-        );
-      }
-      return;
-    }
-
-    // Regular (non-recurring) task creation
-    const newTask: TaskType = {
-      id: `new_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      title,
-      description: description || "", // Assicurarsi che description non sia null
-      end_time: dueDate && dueDate.trim() ? new Date(dueDate).toISOString() : null, // Supporta task senza scadenza
-      priority: priorityString,
-      completed: false,
-      status: "In sospeso", // Impostare un valore predefinito per status
-      start_time: new Date().toISOString() // Impostare start_time al momento attuale
-    };
-
-    try {
-      // Attempt to save to backend
-      const response = await taskService.addTask({
-        ...newTask,
-        category_name: categoryName,
-      });
-      
-      // Check if the response contains status_code and task_id but not a complete task
-      if (response && response.status_code && response.task_id && !response.title) {
-        // Create a complete task object using the original data plus the ID from the server
-        const finalTask: TaskType = {
-          ...newTask,
-          id: response.task_id,
-          task_id: response.task_id,
-          status_code: response.status_code
-        };
-        
-        // Add to global reference and local state
-        globalTasksRef.addTask(finalTask, categoryName);
-      } else if (response && response.title) {
-        // If server returns a complete task object
-        globalTasksRef.addTask(response, categoryName);
-      } else {
-        // Use original task as fallback
-        globalTasksRef.addTask(newTask, categoryName);
+        // Reload tasks to show the new task
+        fetchTasks();
       }
     } catch (error) {
-      console.error("Error adding task:", error);
-      // Still add to local state even if backend fails
-      globalTasksRef.addTask(newTask, categoryName);
-      
+      console.error("Error creating task:", error);
       Alert.alert(
-        "Attenzione",
-        "Il task è stato aggiunto localmente ma c'è stato un errore nel salvataggio sul server."
+        t('error') || "Error",
+        t('recurring.taskError') || "An error occurred while creating the task"
       );
     }
   };

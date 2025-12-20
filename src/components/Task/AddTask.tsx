@@ -164,7 +164,7 @@ const AddTask: React.FC<AddTaskProps> = ({
     const priorityString =
       priority === 1 ? "Bassa" : priority === 2 ? "Media" : "Alta";
 
-    const taskObject = {
+    const taskObject: any = {
       id: Date.now(),
       title: title.trim(),
       description: description.trim() || "", // Assicurarsi che description non sia mai null
@@ -178,6 +178,30 @@ const AddTask: React.FC<AddTaskProps> = ({
       user: "", // Campo richiesto dal server
       completed: false,
     };
+
+    // Add recurring task fields if enabled
+    if (isRecurring) {
+      taskObject.is_recurring = true;
+      taskObject.recurrence_pattern = recurrenceConfig.pattern;
+      taskObject.recurrence_interval = recurrenceConfig.interval;
+      taskObject.recurrence_end_type = recurrenceConfig.end_type;
+
+      // Add pattern-specific fields
+      if (recurrenceConfig.pattern === "weekly" && recurrenceConfig.days_of_week) {
+        taskObject.recurrence_days_of_week = recurrenceConfig.days_of_week;
+      }
+      if (recurrenceConfig.pattern === "monthly" && recurrenceConfig.day_of_month) {
+        taskObject.recurrence_day_of_month = recurrenceConfig.day_of_month;
+      }
+
+      // Add end-type-specific fields
+      if (recurrenceConfig.end_type === "on_date" && recurrenceConfig.end_date) {
+        taskObject.recurrence_end_date = recurrenceConfig.end_date;
+      }
+      if (recurrenceConfig.end_type === "after_count" && recurrenceConfig.end_count) {
+        taskObject.recurrence_end_count = recurrenceConfig.end_count;
+      }
+    }
 
     try {
       if (onSave) {
