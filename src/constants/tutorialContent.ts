@@ -33,11 +33,6 @@ export const getTutorialContent = () => ({
     description: i18n.t('tutorial.steps.calendar.description'),
     icon: "calendar",
   },
-  step7: {
-    title: i18n.t('tutorial.steps.statistics.title'),
-    description: i18n.t('tutorial.steps.statistics.description'),
-    icon: "bar-chart",
-  },
   completion: {
     title: i18n.t('tutorial.completion.title'),
     description: i18n.t('tutorial.completion.description'),
@@ -141,17 +136,6 @@ export const getTutorialSteps = (): TutorialStep[] => {
     },
     {
       id: 7,
-      type: 'spotlight',
-      targetScreen: 'Statistics',
-      targetElement: 'statisticsContainer',
-      content: {
-        title: content.step7.title,
-        description: content.step7.description,
-        icon: content.step7.icon,
-      },
-    },
-    {
-      id: 8,
       type: 'completion',
       content: {
         title: content.completion.title,
