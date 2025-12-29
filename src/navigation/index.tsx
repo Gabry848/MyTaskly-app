@@ -9,6 +9,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { BackHandler, Linking } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Ionicons } from "@expo/vector-icons";
+import WelcomeCarouselScreen from "./screens/WelcomeCarousel";
 import LoginScreen from "./screens/Login";
 import RegisterScreen from "./screens/Register";
 import EmailVerificationScreen from "./screens/EmailVerification";
@@ -227,6 +228,7 @@ function NavigationHandler() {
 function AppStack() {
   const { t } = useTranslation();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [hasSeenWelcome, setHasSeenWelcome] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(true); // Controlla lo stato di autenticazione all'avvio
 
   // 🔔 Inizializza il sistema di notifiche quando l'utente è autenticato
@@ -250,9 +252,16 @@ function AppStack() {
         }
 
         setIsAuthenticated(authResult.isAuthenticated);
+
+        // Check if user has seen welcome carousel
+        const welcomeCompleted = await AsyncStorage.getItem(
+          STORAGE_KEYS.WELCOME_CAROUSEL_COMPLETED
+        );
+        setHasSeenWelcome(welcomeCompleted === 'true');
       } catch (error) {
         console.error("Errore nel controllo autenticazione:", error);
         setIsAuthenticated(false);
+        setHasSeenWelcome(false);
       } finally {
         setIsLoading(false);
       }
@@ -346,11 +355,28 @@ function AppStack() {
     return null; // O un componente di loading se preferisci
   }
 
-  const initialRoute = isAuthenticated ? "HomeTabs" : "Login";
+  // Determine initial route based on authentication and welcome carousel status
+  const getInitialRoute = () => {
+    // TEMPORARY: Force Welcome Screen for testing
+    return "WelcomeCarousel";
+
+    // Original logic (uncomment after testing):
+    // if (isAuthenticated) return "HomeTabs";
+    // if (!hasSeenWelcome) return "WelcomeCarousel";
+    // return "Login";
+  };
+
+  const initialRoute = getInitialRoute();
+
   return (
     <>
       <NavigationHandler />
       <Stack.Navigator id={undefined} initialRouteName={initialRoute}>
+        <Stack.Screen
+          name="WelcomeCarousel"
+          component={WelcomeCarouselScreen}
+          options={{ headerShown: false }}
+        />
         <Stack.Screen
           name="Login"
           component={LoginScreen}

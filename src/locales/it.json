@@ -649,5 +649,89 @@
   },
   "task": {
     "noDeadline": "Nessuna scadenza"
+  },
+  "recurring": {
+    "title": "Task Ricorrente",
+    "toggle": "Rendi questo task ricorrente",
+    "patterns": {
+      "daily": "Giornaliero",
+      "weekly": "Settimanale",
+      "monthly": "Mensile"
+    },
+    "interval": {
+      "label": "Ripeti ogni",
+      "daily": "{{count}} giorno",
+      "daily_plural": "{{count}} giorni",
+      "weekly": "{{count}} settimana",
+      "weekly_plural": "{{count}} settimane",
+      "monthly": "{{count}} mese",
+      "monthly_plural": "{{count}} mesi"
+    },
+    "daysOfWeek": {
+      "label": "Ripeti il",
+      "monday": "Lun",
+      "tuesday": "Mar",
+      "wednesday": "Mer",
+      "thursday": "Gio",
+      "friday": "Ven",
+      "saturday": "Sab",
+      "sunday": "Dom"
+    },
+    "dayOfMonth": {
+      "label": "Giorno del mese",
+      "placeholder": "Seleziona giorno (1-31)"
+    },
+    "endType": {
+      "label": "Termina",
+      "never": "Mai",
+      "after_count": "Dopo",
+      "on_date": "In data"
+    },
+    "endCount": {
+      "label": "Numero di occorrenze",
+      "placeholder": "Inserisci numero"
+    },
+    "endDate": {
+      "label": "Data di fine",
+      "placeholder": "Seleziona data di fine"
+    },
+    "validation": {
+      "patternRequired": "Seleziona un pattern di ricorrenza",
+      "intervalRequired": "L'intervallo deve essere almeno 1",
+      "daysOfWeekRequired": "Seleziona almeno un giorno",
+      "dayOfMonthInvalid": "Il giorno deve essere tra 1 e 31",
+      "endCountRequired": "Inserisci il numero di occorrenze",
+      "endDateRequired": "Seleziona una data di fine",
+      "endDateInvalid": "La data di fine deve essere futura"
+    },
+    "messages": {
+      "created": "Task ricorrente creato con successo",
+      "error": "Errore nella creazione del task ricorrente"
+    },
+    "badge": {
+      "daily": "Giornaliero",
+      "weekly": "Settimanale",
+      "monthly": "Mensile",
+      "instance": "Parte di serie ricorrente"
+    }
+  },
+  "welcomeCarousel": {
+    "slide1": {
+      "headline": "Il Tuo Assistente AI Personale",
+      "subheadline": "Chatta con l'intelligenza artificiale. Usa la voce. Gestisci task senza sforzo."
+    },
+    "slide2": {
+      "headline": "Task Intelligenti, Sempre Sincronizzati",
+      "subheadline": "Organizza per categorie. Funziona offline. Sincronizza automaticamente."
+    },
+    "slide3": {
+      "headline": "Sincronizza Tutto in Un Posto",
+      "subheadline": "Google Calendar ora disponibile. Outlook, Apple Calendar in arrivo."
+    },
+    "navigation": {
+      "skip": "Salta",
+      "next": "Avanti",
+      "getStarted": "Inizia"
+    }
   }
 }
