@@ -22,13 +22,16 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onPress }) => {
     return String(value).trim();
   };
 
-  const formatTaskTime = (startTime?: string, endTime?: string): string => {
-    if (!startTime && !endTime) {
+  const formatTaskTime = (startTime?: string, endTime?: string, nextOccurrence?: string): string => {
+    // For recurring tasks, show next occurrence instead of end_time
+    const dateToShow = nextOccurrence || endTime || startTime;
+
+    if (!dateToShow) {
       return 'Nessuna scadenza';
     }
 
     const now = dayjs();
-    const taskDate = dayjs(startTime || endTime);
+    const taskDate = dayjs(dateToShow);
 
     let datePrefix = '';
     if (taskDate.isSame(now, 'day')) {
@@ -39,10 +42,38 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onPress }) => {
       datePrefix = taskDate.format('DD/MM ');
     }
 
-    const timeRange = startTime ? dayjs(startTime).format('HH:mm') : '--:--';
-    const endTimeFormatted = endTime ? ' - ' + dayjs(endTime).format('HH:mm') : '';
+    const timeRange = dayjs(dateToShow).format('HH:mm');
 
-    return datePrefix + timeRange + endTimeFormatted;
+    return datePrefix + timeRange;
+  };
+
+  // Format recurrence description for display
+  const getRecurrenceDescription = (): string | null => {
+    if (!task.is_recurring || !task.recurrence_pattern) return null;
+
+    const interval = task.recurrence_interval || 1;
+
+    if (task.recurrence_pattern === 'daily') {
+      return interval === 1 ? 'Ogni giorno' : `Ogni ${interval} giorni`;
+    }
+
+    if (task.recurrence_pattern === 'weekly') {
+      const dayNames = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
+      if (task.recurrence_days_of_week && task.recurrence_days_of_week.length > 0) {
+        const days = task.recurrence_days_of_week.map(d => dayNames[d - 1]).join(', ');
+        return interval === 1 ? `Ogni ${days}` : `Ogni ${interval} settimane: ${days}`;
+      }
+      return interval === 1 ? 'Ogni settimana' : `Ogni ${interval} settimane`;
+    }
+
+    if (task.recurrence_pattern === 'monthly') {
+      const day = task.recurrence_day_of_month || 1;
+      return interval === 1
+        ? `Ogni ${day}° giorno del mese`
+        : `Ogni ${interval} mesi il ${day}°`;
+    }
+
+    return 'Ricorrente';
   };
 
   // Determina il colore in base alla priorità (gradiente di scurezza)
@@ -63,10 +94,17 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onPress }) => {
       onPress={() => onPress && onPress(task)}
     >
       <View style={styles.taskCardContent}>
-        <Text style={styles.taskTitle} numberOfLines={1} ellipsizeMode="tail">
-          {sanitizeString(task.title)}
-        </Text>
-        
+        <View style={styles.titleRow}>
+          <Text style={styles.taskTitle} numberOfLines={1} ellipsizeMode="tail">
+            {sanitizeString(task.title)}
+          </Text>
+          {(task.is_recurring || task.is_generated_instance) && (
+            <View style={styles.recurringBadge}>
+              <Ionicons name="repeat" size={14} color="#007AFF" />
+            </View>
+          )}
+        </View>
+
         {(() => {
           const description = sanitizeString(task.description);
           return description && description !== 'null' && description !== '' ? (
@@ -75,6 +113,20 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onPress }) => {
             </Text>
           ) : null;
         })()}
+
+        {/* Show recurrence pattern for recurring tasks */}
+        {task.is_recurring && getRecurrenceDescription() && (
+          <Text style={styles.recurrenceDescription}>
+            {getRecurrenceDescription()}
+          </Text>
+        )}
+
+        {/* Show completion count for recurring tasks */}
+        {task.is_recurring && task.recurrence_current_count !== undefined && task.recurrence_current_count > 0 && (
+          <Text style={styles.completionCount}>
+            Completato {task.recurrence_current_count} {task.recurrence_current_count === 1 ? 'volta' : 'volte'}
+          </Text>
+        )}
         
         <View style={styles.taskMetadata}>
           {(() => {
@@ -99,16 +151,17 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onPress }) => {
         </View>
         
         <View style={styles.taskTimeInfo}>
-          {task.start_time || task.end_time ? (
+          {task.start_time || task.end_time || task.next_occurrence ? (
             <Ionicons name="time-outline" size={14} color="#666" />
           ) : (
             <Ionicons name="calendar-clear-outline" size={14} color="#999" />
           )}
           <Text style={[
             styles.taskTimeText,
-            { color: task.start_time || task.end_time ? '#666' : '#999' }
+            { color: task.start_time || task.end_time || task.next_occurrence ? '#666' : '#999' }
           ]}>
-            {formatTaskTime(task.start_time, task.end_time)}
+            {task.is_recurring && task.next_occurrence ? 'Prossima: ' : ''}
+            {formatTaskTime(task.start_time, task.end_time, task.next_occurrence)}
           </Text>
         </View>
       </View>
@@ -134,13 +187,27 @@ const styles = StyleSheet.create({
   taskCardContent: {
     flexDirection: "column",
   },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 6,
+  },
   taskTitle: {
     fontSize: 16,
     fontWeight: "500",
-    marginBottom: 6,
     color: "#000000",
     fontFamily: "System",
     letterSpacing: -0.3,
+    flex: 1,
+  },
+  recurringBadge: {
+    backgroundColor: "#E3F2FD",
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    marginLeft: 8,
+    flexDirection: "row",
+    alignItems: "center",
   },
   taskDescription: {
     fontSize: 14,
@@ -189,6 +256,21 @@ const styles = StyleSheet.create({
     marginLeft: 6,
     fontFamily: "System",
     fontWeight: "300",
+  },
+  recurrenceDescription: {
+    fontSize: 12,
+    color: "#007AFF",
+    marginBottom: 6,
+    fontFamily: "System",
+    fontWeight: "400",
+  },
+  completionCount: {
+    fontSize: 11,
+    color: "#666666",
+    marginBottom: 6,
+    fontFamily: "System",
+    fontWeight: "300",
+    fontStyle: "italic",
   },
 });
 

@@ -148,12 +148,13 @@ const RegisterScreen = () => {
   }  return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
-      <View style={styles.avatar}>
+      <View style={styles.logoContainer}>
         <Image
-          source={require("../../../assets/circle-user.png")}
-          style={styles.avatarImage}
+          source={require("../../../assets/icons/adaptive-icon.png")}
+          style={styles.logoImage}
         />
-      </View><View style={[styles.inputContainer, { width: width * 0.9 }]}>
+      </View>
+      <View style={[styles.inputContainer, { width: width * 0.9 }]}>
         <FontAwesome name="user" size={20} color="#666666" style={styles.icon} />
         <TextInput
           placeholder={t('auth.register.username')}
@@ -235,101 +236,98 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     width: "100%",
   },
-  avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: "#f8f9fa",    marginBottom: 30,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.06,    shadowRadius: 8,
-    elevation: 2,
+  logoContainer: {
+    alignItems: "center",
+    marginTop: 20,
+    marginBottom: 32,
   },
-  avatarImage: {
-    width: "100%",
-    height: "100%",
+  logoImage: {
+    width: 140,
+    height: 140,
+    resizeMode: "contain",
   },
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#ffffff",
+    backgroundColor: "#F8F9FA",
     borderRadius: 16,
     paddingHorizontal: 20,
-    marginBottom: 16,
+    marginBottom: 14,
     borderWidth: 1.5,
-    borderColor: "#e1e5e9",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 1,
-  },
-  icon: {
-    marginRight: 15,
-  },
-  input: {
-    flex: 1,
-    color: "#000000",
-    height: 54,
-    fontSize: 16,
-    fontFamily: "System",
-    fontWeight: "400",
-  },
-  registerButton: {
-    backgroundColor: "#000000",
-    paddingVertical: 16,
-    borderRadius: 16,
-    alignItems: "center",
-    marginBottom: 20,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 3,
-    },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  registerText: {
-    color: "#ffffff",
-    fontSize: 17,
-    fontWeight: "500",
-    fontFamily: "System",
-  },
-  loginText: {
-    color: "#666666",
-    fontSize: 16,
-    marginBottom: 12,
-    fontFamily: "System",
-    fontWeight: "400",
-  },
-  loginButton: {
-    borderWidth: 1.5,
-    borderColor: "#e1e5e9",
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 16,
-    backgroundColor: "#ffffff",
+    borderColor: "#E8EBED",
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 1,
     },
-    shadowOpacity: 0.04,
+    shadowOpacity: 0.03,
     shadowRadius: 4,
-    elevation: 1,
+    elevation: 0.5,
+  },
+  icon: {
+    marginRight: 14,
+    opacity: 0.6,
+  },
+  input: {
+    flex: 1,
+    color: "#000000",
+    height: 56,
+    fontSize: 16,
+    fontFamily: "System",
+    fontWeight: "500",
+  },
+  registerButton: {
+    backgroundColor: "#000000",
+    paddingVertical: 18,
+    borderRadius: 28,
+    alignItems: "center",
+    marginTop: 8,
+    marginBottom: 24,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  registerText: {
+    color: "#ffffff",
+    fontSize: 17,
+    fontWeight: "600",
+    fontFamily: "System",
+    letterSpacing: 0.3,
+  },
+  loginText: {
+    color: "#666666",
+    fontSize: 15,
+    marginBottom: 14,
+    fontFamily: "System",
+    fontWeight: "500",
+  },
+  loginButton: {
+    borderWidth: 1.5,
+    borderColor: "#E8EBED",
+    paddingVertical: 14,
+    paddingHorizontal: 28,
+    borderRadius: 28,
+    backgroundColor: "#ffffff",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 1.5,
   },
   loginButtonText: {
     color: "#000000",
-    fontSize: 15,
-    fontWeight: "500",
+    fontSize: 16,
+    fontWeight: "600",
     fontFamily: "System",
+    letterSpacing: 0.2,
   },
 });
 

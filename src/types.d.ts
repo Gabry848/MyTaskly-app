@@ -14,6 +14,7 @@ export interface TaskListRouteParams {
 }
 
 export type RootStackParamList = {
+  WelcomeCarousel: undefined;
   Login: undefined;
   Register: undefined;
   EmailVerification: { email: string; username: string; password: string };

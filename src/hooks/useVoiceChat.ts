@@ -185,6 +185,7 @@ export function useVoiceChat() {
 
     onAudioChunk: (audioData: string, chunkIndex?: number) => {
       const currentTime = Date.now();
+      
 
       // Traccia timing inter-arrival
       if (lastChunkTimeRef.current > 0) {
