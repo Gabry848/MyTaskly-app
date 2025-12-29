@@ -1,0 +1,1 @@
+export { MyTasklyLogo } from './MyTasklyLogo';
