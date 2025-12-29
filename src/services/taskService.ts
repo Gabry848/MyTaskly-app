@@ -32,6 +32,24 @@ export interface Task {
   category_id?: string | number; // Nuovo campo preferito
   user?: string;
   isOptimistic?: boolean; // Per indicare se il task è in stato ottimistico (in attesa di conferma server)
+
+  // NEW RECURRING TASK FIELDS (API v2.2.0)
+  is_recurring?: boolean; // Whether this is a recurring task
+  recurrence_pattern?: string; // "daily", "weekly", or "monthly"
+  recurrence_interval?: number; // Repeat every N days/weeks/months
+  recurrence_days_of_week?: number[]; // Days of week for weekly pattern [1-7]
+  recurrence_day_of_month?: number; // Day of month for monthly pattern (1-31)
+  recurrence_end_type?: string; // "never", "after_count", or "on_date"
+  recurrence_end_date?: string; // End date if end_type="on_date"
+  recurrence_end_count?: number; // Max occurrences if end_type="after_count"
+  recurrence_current_count?: number; // How many times task has been completed
+  next_occurrence?: string; // When the task is next due (ISO 8601)
+  last_completed_at?: string; // When the task was last completed (ISO 8601)
+
+  // DEPRECATED: Old recurring task system (kept for backward compatibility)
+  is_generated_instance?: boolean; // Indicates if this task is a generated instance from a recurring template
+  parent_template_id?: number; // ID of the parent recurring template (if this is an instance)
+
   [key: string]: any; // per proprietà aggiuntive
 }
 
@@ -707,6 +725,32 @@ export async function addTask(task: Task) {
       data.category_id = task.category_id;
     } else if (task.category_name !== undefined) {
       data.category_name = task.category_name;
+    }
+
+    // Add recurring task data if this is a recurring task
+    if (task.is_recurring) {
+      data.is_recurring = true;
+      data.recurrence = {
+        pattern: task.recurrence_pattern,
+        interval: task.recurrence_interval || 1,
+        end_type: task.recurrence_end_type || "never",
+      };
+
+      // Add pattern-specific fields
+      if (task.recurrence_pattern === "weekly" && task.recurrence_days_of_week) {
+        data.recurrence.days_of_week = task.recurrence_days_of_week;
+      }
+      if (task.recurrence_pattern === "monthly" && task.recurrence_day_of_month) {
+        data.recurrence.day_of_month = task.recurrence_day_of_month;
+      }
+
+      // Add end-type-specific fields
+      if (task.recurrence_end_type === "on_date" && task.recurrence_end_date) {
+        data.recurrence.end_date = task.recurrence_end_date;
+      }
+      if (task.recurrence_end_type === "after_count" && task.recurrence_end_count) {
+        data.recurrence.end_count = task.recurrence_end_count;
+      }
     }
     
     // Genera un ID temporaneo per il task locale

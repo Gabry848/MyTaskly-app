@@ -38,6 +38,7 @@
       "Bash(cat:*)",
       "Bash(npm run docs:generate:*)",
       "Bash(powershell -Command \"Get-ChildItem -Path . -Recurse | Select-Object -ExpandProperty FullName | Sort-Object\")",
+<<<<<<< HEAD
 <<<<<<< Updated upstream
       "Bash(git log:*)"
 =======
@@ -48,6 +49,12 @@
       "Bash(test:*)",
       "Bash(npm start)"
 >>>>>>> Stashed changes
+=======
+      "Bash(git log:*)",
+      "Bash(grep:*)",
+      "Bash(powershell -Command \"Get-Content ''e:\\\\MyTaskly\\\\MyTaskly-app\\\\src\\\\locales\\\\en.json'' | Select-Object -Last 20\")",
+      "Bash(powershell -Command \"Get-Content ''e:\\\\MyTaskly\\\\MyTaskly-app\\\\src\\\\locales\\\\it.json'' | Select-Object -Last 20\")"
+>>>>>>> 40288d32f2846e903bc41d36b719adfadd7bd4a4
     ],
     "deny": [],
     "defaultMode": "acceptEdits"
