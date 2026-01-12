@@ -155,70 +155,113 @@ const BotChat: React.FC = () => {
     console.log('Messaggio vocale gestito direttamente dal hook:', audioUri);
   }, []);
 
-  // Handler per inviare messaggi
+  // Handler per inviare messaggi con streaming + widgets
   const handleSendMessage = useCallback(async (text: string) => {
-    // Creiamo il messaggio dell'utente
+    // 1. Creiamo il messaggio dell'utente
     const userMessage: Message = {
       id: Math.random().toString(),
       text,
       sender: USER,
       start_time: new Date(),
     };
-    
+
     // Aggiungiamo il messaggio dell'utente
     setMessages(prevMessages => [...prevMessages, userMessage]);
-    
+
+    // 2. Creiamo messaggio bot temporaneo per streaming
+    const tempId = Math.random().toString();
+    setMessages(prevMessages => [
+      ...prevMessages,
+      {
+        id: tempId,
+        text: "",
+        sender: BOT,
+        start_time: new Date(),
+        isStreaming: true,
+        toolWidgets: [],
+      }
+    ]);
+
+    // 3. Accumulo dati streaming
+    let accumulatedText = "";
+    let currentWidgets: any[] = [];
+
+    // 4. Callback per aggiornare UI durante streaming
+    const onStreamChunk = (chunk: string, isComplete: boolean, toolWidgets?: any[]) => {
+      if (chunk) {
+        accumulatedText += chunk;
+      }
+
+      if (toolWidgets) {
+        currentWidgets = toolWidgets;
+      }
+
+      // Aggiorna il messaggio bot con testo + widgets accumulati
+      setMessages(prevMessages =>
+        prevMessages.map(msg =>
+          msg.id === tempId
+            ? {
+                ...msg,
+                text: accumulatedText,
+                toolWidgets: currentWidgets,
+                isStreaming: !isComplete,
+                isComplete,
+              }
+            : msg
+        )
+      );
+    };
+
     try {
-      // Otteniamo gli ultimi messaggi per inviarli al server
+      // 5. Otteniamo gli ultimi messaggi per contesto
       const currentMessages = [...messages, userMessage];
-      const lastMessages = currentMessages.slice(-5);
-      
-      // Aggiungiamo un messaggio temporaneo "Bot sta scrivendo..."
-      const tempId = Math.random().toString();
-      setMessages(prevMessages => [
-        ...prevMessages,
-        {
-          id: tempId,
-          text: "Sto pensando...",
-          sender: BOT,
-          start_time: new Date(),
-        }
-      ]);
-      
-      // Otteniamo la risposta dal server usando il modello selezionato e i messaggi precedenti
-      const botResponseText = await sendMessageToBot(text, modelType, lastMessages);
-      
-      // Formatta il messaggio per il supporto Markdown
-      const formattedBotResponse = formatMessage(botResponseText);
-      
-      // Rimuoviamo il messaggio temporaneo e aggiungiamo la risposta reale
-      setMessages(prevMessages => {
-        const filtered = prevMessages.filter(msg => msg.id !== tempId);
-        return [
-          ...filtered,
-          {
-            id: Math.random().toString(),
-            text: formattedBotResponse,
-            sender: BOT,
-            start_time: new Date(),
-            modelType: modelType  // Aggiungiamo l'informazione sul modello utilizzato
-          }
-        ];
-      });
-      
+      const lastMessages = currentMessages.slice(-6); // Ultimi 6 messaggi
+
+      // 6. Invia richiesta con streaming callback
+      const result = await sendMessageToBot(
+        text,
+        modelType,
+        lastMessages,
+        onStreamChunk
+      );
+
+      // 7. Aggiornamento finale con dati completi
+      const formattedText = formatMessage(result.text);
+
+      setMessages(prevMessages =>
+        prevMessages.map(msg =>
+          msg.id === tempId
+            ? {
+                ...msg,
+                text: formattedText,
+                toolWidgets: result.toolWidgets,
+                isStreaming: false,
+                isComplete: true,
+                modelType,
+              }
+            : msg
+        )
+      );
+
     } catch (error) {
-      console.log("Errore durante la comunicazione con il bot:", error);
-      // In caso di errore, mostriamo un messaggio di errore
-      setMessages(prevMessages => [
-        ...prevMessages,
-        {
-          id: Math.random().toString(),
-          text: "Mi dispiace, si è verificato un errore. Riprova più tardi.",
-          sender: BOT,
-          start_time: new Date(),
-        }
-      ]);
-    }  }, [modelType, messages]);
+      console.error("Errore durante la comunicazione con il bot:", error);
+
+      // In caso di errore, aggiorna messaggio con errore
+      setMessages(prevMessages =>
+        prevMessages.map(msg =>
+          msg.id === tempId
+            ? {
+                ...msg,
+                text: "Mi dispiace, si è verificato un errore. Riprova più tardi.",
+                isStreaming: false,
+                isComplete: true,
+                toolWidgets: [],
+              }
+            : msg
+        )
+      );
+    }
+  }, [modelType, messages]);
 
   const keyboardConfig = getKeyboardAvoidingViewConfig();
   // Per iPad, usiamo un approccio ibrido: KeyboardAvoidingView con offset minimo
