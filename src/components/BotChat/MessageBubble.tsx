@@ -1,13 +1,23 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View, Text, Animated } from 'react-native';
-import { MessageBubbleProps } from './types';
+import { MessageBubbleProps, ToolWidget } from './types';
 import TaskTableBubble from './TaskTableBubble'; // Importa il nuovo componente
 import Markdown from 'react-native-markdown-display'; // Supporto per Markdown
+import WidgetBubble from './widgets/WidgetBubble';
+import VisualizationModal from './widgets/VisualizationModal';
+import ItemDetailModal from './widgets/ItemDetailModal';
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style }) => {
   const isBot = message.sender === 'bot';
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(20)).current;
+
+  // Stati per le modals
+  const [visualizationModalVisible, setVisualizationModalVisible] = useState(false);
+  const [selectedVisualizationWidget, setSelectedVisualizationWidget] = useState<ToolWidget | null>(null);
+  const [detailModalVisible, setDetailModalVisible] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [selectedItemType, setSelectedItemType] = useState<'task' | 'category' | 'note'>('task');
 
   // Animazioni per i punti di streaming
   const streamingDot1 = useRef(new Animated.Value(0.5)).current;
@@ -148,6 +158,19 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style }) => {
     }
   };
 
+  // Handler per aprire la modal di visualizzazione
+  const handleOpenVisualization = (widget: ToolWidget) => {
+    setSelectedVisualizationWidget(widget);
+    setVisualizationModalVisible(true);
+  };
+
+  // Handler per aprire la modal di dettaglio di un item
+  const handleOpenItemDetail = (item: any, type: 'task' | 'category' | 'note') => {
+    setSelectedItem(item);
+    setSelectedItemType(type);
+    setDetailModalVisible(true);
+  };
+
   return (
     <Animated.View style={[
       styles.messageContainer,
@@ -158,6 +181,20 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style }) => {
         transform: [{ translateY: slideAnim }]
       }
     ]}>
+      {/* WIDGETS SOPRA AL MESSAGGIO (come richiesto dall'utente) */}
+      {isBot && message.toolWidgets && message.toolWidgets.length > 0 && (
+        <View style={styles.widgetsContainer}>
+          {message.toolWidgets.map((widget) => (
+            <WidgetBubble
+              key={widget.id}
+              widget={widget}
+              onOpenVisualization={handleOpenVisualization}
+            />
+          ))}
+        </View>
+      )}
+
+      {/* BUBBLE DEL MESSAGGIO */}
       <View style={[
         styles.messageBubble,
         isBot ? styles.botBubble : styles.userBubble
@@ -176,12 +213,32 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style }) => {
           </Text>
         )}
       </View>
+
       <Text style={[
         styles.messageTime,
         isBot ? styles.botTime : styles.userTime
       ]}>
         {formatTime(message.start_time)}
       </Text>
+
+      {/* MODALS */}
+      {selectedVisualizationWidget && (
+        <VisualizationModal
+          visible={visualizationModalVisible}
+          widget={selectedVisualizationWidget}
+          onClose={() => setVisualizationModalVisible(false)}
+          onItemPress={handleOpenItemDetail}
+        />
+      )}
+
+      {selectedItem && (
+        <ItemDetailModal
+          visible={detailModalVisible}
+          item={selectedItem}
+          itemType={selectedItemType}
+          onClose={() => setDetailModalVisible(false)}
+        />
+      )}
     </Animated.View>
   );
 };
@@ -196,6 +253,10 @@ const styles = StyleSheet.create({
   },
   botMessageContainer: {
     alignItems: 'flex-start',
+  },
+  widgetsContainer: {
+    marginBottom: 8,
+    width: '100%',
   },
   messageBubble: {
     maxWidth: '85%',
