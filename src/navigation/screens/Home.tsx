@@ -179,11 +179,10 @@ const HomeScreen = () => {
 
   // Effetto per animare il pulsante del microfono
   useEffect(() => {
-    Animated.spring(micButtonAnim, {
+    Animated.timing(micButtonAnim, {
       toValue: isInputFocused ? 0 : 1,
-      friction: 8,
-      tension: 40,
-      useNativeDriver: true,
+      duration: 200,
+      useNativeDriver: false,
     }).start();
   }, [isInputFocused, micButtonAnim]);
 
