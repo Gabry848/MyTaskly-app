@@ -18,6 +18,7 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scrollview"
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ChatList, Message } from "../../components/BotChat";
+import { ToolWidget } from "../../components/BotChat/types";
 import { sendMessageToBot, formatMessage, clearChatHistory, StreamingCallback } from "../../services/botservice";
 import { STORAGE_KEYS } from "../../constants/authConstants";
 import { TaskCacheService } from '../../services/TaskCacheService';
@@ -315,26 +316,42 @@ const HomeScreen = () => {
 
     try {
       // Callback per gestire lo streaming
-      const onStreamChunk: StreamingCallback = (chunk: string, isComplete: boolean) => {
-        if (typeof chunk !== 'string') {
+      const onStreamChunk: StreamingCallback = (chunk: string, isComplete: boolean, toolWidgets?: ToolWidget[]) => {
+        if (typeof chunk !== 'string' && chunk) {
           console.warn('[HOME] onStreamChunk received non-string chunk:', chunk);
         }
-        console.log('[HOME] onStreamChunk', { isComplete, chunkPreview: typeof chunk === 'string' ? chunk.slice(0, 40) : chunk });
+        console.log('[HOME] onStreamChunk', {
+          isComplete,
+          chunkPreview: typeof chunk === 'string' ? chunk.slice(0, 40) : chunk,
+          widgetsCount: toolWidgets?.length || 0,
+          widgets: toolWidgets?.map(w => ({ toolName: w.toolName, status: w.status, type: w.toolOutput?.type }))
+        });
+
         if (isComplete) {
-          // Lo streaming è completato, rimuovi l'indicatore
+          // Lo streaming è completato, applica formatMessage al testo completo e aggiorna toolWidgets
           setMessages((prev) =>
             prev.map((msg) =>
               msg.id === botMessageId
-                ? { ...msg, isStreaming: false, isComplete: true }
+                ? {
+                    ...msg,
+                    text: formatMessage(msg.text),
+                    isStreaming: false,
+                    isComplete: true,
+                    toolWidgets: toolWidgets || msg.toolWidgets
+                  }
                 : msg
             )
           );
         } else {
-          // Aggiungi il chunk al messaggio esistente
+          // Aggiungi il chunk al messaggio esistente e aggiorna toolWidgets se presenti
           setMessages((prev) =>
             prev.map((msg) =>
               msg.id === botMessageId
-                ? { ...msg, text: msg.text + chunk }
+                ? {
+                    ...msg,
+                    text: msg.text + chunk,
+                    toolWidgets: toolWidgets || msg.toolWidgets
+                  }
                 : msg
             )
           );
@@ -342,29 +359,11 @@ const HomeScreen = () => {
       };
 
       // Invia il messaggio al bot con streaming
-      const botResponse = await sendMessageToBot(
+      await sendMessageToBot(
         trimmedMessage,
         "advanced",
         messages,
         onStreamChunk
-      );
-
-      // Formatta la risposta completa del bot per il supporto Markdown
-      const formattedBotResponse = formatMessage(botResponse);
-      console.log('[HOME] Final bot response length:', formattedBotResponse?.length ?? 0);
-
-      // Aggiorna il messaggio con la risposta formattata finale
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === botMessageId
-            ? {
-                ...msg,
-                text: formattedBotResponse,
-                isStreaming: false,
-                isComplete: true
-              }
-            : msg
-        )
       );
 
     } catch (error) {

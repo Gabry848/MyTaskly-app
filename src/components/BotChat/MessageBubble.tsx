@@ -184,13 +184,22 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style }) => {
       {/* WIDGETS SOPRA AL MESSAGGIO (come richiesto dall'utente) */}
       {isBot && message.toolWidgets && message.toolWidgets.length > 0 && (
         <View style={styles.widgetsContainer}>
-          {message.toolWidgets.map((widget) => (
-            <WidgetBubble
-              key={widget.id}
-              widget={widget}
-              onOpenVisualization={handleOpenVisualization}
-            />
-          ))}
+          {message.toolWidgets
+            .filter((widget) => {
+              // Filtra i widget di visualizzazione in loading (mostra solo i risultati finali)
+              const isVisualizationTool = ['show_tasks_to_user', 'show_categories_to_user', 'show_notes_to_user'].includes(widget.toolName);
+              if (isVisualizationTool && widget.status === 'loading') {
+                return false; // Nascondi loading per tool di visualizzazione
+              }
+              return true; // Mostra tutti gli altri widget (creazione, errori, successi)
+            })
+            .map((widget) => (
+              <WidgetBubble
+                key={widget.id}
+                widget={widget}
+                onOpenVisualization={handleOpenVisualization}
+              />
+            ))}
         </View>
       )}
 
