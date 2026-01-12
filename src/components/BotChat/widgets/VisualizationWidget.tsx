@@ -41,7 +41,7 @@ const VisualizationWidget: React.FC<VisualizationWidgetProps> = ({ widget, onOpe
       onPress={() => onOpen(widget)}
     >
       <View style={styles.iconContainer}>
-        <Ionicons name={icon} size={28} color="#007AFF" />
+        <Ionicons name={icon} size={24} color="#000000" />
       </View>
       <View style={styles.textContainer}>
         <Text style={styles.title}>{title}</Text>
@@ -49,7 +49,7 @@ const VisualizationWidget: React.FC<VisualizationWidgetProps> = ({ widget, onOpe
           {itemCount} {itemCount === 1 ? 'elemento' : 'elementi'}
         </Text>
       </View>
-      <Ionicons name="chevron-forward" size={24} color="#C7C7CC" />
+      <Ionicons name="chevron-forward" size={20} color="#999999" />
     </TouchableOpacity>
   );
 };
@@ -58,18 +58,25 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F2F2F7',
-    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
     paddingHorizontal: 16,
     paddingVertical: 14,
     marginBottom: 8,
     maxWidth: '85%',
+    borderWidth: 1,
+    borderColor: '#e1e5e9',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
   },
   iconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#E5F1FF',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f8f9fa',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -78,14 +85,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '500',
     color: '#000000',
     marginBottom: 2,
+    fontFamily: 'System',
   },
   subtitle: {
-    fontSize: 14,
-    color: '#8E8E93',
+    fontSize: 13,
+    color: '#666666',
+    fontFamily: 'System',
+    fontWeight: '300',
   },
 });
 

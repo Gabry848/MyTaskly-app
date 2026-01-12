@@ -32,13 +32,13 @@ const CreationWidgetCard: React.FC<CreationWidgetCardProps> = ({ widget }) => {
     if (widget.status === 'loading') {
       return (
         <View style={styles.contentRow}>
-          <ActivityIndicator size="small" color="#007AFF" style={styles.icon} />
+          <ActivityIndicator size="small" color="#000000" style={styles.icon} />
           <View style={styles.textContainer}>
             <Text style={styles.title}>Creazione in corso...</Text>
             <Text style={styles.subtitle}>
               {widget.toolName === 'add_task' && 'Sto creando il task'}
-              {widget.toolName === 'add_category' && 'Sto creando la categoria'}
-              {widget.toolName === 'add_note' && 'Sto creando la nota'}
+              {widget.toolName === 'create_category' && 'Sto creando la categoria'}
+              {widget.toolName === 'create_note' && 'Sto creando la nota'}
             </Text>
           </View>
         </View>
@@ -88,21 +88,21 @@ const CreationWidgetCard: React.FC<CreationWidgetCardProps> = ({ widget }) => {
 
     return (
       <TouchableOpacity activeOpacity={0.7} style={styles.contentRow}>
-        <Ionicons name={icon} size={24} color="#34C759" style={styles.icon} />
+        <Ionicons name={icon} size={24} color="#4caf50" style={styles.icon} />
         <View style={styles.textContainer}>
           <Text style={styles.title} numberOfLines={1}>{title}</Text>
           <Text style={styles.subtitle} numberOfLines={1}>{subtitle}</Text>
         </View>
-        <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
+        <Ionicons name="chevron-forward" size={20} color="#999999" />
       </TouchableOpacity>
     );
   };
 
   // Colore bordo in base allo stato
   const borderColor =
-    widget.status === 'loading' ? '#007AFF' :
+    widget.status === 'loading' ? '#666666' :
     widget.status === 'error' ? '#FF3B30' :
-    '#34C759';
+    '#4caf50';
 
   return (
     <Animated.View
@@ -123,15 +123,17 @@ const CreationWidgetCard: React.FC<CreationWidgetCardProps> = ({ widget }) => {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    borderLeftWidth: 4,
+    borderRadius: 16,
+    borderLeftWidth: 3,
     paddingHorizontal: 16,
     paddingVertical: 12,
     marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#e1e5e9',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
     elevation: 2,
     maxWidth: '85%',
   },
@@ -147,13 +149,16 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: '500',
     color: '#000000',
     marginBottom: 2,
+    fontFamily: 'System',
   },
   subtitle: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: '#666666',
+    fontFamily: 'System',
+    fontWeight: '300',
   },
   errorText: {
     color: '#FF3B30',

@@ -65,8 +65,10 @@ export async function sendMessageToBot(
     const decoder = new TextDecoder();
     let fullMessage = '';
 
-    // Mappa per tracciare i widget tool
-    const toolWidgetsMap = new Map<string, ToolWidget>();
+    // Mappa per tracciare i widget tool (usa item_index come chiave)
+    const toolWidgetsMap = new Map<number, ToolWidget>();
+    // Mappa per tracciare tool_name per ogni item_index (workaround per tool_name: "unknown")
+    const toolNamesMap = new Map<number, string>();
 
     try {
       while (true) {
@@ -90,14 +92,23 @@ export async function sendMessageToBot(
 
               // EVENTO: tool_call - Crea widget in loading
               if (parsed.type === 'tool_call') {
-                const widgetId = `${parsed.tool_name}_${parsed.item_index}`;
-                toolWidgetsMap.set(widgetId, {
+                console.log('[BOTSERVICE] 🔧 Tool call:', parsed.tool_name, 'index:', parsed.item_index);
+
+                // Salva il tool_name per questo item_index
+                toolNamesMap.set(parsed.item_index, parsed.tool_name);
+
+                const widgetId = `tool_${parsed.item_index}`;
+                const newWidget = {
                   id: widgetId,
                   toolName: parsed.tool_name,
-                  status: 'loading',
+                  status: 'loading' as const,
                   itemIndex: parsed.item_index,
                   toolArgs: parsed.tool_args,
-                });
+                };
+                toolWidgetsMap.set(parsed.item_index, newWidget);
+
+                console.log('[BOTSERVICE] Widget created:', newWidget);
+                console.log('[BOTSERVICE] Total widgets:', toolWidgetsMap.size);
 
                 // Notifica UI del nuovo widget loading
                 if (onStreamChunk) {
@@ -107,39 +118,92 @@ export async function sendMessageToBot(
 
               // EVENTO: tool_output - Aggiorna widget con risultato
               if (parsed.type === 'tool_output') {
-                const widgetId = `${parsed.tool_name}_${parsed.item_index}`;
-                const widget = toolWidgetsMap.get(widgetId);
+                console.log('[BOTSERVICE] 📦 Tool output received, index:', parsed.item_index);
+
+                // Usa item_index per trovare il widget (ignora tool_name che può essere "unknown")
+                let widget = toolWidgetsMap.get(parsed.item_index);
+                let widgetKey = parsed.item_index; // Traccia la chiave corretta del widget
+
+                // WORKAROUND: Se non trova il widget per item_index, cerca per tool_name
+                // (il server a volte usa index diversi per tool_call e tool_output)
+                if (!widget && parsed.tool_name !== 'unknown') {
+                  console.log('[BOTSERVICE] Widget not found by index, searching by tool_name:', parsed.tool_name);
+                  // Trova widget E la sua chiave originale
+                  for (const [key, w] of toolWidgetsMap.entries()) {
+                    if (w.toolName === parsed.tool_name && w.status === 'loading') {
+                      widget = w;
+                      widgetKey = key; // Usa la chiave originale del widget
+                      console.log('[BOTSERVICE] Found widget by tool_name at index:', widgetKey);
+                      break;
+                    }
+                  }
+                }
+
+                // WORKAROUND 2: Se tool_name è "unknown", cerca l'ultimo widget in loading
+                if (!widget && parsed.tool_name === 'unknown') {
+                  console.log('[BOTSERVICE] Tool name is unknown, searching for last loading widget');
+                  // Trova l'ultimo widget loading E la sua chiave
+                  let lastLoadingKey: number | undefined;
+                  for (const [key, w] of toolWidgetsMap.entries()) {
+                    if (w.status === 'loading') {
+                      widget = w;
+                      lastLoadingKey = key;
+                    }
+                  }
+                  if (lastLoadingKey !== undefined) {
+                    widgetKey = lastLoadingKey;
+                    console.log('[BOTSERVICE] Found last loading widget at index:', widgetKey);
+                  }
+                }
 
                 if (widget) {
+                  console.log('[BOTSERVICE] Updating widget:', widget.id);
                   try {
                     // Parsa l'output JSON del tool
-                    const outputData = JSON.parse(parsed.output);
+                    let outputData = JSON.parse(parsed.output);
+
+                    // Se l'output è wrappato in {"type":"text","text":"..."}, estrailo
+                    if (outputData.type === 'text' && outputData.text) {
+                      outputData = JSON.parse(outputData.text);
+                    }
+
                     widget.status = outputData.success !== false ? 'success' : 'error';
                     widget.toolOutput = outputData;
                     widget.errorMessage = outputData.success === false ? outputData.message : undefined;
+
+                    // Usa il tool_name salvato dal tool_call se quello nell'output è "unknown"
+                    if (parsed.tool_name === 'unknown' && toolNamesMap.has(widgetKey)) {
+                      widget.toolName = toolNamesMap.get(widgetKey)!;
+                    }
+
+                    console.log('[BOTSERVICE] Widget updated to:', widget.status, 'type:', widget.toolOutput?.type);
                   } catch (e: any) {
                     widget.status = 'error';
                     widget.errorMessage = 'Errore parsing output tool';
-                    console.error('Errore parsing tool output:', e);
+                    console.error('[BOTSERVICE] Error parsing tool output:', e);
                   }
 
-                  toolWidgetsMap.set(widgetId, widget);
+                  // IMPORTANTE: Aggiorna il widget nella posizione ORIGINALE, non creare un duplicato
+                  toolWidgetsMap.set(widgetKey, widget);
 
+                  console.log('[BOTSERVICE] Notifying UI with', toolWidgetsMap.size, 'widgets');
                   // Notifica UI dell'aggiornamento widget
                   if (onStreamChunk) {
                     onStreamChunk('', false, Array.from(toolWidgetsMap.values()));
                   }
+                } else {
+                  console.warn('[BOTSERVICE] ⚠️ Widget not found for index:', parsed.item_index);
                 }
               }
 
               // EVENTO: content - Accumula testo messaggio
-              if (parsed.type === 'content' && parsed.content) {
-                fullMessage += parsed.content;
-                console.log(parsed.content); // Log del contenuto in real-time
+              if (parsed.type === 'content' && (parsed.delta || parsed.content)) {
+                const textChunk = parsed.delta || parsed.content;
+                fullMessage += textChunk;
 
                 // Chiama la callback con testo + widgets attuali
                 if (onStreamChunk) {
-                  onStreamChunk(parsed.content, false, Array.from(toolWidgetsMap.values()));
+                  onStreamChunk(textChunk, false, Array.from(toolWidgetsMap.values()));
                 }
               }
 
@@ -163,7 +227,7 @@ export async function sendMessageToBot(
 
               // EVENTO: done - Stream completato
               if (parsed.type === 'done') {
-                console.log('Stream completato');
+                // Stream completato, non serve loggare
               }
 
             } catch (e: any) {
