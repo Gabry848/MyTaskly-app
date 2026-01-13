@@ -7,12 +7,15 @@ import {
   TouchableOpacity,
   ScrollView,
   SafeAreaView,
-  Pressable,
+  TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Calendar } from 'react-native-calendars';
 import { VisualizationModalProps, TaskListItem } from '../types';
 import Category from '../../Category/Category';
+import Task from '../../Task/Task';
+import { Task as TaskType } from '../../../services/taskService';
+import CalendarGrid from '../../Calendar/CalendarGrid';
+import dayjs from 'dayjs';
 
 /**
  * Modal full-screen per visualizzare liste di task/categorie/note
@@ -25,6 +28,11 @@ const VisualizationModal: React.FC<VisualizationModalProps> = ({
   onItemPress,
 }) => {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'completed'>('all');
+  const [showCalendarModal, setShowCalendarModal] = useState(false);
+  const [calendarViewDate, setCalendarViewDate] = useState<string>(dayjs().format('YYYY-MM-DD'));
   const output = widget.toolOutput;
 
   if (!output) return null;
@@ -38,87 +46,186 @@ const VisualizationModal: React.FC<VisualizationModalProps> = ({
   const items = isTaskList ? output.tasks : isCategoryList ? output.categories : output.notes;
   const title = isTaskList ? 'Task' : isCategoryList ? 'Categorie' : 'Note';
 
-  // Marca le date sul calendario (solo per task)
-  const markedDates = useMemo(() => {
-    if (!isTaskList || !output.tasks) return {};
+  console.log('[VisualizationModal] Rendering', {
+    isTaskList,
+    itemsCount: items?.length,
+    outputType: output?.type,
+    widgetStatus: widget.status,
+    firstItem: items?.[0]
+  });
 
-    const marked: any = {};
-    output.tasks.forEach((task: TaskListItem) => {
-      if (task.end_time) {
-        const dateKey = task.end_time.split('T')[0]; // Formato YYYY-MM-DD
-        if (!marked[dateKey]) {
-          marked[dateKey] = {
-            marked: true,
-            dots: [{ color: '#007AFF' }],
-          };
-        }
-      }
-    });
+  // Filtra task per data, ricerca, priorità e stato
+  const filteredItems = useMemo(() => {
+    if (!isTaskList || !output.tasks) return items;
 
-    // Aggiungi selezione corrente
+    let filtered = output.tasks;
+
+    // Filtra per data selezionata (controlla sia end_time che start_time)
     if (selectedDate) {
-      marked[selectedDate] = {
-        ...marked[selectedDate],
-        selected: true,
-        selectedColor: '#007AFF',
-      };
+      filtered = filtered.filter((task: TaskListItem) => {
+        const item = task as any;
+        // Controlla tutti i possibili campi data
+        const endTime = item.endTime || item.end_time || item.endTimeFormatted;
+        const startTime = item.startTime || item.start_time || item.startTimeFormatted;
+        
+        // Se ha end_time, usa quello per il confronto
+        if (endTime) {
+          const taskDate = dayjs(endTime).format('YYYY-MM-DD');
+          return taskDate === selectedDate;
+        }
+        // Altrimenti usa start_time se disponibile
+        if (startTime) {
+          const taskDate = dayjs(startTime).format('YYYY-MM-DD');
+          return taskDate === selectedDate;
+        }
+        
+        return false;
+      });
     }
 
-    return marked;
-  }, [isTaskList, output.tasks, selectedDate]);
+    // Filtra per ricerca
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter((task: TaskListItem) =>
+        task.title.toLowerCase().includes(query) ||
+        (task.category_name && task.category_name.toLowerCase().includes(query))
+      );
+    }
 
-  // Filtra task per data selezionata
-  const filteredItems = useMemo(() => {
-    if (!selectedDate || !isTaskList || !output.tasks) return items;
+    // Filtra per priorità
+    if (priorityFilter) {
+      filtered = filtered.filter((task: TaskListItem) =>
+        task.priority === priorityFilter
+      );
+    }
 
-    return output.tasks.filter((task: TaskListItem) => {
-      if (!task.end_time) return false;
-      return task.end_time.startsWith(selectedDate);
+    // Filtra per stato
+    if (statusFilter === 'pending') {
+      filtered = filtered.filter((task: TaskListItem) => !task.completed);
+    } else if (statusFilter === 'completed') {
+      filtered = filtered.filter((task: TaskListItem) => task.completed);
+    }
+
+    return filtered;
+  }, [selectedDate, searchQuery, priorityFilter, statusFilter, isTaskList, output.tasks, items]);
+
+  const displayItems = filteredItems || items;
+
+  // Debug filtro
+  if (isTaskList && selectedDate) {
+    console.log('[VisualizationModal] Filtro data attivo:', {
+      selectedDate,
+      totalTasks: output.tasks?.length,
+      filteredTasks: filteredItems?.length,
+      firstFilteredTask: filteredItems?.[0]
     });
-  }, [selectedDate, isTaskList, output.tasks, items]);
+  }
 
-  const displayItems = selectedDate ? filteredItems : items;
+  // Ottieni colore priorità
+  const getPriorityColor = (priority?: string): string => {
+    const priorityColors: Record<string, string> = {
+      'Alta': '#000000',
+      'Media': '#333333',
+      'Bassa': '#666666',
+    };
+    return priority ? (priorityColors[priority] || '#999999') : '#999999';
+  };
+
+  // Formatta la data
+  const formatDate = (dateString?: string): string => {
+    if (!dateString) return '';
+    try {
+      const date = new Date(dateString);
+      const today = new Date();
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      const isToday = date.toDateString() === today.toDateString();
+      const isTomorrow = date.toDateString() === tomorrow.toDateString();
+
+      if (isToday) {
+        return `Oggi, ${date.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}`;
+      } else if (isTomorrow) {
+        return `Domani, ${date.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}`;
+      } else {
+        return date.toLocaleDateString('it-IT', {
+          day: 'numeric',
+          month: 'short',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      }
+    } catch {
+      return dateString;
+    }
+  };
+
+  // Converti TaskListItem a Task per TaskCard
+  const convertToTask = (taskListItem: TaskListItem): TaskType => {
+    const item = taskListItem as any;
+    
+    // Determina start_time e end_time dai vari formati possibili
+    const startTime = item.startTime || item.start_time || item.startTimeFormatted;
+    const endTime = item.endTime || item.end_time || item.endTimeFormatted || taskListItem.end_time;
+    
+    return {
+      task_id: taskListItem.id,
+      id: taskListItem.id,
+      title: taskListItem.title,
+      description: item.description || '',
+      // Usa start_time se disponibile, altrimenti end_time, altrimenti data corrente
+      start_time: startTime || endTime || new Date().toISOString(),
+      // Usa end_time se disponibile, altrimenti stringa vuota
+      end_time: endTime || '',
+      category_id: item.category_id || item.categoryId || 0,
+      category_name: taskListItem.category_name || taskListItem.category || item.category || '',
+      priority: taskListItem.priority || item.priority || 'Media',
+      status: taskListItem.status || item.status || (taskListItem.completed ? 'Completato' : 'In sospeso'),
+      user_id: item.user_id || item.userId || 0,
+      is_recurring: item.is_recurring || item.isRecurring || false,
+      created_at: item.created_at || item.createdAt || new Date().toISOString(),
+      updated_at: item.updated_at || item.updatedAt || new Date().toISOString(),
+    };
+  };
 
   // Renderizza un singolo item
   const renderItem = (item: any, index: number) => {
     if (isTaskList) {
-      const task = item as TaskListItem;
+      const taskListItem = item as TaskListItem;
+      const task = convertToTask(taskListItem);
+
       return (
-        <TouchableOpacity
-          key={index}
-          style={styles.itemCard}
-          activeOpacity={0.7}
-          onPress={() => onItemPress && onItemPress(task, 'task')}
-        >
-          <View style={styles.itemIconContainer}>
-            <Ionicons
-              name={task.completed ? 'checkmark-circle' : 'ellipse-outline'}
-              size={24}
-              color={task.completed ? '#34C759' : '#007AFF'}
-            />
-          </View>
-          <View style={styles.itemTextContainer}>
-            <Text style={styles.itemTitle} numberOfLines={1}>
-              {task.title}
-            </Text>
-            {task.end_time && (
-              <Text style={styles.itemSubtitle}>
-                {new Date(task.end_time).toLocaleDateString('it-IT', {
-                  day: 'numeric',
-                  month: 'short',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
-              </Text>
-            )}
-            {task.category_name && (
-              <View style={styles.categoryBadge}>
-                <Text style={styles.categoryBadgeText}>{task.category_name}</Text>
-              </View>
-            )}
-          </View>
-          <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
-        </TouchableOpacity>
+        <Task
+          key={task.id || index}
+          task={task}
+          onTaskComplete={async (taskId: number) => {
+            // Handle task completion
+            if (onItemPress) {
+              onItemPress({ ...taskListItem, completed: true }, 'task');
+            }
+          }}
+          onTaskUncomplete={async (taskId: number) => {
+            // Handle task uncomplete
+            if (onItemPress) {
+              onItemPress({ ...taskListItem, completed: false }, 'task');
+            }
+          }}
+          onTaskEdit={(taskId: number, updatedTask: TaskType) => {
+            // Handle task edit
+            if (onItemPress) {
+              onItemPress({ ...taskListItem, ...updatedTask }, 'task');
+            }
+          }}
+          onTaskDelete={(taskId: number) => {
+            // Handle task deletion
+            if (onItemPress) {
+              onItemPress(taskListItem, 'task');
+            }
+          }}
+          isOwned={true}
+          permissionLevel="READ_WRITE"
+          hideCheckbox={false}
+        />
       );
     }
 
@@ -196,54 +303,111 @@ const VisualizationModal: React.FC<VisualizationModalProps> = ({
         </View>
 
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-          {/* CALENDARIO (solo per task) */}
+          {/* SEARCH BAR CON PULSANTE CALENDARIO (solo per task) */}
           {isTaskList && (
-            <View style={styles.calendarContainer}>
-              <Calendar
-                markedDates={markedDates}
-                onDayPress={(day) => {
-                  setSelectedDate(day.dateString === selectedDate ? null : day.dateString);
-                }}
-                theme={{
-                  todayTextColor: '#007AFF',
-                  selectedDayBackgroundColor: '#007AFF',
-                  selectedDayTextColor: '#FFFFFF',
-                  arrowColor: '#007AFF',
-                  monthTextColor: '#000000',
-                  textMonthFontSize: 18,
-                  textMonthFontWeight: '600',
-                }}
-                markingType="multi-dot"
-              />
-              {selectedDate && (
-                <Pressable
-                  style={styles.clearDateButton}
-                  onPress={() => setSelectedDate(null)}
-                >
-                  <Text style={styles.clearDateText}>Mostra tutti</Text>
-                </Pressable>
-              )}
+            <View style={styles.searchContainer}>
+              <View style={styles.searchBar}>
+                <Ionicons name="search" size={20} color="#8E8E93" />
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Cerca task per titolo o categoria..."
+                  placeholderTextColor="#8E8E93"
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                />
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity onPress={() => setSearchQuery('')}>
+                    <Ionicons name="close-circle" size={20} color="#8E8E93" />
+                  </TouchableOpacity>
+                )}
+              </View>
+              {/* Pulsante Calendario */}
+              <TouchableOpacity
+                style={styles.calendarButton}
+                onPress={() => setShowCalendarModal(true)}
+              >
+                <Ionicons name="calendar-outline" size={22} color="#FFFFFF" />
+              </TouchableOpacity>
             </View>
           )}
 
-          {/* SUMMARY */}
-          {output.summary && (
-            <View style={styles.summaryContainer}>
-              <Text style={styles.summaryText}>
-                Totale: {output.summary.total} elementi
-              </Text>
-              {output.summary.pending !== undefined && (
-                <Text style={styles.summaryText}>
-                  In sospeso: {output.summary.pending}
-                </Text>
-              )}
-              {output.summary.completed !== undefined && (
-                <Text style={styles.summaryText}>
-                  Completati: {output.summary.completed}
-                </Text>
-              )}
+          {/* FILTRI (solo per task) */}
+          {isTaskList && (
+            <View style={styles.filtersContainer}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filtersScrollContent}>
+                {/* Filtro Stato */}
+                <TouchableOpacity
+                  style={[styles.filterChip, statusFilter === 'all' && styles.filterChipActive]}
+                  onPress={() => setStatusFilter('all')}
+                >
+                  <Text style={[styles.filterChipText, statusFilter === 'all' && styles.filterChipTextActive]}>
+                    Tutti
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.filterChip, statusFilter === 'pending' && styles.filterChipActive]}
+                  onPress={() => setStatusFilter('pending')}
+                >
+                  <Text style={[styles.filterChipText, statusFilter === 'pending' && styles.filterChipTextActive]}>
+                    In corso
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.filterChip, statusFilter === 'completed' && styles.filterChipActive]}
+                  onPress={() => setStatusFilter('completed')}
+                >
+                  <Text style={[styles.filterChipText, statusFilter === 'completed' && styles.filterChipTextActive]}>
+                    Completati
+                  </Text>
+                </TouchableOpacity>
+
+                <View style={styles.filterDivider} />
+
+                {/* Filtro Priorità */}
+                <TouchableOpacity
+                  style={[styles.filterChip, priorityFilter === 'Alta' && styles.filterChipPriorityHigh]}
+                  onPress={() => setPriorityFilter(priorityFilter === 'Alta' ? null : 'Alta')}
+                >
+                  <Text style={[styles.filterChipText, priorityFilter === 'Alta' && styles.filterChipTextActive]}>
+                    Alta
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.filterChip, priorityFilter === 'Media' && styles.filterChipPriorityMedium]}
+                  onPress={() => setPriorityFilter(priorityFilter === 'Media' ? null : 'Media')}
+                >
+                  <Text style={[styles.filterChipText, priorityFilter === 'Media' && styles.filterChipTextActive]}>
+                    Media
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.filterChip, priorityFilter === 'Bassa' && styles.filterChipPriorityLow]}
+                  onPress={() => setPriorityFilter(priorityFilter === 'Bassa' ? null : 'Bassa')}
+                >
+                  <Text style={[styles.filterChipText, priorityFilter === 'Bassa' && styles.filterChipTextActive]}>
+                    Bassa
+                  </Text>
+                </TouchableOpacity>
+              </ScrollView>
             </View>
           )}
+
+          {/* Indicatore data selezionata */}
+          {isTaskList && selectedDate && (
+            <View style={styles.selectedDateIndicator}>
+              <Text style={styles.selectedDateText}>
+                Filtrato per: {dayjs(selectedDate).format('DD MMMM YYYY')}
+              </Text>
+              <TouchableOpacity onPress={() => setSelectedDate(null)}>
+                <Ionicons name="close-circle" size={20} color="#000000" />
+              </TouchableOpacity>
+            </View>
+          )}
+
 
           {/* LISTA ITEMS */}
           <View style={[styles.listContainer, isCategoryList && styles.categoryListContainer]}>
@@ -262,6 +426,72 @@ const VisualizationModal: React.FC<VisualizationModalProps> = ({
           </View>
         </ScrollView>
       </SafeAreaView>
+
+      {/* MODAL CALENDARIO */}
+      {isTaskList && (
+        <Modal
+          visible={showCalendarModal}
+          animationType="slide"
+          presentationStyle="pageSheet"
+          onRequestClose={() => setShowCalendarModal(false)}
+        >
+          <SafeAreaView style={styles.calendarModalContainer}>
+            {/* Header del modal calendario */}
+            <View style={styles.calendarModalHeader}>
+              <TouchableOpacity onPress={() => setShowCalendarModal(false)}>
+                <Ionicons name="close" size={28} color="#000000" />
+              </TouchableOpacity>
+              <Text style={styles.calendarModalTitle}>Seleziona Data</Text>
+              <View style={{ width: 28 }} />
+            </View>
+
+            {/* Calendario */}
+            <View style={styles.calendarGridContainer}>
+              <CalendarGrid
+                selectedDate={calendarViewDate}
+                tasks={output.tasks
+                  ?.filter((task: TaskListItem) => {
+                    const item = task as any;
+                    // Includi task con end_time O start_time
+                    const endTime = item.endTime || item.end_time || item.endTimeFormatted;
+                    const startTime = item.startTime || item.start_time || item.startTimeFormatted;
+                    return endTime || startTime;
+                  })
+                  .map((task: TaskListItem) => convertToTask(task)) || []}
+                onSelectDate={(date) => {
+                  if (date) {
+                    setSelectedDate(date);
+                    setShowCalendarModal(false);
+                  }
+                }}
+                onPreviousMonth={() => {
+                  const newDate = dayjs(calendarViewDate).subtract(1, 'month').format('YYYY-MM-DD');
+                  setCalendarViewDate(newDate);
+                }}
+                onNextMonth={() => {
+                  const newDate = dayjs(calendarViewDate).add(1, 'month').format('YYYY-MM-DD');
+                  setCalendarViewDate(newDate);
+                }}
+              />
+            </View>
+
+            {/* Pulsante per rimuovere filtro */}
+            {selectedDate && (
+              <View style={styles.calendarModalFooter}>
+                <TouchableOpacity
+                  style={styles.clearFilterButton}
+                  onPress={() => {
+                    setSelectedDate(null);
+                    setShowCalendarModal(false);
+                  }}
+                >
+                  <Text style={styles.clearFilterButtonText}>Mostra tutti i task</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </SafeAreaView>
+        </Modal>
+      )}
     </Modal>
   );
 };
@@ -294,6 +524,81 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+  },
+  // Search bar
+  searchContainer: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  searchBar: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F2F2F7',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#000000',
+    fontFamily: 'System',
+  },
+  // Filtri
+  filtersContainer: {
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 12,
+    marginBottom: 8,
+  },
+  filtersScrollContent: {
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  filterChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#F2F2F7',
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+  },
+  filterChipActive: {
+    backgroundColor: '#000000',
+    borderColor: '#000000',
+  },
+  filterChipPriorityHigh: {
+    backgroundColor: '#000000',
+    borderColor: '#000000',
+  },
+  filterChipPriorityMedium: {
+    backgroundColor: '#333333',
+    borderColor: '#333333',
+  },
+  filterChipPriorityLow: {
+    backgroundColor: '#666666',
+    borderColor: '#666666',
+  },
+  filterChipText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#000000',
+    fontFamily: 'System',
+  },
+  filterChipTextActive: {
+    color: '#FFFFFF',
+  },
+  filterDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: '#E5E5EA',
+    marginHorizontal: 4,
   },
   calendarContainer: {
     backgroundColor: '#FFFFFF',
@@ -336,6 +641,7 @@ const styles = StyleSheet.create({
   categoryCardWrapper: {
     marginBottom: 0,
   },
+  // Stili per categorie/note (mantieni per retrocompatibilità)
   itemCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -393,6 +699,74 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#8E8E93',
     marginTop: 16,
+  },
+  // Stili per il pulsante calendario
+  calendarButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: '#000000',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // Stili per l'indicatore data selezionata
+  selectedDateIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#E5F1FF',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginHorizontal: 16,
+    marginBottom: 8,
+    borderRadius: 12,
+  },
+  selectedDateText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#000000',
+    fontFamily: 'System',
+  },
+  // Stili per il modal calendario
+  calendarModalContainer: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  calendarModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5EA',
+  },
+  calendarModalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#000000',
+    fontFamily: 'System',
+  },
+  calendarGridContainer: {
+    flex: 1,
+    padding: 20,
+  },
+  calendarModalFooter: {
+    padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E5EA',
+  },
+  clearFilterButton: {
+    backgroundColor: '#000000',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  clearFilterButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    fontFamily: 'System',
   },
 });
 
