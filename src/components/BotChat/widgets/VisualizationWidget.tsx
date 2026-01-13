@@ -25,17 +25,16 @@ const VisualizationWidget: React.FC<VisualizationWidgetProps> = ({ widget, onOpe
 
   if (!output) return null;
 
-  // Se è una lista di task, usa il nuovo design card-based
-  if (output.type === 'task_list') {
-    return <TaskListPreview widget={widget} onOpen={onOpen} />;
-  }
-
-  // Per categorie e note, usa il design semplice con bottone
+  // Per task, categorie e note, usa il design semplice con bottone
   let title = '';
   let itemCount = 0;
   let icon: keyof typeof Ionicons.glyphMap = 'list';
 
-  if (output.type === 'category_list') {
+  if (output.type === 'task_list') {
+    title = 'Visualizza task';
+    itemCount = output.tasks?.length || 0;
+    icon = 'calendar-outline';
+  } else if (output.type === 'category_list') {
     title = 'Visualizza categorie';
     itemCount = output.categories?.length || 0;
     icon = 'folder-outline';
