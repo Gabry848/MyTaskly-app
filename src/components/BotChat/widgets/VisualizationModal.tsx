@@ -101,9 +101,17 @@ const VisualizationModal: React.FC<VisualizationModalProps> = ({
 
     // Filtra per stato
     if (statusFilter === 'pending') {
-      filtered = filtered.filter((task: TaskListItem) => !task.completed);
+      filtered = filtered.filter((task: TaskListItem) => {
+        const item = task as any;
+        const isCompleted = task.completed || item.status === 'Completato';
+        return !isCompleted;
+      });
     } else if (statusFilter === 'completed') {
-      filtered = filtered.filter((task: TaskListItem) => task.completed);
+      filtered = filtered.filter((task: TaskListItem) => {
+        const item = task as any;
+        const isCompleted = task.completed || item.status === 'Completato';
+        return isCompleted;
+      });
     }
 
     return filtered;
