@@ -30,6 +30,7 @@ export interface TaskItem {
 export interface TaskTableBubbleProps {
   message: string; // Il messaggio completo contenente il JSON
   style?: StyleProp<ViewStyle>;
+  onViewAll?: (tasks: TaskItem[]) => void; // Callback per visualizzare tutti i task
 }
 
 // Interfaccia per la sessione di chat
@@ -146,7 +147,9 @@ export interface TaskListItem {
   id: number;
   title: string;
   endTimeFormatted: string;      // Data formattata (es: "Oggi, 10:00")
+  end_time?: string;             // Data ISO originale per filtraggio calendario
   category: string;
+  category_name?: string;        // Nome categoria (alternativo a category)
   categoryColor: string;
   priority: string;
   priorityEmoji: string;

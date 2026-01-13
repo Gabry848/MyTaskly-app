@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View, Text, Animated } from 'react-native';
-import { MessageBubbleProps, ToolWidget } from './types';
-import TaskTableBubble from './TaskTableBubble'; // Importa il nuovo componente
+import { MessageBubbleProps, ToolWidget, TaskItem } from './types';
+import TaskListBubble from './TaskListBubble'; // Nuovo componente card-based
+import TaskTableBubble from './TaskTableBubble'; // Mantieni per backward compatibility
 import Markdown from 'react-native-markdown-display'; // Supporto per Markdown
 import WidgetBubble from './widgets/WidgetBubble';
 import VisualizationModal from './widgets/VisualizationModal';
@@ -18,6 +19,10 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style }) => {
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [selectedItemType, setSelectedItemType] = useState<'task' | 'category' | 'note'>('task');
+
+  // Stato per task list modal (dalla TaskListBubble)
+  const [taskListModalVisible, setTaskListModalVisible] = useState(false);
+  const [taskListForModal, setTaskListForModal] = useState<TaskItem[]>([]);
 
   // Animazioni per i punti di streaming
   const streamingDot1 = useRef(new Animated.Value(0.5)).current;
@@ -84,27 +89,67 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style }) => {
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
+
+  // Handler per "View All" dalla TaskListBubble
+  const handleViewAllTasks = (tasks: TaskItem[]) => {
+    // Converti TaskItem[] a formato compatibile con VisualizationModal
+    const taskListItems = tasks.map(task => ({
+      id: task.task_id,
+      title: task.title,
+      endTimeFormatted: task.end_time,
+      end_time: task.end_time,
+      category: task.category,
+      category_name: task.category,
+      categoryColor: '#007AFF',
+      priority: task.priority,
+      priorityEmoji: '',
+      priorityColor: '#000000',
+      status: task.status,
+      completed: task.status === 'Completato',
+    }));
+
+    // Crea un widget fittizio per la modal
+    const fakeWidget: ToolWidget = {
+      id: 'task-list-view-all',
+      toolName: 'show_tasks_to_user',
+      status: 'success',
+      itemIndex: 0,
+      toolOutput: {
+        type: 'task_list',
+        tasks: taskListItems,
+        summary: {
+          total: tasks.length,
+          pending: tasks.filter(t => t.status !== 'Completato').length,
+          completed: tasks.filter(t => t.status === 'Completato').length,
+        }
+      }
+    };
+
+    setSelectedVisualizationWidget(fakeWidget);
+    setVisualizationModalVisible(true);
+  };
+
   // Controlla se il messaggio del bot contiene la struttura dei task specificata
   if (isBot && typeof message.text === 'string') {
     // Controlla se il messaggio contiene un JSON array di task o il messaggio "Nessun task trovato"
-    if ((message.text.includes('[') && message.text.includes(']') && 
+    if ((message.text.includes('[') && message.text.includes(']') &&
         (message.text.includes('📅 TASK PER LA DATA') || message.text.includes('task_id'))) ||
         message.text.includes('📅 Nessun task trovato') ||
         (message.text.includes('📅') && message.text.includes('TASK PER LA DATA'))) {
-      return <TaskTableBubble message={message.text} style={style} />;
+      return <TaskListBubble message={message.text} style={style} onViewAll={handleViewAllTasks} />;
     }
       // Controlla il formato JSON legacy
     try {
       const parsedData = JSON.parse(message.text);
       if (parsedData.mode === "view") {
-        // Se ha una proprietà message, usa quella per il TaskTableBubble
+        // Se ha una proprietà message, usa quella per il TaskListBubble
         if (parsedData.message) {
-          return <TaskTableBubble message={parsedData.message} style={style} />;
+          return <TaskListBubble message={parsedData.message} style={style} onViewAll={handleViewAllTasks} />;
         }
         // Altrimenti, se ha tasks, converte al nuovo formato
         if (parsedData.tasks) {
           const legacyMessage = `Ecco i tuoi impegni:\n📅 TASK:\n${JSON.stringify(parsedData.tasks)}\n📊 Totale task trovati: ${parsedData.tasks.length}`;
-          return <TaskTableBubble message={legacyMessage} style={style} />;
+          return <TaskListBubble message={legacyMessage} style={style} onViewAll={handleViewAllTasks} />;
         }
       }
     } catch {
@@ -112,10 +157,10 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style }) => {
     }
   }
 
-  // Se il messaggio del bot contiene attività (formato legacy), visualizza TaskTableBubble
+  // Se il messaggio del bot contiene attività (formato legacy), visualizza TaskListBubble
   if (isBot && message.tasks && message.tasks.length > 0) {
     const legacyMessage = `Ecco i tuoi impegni:\n📅 TASK:\n${JSON.stringify(message.tasks)}\n📊 Totale task trovati: ${message.tasks.length}`;
-    return <TaskTableBubble message={legacyMessage} style={style} />;
+    return <TaskListBubble message={legacyMessage} style={style} onViewAll={handleViewAllTasks} />;
   }  // Altrimenti, visualizza il messaggio di testo normale
   
   // Funzione per renderizzare il contenuto del messaggio
@@ -184,22 +229,13 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style }) => {
       {/* WIDGETS SOPRA AL MESSAGGIO (come richiesto dall'utente) */}
       {isBot && message.toolWidgets && message.toolWidgets.length > 0 && (
         <View style={styles.widgetsContainer}>
-          {message.toolWidgets
-            .filter((widget) => {
-              // Filtra i widget di visualizzazione in loading (mostra solo i risultati finali)
-              const isVisualizationTool = ['show_tasks_to_user', 'show_categories_to_user', 'show_notes_to_user'].includes(widget.toolName);
-              if (isVisualizationTool && widget.status === 'loading') {
-                return false; // Nascondi loading per tool di visualizzazione
-              }
-              return true; // Mostra tutti gli altri widget (creazione, errori, successi)
-            })
-            .map((widget) => (
-              <WidgetBubble
-                key={widget.id}
-                widget={widget}
-                onOpenVisualization={handleOpenVisualization}
-              />
-            ))}
+          {message.toolWidgets.map((widget) => (
+            <WidgetBubble
+              key={widget.id}
+              widget={widget}
+              onOpenVisualization={handleOpenVisualization}
+            />
+          ))}
         </View>
       )}
 

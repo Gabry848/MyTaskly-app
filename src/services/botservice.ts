@@ -167,6 +167,15 @@ export async function sendMessageToBot(
                       outputData = JSON.parse(outputData.text);
                     }
 
+                    // Log dettagliato per task list
+                    if (widget.toolName === 'show_tasks_to_user' && outputData.tasks) {
+                      console.log('[BOTSERVICE] 📋 Tasks data from server:', {
+                        count: outputData.tasks.length,
+                        firstTask: outputData.tasks[0],
+                        rawOutput: outputData
+                      });
+                    }
+
                     widget.status = outputData.success !== false ? 'success' : 'error';
                     widget.toolOutput = outputData;
                     widget.errorMessage = outputData.success === false ? outputData.message : undefined;
