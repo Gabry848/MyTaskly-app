@@ -165,9 +165,15 @@ export interface CategoryListItem {
   id: number;
   name: string;
   description?: string;
-  color: string;
-  icon: string;
-  taskCount: number;
+  color?: string;
+  icon?: string;
+  taskCount?: number;
+  task_count?: number; // Backward compatibility
+  imageUrl?: string; // Alternative to icon
+  isShared?: boolean;
+  isOwned?: boolean;
+  ownerName?: string;
+  permissionLevel?: "READ_ONLY" | "READ_WRITE";
 }
 
 // Nota da lista visualizzazione
@@ -201,13 +207,14 @@ export interface VisualizationModalProps {
   visible: boolean;
   widget: ToolWidget;
   onClose: () => void;
+  onItemPress?: (item: any, type: 'task' | 'category' | 'note') => void;
 }
 
 // Props per ItemDetailModal
 export interface ItemDetailModalProps {
   visible: boolean;
   item: any;
-  type: 'task' | 'category' | 'note';
+  itemType: 'task' | 'category' | 'note';
   onClose: () => void;
   onAction?: (action: string, item: any) => void;
 }

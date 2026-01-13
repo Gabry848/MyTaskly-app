@@ -12,6 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Calendar } from 'react-native-calendars';
 import { VisualizationModalProps, TaskListItem } from '../types';
+import Category from '../../Category/Category';
 
 /**
  * Modal full-screen per visualizzare liste di task/categorie/note
@@ -122,26 +123,29 @@ const VisualizationModal: React.FC<VisualizationModalProps> = ({
     }
 
     if (isCategoryList) {
+      // Usa imageUrl solo se è un URL valido (inizia con http/https/file://)
+      // Altrimenti lascia undefined per usare l'icona predefinita
+      const validImageUrl = item.imageUrl || item.icon;
+      const isValidUrl = validImageUrl && (
+        validImageUrl.startsWith('http://') ||
+        validImageUrl.startsWith('https://') ||
+        validImageUrl.startsWith('file://')
+      );
+
       return (
-        <TouchableOpacity
-          key={index}
-          style={styles.itemCard}
-          activeOpacity={0.7}
-          onPress={() => onItemPress && onItemPress(item, 'category')}
-        >
-          <View style={styles.itemIconContainer}>
-            <Ionicons name="folder" size={24} color="#FF9500" />
-          </View>
-          <View style={styles.itemTextContainer}>
-            <Text style={styles.itemTitle} numberOfLines={1}>
-              {item.name}
-            </Text>
-            {item.task_count !== undefined && (
-              <Text style={styles.itemSubtitle}>{item.task_count} task</Text>
-            )}
-          </View>
-          <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
-        </TouchableOpacity>
+        <View key={index} style={styles.categoryCardWrapper}>
+          <Category
+            title={item.name}
+            description={item.description}
+            imageUrl={isValidUrl ? validImageUrl : undefined}
+            taskCount={item.taskCount || item.task_count || 0}
+            categoryId={item.id}
+            isShared={item.isShared || false}
+            isOwned={item.isOwned !== undefined ? item.isOwned : true}
+            ownerName={item.ownerName}
+            permissionLevel={item.permissionLevel || "READ_WRITE"}
+          />
+        </View>
       );
     }
 
@@ -242,7 +246,7 @@ const VisualizationModal: React.FC<VisualizationModalProps> = ({
           )}
 
           {/* LISTA ITEMS */}
-          <View style={styles.listContainer}>
+          <View style={[styles.listContainer, isCategoryList && styles.categoryListContainer]}>
             {displayItems && displayItems.length > 0 ? (
               displayItems.map((item: any, index: number) => renderItem(item, index))
             ) : (
@@ -325,6 +329,12 @@ const styles = StyleSheet.create({
   listContainer: {
     paddingHorizontal: 16,
     paddingBottom: 20,
+  },
+  categoryListContainer: {
+    paddingHorizontal: 0, // Categories have their own margins
+  },
+  categoryCardWrapper: {
+    marginBottom: 0,
   },
   itemCard: {
     flexDirection: 'row',
