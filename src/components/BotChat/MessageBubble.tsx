@@ -7,6 +7,9 @@ import Markdown from 'react-native-markdown-display'; // Supporto per Markdown
 import WidgetBubble from './widgets/WidgetBubble';
 import VisualizationModal from './widgets/VisualizationModal';
 import ItemDetailModal from './widgets/ItemDetailModal';
+import TaskEditModal from '../Task/TaskEditModal';
+import { Task as TaskType } from '../../services/taskService';
+import { updateTask } from '../../services/taskService';
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style }) => {
   const isBot = message.sender === 'bot';
@@ -23,6 +26,10 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style }) => {
   // Stato per task list modal (dalla TaskListBubble)
   const [taskListModalVisible, setTaskListModalVisible] = useState(false);
   const [taskListForModal, setTaskListForModal] = useState<TaskItem[]>([]);
+
+  // Stato per task edit modal
+  const [taskEditModalVisible, setTaskEditModalVisible] = useState(false);
+  const [selectedTaskForEdit, setSelectedTaskForEdit] = useState<TaskType | null>(null);
 
   // Animazioni per i punti di streaming
   const streamingDot1 = useRef(new Animated.Value(0.5)).current;
@@ -216,6 +223,27 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style }) => {
     setDetailModalVisible(true);
   };
 
+  // Handler per aprire la modal di modifica task
+  const handleTaskPress = (task: TaskType) => {
+    setSelectedTaskForEdit(task);
+    setTaskEditModalVisible(true);
+  };
+
+  // Handler per salvare le modifiche al task
+  const handleSaveTask = async (editedTask: Partial<TaskType>) => {
+    if (!selectedTaskForEdit) return;
+
+    try {
+      await updateTask(selectedTaskForEdit.task_id, editedTask);
+      setTaskEditModalVisible(false);
+      setSelectedTaskForEdit(null);
+      // Opzionalmente, puoi aggiornare il messaggio nella chat o mostrare una notifica
+    } catch (error) {
+      console.error('[MessageBubble] Error updating task:', error);
+      // Opzionalmente, mostra un messaggio di errore all'utente
+    }
+  };
+
   return (
     <Animated.View style={[
       styles.messageContainer,
@@ -235,6 +263,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style }) => {
               widget={widget}
               onOpenVisualization={handleOpenVisualization}
               onOpenItemDetail={handleOpenItemDetail}
+              onTaskPress={handleTaskPress}
             />
           ))}
         </View>
@@ -283,6 +312,18 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style }) => {
           item={selectedItem}
           itemType={selectedItemType}
           onClose={() => setDetailModalVisible(false)}
+        />
+      )}
+
+      {selectedTaskForEdit && (
+        <TaskEditModal
+          visible={taskEditModalVisible}
+          task={selectedTaskForEdit}
+          onClose={() => {
+            setTaskEditModalVisible(false);
+            setSelectedTaskForEdit(null);
+          }}
+          onSave={handleSaveTask}
         />
       )}
     </Animated.View>
