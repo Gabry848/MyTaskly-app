@@ -8,10 +8,10 @@ import {
   ScrollView,
   SafeAreaView,
   TextInput,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { VisualizationModalProps, TaskListItem } from '../types';
-import Category from '../../Category/Category';
 import Task from '../../Task/Task';
 import { Task as TaskType } from '../../../services/taskService';
 import CalendarGrid from '../../Calendar/CalendarGrid';
@@ -26,6 +26,7 @@ const VisualizationModal: React.FC<VisualizationModalProps> = ({
   widget,
   onClose,
   onItemPress,
+  onCategoryPress,
 }) => {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -248,19 +249,53 @@ const VisualizationModal: React.FC<VisualizationModalProps> = ({
       );
 
       return (
-        <View key={index} style={styles.categoryCardWrapper}>
-          <Category
-            title={item.name}
-            description={item.description}
-            imageUrl={isValidUrl ? validImageUrl : undefined}
-            taskCount={item.taskCount || item.task_count || 0}
-            categoryId={item.id}
-            isShared={item.isShared || false}
-            isOwned={item.isOwned !== undefined ? item.isOwned : true}
-            ownerName={item.ownerName}
-            permissionLevel={item.permissionLevel || "READ_WRITE"}
-          />
-        </View>
+        <TouchableOpacity
+          key={index}
+          style={styles.categoryCard}
+          activeOpacity={0.7}
+          onPress={() => {
+            console.log('[VisualizationModal] Category pressed:', item.name);
+            console.log('[VisualizationModal] onCategoryPress available:', !!onCategoryPress);
+            if (onCategoryPress) {
+              onCategoryPress(item);
+            } else {
+              console.warn('[VisualizationModal] onCategoryPress is not defined!');
+            }
+          }}
+        >
+          <View style={styles.categoryIconContainer}>
+            {isValidUrl ? (
+              <Image source={{ uri: validImageUrl }} style={styles.categoryImage} />
+            ) : (
+              <Ionicons name="folder" size={32} color="#007AFF" />
+            )}
+          </View>
+          <View style={styles.categoryTextContainer}>
+            <Text style={styles.categoryTitle} numberOfLines={1}>
+              {item.name}
+            </Text>
+            {item.description && (
+              <Text style={styles.categoryDescription} numberOfLines={2}>
+                {item.description}
+              </Text>
+            )}
+            <View style={styles.categoryMetaContainer}>
+              <View style={styles.categoryTaskCount}>
+                <Ionicons name="list-outline" size={14} color="#666666" />
+                <Text style={styles.categoryTaskCountText}>
+                  {item.taskCount || item.task_count || 0} task
+                </Text>
+              </View>
+              {item.isShared && (
+                <View style={styles.categorySharedBadge}>
+                  <Ionicons name="people-outline" size={14} color="#007AFF" />
+                  <Text style={styles.categorySharedText}>Condiviso</Text>
+                </View>
+              )}
+            </View>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
+        </TouchableOpacity>
       );
     }
 
@@ -778,6 +813,85 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
+    fontFamily: 'System',
+  },
+  // Stili per le category card personalizzate nella chat
+  categoryCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginBottom: 12,
+    marginHorizontal: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
+    borderWidth: 1.5,
+    borderColor: '#E1E5E9',
+  },
+  categoryIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#E5F1FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+    overflow: 'hidden',
+  },
+  categoryImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+  },
+  categoryTextContainer: {
+    flex: 1,
+  },
+  categoryTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#000000',
+    marginBottom: 4,
+    fontFamily: 'System',
+  },
+  categoryDescription: {
+    fontSize: 14,
+    color: '#666666',
+    marginBottom: 6,
+    fontFamily: 'System',
+  },
+  categoryMetaContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  categoryTaskCount: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  categoryTaskCountText: {
+    fontSize: 13,
+    color: '#666666',
+    fontFamily: 'System',
+  },
+  categorySharedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#E5F1FF',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  categorySharedText: {
+    fontSize: 12,
+    color: '#007AFF',
+    fontWeight: '600',
     fontFamily: 'System',
   },
 });
