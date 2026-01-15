@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View, Text, Animated } from 'react-native';
+import { StyleSheet, View, Text, Animated, Alert } from 'react-native';
 import { MessageBubbleProps, ToolWidget, TaskItem } from './types';
 import TaskListBubble from './TaskListBubble'; // Nuovo componente card-based
 import TaskTableBubble from './TaskTableBubble'; // Mantieni per backward compatibility
@@ -8,8 +8,10 @@ import WidgetBubble from './widgets/WidgetBubble';
 import VisualizationModal from './widgets/VisualizationModal';
 import ItemDetailModal from './widgets/ItemDetailModal';
 import TaskEditModal from '../Task/TaskEditModal';
+import EditCategoryModal from '../Category/EditCategoryModal';
+import CategoryMenu from '../Category/CategoryMenu';
 import { Task as TaskType } from '../../services/taskService';
-import { updateTask } from '../../services/taskService';
+import { updateTask, updateCategory, deleteCategory } from '../../services/taskService';
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style }) => {
   const isBot = message.sender === 'bot';
@@ -30,6 +32,15 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style }) => {
   // Stato per task edit modal
   const [taskEditModalVisible, setTaskEditModalVisible] = useState(false);
   const [selectedTaskForEdit, setSelectedTaskForEdit] = useState<TaskType | null>(null);
+
+  // Stato per category edit modal e menu
+  const [categoryEditModalVisible, setCategoryEditModalVisible] = useState(false);
+  const [categoryMenuVisible, setCategoryMenuVisible] = useState(false);
+  const [selectedCategoryForEdit, setSelectedCategoryForEdit] = useState<any>(null);
+  const [editCategoryName, setEditCategoryName] = useState('');
+  const [editCategoryDescription, setEditCategoryDescription] = useState('');
+  const [isEditingCategory, setIsEditingCategory] = useState(false);
+  const [isDeletingCategory, setIsDeletingCategory] = useState(false);
 
   // Animazioni per i punti di streaming
   const streamingDot1 = useRef(new Animated.Value(0.5)).current;
@@ -244,6 +255,100 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style }) => {
     }
   };
 
+  // Handler per aprire il menu della categoria
+  const handleCategoryPress = (category: any) => {
+    console.log('[MessageBubble] handleCategoryPress called with:', category);
+    setSelectedCategoryForEdit(category);
+    setCategoryMenuVisible(true);
+  };
+
+  // Handler per chiudere il menu della categoria
+  const handleCloseCategoryMenu = () => {
+    setCategoryMenuVisible(false);
+  };
+
+  // Handler per aprire la modal di modifica dalla voce menu
+  const handleEditCategory = () => {
+    console.log('[MessageBubble] handleEditCategory - selectedCategoryForEdit:', selectedCategoryForEdit);
+    console.log('[MessageBubble] handleEditCategory - name:', selectedCategoryForEdit?.name);
+    console.log('[MessageBubble] handleEditCategory - description:', selectedCategoryForEdit?.description);
+    setCategoryMenuVisible(false);
+    setEditCategoryName(selectedCategoryForEdit?.name || '');
+    setEditCategoryDescription(selectedCategoryForEdit?.description || '');
+    setCategoryEditModalVisible(true);
+  };
+
+  // Handler per salvare le modifiche alla categoria
+  const handleSaveCategory = async () => {
+    if (!selectedCategoryForEdit) return;
+
+    if (editCategoryName.trim() === '') {
+      Alert.alert('Errore', 'Il nome della categoria non può essere vuoto');
+      return;
+    }
+
+    setIsEditingCategory(true);
+    try {
+      await updateCategory(selectedCategoryForEdit.name, {
+        name: editCategoryName.trim(),
+        description: editCategoryDescription.trim()
+      });
+
+      Alert.alert('Successo', 'Categoria aggiornata con successo');
+      setCategoryEditModalVisible(false);
+      setSelectedCategoryForEdit(null);
+    } catch (error) {
+      console.error('[MessageBubble] Error updating category:', error);
+      Alert.alert('Errore', 'Impossibile aggiornare la categoria. Riprova più tardi.');
+    } finally {
+      setIsEditingCategory(false);
+    }
+  };
+
+  // Handler per chiudere la modal di modifica categoria
+  const handleCancelCategoryEdit = () => {
+    setCategoryEditModalVisible(false);
+    setEditCategoryName('');
+    setEditCategoryDescription('');
+  };
+
+  // Handler per eliminare una categoria
+  const handleDeleteCategory = async () => {
+    if (!selectedCategoryForEdit) return;
+
+    Alert.alert(
+      'Conferma eliminazione',
+      `Sei sicuro di voler eliminare la categoria "${selectedCategoryForEdit.name}"?`,
+      [
+        { text: 'Annulla', style: 'cancel' },
+        {
+          text: 'Elimina',
+          style: 'destructive',
+          onPress: async () => {
+            setIsDeletingCategory(true);
+            try {
+              await deleteCategory(selectedCategoryForEdit.name);
+              Alert.alert('Successo', 'Categoria eliminata con successo');
+              setCategoryMenuVisible(false);
+              setSelectedCategoryForEdit(null);
+            } catch (error) {
+              console.error('[MessageBubble] Error deleting category:', error);
+              Alert.alert('Errore', 'Impossibile eliminare la categoria. Riprova più tardi.');
+            } finally {
+              setIsDeletingCategory(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // Handler placeholder per condivisione categoria
+  const handleShareCategory = () => {
+    setCategoryMenuVisible(false);
+    Alert.alert('Info', 'Funzionalità di condivisione non ancora disponibile nella chat');
+  };
+
   return (
     <Animated.View style={[
       styles.messageContainer,
@@ -264,6 +369,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style }) => {
               onOpenVisualization={handleOpenVisualization}
               onOpenItemDetail={handleOpenItemDetail}
               onTaskPress={handleTaskPress}
+              onCategoryPress={handleCategoryPress}
             />
           ))}
         </View>
@@ -303,6 +409,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style }) => {
           widget={selectedVisualizationWidget}
           onClose={() => setVisualizationModalVisible(false)}
           onItemPress={handleOpenItemDetail}
+          onCategoryPress={handleCategoryPress}
         />
       )}
 
@@ -324,6 +431,34 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style }) => {
             setSelectedTaskForEdit(null);
           }}
           onSave={handleSaveTask}
+        />
+      )}
+
+      {/* Category Menu */}
+      {selectedCategoryForEdit && (
+        <CategoryMenu
+          visible={categoryMenuVisible}
+          onClose={handleCloseCategoryMenu}
+          onEdit={handleEditCategory}
+          onDelete={handleDeleteCategory}
+          onShare={handleShareCategory}
+          isDeleting={isDeletingCategory}
+          isOwned={selectedCategoryForEdit.isOwned !== undefined ? selectedCategoryForEdit.isOwned : true}
+          permissionLevel={selectedCategoryForEdit.permissionLevel || "READ_WRITE"}
+        />
+      )}
+
+      {/* Category Edit Modal */}
+      {selectedCategoryForEdit && (
+        <EditCategoryModal
+          visible={categoryEditModalVisible}
+          onClose={handleCancelCategoryEdit}
+          onSave={handleSaveCategory}
+          title={editCategoryName}
+          description={editCategoryDescription}
+          onTitleChange={setEditCategoryName}
+          onDescriptionChange={setEditCategoryDescription}
+          isEditing={isEditingCategory}
         />
       )}
     </Animated.View>

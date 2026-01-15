@@ -9,6 +9,7 @@ interface VisualizationWidgetProps {
   widget: ToolWidget;
   onOpen: (widget: ToolWidget) => void;
   onTaskPress?: (task: any) => void;
+  onCategoryPress?: (category: any) => void;
 }
 
 /**
@@ -16,7 +17,7 @@ interface VisualizationWidgetProps {
  * Per task_list: mostra preview card-based (max 3)
  * Per altri tipi: mostra card semplice con pulsante
  */
-const VisualizationWidget: React.FC<VisualizationWidgetProps> = ({ widget, onOpen, onTaskPress }) => {
+const VisualizationWidget: React.FC<VisualizationWidgetProps> = ({ widget, onOpen, onTaskPress, onCategoryPress }) => {
   const output = widget.toolOutput;
 
   // Se è in stato loading e non ha ancora output, mostra lo skeleton loader

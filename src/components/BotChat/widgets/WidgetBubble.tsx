@@ -7,7 +7,7 @@ import VisualizationWidget from './VisualizationWidget';
 /**
  * Router component che decide quale widget renderizzare in base al tipo di tool
  */
-const WidgetBubble: React.FC<WidgetBubbleProps> = ({ widget, onOpenVisualization, onOpenItemDetail, onTaskPress }) => {
+const WidgetBubble: React.FC<WidgetBubbleProps> = ({ widget, onOpenVisualization, onOpenItemDetail, onTaskPress, onCategoryPress }) => {
   // Lista dei tool di visualizzazione
   const visualizationTools = ['show_tasks_to_user', 'show_categories_to_user', 'show_notes_to_user'];
 
@@ -22,6 +22,7 @@ const WidgetBubble: React.FC<WidgetBubbleProps> = ({ widget, onOpenVisualization
         widget={widget}
         onOpen={onOpenVisualization}
         onTaskPress={onTaskPress}
+        onCategoryPress={onCategoryPress}
       />
     );
   }
@@ -66,13 +67,24 @@ const WidgetBubble: React.FC<WidgetBubbleProps> = ({ widget, onOpenVisualization
         };
         onTaskPress(taskForEdit);
       }
-    } else if (output.type === 'category_created' && output.category && onOpenItemDetail) {
-      // Assicurati che la categoria abbia tutti i campi necessari
-      const categoryItem = {
-        ...output.category,
-        id: output.category.category_id,
-      };
-      onOpenItemDetail(categoryItem, 'category');
+    } else if (output.type === 'category_created' && output.category) {
+      // Per le categorie, usa onCategoryPress per aprire il CategoryMenu
+      if (onCategoryPress) {
+        // Usa toolArgs per ottenere i dati originali della categoria (come per i task)
+        const categoryItem = {
+          ...output.category,
+          id: output.category.category_id,
+          // Usa toolArgsData per name e description, come facciamo per i task
+          name: toolArgsData.name || output.category.name || '',
+          description: toolArgsData.description || output.category.description || '',
+          // Assicurati che i campi necessari per CategoryMenu siano presenti
+          isOwned: output.category.isOwned !== undefined ? output.category.isOwned : true,
+          permissionLevel: output.category.permissionLevel || "READ_WRITE",
+        };
+        console.log('[WidgetBubble] Category item to pass:', categoryItem);
+        console.log('[WidgetBubble] toolArgsData:', toolArgsData);
+        onCategoryPress(categoryItem);
+      }
     } else if (output.type === 'note_created' && output.note && onOpenItemDetail) {
       // Assicurati che la nota abbia tutti i campi necessari
       const noteItem = {

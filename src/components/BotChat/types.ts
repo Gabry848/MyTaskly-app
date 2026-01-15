@@ -201,6 +201,7 @@ export interface WidgetBubbleProps {
   onOpenVisualization?: (widget: ToolWidget) => void;
   onOpenItemDetail?: (item: any, type: 'task' | 'category' | 'note') => void;
   onTaskPress?: (task: any) => void;
+  onCategoryPress?: (category: any) => void;
 }
 
 // Props per CreationWidgetCard
@@ -215,6 +216,7 @@ export interface VisualizationModalProps {
   widget: ToolWidget;
   onClose: () => void;
   onItemPress?: (item: any, type: 'task' | 'category' | 'note') => void;
+  onCategoryPress?: (category: any) => void;
 }
 
 // Props per ItemDetailModal
