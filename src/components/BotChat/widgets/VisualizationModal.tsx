@@ -507,7 +507,7 @@ const VisualizationModal: React.FC<VisualizationModalProps> = ({
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: '#F9F9F9',
   },
   header: {
     flexDirection: 'row',
@@ -516,8 +516,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5EA',
+    borderBottomWidth: 1.5,
+    borderBottomColor: '#E1E5E9',
   },
   closeButton: {
     width: 40,
@@ -542,12 +542,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E1E5E9',
   },
   searchBar: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F2F2F7',
+    backgroundColor: '#f8f8f8',
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -564,6 +566,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     paddingVertical: 12,
     marginBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E1E5E9',
   },
   filtersScrollContent: {
     paddingHorizontal: 16,
@@ -573,9 +577,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#F2F2F7',
-    borderWidth: 1,
-    borderColor: '#E5E5EA',
+    backgroundColor: '#f8f8f8',
+    borderWidth: 1.5,
+    borderColor: '#E1E5E9',
   },
   filterChipActive: {
     backgroundColor: '#000000',

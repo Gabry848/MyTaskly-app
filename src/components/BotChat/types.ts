@@ -196,13 +196,14 @@ export interface NoteListItem {
 // Props per WidgetBubble
 export interface WidgetBubbleProps {
   widget: ToolWidget;
-  onPress: () => void;
+  onOpenVisualization?: (widget: ToolWidget) => void;
+  onOpenItemDetail?: (item: any, type: 'task' | 'category' | 'note') => void;
 }
 
 // Props per CreationWidgetCard
 export interface CreationWidgetCardProps {
   widget: ToolWidget;
-  onPress: () => void;
+  onPress?: () => void;
 }
 
 // Props per VisualizationModal
