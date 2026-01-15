@@ -8,6 +8,7 @@ import { Task as TaskType } from '../../../services/taskService';
 interface VisualizationWidgetProps {
   widget: ToolWidget;
   onOpen: (widget: ToolWidget) => void;
+  onTaskPress?: (task: any) => void;
 }
 
 /**
@@ -15,7 +16,7 @@ interface VisualizationWidgetProps {
  * Per task_list: mostra preview card-based (max 3)
  * Per altri tipi: mostra card semplice con pulsante
  */
-const VisualizationWidget: React.FC<VisualizationWidgetProps> = ({ widget, onOpen }) => {
+const VisualizationWidget: React.FC<VisualizationWidgetProps> = ({ widget, onOpen, onTaskPress }) => {
   const output = widget.toolOutput;
 
   // Se è in stato loading e non ha ancora output, mostra lo skeleton loader
@@ -172,7 +173,7 @@ const LoadingWidget: React.FC<{ widget: ToolWidget }> = ({ widget }) => {
 /**
  * Component for task list preview with card-based design
  */
-const TaskListPreview: React.FC<VisualizationWidgetProps> = ({ widget, onOpen }) => {
+const TaskListPreview: React.FC<VisualizationWidgetProps> = ({ widget, onOpen, onTaskPress }) => {
   const output = widget.toolOutput;
   const tasks = output?.tasks || [];
 
@@ -255,6 +256,7 @@ const TaskListPreview: React.FC<VisualizationWidgetProps> = ({ widget, onOpen })
             <TaskCard
               key={task.id || index}
               task={task}
+              onPress={onTaskPress}
             />
           );
         })}

@@ -98,6 +98,8 @@ export interface ToolOutputData {
   task?: {
     task_id: number;
     title: string;
+    description?: string;
+    start_time?: string;
     end_time?: string;
     priority?: string;
     status?: string;
@@ -198,6 +200,7 @@ export interface WidgetBubbleProps {
   widget: ToolWidget;
   onOpenVisualization?: (widget: ToolWidget) => void;
   onOpenItemDetail?: (item: any, type: 'task' | 'category' | 'note') => void;
+  onTaskPress?: (task: any) => void;
 }
 
 // Props per CreationWidgetCard

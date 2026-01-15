@@ -7,7 +7,7 @@ import VisualizationWidget from './VisualizationWidget';
 /**
  * Router component che decide quale widget renderizzare in base al tipo di tool
  */
-const WidgetBubble: React.FC<WidgetBubbleProps> = ({ widget, onOpenVisualization, onOpenItemDetail }) => {
+const WidgetBubble: React.FC<WidgetBubbleProps> = ({ widget, onOpenVisualization, onOpenItemDetail, onTaskPress }) => {
   // Lista dei tool di visualizzazione
   const visualizationTools = ['show_tasks_to_user', 'show_categories_to_user', 'show_notes_to_user'];
 
@@ -21,6 +21,7 @@ const WidgetBubble: React.FC<WidgetBubbleProps> = ({ widget, onOpenVisualization
       <VisualizationWidget
         widget={widget}
         onOpen={onOpenVisualization}
+        onTaskPress={onTaskPress}
       />
     );
   }
@@ -32,14 +33,28 @@ const WidgetBubble: React.FC<WidgetBubbleProps> = ({ widget, onOpenVisualization
     const output = widget.toolOutput;
 
     // Determina tipo e item in base al tipo di output
-    if (output.type === 'task_created' && output.task && onOpenItemDetail) {
-      // Assicurati che il task abbia tutti i campi necessari per ItemDetailModal
-      const taskItem = {
-        ...output.task,
-        id: output.task.task_id,
-        completed: output.task.status === 'completed' || output.task.status === 'Completato',
-      };
-      onOpenItemDetail(taskItem, 'task');
+    if (output.type === 'task_created' && output.task) {
+      // Per i task, usa onTaskPress per aprire TaskEditModal
+      if (onTaskPress) {
+        // Converti al formato Task completo per TaskEditModal
+        const taskForEdit = {
+          task_id: output.task.task_id,
+          id: output.task.task_id,
+          title: output.task.title || '',
+          description: output.task.description || '',
+          start_time: output.task.start_time || new Date().toISOString(),
+          end_time: output.task.end_time || '',
+          category_id: output.task.category_id || 0,
+          category_name: output.task.category_name || '',
+          priority: output.task.priority || 'Media',
+          status: output.task.status || 'In sospeso',
+          user_id: 0,
+          is_recurring: false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        onTaskPress(taskForEdit);
+      }
     } else if (output.type === 'category_created' && output.category && onOpenItemDetail) {
       // Assicurati che la categoria abbia tutti i campi necessari
       const categoryItem = {
