@@ -5,7 +5,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   Dimensions,
-  Image,
   ScrollView,
   StatusBar,
   Animated,
@@ -14,6 +13,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
+import { LinearGradient } from "expo-linear-gradient";
 import * as authService from "../../services/authService";
 import { NotificationSnackbar } from "../../components/UI/NotificationSnackbar";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -183,11 +183,17 @@ const ProfileScreen = () => {
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
             <View style={styles.headerSection}>
-              <View style={styles.avatar}>
-                <Image
-                  source={require("../../../assets/circle-user.png")}
-                  style={styles.avatarImage}
-                />
+              <View style={styles.avatarContainer}>
+                <LinearGradient
+                  colors={['#1a1a1a', '#4a4a4a', '#2d2d2d']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.gradientAvatar}
+                >
+                  <Text style={styles.initialsText}>
+                    {userData.username ? userData.username.substring(0, 2).toUpperCase() : 'U'}
+                  </Text>
+                </LinearGradient>
               </View>
               <Text style={styles.username}>{userData.username}</Text>
               <Text style={styles.userSubtitle}>{t('profile.user.subtitle')}</Text>
@@ -377,21 +383,25 @@ const styles = StyleSheet.create({
     marginTop: 20,
     paddingHorizontal: 20,
   },
-  avatar: {
+  avatarContainer: {
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: "#ffffff",
     marginBottom: 20,
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 4,
-    borderColor: "#000000",
+    overflow: 'hidden',
   },
-  avatarImage: {
-    width: "85%",
-    height: "85%",
-    borderRadius: 50,
+  gradientAvatar: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  initialsText: {
+    fontSize: 48,
+    fontWeight: '700',
+    color: '#ffffff',
+    fontFamily: 'System',
+    letterSpacing: 2,
   },
   username: {
     fontSize: 28,
