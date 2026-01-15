@@ -32,21 +32,32 @@ const WidgetBubble: React.FC<WidgetBubbleProps> = ({ widget, onOpenVisualization
 
     const output = widget.toolOutput;
 
+    // Parse toolArgs per ottenere i dati originali della richiesta
+    let toolArgsData: any = {};
+    if (widget.toolArgs) {
+      try {
+        toolArgsData = JSON.parse(widget.toolArgs);
+      } catch (e) {
+        console.error('[WidgetBubble] Error parsing toolArgs:', e);
+      }
+    }
+
     // Determina tipo e item in base al tipo di output
     if (output.type === 'task_created' && output.task) {
       // Per i task, usa onTaskPress per aprire TaskEditModal
       if (onTaskPress) {
         // Converti al formato Task completo per TaskEditModal
+        // Usa toolArgs per i dati originali (title, description, etc.)
         const taskForEdit = {
           task_id: output.task.task_id,
           id: output.task.task_id,
-          title: output.task.title || '',
-          description: output.task.description || '',
-          start_time: output.task.start_time || new Date().toISOString(),
-          end_time: output.task.end_time || '',
+          title: toolArgsData.title || output.task.title || '',
+          description: toolArgsData.description || output.task.description || '',
+          start_time: toolArgsData.start_time || output.task.start_time || new Date().toISOString(),
+          end_time: toolArgsData.end_time || output.task.end_time || '',
           category_id: output.task.category_id || 0,
           category_name: output.task.category_name || '',
-          priority: output.task.priority || 'Media',
+          priority: toolArgsData.priority || output.task.priority || 'Media',
           status: output.task.status || 'In sospeso',
           user_id: 0,
           is_recurring: false,
