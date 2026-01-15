@@ -92,8 +92,6 @@ export async function sendMessageToBot(
 
               // EVENTO: tool_call - Crea widget in loading
               if (parsed.type === 'tool_call') {
-                console.log('[BOTSERVICE] 🔧 Tool call:', parsed.tool_name, 'index:', parsed.item_index);
-
                 // Salva il tool_name per questo item_index
                 toolNamesMap.set(parsed.item_index, parsed.tool_name);
 
@@ -106,9 +104,6 @@ export async function sendMessageToBot(
                   toolArgs: parsed.tool_args,
                 };
                 toolWidgetsMap.set(parsed.item_index, newWidget);
-
-                console.log('[BOTSERVICE] Widget created:', newWidget);
-                console.log('[BOTSERVICE] Total widgets:', toolWidgetsMap.size);
 
                 // Notifica UI del nuovo widget loading
                 if (onStreamChunk) {

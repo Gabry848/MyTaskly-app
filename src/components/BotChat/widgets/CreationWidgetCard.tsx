@@ -7,7 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
  * Widget inline per creazione task/categoria/nota
  * Stati: loading → success | error
  */
-const CreationWidgetCard: React.FC<CreationWidgetCardProps> = ({ widget }) => {
+const CreationWidgetCard: React.FC<CreationWidgetCardProps> = ({ widget, onPress }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
 
@@ -65,30 +65,53 @@ const CreationWidgetCard: React.FC<CreationWidgetCardProps> = ({ widget }) => {
     let subtitle = '';
     let icon: keyof typeof Ionicons.glyphMap = 'checkmark-circle';
 
-    if (output.type === 'task_created' && output.task) {
-      title = output.task.title;
-      subtitle = output.task.end_time
-        ? new Date(output.task.end_time).toLocaleDateString('it-IT', {
-            day: 'numeric',
-            month: 'short',
-            hour: '2-digit',
-            minute: '2-digit'
-          })
-        : 'Nessuna scadenza';
+    // Parse toolArgs per ottenere i dati originali della richiesta
+    let toolArgsData: any = {};
+    if (widget.toolArgs) {
+      try {
+        toolArgsData = JSON.parse(widget.toolArgs);
+      } catch (e) {
+        console.error('[CreationWidgetCard] Error parsing toolArgs:', e);
+      }
+    }
+
+    if (output.type === 'task_created') {
+      // Usa il titolo dai toolArgs (dati originali della richiesta)
+      title = toolArgsData.title || 'Task creato';
+
+      // Usa la categoria o end_time per il subtitle
+      if (output.category_used) {
+        subtitle = `Categoria: ${output.category_used}`;
+      } else if (toolArgsData.end_time) {
+        subtitle = new Date(toolArgsData.end_time).toLocaleDateString('it-IT', {
+          day: 'numeric',
+          month: 'short',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      } else {
+        subtitle = 'Nessuna scadenza';
+      }
       icon = 'checkmark-circle';
-    } else if (output.type === 'category_created' && output.category) {
-      title = output.category.name;
+    } else if (output.type === 'category_created') {
+      // Per categoria, usa il nome dai toolArgs o dall'output
+      title = output.category?.name || toolArgsData.name || 'Categoria creata';
       subtitle = 'Categoria creata';
       icon = 'folder';
-    } else if (output.type === 'note_created' && output.note) {
-      title = output.note.title;
+    } else if (output.type === 'note_created') {
+      // Per nota, usa il titolo dai toolArgs o dall'output
+      title = output.note?.title || toolArgsData.title || 'Nota creata';
       subtitle = 'Nota creata';
       icon = 'document-text';
     }
 
     return (
-      <TouchableOpacity activeOpacity={0.7} style={styles.contentRow}>
-        <Ionicons name={icon} size={24} color="#4caf50" style={styles.icon} />
+      <TouchableOpacity
+        activeOpacity={0.7}
+        style={styles.contentRow}
+        onPress={onPress}
+      >
+        <Ionicons name={icon} size={24} color="#000000" style={styles.icon} />
         <View style={styles.textContainer}>
           <Text style={styles.title} numberOfLines={1}>{title}</Text>
           <Text style={styles.subtitle} numberOfLines={1}>{subtitle}</Text>
@@ -102,7 +125,7 @@ const CreationWidgetCard: React.FC<CreationWidgetCardProps> = ({ widget }) => {
   const borderColor =
     widget.status === 'loading' ? '#666666' :
     widget.status === 'error' ? '#FF3B30' :
-    '#4caf50';
+    '#000000';
 
   return (
     <Animated.View
@@ -124,17 +147,17 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    borderLeftWidth: 3,
+    borderLeftWidth: 4,
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
     marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#e1e5e9',
+    borderWidth: 1.5,
+    borderColor: '#E1E5E9',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowRadius: 12,
+    elevation: 3,
     maxWidth: '85%',
   },
   contentRow: {
@@ -148,11 +171,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '500',
     color: '#000000',
     marginBottom: 2,
     fontFamily: 'System',
+    letterSpacing: -0.3,
   },
   subtitle: {
     fontSize: 13,

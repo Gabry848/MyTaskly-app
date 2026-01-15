@@ -234,6 +234,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style }) => {
               key={widget.id}
               widget={widget}
               onOpenVisualization={handleOpenVisualization}
+              onOpenItemDetail={handleOpenItemDetail}
             />
           ))}
         </View>
