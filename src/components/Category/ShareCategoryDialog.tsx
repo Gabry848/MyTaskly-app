@@ -103,7 +103,7 @@ const ShareCategoryDialog: React.FC<ShareCategoryDialogProps> = ({
         style={styles.overlay}
       >
         <View style={styles.dialog}>
-          <Text style={styles.title}>Condividi "{categoryName}"</Text>
+          <Text style={styles.title}>Condividi &quot;{categoryName}&quot;</Text>
 
           <View style={styles.formGroup}>
             <Text style={styles.label}>Email utente:</Text>
@@ -239,7 +239,7 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: "#007AFF",
+    borderColor: "#000000",
     justifyContent: "center",
     alignItems: "center",
     marginRight: 10,
@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: "#007AFF",
+    backgroundColor: "#000000",
   },
   radioLabel: {
     fontSize: 14,
@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   primaryButton: {
-    backgroundColor: "#007AFF",
+    backgroundColor: "#000000",
   },
   primaryButtonText: {
     color: "#fff",

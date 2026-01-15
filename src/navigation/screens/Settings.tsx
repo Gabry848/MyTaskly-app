@@ -39,6 +39,10 @@ export default function Settings() {
     navigation.navigate('GoogleCalendar');
   };
 
+  const handleNavigateToCalendarWidgetDemo = () => {
+    navigation.navigate('CalendarWidgetDemo');
+  };
+
   const testNotification = async () => {
     try {
       const response = await axiosInstance.post('api/notifications/test-timer-notification', {
@@ -166,6 +170,17 @@ export default function Settings() {
             <Ionicons name="notifications-outline" size={24} color="#000000" />
             <Text style={styles.menuItemText}>{t('settings.menu.testNotifications')}</Text>
           </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={handleNavigateToCalendarWidgetDemo}
+        >
+          <View style={styles.menuItemContent}>
+            <Ionicons name="calendar" size={24} color="#2196F3" />
+            <Text style={styles.menuItemText}>Calendar Widget Demo</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#666666" />
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

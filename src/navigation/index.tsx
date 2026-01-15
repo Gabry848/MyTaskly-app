@@ -32,6 +32,7 @@ import NotificationDebugScreen from "./screens/NotificationDebug";
 import BugReportScreen from "./screens/BugReport";
 //import StatisticsScreen from "./screens/Statistics";
 import { NotFound as NotFoundScreen } from "./screens/NotFound";
+import CalendarWidgetDemoScreen from "./screens/CalendarWidgetDemo";
 import eventEmitter, { emitScreenChange, EVENTS } from "../utils/eventEmitter";
 import { useNotifications } from "../services/notificationService";
 import AppInitializer from "../services/AppInitializer";
@@ -65,6 +66,7 @@ export type RootStackParamList = {
   GoogleCalendar: undefined;
   NotificationDebug: undefined;
   BugReport: undefined;
+  CalendarWidgetDemo: undefined;
   Statistics: undefined;
   Updates: undefined;
   NotFound: undefined;
@@ -358,12 +360,10 @@ function AppStack() {
   // Determine initial route based on authentication and welcome carousel status
   const getInitialRoute = () => {
     // TEMPORARY: Force Welcome Screen for testing
-    return "WelcomeCarousel";
 
-    // Original logic (uncomment after testing):
-    // if (isAuthenticated) return "HomeTabs";
-    // if (!hasSeenWelcome) return "WelcomeCarousel";
-    // return "Login";
+    if (isAuthenticated) return "HomeTabs";
+    if (!hasSeenWelcome) return "WelcomeCarousel";
+    return "Login";
   };
 
   const initialRoute = getInitialRoute();
@@ -461,6 +461,11 @@ function AppStack() {
           name="BugReport"
           component={BugReportScreen}
           options={{ title: t('navigation.screens.bugReport') }}
+        />
+        <Stack.Screen
+          name="CalendarWidgetDemo"
+          component={CalendarWidgetDemoScreen}
+          options={{ title: 'Calendar Widget Demo' }}
         />
         <Stack.Screen name="NotFound" component={NotFoundScreen} />
       </Stack.Navigator>

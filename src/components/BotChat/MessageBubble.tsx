@@ -1,13 +1,46 @@
-import React, { useEffect, useRef } from 'react';
-import { StyleSheet, View, Text, Animated } from 'react-native';
-import { MessageBubbleProps } from './types';
-import TaskTableBubble from './TaskTableBubble'; // Importa il nuovo componente
+import React, { useEffect, useRef, useState } from 'react';
+import { StyleSheet, View, Text, Animated, Alert } from 'react-native';
+import { MessageBubbleProps, ToolWidget, TaskItem } from './types';
+import TaskListBubble from './TaskListBubble'; // Nuovo componente card-based
+import TaskTableBubble from './TaskTableBubble'; // Mantieni per backward compatibility
 import Markdown from 'react-native-markdown-display'; // Supporto per Markdown
+import WidgetBubble from './widgets/WidgetBubble';
+import VisualizationModal from './widgets/VisualizationModal';
+import ItemDetailModal from './widgets/ItemDetailModal';
+import TaskEditModal from '../Task/TaskEditModal';
+import EditCategoryModal from '../Category/EditCategoryModal';
+import CategoryMenu from '../Category/CategoryMenu';
+import { Task as TaskType } from '../../services/taskService';
+import { updateTask, updateCategory, deleteCategory } from '../../services/taskService';
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style }) => {
   const isBot = message.sender === 'bot';
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(20)).current;
+
+  // Stati per le modals
+  const [visualizationModalVisible, setVisualizationModalVisible] = useState(false);
+  const [selectedVisualizationWidget, setSelectedVisualizationWidget] = useState<ToolWidget | null>(null);
+  const [detailModalVisible, setDetailModalVisible] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [selectedItemType, setSelectedItemType] = useState<'task' | 'category' | 'note'>('task');
+
+  // Stato per task list modal (dalla TaskListBubble)
+  const [taskListModalVisible, setTaskListModalVisible] = useState(false);
+  const [taskListForModal, setTaskListForModal] = useState<TaskItem[]>([]);
+
+  // Stato per task edit modal
+  const [taskEditModalVisible, setTaskEditModalVisible] = useState(false);
+  const [selectedTaskForEdit, setSelectedTaskForEdit] = useState<TaskType | null>(null);
+
+  // Stato per category edit modal e menu
+  const [categoryEditModalVisible, setCategoryEditModalVisible] = useState(false);
+  const [categoryMenuVisible, setCategoryMenuVisible] = useState(false);
+  const [selectedCategoryForEdit, setSelectedCategoryForEdit] = useState<any>(null);
+  const [editCategoryName, setEditCategoryName] = useState('');
+  const [editCategoryDescription, setEditCategoryDescription] = useState('');
+  const [isEditingCategory, setIsEditingCategory] = useState(false);
+  const [isDeletingCategory, setIsDeletingCategory] = useState(false);
 
   // Animazioni per i punti di streaming
   const streamingDot1 = useRef(new Animated.Value(0.5)).current;
@@ -74,27 +107,67 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style }) => {
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
+
+  // Handler per "View All" dalla TaskListBubble
+  const handleViewAllTasks = (tasks: TaskItem[]) => {
+    // Converti TaskItem[] a formato compatibile con VisualizationModal
+    const taskListItems = tasks.map(task => ({
+      id: task.task_id,
+      title: task.title,
+      endTimeFormatted: task.end_time,
+      end_time: task.end_time,
+      category: task.category,
+      category_name: task.category,
+      categoryColor: '#007AFF',
+      priority: task.priority,
+      priorityEmoji: '',
+      priorityColor: '#000000',
+      status: task.status,
+      completed: task.status === 'Completato',
+    }));
+
+    // Crea un widget fittizio per la modal
+    const fakeWidget: ToolWidget = {
+      id: 'task-list-view-all',
+      toolName: 'show_tasks_to_user',
+      status: 'success',
+      itemIndex: 0,
+      toolOutput: {
+        type: 'task_list',
+        tasks: taskListItems,
+        summary: {
+          total: tasks.length,
+          pending: tasks.filter(t => t.status !== 'Completato').length,
+          completed: tasks.filter(t => t.status === 'Completato').length,
+        }
+      }
+    };
+
+    setSelectedVisualizationWidget(fakeWidget);
+    setVisualizationModalVisible(true);
+  };
+
   // Controlla se il messaggio del bot contiene la struttura dei task specificata
   if (isBot && typeof message.text === 'string') {
     // Controlla se il messaggio contiene un JSON array di task o il messaggio "Nessun task trovato"
-    if ((message.text.includes('[') && message.text.includes(']') && 
+    if ((message.text.includes('[') && message.text.includes(']') &&
         (message.text.includes('📅 TASK PER LA DATA') || message.text.includes('task_id'))) ||
         message.text.includes('📅 Nessun task trovato') ||
         (message.text.includes('📅') && message.text.includes('TASK PER LA DATA'))) {
-      return <TaskTableBubble message={message.text} style={style} />;
+      return <TaskListBubble message={message.text} style={style} onViewAll={handleViewAllTasks} />;
     }
       // Controlla il formato JSON legacy
     try {
       const parsedData = JSON.parse(message.text);
       if (parsedData.mode === "view") {
-        // Se ha una proprietà message, usa quella per il TaskTableBubble
+        // Se ha una proprietà message, usa quella per il TaskListBubble
         if (parsedData.message) {
-          return <TaskTableBubble message={parsedData.message} style={style} />;
+          return <TaskListBubble message={parsedData.message} style={style} onViewAll={handleViewAllTasks} />;
         }
         // Altrimenti, se ha tasks, converte al nuovo formato
         if (parsedData.tasks) {
           const legacyMessage = `Ecco i tuoi impegni:\n📅 TASK:\n${JSON.stringify(parsedData.tasks)}\n📊 Totale task trovati: ${parsedData.tasks.length}`;
-          return <TaskTableBubble message={legacyMessage} style={style} />;
+          return <TaskListBubble message={legacyMessage} style={style} onViewAll={handleViewAllTasks} />;
         }
       }
     } catch {
@@ -102,10 +175,10 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style }) => {
     }
   }
 
-  // Se il messaggio del bot contiene attività (formato legacy), visualizza TaskTableBubble
+  // Se il messaggio del bot contiene attività (formato legacy), visualizza TaskListBubble
   if (isBot && message.tasks && message.tasks.length > 0) {
     const legacyMessage = `Ecco i tuoi impegni:\n📅 TASK:\n${JSON.stringify(message.tasks)}\n📊 Totale task trovati: ${message.tasks.length}`;
-    return <TaskTableBubble message={legacyMessage} style={style} />;
+    return <TaskListBubble message={legacyMessage} style={style} onViewAll={handleViewAllTasks} />;
   }  // Altrimenti, visualizza il messaggio di testo normale
   
   // Funzione per renderizzare il contenuto del messaggio
@@ -148,6 +221,134 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style }) => {
     }
   };
 
+  // Handler per aprire la modal di visualizzazione
+  const handleOpenVisualization = (widget: ToolWidget) => {
+    setSelectedVisualizationWidget(widget);
+    setVisualizationModalVisible(true);
+  };
+
+  // Handler per aprire la modal di dettaglio di un item
+  const handleOpenItemDetail = (item: any, type: 'task' | 'category' | 'note') => {
+    setSelectedItem(item);
+    setSelectedItemType(type);
+    setDetailModalVisible(true);
+  };
+
+  // Handler per aprire la modal di modifica task
+  const handleTaskPress = (task: TaskType) => {
+    setSelectedTaskForEdit(task);
+    setTaskEditModalVisible(true);
+  };
+
+  // Handler per salvare le modifiche al task
+  const handleSaveTask = async (editedTask: Partial<TaskType>) => {
+    if (!selectedTaskForEdit) return;
+
+    try {
+      await updateTask(selectedTaskForEdit.task_id, editedTask);
+      setTaskEditModalVisible(false);
+      setSelectedTaskForEdit(null);
+      // Opzionalmente, puoi aggiornare il messaggio nella chat o mostrare una notifica
+    } catch (error) {
+      console.error('[MessageBubble] Error updating task:', error);
+      // Opzionalmente, mostra un messaggio di errore all'utente
+    }
+  };
+
+  // Handler per aprire il menu della categoria
+  const handleCategoryPress = (category: any) => {
+    console.log('[MessageBubble] handleCategoryPress called with:', category);
+    setSelectedCategoryForEdit(category);
+    setCategoryMenuVisible(true);
+  };
+
+  // Handler per chiudere il menu della categoria
+  const handleCloseCategoryMenu = () => {
+    setCategoryMenuVisible(false);
+  };
+
+  // Handler per aprire la modal di modifica dalla voce menu
+  const handleEditCategory = () => {
+    console.log('[MessageBubble] handleEditCategory - selectedCategoryForEdit:', selectedCategoryForEdit);
+    console.log('[MessageBubble] handleEditCategory - name:', selectedCategoryForEdit?.name);
+    console.log('[MessageBubble] handleEditCategory - description:', selectedCategoryForEdit?.description);
+    setCategoryMenuVisible(false);
+    setEditCategoryName(selectedCategoryForEdit?.name || '');
+    setEditCategoryDescription(selectedCategoryForEdit?.description || '');
+    setCategoryEditModalVisible(true);
+  };
+
+  // Handler per salvare le modifiche alla categoria
+  const handleSaveCategory = async () => {
+    if (!selectedCategoryForEdit) return;
+
+    if (editCategoryName.trim() === '') {
+      Alert.alert('Errore', 'Il nome della categoria non può essere vuoto');
+      return;
+    }
+
+    setIsEditingCategory(true);
+    try {
+      await updateCategory(selectedCategoryForEdit.name, {
+        name: editCategoryName.trim(),
+        description: editCategoryDescription.trim()
+      });
+
+      Alert.alert('Successo', 'Categoria aggiornata con successo');
+      setCategoryEditModalVisible(false);
+      setSelectedCategoryForEdit(null);
+    } catch (error) {
+      console.error('[MessageBubble] Error updating category:', error);
+      Alert.alert('Errore', 'Impossibile aggiornare la categoria. Riprova più tardi.');
+    } finally {
+      setIsEditingCategory(false);
+    }
+  };
+
+  // Handler per chiudere la modal di modifica categoria
+  const handleCancelCategoryEdit = () => {
+    setCategoryEditModalVisible(false);
+    setEditCategoryName('');
+    setEditCategoryDescription('');
+  };
+
+  // Handler per eliminare una categoria
+  const handleDeleteCategory = async () => {
+    if (!selectedCategoryForEdit) return;
+
+    Alert.alert(
+      'Conferma eliminazione',
+      `Sei sicuro di voler eliminare la categoria "${selectedCategoryForEdit.name}"?`,
+      [
+        { text: 'Annulla', style: 'cancel' },
+        {
+          text: 'Elimina',
+          style: 'destructive',
+          onPress: async () => {
+            setIsDeletingCategory(true);
+            try {
+              await deleteCategory(selectedCategoryForEdit.name);
+              Alert.alert('Successo', 'Categoria eliminata con successo');
+              setCategoryMenuVisible(false);
+              setSelectedCategoryForEdit(null);
+            } catch (error) {
+              console.error('[MessageBubble] Error deleting category:', error);
+              Alert.alert('Errore', 'Impossibile eliminare la categoria. Riprova più tardi.');
+            } finally {
+              setIsDeletingCategory(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // Handler placeholder per condivisione categoria
+  const handleShareCategory = () => {
+    setCategoryMenuVisible(false);
+    Alert.alert('Info', 'Funzionalità di condivisione non ancora disponibile nella chat');
+  };
+
   return (
     <Animated.View style={[
       styles.messageContainer,
@@ -158,6 +359,23 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style }) => {
         transform: [{ translateY: slideAnim }]
       }
     ]}>
+      {/* WIDGETS SOPRA AL MESSAGGIO (come richiesto dall'utente) */}
+      {isBot && message.toolWidgets && message.toolWidgets.length > 0 && (
+        <View style={styles.widgetsContainer}>
+          {message.toolWidgets.map((widget) => (
+            <WidgetBubble
+              key={widget.id}
+              widget={widget}
+              onOpenVisualization={handleOpenVisualization}
+              onOpenItemDetail={handleOpenItemDetail}
+              onTaskPress={handleTaskPress}
+              onCategoryPress={handleCategoryPress}
+            />
+          ))}
+        </View>
+      )}
+
+      {/* BUBBLE DEL MESSAGGIO */}
       <View style={[
         styles.messageBubble,
         isBot ? styles.botBubble : styles.userBubble
@@ -176,12 +394,73 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style }) => {
           </Text>
         )}
       </View>
+
       <Text style={[
         styles.messageTime,
         isBot ? styles.botTime : styles.userTime
       ]}>
         {formatTime(message.start_time)}
       </Text>
+
+      {/* MODALS */}
+      {selectedVisualizationWidget && (
+        <VisualizationModal
+          visible={visualizationModalVisible}
+          widget={selectedVisualizationWidget}
+          onClose={() => setVisualizationModalVisible(false)}
+          onItemPress={handleOpenItemDetail}
+          onCategoryPress={handleCategoryPress}
+        />
+      )}
+
+      {selectedItem && (
+        <ItemDetailModal
+          visible={detailModalVisible}
+          item={selectedItem}
+          itemType={selectedItemType}
+          onClose={() => setDetailModalVisible(false)}
+        />
+      )}
+
+      {selectedTaskForEdit && (
+        <TaskEditModal
+          visible={taskEditModalVisible}
+          task={selectedTaskForEdit}
+          onClose={() => {
+            setTaskEditModalVisible(false);
+            setSelectedTaskForEdit(null);
+          }}
+          onSave={handleSaveTask}
+        />
+      )}
+
+      {/* Category Menu */}
+      {selectedCategoryForEdit && (
+        <CategoryMenu
+          visible={categoryMenuVisible}
+          onClose={handleCloseCategoryMenu}
+          onEdit={handleEditCategory}
+          onDelete={handleDeleteCategory}
+          onShare={handleShareCategory}
+          isDeleting={isDeletingCategory}
+          isOwned={selectedCategoryForEdit.isOwned !== undefined ? selectedCategoryForEdit.isOwned : true}
+          permissionLevel={selectedCategoryForEdit.permissionLevel || "READ_WRITE"}
+        />
+      )}
+
+      {/* Category Edit Modal */}
+      {selectedCategoryForEdit && (
+        <EditCategoryModal
+          visible={categoryEditModalVisible}
+          onClose={handleCancelCategoryEdit}
+          onSave={handleSaveCategory}
+          title={editCategoryName}
+          description={editCategoryDescription}
+          onTitleChange={setEditCategoryName}
+          onDescriptionChange={setEditCategoryDescription}
+          isEditing={isEditingCategory}
+        />
+      )}
     </Animated.View>
   );
 };
@@ -196,6 +475,10 @@ const styles = StyleSheet.create({
   },
   botMessageContainer: {
     alignItems: 'flex-start',
+  },
+  widgetsContainer: {
+    marginBottom: 8,
+    width: '100%',
   },
   messageBubble: {
     maxWidth: '85%',

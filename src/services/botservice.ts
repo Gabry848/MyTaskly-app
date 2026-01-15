@@ -1,11 +1,16 @@
 import { getValidToken } from "./authService";
 import { fetch } from 'expo/fetch';
+import { ToolWidget } from '../components/BotChat/types';
 
 
 /**
- * Callback per gestire chunk di testo in streaming
+ * Callback per gestire chunk di testo in streaming + widget tool
  */
-export type StreamingCallback = (chunk: string, isComplete: boolean) => void;
+export type StreamingCallback = (
+  chunk: string,
+  isComplete: boolean,
+  toolWidgets?: ToolWidget[]
+) => void;
 
 /**
  * Invia un messaggio testuale al bot e riceve una risposta in streaming
@@ -13,15 +18,15 @@ export type StreamingCallback = (chunk: string, isComplete: boolean) => void;
  * @param {string} userMessage - Il messaggio dell'utente da inviare al bot
  * @param {string} modelType - Il tipo di modello da utilizzare ('base' o 'advanced')
  * @param {Array} previousMessages - Gli ultimi messaggi scambiati tra utente e bot per il contesto
- * @param {StreamingCallback} onStreamChunk - Callback per ricevere chunk in streaming (opzionale)
- * @returns {Promise<string>} - La risposta completa del bot
+ * @param {StreamingCallback} onStreamChunk - Callback per ricevere chunk in streaming + widgets (opzionale)
+ * @returns {Promise<{text: string, toolWidgets: ToolWidget[]}>} - La risposta completa del bot con widgets
  */
 export async function sendMessageToBot(
   userMessage: string,
   modelType: "base" | "advanced" = "base",
   previousMessages: any[] = [],
   onStreamChunk?: StreamingCallback
-): Promise<string> {
+): Promise<{text: string, toolWidgets: ToolWidget[]}> {
   try {
     // Verifica che l'utente sia autenticato
     const token = await getValidToken();
@@ -60,35 +65,156 @@ export async function sendMessageToBot(
     const decoder = new TextDecoder();
     let fullMessage = '';
 
+    // Mappa per tracciare i widget tool (usa item_index come chiave)
+    const toolWidgetsMap = new Map<number, ToolWidget>();
+    // Mappa per tracciare tool_name per ogni item_index (workaround per tool_name: "unknown")
+    const toolNamesMap = new Map<number, string>();
+
     try {
       while (true) {
         const { done, value } = await reader.read();
-        
+
         if (done) {
           break;
         }
 
         // Decodifica ogni chunk immediatamente
         const text = decoder.decode(value, { stream: true });
-        
+
         // Dividi il testo per linee per gestire più messaggi JSON
         const lines = text.split('\n').filter((line: string) => line.trim());
-        
+
         for (const line of lines) {
           if (line.startsWith('data: {')) {
             try {
               const jsonStr = line.replace('data: ', '').trim();
               const parsed = JSON.parse(jsonStr);
 
-              if (parsed.type === 'content' && parsed.content) {
-                fullMessage += parsed.content;
-                console.log(parsed.content); // Log del contenuto in real-time
+              // EVENTO: tool_call - Crea widget in loading
+              if (parsed.type === 'tool_call') {
+                // Salva il tool_name per questo item_index
+                toolNamesMap.set(parsed.item_index, parsed.tool_name);
 
-                // Chiama la callback se fornita
+                const widgetId = `tool_${parsed.item_index}`;
+                const newWidget = {
+                  id: widgetId,
+                  toolName: parsed.tool_name,
+                  status: 'loading' as const,
+                  itemIndex: parsed.item_index,
+                  toolArgs: parsed.tool_args,
+                };
+                toolWidgetsMap.set(parsed.item_index, newWidget);
+
+                // Notifica UI del nuovo widget loading
                 if (onStreamChunk) {
-                  onStreamChunk(parsed.content, false);
+                  onStreamChunk('', false, Array.from(toolWidgetsMap.values()));
                 }
               }
+
+              // EVENTO: tool_output - Aggiorna widget con risultato
+              if (parsed.type === 'tool_output') {
+                // Usa item_index per trovare il widget (ignora tool_name che può essere "unknown")
+                let widget = toolWidgetsMap.get(parsed.item_index);
+                let widgetKey = parsed.item_index; // Traccia la chiave corretta del widget
+
+                // WORKAROUND: Se non trova il widget per item_index, cerca per tool_name
+                // (il server a volte usa index diversi per tool_call e tool_output)
+                if (!widget && parsed.tool_name !== 'unknown') {
+                  // Trova widget E la sua chiave originale
+                  for (const [key, w] of toolWidgetsMap.entries()) {
+                    if (w.toolName === parsed.tool_name && w.status === 'loading') {
+                      widget = w;
+                      widgetKey = key; // Usa la chiave originale del widget
+                      break;
+                    }
+                  }
+                }
+
+                // WORKAROUND 2: Se tool_name è "unknown", cerca l'ultimo widget in loading
+                if (!widget && parsed.tool_name === 'unknown') {
+                  // Trova l'ultimo widget loading E la sua chiave
+                  let lastLoadingKey: number | undefined;
+                  for (const [key, w] of toolWidgetsMap.entries()) {
+                    if (w.status === 'loading') {
+                      widget = w;
+                      lastLoadingKey = key;
+                    }
+                  }
+                  if (lastLoadingKey !== undefined) {
+                    widgetKey = lastLoadingKey;
+                  }
+                }
+
+                if (widget) {
+                  try {
+                    // Parsa l'output JSON del tool
+                    let outputData = JSON.parse(parsed.output);
+
+                    // Se l'output è wrappato in {"type":"text","text":"..."}, estrailo
+                    if (outputData.type === 'text' && outputData.text) {
+                      outputData = JSON.parse(outputData.text);
+                    }
+
+                    widget.status = outputData.success !== false ? 'success' : 'error';
+                    widget.toolOutput = outputData;
+                    widget.errorMessage = outputData.success === false ? outputData.message : undefined;
+
+                    // Usa il tool_name salvato dal tool_call se quello nell'output è "unknown"
+                    if (parsed.tool_name === 'unknown' && toolNamesMap.has(widgetKey)) {
+                      widget.toolName = toolNamesMap.get(widgetKey)!;
+                    }
+                  } catch (e: any) {
+                    widget.status = 'error';
+                    widget.errorMessage = 'Errore parsing output tool';
+                    console.error('[BOTSERVICE] Error parsing tool output:', e);
+                  }
+
+                  // IMPORTANTE: Aggiorna il widget nella posizione ORIGINALE, non creare un duplicato
+                  toolWidgetsMap.set(widgetKey, widget);
+
+                  // Notifica UI dell'aggiornamento widget
+                  if (onStreamChunk) {
+                    onStreamChunk('', false, Array.from(toolWidgetsMap.values()));
+                  }
+                } else {
+                  console.warn('[BOTSERVICE] Widget not found for index:', parsed.item_index);
+                }
+              }
+
+              // EVENTO: content - Accumula testo messaggio
+              if (parsed.type === 'content' && (parsed.delta || parsed.content)) {
+                const textChunk = parsed.delta || parsed.content;
+                fullMessage += textChunk;
+
+                // Chiama la callback con testo + widgets attuali
+                if (onStreamChunk) {
+                  onStreamChunk(textChunk, false, Array.from(toolWidgetsMap.values()));
+                }
+              }
+
+              // EVENTO: error - Marca widgets loading come error
+              if (parsed.type === 'error') {
+                console.error('Errore streaming:', parsed.message);
+
+                // Marca tutti i widget loading come error
+                toolWidgetsMap.forEach((widget) => {
+                  if (widget.status === 'loading') {
+                    widget.status = 'error';
+                    widget.errorMessage = parsed.message || 'Errore sconosciuto';
+                  }
+                });
+
+                // Notifica UI dell'errore
+                if (onStreamChunk) {
+                  onStreamChunk('', false, Array.from(toolWidgetsMap.values()));
+                }
+              }
+
+              // EVENTO: done - Stream completato
+              if (parsed.type === 'done') {
+                // Stream completato, non serve loggare
+              }
+
             } catch (e: any) {
               console.log("Errore parsing JSON per linea:", line);
               console.log("Errore:", e.message);
@@ -102,29 +228,33 @@ export async function sendMessageToBot(
 
     // Notifica il completamento dello streaming
     if (onStreamChunk) {
-      onStreamChunk('', true);
+      onStreamChunk('', true, Array.from(toolWidgetsMap.values()));
     }
 
-    return fullMessage || "Nessuna risposta ricevuta dal bot.";
+    return {
+      text: fullMessage || "Nessuna risposta ricevuta dal bot.",
+      toolWidgets: Array.from(toolWidgetsMap.values()),
+    };
     
   } catch (error: any) {
     console.error("❌ Errore nella comunicazione con il bot:", error);
-    
+
+    let errorMessage = "Mi dispiace, si è verificato un errore. Riprova più tardi.";
+
     // Gestisci errori specifici per fetch
     if (error.message?.includes('status: 401')) {
-      return "Sessione scaduta. Effettua nuovamente il login.";
+      errorMessage = "Sessione scaduta. Effettua nuovamente il login.";
+    } else if (error.message?.includes('status: 429')) {
+      errorMessage = "Troppe richieste. Riprova tra qualche secondo.";
+    } else if (error.message?.includes('status: 5')) {
+      errorMessage = "Il servizio è temporaneamente non disponibile. Riprova più tardi.";
     }
-    
-    if (error.message?.includes('status: 429')) {
-      return "Troppe richieste. Riprova tra qualche secondo.";
-    }
-    
-    if (error.message?.includes('status: 5')) {
-      return "Il servizio è temporaneamente non disponibile. Riprova più tardi.";
-    }
-    
-    // Errore generico
-    return "Mi dispiace, si è verificato un errore. Riprova più tardi.";
+
+    // Ritorna messaggio di errore con widgets vuoti
+    return {
+      text: errorMessage,
+      toolWidgets: [],
+    };
   }
 }
 

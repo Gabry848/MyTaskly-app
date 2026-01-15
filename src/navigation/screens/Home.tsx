@@ -18,6 +18,7 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scrollview"
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ChatList, Message } from "../../components/BotChat";
+import { ToolWidget } from "../../components/BotChat/types";
 import { sendMessageToBot, formatMessage, clearChatHistory, StreamingCallback } from "../../services/botservice";
 import { STORAGE_KEYS } from "../../constants/authConstants";
 import { TaskCacheService } from '../../services/TaskCacheService';
@@ -40,6 +41,7 @@ const HomeScreen = () => {
   const [suggestedCommandUsed, setSuggestedCommandUsed] = useState(false);
   const [screenHeight, setScreenHeight] = useState(Dimensions.get('window').height);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [isInputFocused, setIsInputFocused] = useState(false);
 
   // Tutorial context
   const tutorialContext = useTutorialContext();
@@ -66,6 +68,7 @@ const HomeScreen = () => {
   const messagesOpacity = useRef(new Animated.Value(1)).current;
   const inputBottomPosition = useRef(new Animated.Value(0)).current;
   const cursorOpacity = useRef(new Animated.Value(1)).current;
+  const micButtonAnim = useRef(new Animated.Value(1)).current;
   // Setup sync status listener
   useEffect(() => {
     const handleSyncStatus = (status: SyncStatus) => {
@@ -174,6 +177,15 @@ const HomeScreen = () => {
 
     return () => subscription?.remove();
   }, []);
+
+  // Effetto per animare il pulsante del microfono
+  useEffect(() => {
+    Animated.timing(micButtonAnim, {
+      toValue: isInputFocused ? 0 : 1,
+      duration: 200,
+      useNativeDriver: false,
+    }).start();
+  }, [isInputFocused, micButtonAnim]);
 
   // Effetto per gestire la visualizzazione della tastiera
   useEffect(() => {
@@ -304,26 +316,42 @@ const HomeScreen = () => {
 
     try {
       // Callback per gestire lo streaming
-      const onStreamChunk: StreamingCallback = (chunk: string, isComplete: boolean) => {
-        if (typeof chunk !== 'string') {
+      const onStreamChunk: StreamingCallback = (chunk: string, isComplete: boolean, toolWidgets?: ToolWidget[]) => {
+        if (typeof chunk !== 'string' && chunk) {
           console.warn('[HOME] onStreamChunk received non-string chunk:', chunk);
         }
-        console.log('[HOME] onStreamChunk', { isComplete, chunkPreview: typeof chunk === 'string' ? chunk.slice(0, 40) : chunk });
+        console.log('[HOME] onStreamChunk', {
+          isComplete,
+          chunkPreview: typeof chunk === 'string' ? chunk.slice(0, 40) : chunk,
+          widgetsCount: toolWidgets?.length || 0,
+          widgets: toolWidgets?.map(w => ({ toolName: w.toolName, status: w.status, type: w.toolOutput?.type }))
+        });
+
         if (isComplete) {
-          // Lo streaming è completato, rimuovi l'indicatore
+          // Lo streaming è completato, applica formatMessage al testo completo e aggiorna toolWidgets
           setMessages((prev) =>
             prev.map((msg) =>
               msg.id === botMessageId
-                ? { ...msg, isStreaming: false, isComplete: true }
+                ? {
+                    ...msg,
+                    text: formatMessage(msg.text),
+                    isStreaming: false,
+                    isComplete: true,
+                    toolWidgets: toolWidgets || msg.toolWidgets
+                  }
                 : msg
             )
           );
         } else {
-          // Aggiungi il chunk al messaggio esistente
+          // Aggiungi il chunk al messaggio esistente e aggiorna toolWidgets se presenti
           setMessages((prev) =>
             prev.map((msg) =>
               msg.id === botMessageId
-                ? { ...msg, text: msg.text + chunk }
+                ? {
+                    ...msg,
+                    text: msg.text + chunk,
+                    toolWidgets: toolWidgets || msg.toolWidgets
+                  }
                 : msg
             )
           );
@@ -331,29 +359,11 @@ const HomeScreen = () => {
       };
 
       // Invia il messaggio al bot con streaming
-      const botResponse = await sendMessageToBot(
+      await sendMessageToBot(
         trimmedMessage,
         "advanced",
         messages,
         onStreamChunk
-      );
-
-      // Formatta la risposta completa del bot per il supporto Markdown
-      const formattedBotResponse = formatMessage(botResponse);
-      console.log('[HOME] Final bot response length:', formattedBotResponse?.length ?? 0);
-
-      // Aggiorna il messaggio con la risposta formattata finale
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === botMessageId
-            ? {
-                ...msg,
-                text: formattedBotResponse,
-                isStreaming: false,
-                isComplete: true
-              }
-            : msg
-        )
       );
 
     } catch (error) {
@@ -535,10 +545,37 @@ const HomeScreen = () => {
               <View style={styles.inputSectionUnderGreeting}>
                 <View style={styles.animatedInputWrapper}>
                   <View style={styles.inputContainer}>
+                    <TouchableOpacity
+                      style={styles.calendarToggleButton}
+                      onPress={() => {/* TODO: Open calendar */}}
+                      activeOpacity={0.7}
+                      disabled={isLoading}
+                    >
+                      <Ionicons name="calendar-outline" size={24} color={isLoading ? "#ccc" : "#000"} />
+                    </TouchableOpacity>
+                    <Animated.View
+                      style={{
+                        opacity: micButtonAnim,
+                        width: micButtonAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [0, 38],
+                        }),
+                        overflow: 'hidden',
+                      }}
+                    >
+                      <TouchableOpacity
+                        style={styles.attachButton}
+                        onPress={handleVoicePress}
+                        activeOpacity={0.7}
+                        disabled={isLoading || isInputFocused}
+                      >
+                        <Ionicons name="mic-outline" size={22} color={isLoading ? "#ccc" : "#000"} />
+                      </TouchableOpacity>
+                    </Animated.View>
                     <TextInput
                       style={[styles.textInput, { maxHeight: 120 }]}
                       placeholder={t('home.chat.placeholder')}
-                      placeholderTextColor="#999999"
+                      placeholderTextColor="#999"
                       value={message}
                       onChangeText={setMessage}
                       multiline={true}
@@ -546,42 +583,17 @@ const HomeScreen = () => {
                       returnKeyType="send"
                       blurOnSubmit={true}
                       editable={!isLoading}
+                      onFocus={() => setIsInputFocused(true)}
+                      onBlur={() => setIsInputFocused(false)}
                     />
-
-                    {/* Mostra il pulsante di invio se c'è del testo, altrimenti il microfono */}
-                    {message.trim() ? (
-                      <TouchableOpacity
-                        style={[
-                          styles.sendButton,
-                          isLoading && styles.sendButtonDisabled,
-                        ]}
-                        onPress={handleSubmit}
-                        activeOpacity={0.7}
-                        disabled={isLoading}
-                      >
-                        <Ionicons
-                          name="send"
-                          size={20}
-                          color={isLoading ? "#ccc" : "#000"}
-                        />
-                      </TouchableOpacity>
-                    ) : (
-                      <TouchableOpacity
-                        style={[
-                          styles.voiceButton,
-                          isLoading && styles.voiceButtonDisabled,
-                        ]}
-                        onPress={handleVoicePress}
-                        activeOpacity={0.7}
-                        disabled={isLoading}
-                      >
-                        <Ionicons
-                          name="mic"
-                          size={24}
-                          color={isLoading ? "#ccc" : "#666666"}
-                        />
-                      </TouchableOpacity>
-                    )}
+                    <TouchableOpacity
+                      style={styles.sendButton}
+                      onPress={handleSubmit}
+                      activeOpacity={0.7}
+                      disabled={isLoading || !message.trim()}
+                    >
+                      <Ionicons name="send" size={20} color={isLoading || !message.trim() ? "#ccc" : "#000"} />
+                    </TouchableOpacity>
                   </View>
                 </View>
 
@@ -654,10 +666,37 @@ const HomeScreen = () => {
             ]}
           >
             <View style={styles.inputContainer}>
+              <TouchableOpacity
+                style={styles.calendarToggleButton}
+                onPress={() => {/* TODO: Open calendar */}}
+                activeOpacity={0.7}
+                disabled={isLoading}
+              >
+                <Ionicons name="calendar-outline" size={24} color={isLoading ? "#ccc" : "#000"} />
+              </TouchableOpacity>
+              <Animated.View
+                style={{
+                  opacity: micButtonAnim,
+                  width: micButtonAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, 38],
+                  }),
+                  overflow: 'hidden',
+                }}
+              >
+                <TouchableOpacity
+                  style={styles.attachButton}
+                  onPress={handleVoicePress}
+                  activeOpacity={0.7}
+                  disabled={isLoading || isInputFocused}
+                >
+                  <Ionicons name="mic-outline" size={22} color={isLoading ? "#ccc" : "#000"} />
+                </TouchableOpacity>
+              </Animated.View>
               <TextInput
                 style={[styles.textInput, { maxHeight: 120 }]}
                 placeholder={t('home.chat.placeholder')}
-                placeholderTextColor="#999999"
+                placeholderTextColor="#999"
                 value={message}
                 onChangeText={setMessage}
                 multiline={true}
@@ -665,42 +704,17 @@ const HomeScreen = () => {
                 returnKeyType="send"
                 blurOnSubmit={true}
                 editable={!isLoading}
+                onFocus={() => setIsInputFocused(true)}
+                onBlur={() => setIsInputFocused(false)}
               />
-
-              {/* Mostra il pulsante di invio se c'è del testo, altrimenti il microfono */}
-              {message.trim() ? (
-                <TouchableOpacity
-                  style={[
-                    styles.sendButton,
-                    isLoading && styles.sendButtonDisabled,
-                  ]}
-                  onPress={handleSubmit}
-                  activeOpacity={0.7}
-                  disabled={isLoading}
-                >
-                  <Ionicons
-                    name="send"
-                    size={20}
-                    color={isLoading ? "#ccc" : "#000"}
-                  />
-                </TouchableOpacity>
-              ) : (
-                <TouchableOpacity
-                  style={[
-                    styles.voiceButton,
-                    isLoading && styles.voiceButtonDisabled,
-                  ]}
-                  onPress={handleVoicePress}
-                  activeOpacity={0.7}
-                  disabled={isLoading}
-                >
-                  <Ionicons
-                    name="mic"
-                    size={24}
-                    color={isLoading ? "#ccc" : "#666666"}
-                  />
-                </TouchableOpacity>
-              )}
+              <TouchableOpacity
+                style={styles.sendButton}
+                onPress={handleSubmit}
+                activeOpacity={0.7}
+                disabled={isLoading || !message.trim()}
+              >
+                <Ionicons name="send" size={20} color={isLoading || !message.trim() ? "#ccc" : "#000"} />
+              </TouchableOpacity>
             </View>
           </Animated.View>
         )}
@@ -927,18 +941,20 @@ const styles = StyleSheet.create({
   },
   inputSection: {
     alignItems: "center",
-    paddingHorizontal: 40,
-    paddingBottom: 40,
-    paddingTop: 20,
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+    paddingTop: 12,
     backgroundColor: "#ffffff",
+    borderTopWidth: 1,
+    borderTopColor: "#e1e5e9",
   },
   inputContainer: {
     flexDirection: "row",
-    alignItems: "flex-end",
+    alignItems: "center",
     backgroundColor: "#ffffff",
     borderRadius: 30,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
     width: "100%",
     maxWidth: 420,
     borderWidth: 1.5,
@@ -951,7 +967,14 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 12,
     elevation: 3,
-    minHeight: 50,
+  },
+  calendarToggleButton: {
+    marginRight: 8,
+    padding: 4,
+  },
+  attachButton: {
+    marginRight: 8,
+    padding: 4,
   },
   textInput: {
     flex: 1,
@@ -959,33 +982,14 @@ const styles = StyleSheet.create({
     color: "#000000",
     fontFamily: "System",
     fontWeight: "400",
-    paddingVertical: 12,
-    textAlignVertical: "top",
-    minHeight: 26,
-  },
-  voiceButton: {
-    marginLeft: 12,
-    padding: 8,
-    borderRadius: 20,
-    backgroundColor: "transparent",
-    alignSelf: "flex-end",
-    marginBottom: 8,
-  },
-  voiceButtonDisabled: {
-    backgroundColor: "#f8f8f8",
+    maxHeight: 100,
+    paddingVertical: 8,
   },
   sendButton: {
     marginLeft: 12,
-    padding: 10,
+    padding: 8,
     borderRadius: 20,
     backgroundColor: "#f0f0f0",
-    justifyContent: "center",
-    alignItems: "center",
-    alignSelf: "flex-end",
-    marginBottom: 8,
-  },
-  sendButtonDisabled: {
-    backgroundColor: "#e8e8e8",
   },
   suggestedCommandsContainer: {
     marginTop: 20,
