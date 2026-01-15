@@ -4,6 +4,7 @@ import ChatInput from './ChatInput';
 import ChatList from './ChatList';
 import VoiceRecordButton from './VoiceRecordButton';
 import MarkdownExample from './MarkdownExample';
+import TaskListBubble from './TaskListBubble';
 import { Message, ChatSession } from './types';
 
 // Esporto tutti i componenti e i tipi per facilitare l'import
@@ -13,6 +14,7 @@ export {
   ChatList,
   VoiceRecordButton,
   MarkdownExample,
+  TaskListBubble,
   Message,
   ChatSession
 };
