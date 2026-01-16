@@ -171,17 +171,6 @@ export default function Settings() {
             <Text style={styles.menuItemText}>{t('settings.menu.testNotifications')}</Text>
           </View>
         </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.menuItem}
-          onPress={handleNavigateToCalendarWidgetDemo}
-        >
-          <View style={styles.menuItemContent}>
-            <Ionicons name="calendar" size={24} color="#2196F3" />
-            <Text style={styles.menuItemText}>Calendar Widget Demo</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color="#666666" />
-        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );

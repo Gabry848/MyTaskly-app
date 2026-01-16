@@ -545,14 +545,6 @@ const HomeScreen = () => {
               <View style={styles.inputSectionUnderGreeting}>
                 <View style={styles.animatedInputWrapper}>
                   <View style={styles.inputContainer}>
-                    <TouchableOpacity
-                      style={styles.calendarToggleButton}
-                      onPress={() => {/* TODO: Open calendar */}}
-                      activeOpacity={0.7}
-                      disabled={isLoading}
-                    >
-                      <Ionicons name="calendar-outline" size={24} color={isLoading ? "#ccc" : "#000"} />
-                    </TouchableOpacity>
                     <Animated.View
                       style={{
                         opacity: micButtonAnim,
