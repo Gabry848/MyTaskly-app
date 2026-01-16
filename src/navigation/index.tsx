@@ -32,7 +32,6 @@ import NotificationDebugScreen from "./screens/NotificationDebug";
 import BugReportScreen from "./screens/BugReport";
 //import StatisticsScreen from "./screens/Statistics";
 import { NotFound as NotFoundScreen } from "./screens/NotFound";
-import CalendarWidgetDemoScreen from "./screens/CalendarWidgetDemo";
 import eventEmitter, { emitScreenChange, EVENTS } from "../utils/eventEmitter";
 import { useNotifications } from "../services/notificationService";
 import AppInitializer from "../services/AppInitializer";
@@ -461,11 +460,6 @@ function AppStack() {
           name="BugReport"
           component={BugReportScreen}
           options={{ title: t('navigation.screens.bugReport') }}
-        />
-        <Stack.Screen
-          name="CalendarWidgetDemo"
-          component={CalendarWidgetDemoScreen}
-          options={{ title: 'Calendar Widget Demo' }}
         />
         <Stack.Screen name="NotFound" component={NotFoundScreen} />
       </Stack.Navigator>
