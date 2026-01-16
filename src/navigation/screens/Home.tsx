@@ -14,7 +14,8 @@ import {
   Platform,
   Alert,
 } from "react-native";
-import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scrollview";
+import { GestureDetector, Gesture, GestureHandlerRootView } from "react-native-gesture-handler";
+import { runOnJS } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ChatList, Message } from "../../components/BotChat";
@@ -27,6 +28,8 @@ import Badge from "../../components/UI/Badge";
 import VoiceChatModal from "../../components/BotChat/VoiceChatModal";
 import { useTutorialContext } from "../../contexts/TutorialContext";
 import { useTranslation } from 'react-i18next';
+import { ChatHistory } from "../../components/BotChat/ChatHistory";
+import { demoChatHistory } from "../../data/demoChatHistory";
 
 const HomeScreen = () => {
   const { t } = useTranslation();
@@ -40,8 +43,8 @@ const HomeScreen = () => {
   const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null);
   const [suggestedCommandUsed, setSuggestedCommandUsed] = useState(false);
   const [screenHeight, setScreenHeight] = useState(Dimensions.get('window').height);
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [isInputFocused, setIsInputFocused] = useState(false);
+  const [showChatHistory, setShowChatHistory] = useState(false);
 
   // Tutorial context
   const tutorialContext = useTutorialContext();
@@ -69,6 +72,8 @@ const HomeScreen = () => {
   const inputBottomPosition = useRef(new Animated.Value(0)).current;
   const cursorOpacity = useRef(new Animated.Value(1)).current;
   const micButtonAnim = useRef(new Animated.Value(1)).current;
+  const chatHistorySlideIn = useRef(new Animated.Value(0)).current;
+  const chatHistoryOpacity = useRef(new Animated.Value(0)).current;
   // Setup sync status listener
   useEffect(() => {
     const handleSyncStatus = (status: SyncStatus) => {
@@ -140,7 +145,7 @@ const HomeScreen = () => {
         clearInterval(typingInterval);
       };
     }
-  }, [userName, chatStarted]);
+  }, [userName, chatStarted, t]);
 
   // Effetto per l'animazione del cursore lampeggiante
   useEffect(() => {
@@ -192,7 +197,6 @@ const HomeScreen = () => {
     const keyboardDidShowListener = Keyboard.addListener(
       "keyboardDidShow",
       (event) => {
-        setKeyboardHeight(event.endCoordinates.height);
         if (chatStarted) {
           // Sposta l'input sopra la tastiera con margine maggiore
           Animated.timing(inputBottomPosition, {
@@ -207,7 +211,6 @@ const HomeScreen = () => {
     const keyboardDidHideListener = Keyboard.addListener(
       "keyboardDidHide",
       () => {
-        setKeyboardHeight(0);
         if (chatStarted) {
           // Riporta l'input in posizione normale
           Animated.timing(inputBottomPosition, {
@@ -460,6 +463,58 @@ const HomeScreen = () => {
     setMessages((prev) => [...prev, botMessage]);
   };
 
+  const handleChatHistoryPress = (chatId: string) => {
+    console.log('[HOME] Opening chat history:', chatId);
+    // TODO: Implementare il caricamento della chat storica
+    setShowChatHistory(false);
+  };
+
+  const handleChatHistoryDelete = (chatId: string) => {
+    console.log('[HOME] Deleting chat history:', chatId);
+    // TODO: Implementare l'eliminazione della chat storica
+  };
+
+  const handleNewChat = () => {
+    console.log('[HOME] Starting new chat from history');
+    setShowChatHistory(false);
+  };
+
+  const handleToggleChatHistory = () => {
+    if (!showChatHistory) {
+      // Apri la cronologia con animazione
+      setShowChatHistory(true);
+      Animated.parallel([
+        Animated.timing(chatHistoryOpacity, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.spring(chatHistorySlideIn, {
+          toValue: 1,
+          tension: 50,
+          friction: 8,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      // Chiudi la cronologia con animazione
+      Animated.parallel([
+        Animated.timing(chatHistoryOpacity, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(chatHistorySlideIn, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        setShowChatHistory(false);
+      });
+    }
+  };
+
   // Calcolo dinamico del padding top basato sull'altezza dello schermo
   const getGreetingPaddingTop = () => {
     if (screenHeight < 700) return Math.max(screenHeight * 0.15, 80); // Schermi piccoli
@@ -467,9 +522,34 @@ const HomeScreen = () => {
     return Math.max(screenHeight * 0.25, 180); // Schermi grandi
   };
 
+  // Gesto swipe da destra a sinistra per aprire la cronologia
+  const swipeGesture = Gesture.Pan()
+    .activeOffsetX([-10, 10]) // Inizia il gesto con almeno 10px di movimento orizzontale
+    .failOffsetY([-20, 20]) // Fallisce se c'è troppo movimento verticale
+    .onEnd((event) => {
+      'worklet';
+      console.log('[HOME] Swipe gesture detected:', {
+        translationX: event.translationX,
+        velocityX: event.velocityX,
+        showChatHistory,
+      });
+
+      // Swipe da destra a sinistra per aprire (soglia più bassa per il simulatore)
+      if (event.translationX < -50 && !showChatHistory) {
+        console.log('[HOME] Opening chat history via swipe');
+        runOnJS(handleToggleChatHistory)();
+      }
+      // Swipe da sinistra a destra per chiudere
+      else if (event.translationX > 50 && showChatHistory) {
+        console.log('[HOME] Closing chat history via swipe');
+        runOnJS(handleToggleChatHistory)();
+      }
+    });
+
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
 
         {/* Header con titolo principale e indicatori sync */}
         <View style={styles.header}>
@@ -511,7 +591,20 @@ const HomeScreen = () => {
             <Ionicons name="help-circle-outline" size={24} color="#007AFF" />
           </TouchableOpacity>
 
-          {chatStarted && (
+          {/* Chat History Toggle Button */}
+          <TouchableOpacity
+            style={[styles.resetButton, { marginRight: 8 }]}
+            onPress={handleToggleChatHistory}
+            activeOpacity={0.7}
+          >
+            <Ionicons
+              name={showChatHistory ? "chatbubbles" : "chatbubbles-outline"}
+              size={24}
+              color={showChatHistory ? "#007AFF" : "#666666"}
+            />
+          </TouchableOpacity>
+
+          {chatStarted && !showChatHistory && (
             <TouchableOpacity
               style={styles.resetButton}
               onPress={handleResetChat}
@@ -524,11 +617,45 @@ const HomeScreen = () => {
         </View>
       </View>
 
-      <View style={styles.mainContent}>
-        {/* Contenuto principale */}
-        <View style={chatStarted ? styles.contentChatStarted : [styles.content, { paddingTop: getGreetingPaddingTop() }]}>
-          {/* Saluto personalizzato - nascosto quando la chat inizia */}
-          {!chatStarted && (
+      <GestureDetector gesture={swipeGesture}>
+        <View style={styles.mainContent}>
+          {/* Chat History View */}
+          {showChatHistory ? (
+          <Animated.View
+            style={[
+              styles.chatHistoryContainer,
+              {
+                opacity: chatHistoryOpacity,
+                transform: [
+                  {
+                    translateX: chatHistorySlideIn.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [300, 0],
+                    }),
+                  },
+                  {
+                    scale: chatHistorySlideIn.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.9, 1],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
+            <ChatHistory
+              chats={demoChatHistory}
+              onChatPress={handleChatHistoryPress}
+              onChatDelete={handleChatHistoryDelete}
+              onNewChat={handleNewChat}
+            />
+          </Animated.View>
+        ) : (
+          <>
+            {/* Contenuto principale */}
+            <View style={chatStarted ? styles.contentChatStarted : [styles.content, { paddingTop: getGreetingPaddingTop() }]}>
+              {/* Saluto personalizzato - nascosto quando la chat inizia */}
+              {!chatStarted && (
             <View style={styles.greetingSection}>
               <View style={styles.greetingTextContainer}>
                 <Text style={styles.greetingText}>
@@ -710,7 +837,10 @@ const HomeScreen = () => {
             </View>
           </Animated.View>
         )}
-      </View>
+          </>
+        )}
+        </View>
+      </GestureDetector>
 
       {/* Voice Chat Modal */}
       <VoiceChatModal
@@ -719,7 +849,8 @@ const HomeScreen = () => {
         isRecording={isRecording}
         onVoiceResponse={handleVoiceResponse}
       />
-    </SafeAreaView>
+      </SafeAreaView>
+    </GestureHandlerRootView>
   );
 };
 
@@ -1015,6 +1146,10 @@ const styles = StyleSheet.create({
   },
   suggestedCommandTextDisabled: {
     color: "#999999",
+  },
+  chatHistoryContainer: {
+    flex: 1,
+    backgroundColor: "#ffffff",
   },
 });
 
