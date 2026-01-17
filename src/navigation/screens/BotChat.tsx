@@ -234,15 +234,29 @@ const BotChat: React.FC = () => {
     // 3. Accumulo dati streaming
     let accumulatedText = "";
     let currentWidgets: any[] = [];
+    let receivedChatId: string | undefined;
 
     // 4. Callback per aggiornare UI durante streaming
-    const onStreamChunk = (chunk: string, isComplete: boolean, toolWidgets?: any[]) => {
+    const onStreamChunk = (
+      chunk: string,
+      isComplete: boolean,
+      toolWidgets?: any[],
+      chatInfo?: { chat_id: string; is_new: boolean }
+    ) => {
       if (chunk) {
         accumulatedText += chunk;
       }
 
       if (toolWidgets) {
         currentWidgets = toolWidgets;
+      }
+
+      // Se riceviamo chat_id dal server, aggiorniamo lo stato
+      if (chatInfo?.chat_id) {
+        receivedChatId = chatInfo.chat_id;
+        if (chatInfo.is_new) {
+          console.log('[BotChat] Nuova chat creata automaticamente dal server:', receivedChatId);
+        }
       }
 
       // Aggiorna il messaggio bot con testo + widgets accumulati
@@ -262,18 +276,19 @@ const BotChat: React.FC = () => {
     };
 
     try {
-      // 5. Otteniamo gli ultimi messaggi per contesto
-      const currentMessages = [...messages, userMessage];
-      const lastMessages = currentMessages.slice(-6); // Ultimi 6 messaggi
-
-      // 6. Invia richiesta con streaming callback e chat_id
+      // 5. Invia richiesta con streaming callback e chat_id
       const result = await sendMessageToBot(
         text,
         modelType,
-        lastMessages,
         onStreamChunk,
         currentChatId || undefined
       );
+
+      // 6. Aggiorna currentChatId se il server ha restituito un chat_id
+      if (result.chat_id && result.chat_id !== currentChatId) {
+        console.log('[BotChat] Aggiornamento chat_id da:', currentChatId, 'a:', result.chat_id);
+        setCurrentChatId(result.chat_id);
+      }
 
       // 7. Aggiornamento finale con dati completi
       const formattedText = formatMessage(result.text);

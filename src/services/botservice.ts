@@ -4,12 +4,13 @@ import { ToolWidget } from '../components/BotChat/types';
 
 
 /**
- * Callback per gestire chunk di testo in streaming + widget tool
+ * Callback per gestire chunk di testo in streaming + widget tool + chat info
  */
 export type StreamingCallback = (
   chunk: string,
   isComplete: boolean,
-  toolWidgets?: ToolWidget[]
+  toolWidgets?: ToolWidget[],
+  chatInfo?: { chat_id: string; is_new: boolean }
 ) => void;
 
 /**
@@ -17,18 +18,16 @@ export type StreamingCallback = (
  * Utilizza l'endpoint /chat/text per la chat scritta con supporto streaming
  * @param {string} userMessage - Il messaggio dell'utente da inviare al bot
  * @param {string} modelType - Il tipo di modello da utilizzare ('base' o 'advanced')
- * @param {Array} previousMessages - Gli ultimi messaggi scambiati tra utente e bot per il contesto
  * @param {StreamingCallback} onStreamChunk - Callback per ricevere chunk in streaming + widgets (opzionale)
- * @param {string} chatId - Optional chat ID to save messages to chat history
- * @returns {Promise<{text: string, toolWidgets: ToolWidget[]}>} - La risposta completa del bot con widgets
+ * @param {string} chatId - Optional chat ID to identify the chat session
+ * @returns {Promise<{text: string, toolWidgets: ToolWidget[], chat_id?: string, is_new?: boolean}>} - La risposta completa del bot con widgets e chat info
  */
 export async function sendMessageToBot(
   userMessage: string,
   modelType: "base" | "advanced" = "base",
-  previousMessages: any[] = [],
   onStreamChunk?: StreamingCallback,
   chatId?: string
-): Promise<{text: string, toolWidgets: ToolWidget[]}> {
+): Promise<{text: string, toolWidgets: ToolWidget[], chat_id?: string, is_new?: boolean}> {
   try {
     // Verifica che l'utente sia autenticato
     const token = await getValidToken();
@@ -76,6 +75,9 @@ export async function sendMessageToBot(
     const toolWidgetsMap = new Map<number, ToolWidget>();
     // Mappa per tracciare tool_name per ogni item_index (workaround per tool_name: "unknown")
     const toolNamesMap = new Map<number, string>();
+    // Variabili per tracciare chat_id ricevuto dal server
+    let receivedChatId: string | undefined;
+    let isNewChat: boolean | undefined;
 
     try {
       while (true) {
@@ -96,6 +98,21 @@ export async function sendMessageToBot(
             try {
               const jsonStr = line.replace('data: ', '').trim();
               const parsed = JSON.parse(jsonStr);
+
+              // EVENTO: chat_info - Riceve informazioni sulla chat
+              if (parsed.type === 'chat_info') {
+                receivedChatId = parsed.chat_id;
+                isNewChat = parsed.is_new;
+                console.log(`[BOTSERVICE] Chat info ricevuto: chat_id=${receivedChatId}, is_new=${isNewChat}`);
+
+                // Notifica UI del chat_id ricevuto
+                if (onStreamChunk) {
+                  onStreamChunk('', false, Array.from(toolWidgetsMap.values()), {
+                    chat_id: receivedChatId,
+                    is_new: isNewChat || false,
+                  });
+                }
+              }
 
               // EVENTO: tool_call - Crea widget in loading
               if (parsed.type === 'tool_call') {
@@ -235,12 +252,16 @@ export async function sendMessageToBot(
 
     // Notifica il completamento dello streaming
     if (onStreamChunk) {
-      onStreamChunk('', true, Array.from(toolWidgetsMap.values()));
+      onStreamChunk('', true, Array.from(toolWidgetsMap.values()),
+        receivedChatId ? { chat_id: receivedChatId, is_new: isNewChat || false } : undefined
+      );
     }
 
     return {
       text: fullMessage || "Nessuna risposta ricevuta dal bot.",
       toolWidgets: Array.from(toolWidgetsMap.values()),
+      chat_id: receivedChatId,
+      is_new: isNewChat,
     };
     
   } catch (error: any) {
