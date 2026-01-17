@@ -1,27 +1,93 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   FlatList,
   TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ChatHistoryItem, ChatHistoryItemData } from './ChatHistoryItem';
+import {
+  fetchChatHistory,
+  deleteChatHistory,
+  ChatHistoryResponse,
+} from '../../services/chatHistoryService';
 
 interface ChatHistoryProps {
-  chats: ChatHistoryItemData[];
   onChatPress: (chatId: string) => void;
-  onChatDelete?: (chatId: string) => void;
   onNewChat?: () => void;
+  onRefresh?: () => void;
 }
 
+/**
+ * Transforms API response data to ChatHistoryItemData format
+ */
+const transformChatData = (
+  apiChat: ChatHistoryResponse
+): ChatHistoryItemData => ({
+  id: apiChat.chat_id,
+  title: apiChat.title,
+  preview: apiChat.last_message_preview,
+  timestamp: new Date(apiChat.updated_at),
+  messageCount: apiChat.message_count,
+  isPinned: apiChat.is_pinned,
+});
+
 export const ChatHistory: React.FC<ChatHistoryProps> = ({
-  chats,
   onChatPress,
-  onChatDelete,
   onNewChat,
+  onRefresh,
 }) => {
+  const [chats, setChats] = useState<ChatHistoryItemData[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadChatHistory = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const chatData = await fetchChatHistory();
+
+      // Sort by pinned first, then by updated_at
+      const sortedChats = chatData
+        .map(transformChatData)
+        .sort((a, b) => {
+          if (a.isPinned && !b.isPinned) return -1;
+          if (!a.isPinned && b.isPinned) return 1;
+          return b.timestamp.getTime() - a.timestamp.getTime();
+        });
+
+      setChats(sortedChats);
+    } catch (err) {
+      console.error('Failed to load chat history:', err);
+      setError('Failed to load chat history');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChatDelete = async (chatId: string) => {
+    try {
+      await deleteChatHistory(chatId);
+      setChats((prevChats) => prevChats.filter((chat) => chat.id !== chatId));
+    } catch (err) {
+      console.error('Failed to delete chat:', err);
+      setError('Failed to delete chat');
+    }
+  };
+
+  const handleRefresh = () => {
+    loadChatHistory();
+    if (onRefresh) {
+      onRefresh();
+    }
+  };
+
+  useEffect(() => {
+    loadChatHistory();
+  }, []);
   const renderHeader = () => (
     <View style={styles.header}>
       <View style={styles.headerLeft}>
@@ -30,33 +96,75 @@ export const ChatHistory: React.FC<ChatHistoryProps> = ({
           <Text style={styles.countText}>{chats.length}</Text>
         </View>
       </View>
-      {onNewChat && (
+      <View style={styles.headerRight}>
         <TouchableOpacity
-          style={styles.newChatButton}
-          onPress={onNewChat}
+          style={styles.refreshButton}
+          onPress={handleRefresh}
           activeOpacity={0.7}
+          disabled={loading}
         >
-          <Ionicons name="add-circle-outline" size={24} color="#007AFF" />
+          <Ionicons
+            name="refresh-outline"
+            size={24}
+            color={loading ? '#cccccc' : '#007AFF'}
+          />
         </TouchableOpacity>
-      )}
+        {onNewChat && (
+          <TouchableOpacity
+            style={styles.newChatButton}
+            onPress={onNewChat}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="add-circle-outline" size={24} color="#007AFF" />
+          </TouchableOpacity>
+        )}
+      </View>
     </View>
   );
 
-  const renderEmptyState = () => (
-    <View style={styles.emptyContainer}>
-      <Ionicons name="chatbubbles-outline" size={64} color="#cccccc" />
-      <Text style={styles.emptyTitle}>No chat history</Text>
-      <Text style={styles.emptySubtitle}>
-        Start a conversation to see it here
-      </Text>
-    </View>
-  );
+  const renderEmptyState = () => {
+    if (loading) {
+      return (
+        <View style={styles.emptyContainer}>
+          <ActivityIndicator size="large" color="#007AFF" />
+          <Text style={styles.emptySubtitle}>Loading chat history...</Text>
+        </View>
+      );
+    }
+
+    if (error) {
+      return (
+        <View style={styles.emptyContainer}>
+          <Ionicons name="alert-circle-outline" size={64} color="#ff6b6b" />
+          <Text style={styles.emptyTitle}>Error</Text>
+          <Text style={styles.emptySubtitle}>{error}</Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={handleRefresh}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.emptyContainer}>
+        <Ionicons name="chatbubbles-outline" size={64} color="#cccccc" />
+        <Text style={styles.emptyTitle}>No chat history</Text>
+        <Text style={styles.emptySubtitle}>
+          Start a conversation to see it here
+        </Text>
+      </View>
+    );
+  };
 
   const renderItem = ({ item }: { item: ChatHistoryItemData }) => (
     <ChatHistoryItem
       chat={item}
       onPress={onChatPress}
-      onDelete={onChatDelete}
+      onDelete={handleChatDelete}
     />
   );
 
@@ -93,6 +201,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   headerTitle: {
     fontSize: 20,
     fontWeight: '600',
@@ -113,6 +226,9 @@ const styles = StyleSheet.create({
     color: '#666666',
     fontWeight: '600',
     fontFamily: 'System',
+  },
+  refreshButton: {
+    padding: 4,
   },
   newChatButton: {
     padding: 4,
@@ -140,6 +256,19 @@ const styles = StyleSheet.create({
     color: '#cccccc',
     marginTop: 8,
     textAlign: 'center',
+    fontFamily: 'System',
+  },
+  retryButton: {
+    marginTop: 16,
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
     fontFamily: 'System',
   },
 });

@@ -13,6 +13,7 @@ export interface ChatHistoryItemData {
   preview: string;
   timestamp: Date;
   messageCount: number;
+  isPinned?: boolean;
 }
 
 interface ChatHistoryItemProps {
@@ -56,9 +57,19 @@ export const ChatHistoryItem: React.FC<ChatHistoryItemProps> = ({
 
       <View style={styles.contentContainer}>
         <View style={styles.headerRow}>
-          <Text style={styles.title} numberOfLines={1}>
-            {chat.title}
-          </Text>
+          <View style={styles.titleRow}>
+            {chat.isPinned && (
+              <Ionicons
+                name="pin"
+                size={14}
+                color="#007AFF"
+                style={styles.pinIcon}
+              />
+            )}
+            <Text style={styles.title} numberOfLines={1}>
+              {chat.title}
+            </Text>
+          </View>
           <Text style={styles.timestamp}>
             {formatTimestamp(chat.timestamp)}
           </Text>
@@ -124,6 +135,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 4,
+  },
+  titleRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  pinIcon: {
+    marginRight: 4,
   },
   title: {
     flex: 1,
