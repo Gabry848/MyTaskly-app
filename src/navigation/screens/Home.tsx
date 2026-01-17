@@ -14,12 +14,14 @@ import {
   Platform,
   Alert,
 } from "react-native";
-import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scrollview";
+import { GestureDetector, Gesture, GestureHandlerRootView } from "react-native-gesture-handler";
+import { runOnJS } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ChatList, Message } from "../../components/BotChat";
 import { ToolWidget } from "../../components/BotChat/types";
-import { sendMessageToBot, formatMessage, clearChatHistory, StreamingCallback } from "../../services/botservice";
+import { sendMessageToBot, formatMessage, StreamingCallback, createNewChat } from "../../services/botservice";
+import { getChatWithMessages, ChatMessage } from "../../services/chatHistoryService";
 import { STORAGE_KEYS } from "../../constants/authConstants";
 import { TaskCacheService } from '../../services/TaskCacheService';
 import SyncManager, { SyncStatus } from '../../services/SyncManager';
@@ -27,6 +29,7 @@ import Badge from "../../components/UI/Badge";
 import VoiceChatModal from "../../components/BotChat/VoiceChatModal";
 import { useTutorialContext } from "../../contexts/TutorialContext";
 import { useTranslation } from 'react-i18next';
+import { ChatHistory } from "../../components/BotChat/ChatHistory";
 
 const HomeScreen = () => {
   const { t } = useTranslation();
@@ -40,11 +43,16 @@ const HomeScreen = () => {
   const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null);
   const [suggestedCommandUsed, setSuggestedCommandUsed] = useState(false);
   const [screenHeight, setScreenHeight] = useState(Dimensions.get('window').height);
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [isInputFocused, setIsInputFocused] = useState(false);
+  const [showChatHistory, setShowChatHistory] = useState(false);
+  const [currentChatId, setCurrentChatId] = useState<string | null>(null);
 
   // Tutorial context
   const tutorialContext = useTutorialContext();
+
+  // Costanti
+  const USER = 'user';
+  const BOT = 'bot';
 
   const handleStartTutorial = () => {
     console.log('[HOME] Tutorial context:', tutorialContext);
@@ -69,6 +77,8 @@ const HomeScreen = () => {
   const inputBottomPosition = useRef(new Animated.Value(0)).current;
   const cursorOpacity = useRef(new Animated.Value(1)).current;
   const micButtonAnim = useRef(new Animated.Value(1)).current;
+  const chatHistorySlideIn = useRef(new Animated.Value(0)).current;
+  const chatHistoryOpacity = useRef(new Animated.Value(0)).current;
   // Setup sync status listener
   useEffect(() => {
     const handleSyncStatus = (status: SyncStatus) => {
@@ -140,7 +150,7 @@ const HomeScreen = () => {
         clearInterval(typingInterval);
       };
     }
-  }, [userName, chatStarted]);
+  }, [userName, chatStarted, t]);
 
   // Effetto per l'animazione del cursore lampeggiante
   useEffect(() => {
@@ -192,7 +202,6 @@ const HomeScreen = () => {
     const keyboardDidShowListener = Keyboard.addListener(
       "keyboardDidShow",
       (event) => {
-        setKeyboardHeight(event.endCoordinates.height);
         if (chatStarted) {
           // Sposta l'input sopra la tastiera con margine maggiore
           Animated.timing(inputBottomPosition, {
@@ -207,7 +216,6 @@ const HomeScreen = () => {
     const keyboardDidHideListener = Keyboard.addListener(
       "keyboardDidHide",
       () => {
-        setKeyboardHeight(0);
         if (chatStarted) {
           // Riporta l'input in posizione normale
           Animated.timing(inputBottomPosition, {
@@ -268,6 +276,19 @@ const HomeScreen = () => {
     const trimmedMessage = message.trim();
     if (!trimmedMessage || isLoading) return;
 
+    // Se non c'è un chat_id corrente, crea una nuova sessione
+    let chatIdToUse = currentChatId;
+    if (!chatIdToUse) {
+      try {
+        chatIdToUse = await createNewChat();
+        setCurrentChatId(chatIdToUse);
+        console.log('✅ Nuova chat creata automaticamente con ID:', chatIdToUse);
+      } catch (error) {
+        console.error('❌ Errore durante la creazione automatica della chat:', error);
+        // Continua senza chat_id (modalità offline)
+      }
+    }
+
     const userMessage: Message = {
       id: generateMessageId(),
       text: trimmedMessage,
@@ -316,7 +337,12 @@ const HomeScreen = () => {
 
     try {
       // Callback per gestire lo streaming
-      const onStreamChunk: StreamingCallback = (chunk: string, isComplete: boolean, toolWidgets?: ToolWidget[]) => {
+      const onStreamChunk: StreamingCallback = (
+        chunk: string,
+        isComplete: boolean,
+        toolWidgets?: ToolWidget[],
+        chatInfo?: { chat_id: string; is_new: boolean }
+      ) => {
         if (typeof chunk !== 'string' && chunk) {
           console.warn('[HOME] onStreamChunk received non-string chunk:', chunk);
         }
@@ -324,8 +350,17 @@ const HomeScreen = () => {
           isComplete,
           chunkPreview: typeof chunk === 'string' ? chunk.slice(0, 40) : chunk,
           widgetsCount: toolWidgets?.length || 0,
-          widgets: toolWidgets?.map(w => ({ toolName: w.toolName, status: w.status, type: w.toolOutput?.type }))
+          widgets: toolWidgets?.map(w => ({ toolName: w.toolName, status: w.status, type: w.toolOutput?.type })),
+          chatInfo
         });
+
+        // Se riceviamo chat_id dal server, aggiorniamo lo stato
+        if (chatInfo?.chat_id) {
+          if (chatInfo.is_new) {
+            console.log('[HOME] Nuova chat creata automaticamente dal server:', chatInfo.chat_id);
+          }
+          setCurrentChatId(chatInfo.chat_id);
+        }
 
         if (isComplete) {
           // Lo streaming è completato, applica formatMessage al testo completo e aggiorna toolWidgets
@@ -358,13 +393,19 @@ const HomeScreen = () => {
         }
       };
 
-      // Invia il messaggio al bot con streaming
-      await sendMessageToBot(
+      // Invia il messaggio al bot con streaming e chat_id
+      const result = await sendMessageToBot(
         trimmedMessage,
         "advanced",
-        messages,
-        onStreamChunk
+        onStreamChunk,
+        chatIdToUse || undefined
       );
+
+      // Aggiorna currentChatId se il server ha restituito un chat_id
+      if (result.chat_id && result.chat_id !== currentChatId) {
+        console.log('[HOME] Aggiornamento chat_id da:', currentChatId, 'a:', result.chat_id);
+        setCurrentChatId(result.chat_id);
+      }
 
     } catch (error) {
       console.error("[HOME] Errore nell'invio del messaggio:", error);
@@ -387,12 +428,23 @@ const HomeScreen = () => {
   };
 
   const handleResetChat = async () => {
-    try {
-      // Prima elimina la cronologia dal server
-      await clearChatHistory();
-    } catch (error) {
-      console.error("Errore durante l'eliminazione della cronologia dal server:", error);
-      // Procedi comunque con la pulizia locale anche se fallisce quella del server
+    // Se c'è una chat aperta, semplicemente pulisci e esci dalla sessione
+    if (currentChatId) {
+      console.log('[HOME] Clearing current chat session:', currentChatId);
+      setCurrentChatId(null);
+    } else {
+      console.log('[HOME] Starting new chat (reset current chat)');
+
+      try {
+        // Crea una nuova sessione chat sul server solo se non c'è una chat aperta
+        const chatId = await createNewChat();
+        setCurrentChatId(chatId);
+        console.log('✅ Nuova chat creata con ID:', chatId);
+      } catch (error) {
+        console.error('❌ Errore durante la creazione della nuova chat:', error);
+        // Continua comunque con il reset locale anche se fallisce la creazione sul server
+        setCurrentChatId(null);
+      }
     }
 
     // Animazione di uscita per i messaggi
@@ -460,6 +512,120 @@ const HomeScreen = () => {
     setMessages((prev) => [...prev, botMessage]);
   };
 
+  const handleChatHistoryPress = async (chatId: string) => {
+    console.log('[HOME] Opening chat history:', chatId);
+
+    try {
+      // Recupera la chat con tutti i suoi messaggi dal server
+      const chatData = await getChatWithMessages(chatId);
+
+      // Trasforma i messaggi dall'API al formato UI
+      const transformedMessages: Message[] = chatData.messages.map((apiMsg: ChatMessage) => ({
+        id: apiMsg.message_id.toString(),
+        text: apiMsg.content,
+        sender: apiMsg.role === 'user' ? USER : BOT,
+        start_time: new Date(apiMsg.created_at),
+        modelType: apiMsg.model as 'base' | 'advanced' | undefined,
+        isStreaming: false,
+        isComplete: true,
+      }));
+
+      // Imposta la chat corrente
+      setCurrentChatId(chatId);
+      setMessages(transformedMessages);
+
+      // Avvia la modalità chat se non è già avviata
+      if (!chatStarted) {
+        startChatAnimation();
+      }
+
+      // Chiudi la cronologia
+      setShowChatHistory(false);
+
+      console.log('✅ Chat caricata con successo:', {
+        chatId,
+        title: chatData.title,
+        messageCount: transformedMessages.length
+      });
+    } catch (error) {
+      console.error('❌ Errore durante il caricamento della chat:', error);
+      Alert.alert(
+        'Errore',
+        'Impossibile caricare la chat. Riprova più tardi.',
+        [{ text: 'OK' }]
+      );
+    }
+  };
+
+  const handleNewChat = async () => {
+    // Se c'è una chat aperta, semplicemente pulisci e esci dalla sessione
+    if (currentChatId) {
+      console.log('[HOME] Clearing current chat session:', currentChatId);
+      setCurrentChatId(null);
+      setMessages([]);
+      setChatStarted(false);
+      setShowChatHistory(false);
+      console.log('✅ Chat pulita e uscito dalla sessione');
+      return;
+    }
+
+    // Altrimenti, crea una nuova sessione chat sul server
+    console.log('[HOME] Starting new chat from history');
+
+    try {
+      const chatId = await createNewChat();
+      setCurrentChatId(chatId);
+      setMessages([]);
+      setChatStarted(false);
+      setShowChatHistory(false);
+
+      console.log('✅ Nuova chat creata con ID:', chatId);
+    } catch (error) {
+      console.error('❌ Errore durante la creazione della nuova chat:', error);
+      // In caso di errore, continua comunque senza chat_id
+      setCurrentChatId(null);
+      setMessages([]);
+      setChatStarted(false);
+      setShowChatHistory(false);
+    }
+  };
+
+  const handleToggleChatHistory = () => {
+    if (!showChatHistory) {
+      // Apri la cronologia con animazione
+      setShowChatHistory(true);
+      Animated.parallel([
+        Animated.timing(chatHistoryOpacity, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.spring(chatHistorySlideIn, {
+          toValue: 1,
+          tension: 50,
+          friction: 8,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      // Chiudi la cronologia con animazione
+      Animated.parallel([
+        Animated.timing(chatHistoryOpacity, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(chatHistorySlideIn, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        setShowChatHistory(false);
+      });
+    }
+  };
+
   // Calcolo dinamico del padding top basato sull'altezza dello schermo
   const getGreetingPaddingTop = () => {
     if (screenHeight < 700) return Math.max(screenHeight * 0.15, 80); // Schermi piccoli
@@ -467,9 +633,34 @@ const HomeScreen = () => {
     return Math.max(screenHeight * 0.25, 180); // Schermi grandi
   };
 
+  // Gesto swipe da destra a sinistra per aprire la cronologia
+  const swipeGesture = Gesture.Pan()
+    .activeOffsetX([-10, 10]) // Inizia il gesto con almeno 10px di movimento orizzontale
+    .failOffsetY([-20, 20]) // Fallisce se c'è troppo movimento verticale
+    .onEnd((event) => {
+      'worklet';
+      console.log('[HOME] Swipe gesture detected:', {
+        translationX: event.translationX,
+        velocityX: event.velocityX,
+        showChatHistory,
+      });
+
+      // Swipe da destra a sinistra per aprire (soglia più bassa per il simulatore)
+      if (event.translationX < -50 && !showChatHistory) {
+        console.log('[HOME] Opening chat history via swipe');
+        runOnJS(handleToggleChatHistory)();
+      }
+      // Swipe da sinistra a destra per chiudere
+      else if (event.translationX > 50 && showChatHistory) {
+        console.log('[HOME] Closing chat history via swipe');
+        runOnJS(handleToggleChatHistory)();
+      }
+    });
+
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
 
         {/* Header con titolo principale e indicatori sync */}
         <View style={styles.header}>
@@ -511,24 +702,69 @@ const HomeScreen = () => {
             <Ionicons name="help-circle-outline" size={24} color="#007AFF" />
           </TouchableOpacity>
 
-          {chatStarted && (
+          {/* Chat History Toggle Button */}
+          <TouchableOpacity
+            style={[styles.resetButton, { marginRight: 8 }]}
+            onPress={handleToggleChatHistory}
+            activeOpacity={0.7}
+          >
+            <Ionicons
+              name={showChatHistory ? "chatbubbles" : "chatbubbles-outline"}
+              size={24}
+              color={showChatHistory ? "#007AFF" : "#666666"}
+            />
+          </TouchableOpacity>
+
+          {chatStarted && !showChatHistory && (
             <TouchableOpacity
               style={styles.resetButton}
               onPress={handleResetChat}
               activeOpacity={0.7}
             >
-              <Ionicons name="refresh-outline" size={24} color="#666666" />
+              <Ionicons name="add-outline" size={24} color="#666666" />
             </TouchableOpacity>
           )}
           <Badge />
         </View>
       </View>
 
-      <View style={styles.mainContent}>
-        {/* Contenuto principale */}
-        <View style={chatStarted ? styles.contentChatStarted : [styles.content, { paddingTop: getGreetingPaddingTop() }]}>
-          {/* Saluto personalizzato - nascosto quando la chat inizia */}
-          {!chatStarted && (
+      <GestureDetector gesture={swipeGesture}>
+        <View style={styles.mainContent}>
+          {/* Chat History View */}
+          {showChatHistory ? (
+          <Animated.View
+            style={[
+              styles.chatHistoryContainer,
+              {
+                opacity: chatHistoryOpacity,
+                transform: [
+                  {
+                    translateX: chatHistorySlideIn.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [300, 0],
+                    }),
+                  },
+                  {
+                    scale: chatHistorySlideIn.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.9, 1],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
+            <ChatHistory
+              onChatPress={handleChatHistoryPress}
+              onNewChat={handleNewChat}
+            />
+          </Animated.View>
+        ) : (
+          <>
+            {/* Contenuto principale */}
+            <View style={chatStarted ? styles.contentChatStarted : [styles.content, { paddingTop: getGreetingPaddingTop() }]}>
+              {/* Saluto personalizzato - nascosto quando la chat inizia */}
+              {!chatStarted && (
             <View style={styles.greetingSection}>
               <View style={styles.greetingTextContainer}>
                 <Text style={styles.greetingText}>
@@ -710,7 +946,10 @@ const HomeScreen = () => {
             </View>
           </Animated.View>
         )}
-      </View>
+          </>
+        )}
+        </View>
+      </GestureDetector>
 
       {/* Voice Chat Modal */}
       <VoiceChatModal
@@ -719,7 +958,8 @@ const HomeScreen = () => {
         isRecording={isRecording}
         onVoiceResponse={handleVoiceResponse}
       />
-    </SafeAreaView>
+      </SafeAreaView>
+    </GestureHandlerRootView>
   );
 };
 
@@ -1015,6 +1255,10 @@ const styles = StyleSheet.create({
   },
   suggestedCommandTextDisabled: {
     color: "#999999",
+  },
+  chatHistoryContainer: {
+    flex: 1,
+    backgroundColor: "#ffffff",
   },
 });
 

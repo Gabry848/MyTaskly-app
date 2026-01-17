@@ -38,12 +38,15 @@ async function testSingleMessage(message: string, modelType: "base" | "advanced"
     
     // Invia il messaggio al bot
     const response = await sendMessageToBot(formattedMessage, modelType);
-    
+
     const endTime = Date.now();
     const responseTime = endTime - startTime;
-    
+
     console.log(`📥 Risposta ricevuta (${responseTime}ms):`);
-    console.log(`"${response}"`);
+    console.log(`"${response.text}"`);
+    if (response.chat_id) {
+      console.log(`💬 Chat ID: ${response.chat_id} (new: ${response.is_new})`);
+    }
     console.log("✅ Test completato con successo");
     
   } catch (error) {
@@ -52,35 +55,31 @@ async function testSingleMessage(message: string, modelType: "base" | "advanced"
 }
 
 /**
- * Esegue test con contesto (messaggi precedenti)
+ * Esegue test con chat_id (la cronologia è gestita dal server)
  */
-async function testWithContext(): Promise<void> {
-  console.log("\n🧪 Test con contesto (messaggi precedenti)");
+async function testWithChatId(): Promise<void> {
+  console.log("\n🧪 Test con chat_id (cronologia server-side)");
   console.log("=".repeat(50));
-  
-  const previousMessages = [
-    { sender: "user", text: "Ciao" },
-    { sender: "bot", text: "Ciao! Come posso aiutarti oggi?" },
-    { sender: "user", text: "Sto pianificando la mia giornata" },
-    { sender: "bot", text: "Perfetto! Posso aiutarti a organizzare le tue attività." }
-  ];
-  
+
   const newMessage = "Aiutami a creare una lista di 5 cose importanti da fare";
-  
+
   try {
-    console.log(`📚 Contesto: ${previousMessages.length} messaggi precedenti`);
     console.log(`📤 Nuovo messaggio: "${newMessage}"`);
-    
+    console.log(`💬 Note: La cronologia è ora gestita dal server tramite chat_id`);
+
     const startTime = Date.now();
-    const response = await sendMessageToBot(newMessage, "advanced", previousMessages);
+    const response = await sendMessageToBot(newMessage, "advanced");
     const endTime = Date.now();
-    
-    console.log(`📥 Risposta con contesto (${endTime - startTime}ms):`);
-    console.log(`"${response}"`);
-    console.log("✅ Test con contesto completato");
-    
+
+    console.log(`📥 Risposta (${endTime - startTime}ms):`);
+    console.log(`"${response.text}"`);
+    if (response.chat_id) {
+      console.log(`💬 Chat ID ricevuto: ${response.chat_id} (new: ${response.is_new})`);
+    }
+    console.log("✅ Test con chat_id completato");
+
   } catch (error) {
-    console.error("❌ Errore nel test con contesto:", error);
+    console.error("❌ Errore nel test con chat_id:", error);
   }
 }
 
@@ -150,8 +149,8 @@ async function main(): Promise<void> {
     await testSingleMessage("Ciao, come stai?", "base");
     await testSingleMessage("Spiegami come organizzare le mie attività", "advanced");
     
-    // Test con contesto
-    await testWithContext();
+    // Test con chat_id
+    await testWithChatId();
     
     // Test di performance (opzionale - commentalo se non vuoi sovraccaricare il server)
     // await testPerformance();
@@ -170,7 +169,7 @@ if (require.main === module) {
 
 export {
   testSingleMessage,
-  testWithContext,
+  testWithChatId,
   testPerformance,
   main
 };
