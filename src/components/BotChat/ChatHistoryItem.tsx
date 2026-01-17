@@ -31,7 +31,8 @@ export const ChatHistoryItem: React.FC<ChatHistoryItemProps> = ({
 }) => {
   const formatTimestamp = (date: Date) => {
     const now = new Date();
-    const diffInMs = now.getTime() - date.getTime();
+    // Add 240 minutes (4 hours) to compensate for timezone offset
+    const diffInMs = now.getTime() - date.getTime() + (240 * 60 * 1000);
     const diffInHours = diffInMs / (1000 * 60 * 60);
     const diffInDays = diffInMs / (1000 * 60 * 60 * 24);
 
