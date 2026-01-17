@@ -29,7 +29,6 @@ import VoiceChatModal from "../../components/BotChat/VoiceChatModal";
 import { useTutorialContext } from "../../contexts/TutorialContext";
 import { useTranslation } from 'react-i18next';
 import { ChatHistory } from "../../components/BotChat/ChatHistory";
-import { demoChatHistory } from "../../data/demoChatHistory";
 
 const HomeScreen = () => {
   const { t } = useTranslation();
@@ -469,11 +468,6 @@ const HomeScreen = () => {
     setShowChatHistory(false);
   };
 
-  const handleChatHistoryDelete = (chatId: string) => {
-    console.log('[HOME] Deleting chat history:', chatId);
-    // TODO: Implementare l'eliminazione della chat storica
-  };
-
   const handleNewChat = () => {
     console.log('[HOME] Starting new chat from history');
     setShowChatHistory(false);
@@ -644,9 +638,7 @@ const HomeScreen = () => {
             ]}
           >
             <ChatHistory
-              chats={demoChatHistory}
               onChatPress={handleChatHistoryPress}
-              onChatDelete={handleChatHistoryDelete}
               onNewChat={handleNewChat}
             />
           </Animated.View>
