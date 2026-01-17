@@ -139,45 +139,69 @@ const BotChat: React.FC = () => {
 
   // Handler per creare una nuova chat
   const handleNewChat = () => {
-    Alert.alert(
-      "Nuova Chat",
-      "Vuoi creare una nuova chat? Tutti i messaggi attuali verranno eliminati sia localmente che dal server.",
-      [
-        {
-          text: "Annulla",
-          style: "cancel"
-        },
-        {
-          text: "Conferma",
-          onPress: async () => {
-            try {
-              // Elimina la cronologia dal server
-              const serverCleared = await clearChatHistory();
-              
-              if (!serverCleared) {
-                // Mostra un avviso ma procedi comunque con la pulizia locale
-                Alert.alert(
-                  "Avviso",
-                  "Non è stato possibile eliminare la cronologia dal server, ma la chat locale verrà comunque resettata.",
-                  [{ text: "OK", onPress: () => initializeChat() }]
-                );
-              } else {
-                // Tutto ok, procedi con la pulizia locale
-                await initializeChat();
-              }
-            } catch (error) {
-              console.error("Errore durante il reset della chat:", error);
-              // In caso di errore, procedi comunque con la pulizia locale
-              Alert.alert(
-                "Errore",
-                "Si è verificato un errore durante l'eliminazione della cronologia dal server, ma la chat locale verrà resettata.",
-                [{ text: "OK", onPress: () => initializeChat() }]
-              );
+    // Se c'è una chat aperta, semplicemente pulisci e esci dalla sessione
+    if (currentChatId) {
+      Alert.alert(
+        "Pulisci Chat",
+        "Vuoi pulire la chat corrente? I messaggi verranno rimossi localmente ma la cronologia sul server rimarrà intatta.",
+        [
+          {
+            text: "Annulla",
+            style: "cancel"
+          },
+          {
+            text: "Conferma",
+            onPress: () => {
+              // Pulisci solo localmente senza creare una nuova sessione
+              setMessages([]);
+              setCurrentChatId(null);
+              console.log('✅ Chat pulita e uscito dalla sessione');
             }
           }
-        }
-      ]
-    );
+        ]
+      );
+    } else {
+      // Se non c'è una chat aperta, crea una nuova sessione
+      Alert.alert(
+        "Nuova Chat",
+        "Vuoi creare una nuova chat? Tutti i messaggi attuali verranno eliminati sia localmente che dal server.",
+        [
+          {
+            text: "Annulla",
+            style: "cancel"
+          },
+          {
+            text: "Conferma",
+            onPress: async () => {
+              try {
+                // Elimina la cronologia dal server
+                const serverCleared = await clearChatHistory();
+
+                if (!serverCleared) {
+                  // Mostra un avviso ma procedi comunque con la pulizia locale
+                  Alert.alert(
+                    "Avviso",
+                    "Non è stato possibile eliminare la cronologia dal server, ma la chat locale verrà comunque resettata.",
+                    [{ text: "OK", onPress: () => initializeChat() }]
+                  );
+                } else {
+                  // Tutto ok, procedi con la pulizia locale
+                  await initializeChat();
+                }
+              } catch (error) {
+                console.error("Errore durante il reset della chat:", error);
+                // In caso di errore, procedi comunque con la pulizia locale
+                Alert.alert(
+                  "Errore",
+                  "Si è verificato un errore durante l'eliminazione della cronologia dal server, ma la chat locale verrà resettata.",
+                  [{ text: "OK", onPress: () => initializeChat() }]
+                );
+              }
+            }
+          }
+        ]
+      );
+    }
   };
 
   // Handler per cambiare il tipo di modello

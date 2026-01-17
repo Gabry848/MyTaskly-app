@@ -428,17 +428,23 @@ const HomeScreen = () => {
   };
 
   const handleResetChat = async () => {
-    console.log('[HOME] Starting new chat (reset current chat)');
-
-    try {
-      // Crea una nuova sessione chat sul server
-      const chatId = await createNewChat();
-      setCurrentChatId(chatId);
-      console.log('✅ Nuova chat creata con ID:', chatId);
-    } catch (error) {
-      console.error('❌ Errore durante la creazione della nuova chat:', error);
-      // Continua comunque con il reset locale anche se fallisce la creazione sul server
+    // Se c'è una chat aperta, semplicemente pulisci e esci dalla sessione
+    if (currentChatId) {
+      console.log('[HOME] Clearing current chat session:', currentChatId);
       setCurrentChatId(null);
+    } else {
+      console.log('[HOME] Starting new chat (reset current chat)');
+
+      try {
+        // Crea una nuova sessione chat sul server solo se non c'è una chat aperta
+        const chatId = await createNewChat();
+        setCurrentChatId(chatId);
+        console.log('✅ Nuova chat creata con ID:', chatId);
+      } catch (error) {
+        console.error('❌ Errore durante la creazione della nuova chat:', error);
+        // Continua comunque con il reset locale anche se fallisce la creazione sul server
+        setCurrentChatId(null);
+      }
     }
 
     // Animazione di uscita per i messaggi
@@ -552,10 +558,21 @@ const HomeScreen = () => {
   };
 
   const handleNewChat = async () => {
+    // Se c'è una chat aperta, semplicemente pulisci e esci dalla sessione
+    if (currentChatId) {
+      console.log('[HOME] Clearing current chat session:', currentChatId);
+      setCurrentChatId(null);
+      setMessages([]);
+      setChatStarted(false);
+      setShowChatHistory(false);
+      console.log('✅ Chat pulita e uscito dalla sessione');
+      return;
+    }
+
+    // Altrimenti, crea una nuova sessione chat sul server
     console.log('[HOME] Starting new chat from history');
 
     try {
-      // Crea una nuova sessione chat sul server
       const chatId = await createNewChat();
       setCurrentChatId(chatId);
       setMessages([]);
