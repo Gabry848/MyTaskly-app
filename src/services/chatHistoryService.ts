@@ -134,6 +134,8 @@ export const getChatWithMessages = async (
       }
     );
 
+    console.log('Fetched chat with messages:', response.data);
+
     return response.data;
   } catch (error) {
     console.error('Error fetching chat with messages:', error);

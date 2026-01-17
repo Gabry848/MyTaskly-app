@@ -20,7 +20,7 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ChatList, Message } from "../../components/BotChat";
 import { ToolWidget } from "../../components/BotChat/types";
-import { sendMessageToBot, formatMessage, clearChatHistory, StreamingCallback, createNewChat } from "../../services/botservice";
+import { sendMessageToBot, formatMessage, StreamingCallback, createNewChat } from "../../services/botservice";
 import { getChatWithMessages, ChatMessage } from "../../services/chatHistoryService";
 import { STORAGE_KEYS } from "../../constants/authConstants";
 import { TaskCacheService } from '../../services/TaskCacheService';
@@ -409,12 +409,17 @@ const HomeScreen = () => {
   };
 
   const handleResetChat = async () => {
+    console.log('[HOME] Starting new chat (reset current chat)');
+
     try {
-      // Prima elimina la cronologia dal server
-      await clearChatHistory();
+      // Crea una nuova sessione chat sul server
+      const chatId = await createNewChat();
+      setCurrentChatId(chatId);
+      console.log('✅ Nuova chat creata con ID:', chatId);
     } catch (error) {
-      console.error("Errore durante l'eliminazione della cronologia dal server:", error);
-      // Procedi comunque con la pulizia locale anche se fallisce quella del server
+      console.error('❌ Errore durante la creazione della nuova chat:', error);
+      // Continua comunque con il reset locale anche se fallisce la creazione sul server
+      setCurrentChatId(null);
     }
 
     // Animazione di uscita per i messaggi
@@ -437,7 +442,6 @@ const HomeScreen = () => {
       setIsLoading(false);
       setDisplayedText("");
       setIsTyping(false);
-      setCurrentChatId(null); // Reset del chat_id corrente
 
       // Leggi il valore persistente del comando suggerito da AsyncStorage
       try {
