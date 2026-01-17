@@ -337,7 +337,12 @@ const HomeScreen = () => {
 
     try {
       // Callback per gestire lo streaming
-      const onStreamChunk: StreamingCallback = (chunk: string, isComplete: boolean, toolWidgets?: ToolWidget[]) => {
+      const onStreamChunk: StreamingCallback = (
+        chunk: string,
+        isComplete: boolean,
+        toolWidgets?: ToolWidget[],
+        chatInfo?: { chat_id: string; is_new: boolean }
+      ) => {
         if (typeof chunk !== 'string' && chunk) {
           console.warn('[HOME] onStreamChunk received non-string chunk:', chunk);
         }
@@ -345,8 +350,17 @@ const HomeScreen = () => {
           isComplete,
           chunkPreview: typeof chunk === 'string' ? chunk.slice(0, 40) : chunk,
           widgetsCount: toolWidgets?.length || 0,
-          widgets: toolWidgets?.map(w => ({ toolName: w.toolName, status: w.status, type: w.toolOutput?.type }))
+          widgets: toolWidgets?.map(w => ({ toolName: w.toolName, status: w.status, type: w.toolOutput?.type })),
+          chatInfo
         });
+
+        // Se riceviamo chat_id dal server, aggiorniamo lo stato
+        if (chatInfo?.chat_id) {
+          if (chatInfo.is_new) {
+            console.log('[HOME] Nuova chat creata automaticamente dal server:', chatInfo.chat_id);
+          }
+          setCurrentChatId(chatInfo.chat_id);
+        }
 
         if (isComplete) {
           // Lo streaming è completato, applica formatMessage al testo completo e aggiorna toolWidgets
@@ -380,13 +394,18 @@ const HomeScreen = () => {
       };
 
       // Invia il messaggio al bot con streaming e chat_id
-      await sendMessageToBot(
+      const result = await sendMessageToBot(
         trimmedMessage,
         "advanced",
-        messages,
         onStreamChunk,
         chatIdToUse || undefined
       );
+
+      // Aggiorna currentChatId se il server ha restituito un chat_id
+      if (result.chat_id && result.chat_id !== currentChatId) {
+        console.log('[HOME] Aggiornamento chat_id da:', currentChatId, 'a:', result.chat_id);
+        setCurrentChatId(result.chat_id);
+      }
 
     } catch (error) {
       console.error("[HOME] Errore nell'invio del messaggio:", error);
