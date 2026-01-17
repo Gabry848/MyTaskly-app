@@ -43,28 +43,59 @@ export const ChatHistory: React.FC<ChatHistoryProps> = ({
   const [chats, setChats] = useState<ChatHistoryItemData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [loadingMore, setLoadingMore] = useState<boolean>(false);
+  const [hasMore, setHasMore] = useState<boolean>(true);
+  const [skip, setSkip] = useState<number>(0);
+  const LIMIT = 20;
 
-  const loadChatHistory = async () => {
+  const loadChatHistory = async (reset: boolean = false) => {
     try {
-      setLoading(true);
+      if (reset) {
+        setLoading(true);
+        setSkip(0);
+      }
       setError(null);
-      const chatData = await fetchChatHistory();
 
-      // Sort by pinned first, then by updated_at
-      const sortedChats = chatData
-        .map(transformChatData)
-        .sort((a, b) => {
-          if (a.isPinned && !b.isPinned) return -1;
-          if (!a.isPinned && b.isPinned) return 1;
-          return b.timestamp.getTime() - a.timestamp.getTime();
-        });
+      const currentSkip = reset ? 0 : skip;
+      const chatData = await fetchChatHistory({
+        skip: currentSkip,
+        limit: LIMIT,
+      });
 
-      setChats(sortedChats);
+      // Sort by pinned first, then by updated_at (API already returns sorted)
+      const sortedChats = chatData.map(transformChatData);
+
+      if (reset) {
+        setChats(sortedChats);
+      } else {
+        setChats((prevChats) => [...prevChats, ...sortedChats]);
+      }
+
+      setHasMore(chatData.length === LIMIT);
+      setSkip(currentSkip + chatData.length);
     } catch (err) {
       console.error('Failed to load chat history:', err);
       setError('Failed to load chat history');
     } finally {
       setLoading(false);
+      setLoadingMore(false);
+      setRefreshing(false);
+    }
+  };
+
+  const loadMoreChats = async () => {
+    if (loadingMore || !hasMore) return;
+
+    setLoadingMore(true);
+    await loadChatHistory(false);
+  };
+
+  const handlePullRefresh = async () => {
+    setRefreshing(true);
+    await loadChatHistory(true);
+    if (onRefresh) {
+      onRefresh();
     }
   };
 
@@ -78,15 +109,45 @@ export const ChatHistory: React.FC<ChatHistoryProps> = ({
     }
   };
 
+  const handleTogglePin = async (chatId: string, isPinned: boolean) => {
+    try {
+      const { toggleChatPin } = await import('../../services/chatHistoryService');
+      const updatedChat = await toggleChatPin(chatId, isPinned);
+
+      setChats((prevChats) =>
+        prevChats.map((chat) =>
+          chat.id === chatId
+            ? {
+                ...chat,
+                isPinned: updatedChat.is_pinned,
+              }
+            : chat
+        )
+      );
+
+      // Re-sort after pin change
+      setChats((prevChats) =>
+        [...prevChats].sort((a, b) => {
+          if (a.isPinned && !b.isPinned) return -1;
+          if (!a.isPinned && b.isPinned) return 1;
+          return b.timestamp.getTime() - a.timestamp.getTime();
+        })
+      );
+    } catch (err) {
+      console.error('Failed to toggle pin:', err);
+      setError('Failed to update chat');
+    }
+  };
+
   const handleRefresh = () => {
-    loadChatHistory();
+    loadChatHistory(true);
     if (onRefresh) {
       onRefresh();
     }
   };
 
   useEffect(() => {
-    loadChatHistory();
+    loadChatHistory(true);
   }, []);
   const renderHeader = () => (
     <View style={styles.header}>
@@ -165,8 +226,19 @@ export const ChatHistory: React.FC<ChatHistoryProps> = ({
       chat={item}
       onPress={onChatPress}
       onDelete={handleChatDelete}
+      onTogglePin={handleTogglePin}
     />
   );
+
+  const renderFooter = () => {
+    if (!loadingMore) return null;
+
+    return (
+      <View style={styles.footerLoader}>
+        <ActivityIndicator size="small" color="#007AFF" />
+      </View>
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -177,7 +249,12 @@ export const ChatHistory: React.FC<ChatHistoryProps> = ({
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={renderEmptyState}
+        ListFooterComponent={renderFooter}
         showsVerticalScrollIndicator={false}
+        refreshing={refreshing}
+        onRefresh={handlePullRefresh}
+        onEndReached={loadMoreChats}
+        onEndReachedThreshold={0.5}
       />
     </View>
   );
@@ -270,5 +347,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     fontFamily: 'System',
+  },
+  footerLoader: {
+    paddingVertical: 20,
+    alignItems: 'center',
   },
 });

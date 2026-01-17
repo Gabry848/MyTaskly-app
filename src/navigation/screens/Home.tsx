@@ -20,7 +20,8 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ChatList, Message } from "../../components/BotChat";
 import { ToolWidget } from "../../components/BotChat/types";
-import { sendMessageToBot, formatMessage, clearChatHistory, StreamingCallback } from "../../services/botservice";
+import { sendMessageToBot, formatMessage, clearChatHistory, StreamingCallback, createNewChat } from "../../services/botservice";
+import { getChatWithMessages, ChatMessage } from "../../services/chatHistoryService";
 import { STORAGE_KEYS } from "../../constants/authConstants";
 import { TaskCacheService } from '../../services/TaskCacheService';
 import SyncManager, { SyncStatus } from '../../services/SyncManager';
@@ -44,9 +45,14 @@ const HomeScreen = () => {
   const [screenHeight, setScreenHeight] = useState(Dimensions.get('window').height);
   const [isInputFocused, setIsInputFocused] = useState(false);
   const [showChatHistory, setShowChatHistory] = useState(false);
+  const [currentChatId, setCurrentChatId] = useState<string | null>(null);
 
   // Tutorial context
   const tutorialContext = useTutorialContext();
+
+  // Costanti
+  const USER = 'user';
+  const BOT = 'bot';
 
   const handleStartTutorial = () => {
     console.log('[HOME] Tutorial context:', tutorialContext);
@@ -270,6 +276,19 @@ const HomeScreen = () => {
     const trimmedMessage = message.trim();
     if (!trimmedMessage || isLoading) return;
 
+    // Se non c'è un chat_id corrente, crea una nuova sessione
+    let chatIdToUse = currentChatId;
+    if (!chatIdToUse) {
+      try {
+        chatIdToUse = await createNewChat();
+        setCurrentChatId(chatIdToUse);
+        console.log('✅ Nuova chat creata automaticamente con ID:', chatIdToUse);
+      } catch (error) {
+        console.error('❌ Errore durante la creazione automatica della chat:', error);
+        // Continua senza chat_id (modalità offline)
+      }
+    }
+
     const userMessage: Message = {
       id: generateMessageId(),
       text: trimmedMessage,
@@ -360,12 +379,13 @@ const HomeScreen = () => {
         }
       };
 
-      // Invia il messaggio al bot con streaming
+      // Invia il messaggio al bot con streaming e chat_id
       await sendMessageToBot(
         trimmedMessage,
         "advanced",
         messages,
-        onStreamChunk
+        onStreamChunk,
+        chatIdToUse || undefined
       );
 
     } catch (error) {
@@ -417,6 +437,7 @@ const HomeScreen = () => {
       setIsLoading(false);
       setDisplayedText("");
       setIsTyping(false);
+      setCurrentChatId(null); // Reset del chat_id corrente
 
       // Leggi il valore persistente del comando suggerito da AsyncStorage
       try {
@@ -462,15 +483,71 @@ const HomeScreen = () => {
     setMessages((prev) => [...prev, botMessage]);
   };
 
-  const handleChatHistoryPress = (chatId: string) => {
+  const handleChatHistoryPress = async (chatId: string) => {
     console.log('[HOME] Opening chat history:', chatId);
-    // TODO: Implementare il caricamento della chat storica
-    setShowChatHistory(false);
+
+    try {
+      // Recupera la chat con tutti i suoi messaggi dal server
+      const chatData = await getChatWithMessages(chatId);
+
+      // Trasforma i messaggi dall'API al formato UI
+      const transformedMessages: Message[] = chatData.messages.map((apiMsg: ChatMessage) => ({
+        id: apiMsg.message_id.toString(),
+        text: apiMsg.content,
+        sender: apiMsg.role === 'user' ? USER : BOT,
+        start_time: new Date(apiMsg.created_at),
+        modelType: apiMsg.model as 'base' | 'advanced' | undefined,
+        isStreaming: false,
+        isComplete: true,
+      }));
+
+      // Imposta la chat corrente
+      setCurrentChatId(chatId);
+      setMessages(transformedMessages);
+
+      // Avvia la modalità chat se non è già avviata
+      if (!chatStarted) {
+        startChatAnimation();
+      }
+
+      // Chiudi la cronologia
+      setShowChatHistory(false);
+
+      console.log('✅ Chat caricata con successo:', {
+        chatId,
+        title: chatData.title,
+        messageCount: transformedMessages.length
+      });
+    } catch (error) {
+      console.error('❌ Errore durante il caricamento della chat:', error);
+      Alert.alert(
+        'Errore',
+        'Impossibile caricare la chat. Riprova più tardi.',
+        [{ text: 'OK' }]
+      );
+    }
   };
 
-  const handleNewChat = () => {
+  const handleNewChat = async () => {
     console.log('[HOME] Starting new chat from history');
-    setShowChatHistory(false);
+
+    try {
+      // Crea una nuova sessione chat sul server
+      const chatId = await createNewChat();
+      setCurrentChatId(chatId);
+      setMessages([]);
+      setChatStarted(false);
+      setShowChatHistory(false);
+
+      console.log('✅ Nuova chat creata con ID:', chatId);
+    } catch (error) {
+      console.error('❌ Errore durante la creazione della nuova chat:', error);
+      // In caso di errore, continua comunque senza chat_id
+      setCurrentChatId(null);
+      setMessages([]);
+      setChatStarted(false);
+      setShowChatHistory(false);
+    }
   };
 
   const handleToggleChatHistory = () => {
@@ -604,7 +681,7 @@ const HomeScreen = () => {
               onPress={handleResetChat}
               activeOpacity={0.7}
             >
-              <Ionicons name="refresh-outline" size={24} color="#666666" />
+              <Ionicons name="add-outline" size={24} color="#666666" />
             </TouchableOpacity>
           )}
           <Badge />

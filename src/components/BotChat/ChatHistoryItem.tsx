@@ -20,12 +20,14 @@ interface ChatHistoryItemProps {
   chat: ChatHistoryItemData;
   onPress: (chatId: string) => void;
   onDelete?: (chatId: string) => void;
+  onTogglePin?: (chatId: string, isPinned: boolean) => void;
 }
 
 export const ChatHistoryItem: React.FC<ChatHistoryItemProps> = ({
   chat,
   onPress,
   onDelete,
+  onTogglePin,
 }) => {
   const formatTimestamp = (date: Date) => {
     const now = new Date();
@@ -85,15 +87,30 @@ export const ChatHistoryItem: React.FC<ChatHistoryItemProps> = ({
         </View>
       </View>
 
-      {onDelete && (
-        <TouchableOpacity
-          style={styles.deleteButton}
-          onPress={() => onDelete(chat.id)}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="trash-outline" size={18} color="#ff6b6b" />
-        </TouchableOpacity>
-      )}
+      <View style={styles.actionsContainer}>
+        {onTogglePin && (
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => onTogglePin(chat.id, !chat.isPinned)}
+            activeOpacity={0.7}
+          >
+            <Ionicons
+              name={chat.isPinned ? 'pin' : 'pin-outline'}
+              size={18}
+              color={chat.isPinned ? '#007AFF' : '#999999'}
+            />
+          </TouchableOpacity>
+        )}
+        {onDelete && (
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => onDelete(chat.id)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="trash-outline" size={18} color="#ff6b6b" />
+          </TouchableOpacity>
+        )}
+      </View>
     </TouchableOpacity>
   );
 };
@@ -183,8 +200,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontFamily: 'System',
   },
-  deleteButton: {
-    padding: 8,
+  actionsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     marginLeft: 8,
+  },
+  actionButton: {
+    padding: 8,
   },
 });
