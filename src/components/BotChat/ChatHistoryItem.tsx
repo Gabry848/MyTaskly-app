@@ -1,0 +1,213 @@
+import React from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+
+export interface ChatHistoryItemData {
+  id: string;
+  title: string;
+  preview: string;
+  timestamp: Date;
+  messageCount: number;
+  isPinned?: boolean;
+}
+
+interface ChatHistoryItemProps {
+  chat: ChatHistoryItemData;
+  onPress: (chatId: string) => void;
+  onDelete?: (chatId: string) => void;
+  onTogglePin?: (chatId: string, isPinned: boolean) => void;
+}
+
+export const ChatHistoryItem: React.FC<ChatHistoryItemProps> = ({
+  chat,
+  onPress,
+  onDelete,
+  onTogglePin,
+}) => {
+  const formatTimestamp = (date: Date) => {
+    const now = new Date();
+    // Add 240 minutes (4 hours) to compensate for timezone offset
+    const diffInMs = now.getTime() - date.getTime() + (240 * 60 * 1000);
+    const diffInHours = diffInMs / (1000 * 60 * 60);
+    const diffInDays = diffInMs / (1000 * 60 * 60 * 24);
+
+    if (diffInHours < 1) {
+      const minutes = Math.floor(diffInMs / (1000 * 60));
+      return `${minutes}m ago`;
+    } else if (diffInHours < 24) {
+      return `${Math.floor(diffInHours)}h ago`;
+    } else if (diffInDays < 7) {
+      return `${Math.floor(diffInDays)}d ago`;
+    } else {
+      return date.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' });
+    }
+  };
+
+  return (
+    <TouchableOpacity
+      style={styles.container}
+      onPress={() => onPress(chat.id)}
+      activeOpacity={0.7}
+    >
+      <View style={styles.iconContainer}>
+        <Ionicons name="chatbubble-outline" size={20} color="#666" />
+      </View>
+
+      <View style={styles.contentContainer}>
+        <View style={styles.headerRow}>
+          <View style={styles.titleRow}>
+            {chat.isPinned && (
+              <Ionicons
+                name="pin"
+                size={14}
+                color="#007AFF"
+                style={styles.pinIcon}
+              />
+            )}
+            <Text style={styles.title} numberOfLines={1}>
+              {chat.title}
+            </Text>
+          </View>
+          <Text style={styles.timestamp}>
+            {formatTimestamp(chat.timestamp)}
+          </Text>
+        </View>
+
+        <View style={styles.previewRow}>
+          <Text style={styles.preview} numberOfLines={1}>
+            {chat.preview}
+          </Text>
+          <View style={styles.messageCountBadge}>
+            <Text style={styles.messageCountText}>{chat.messageCount}</Text>
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.actionsContainer}>
+        {onTogglePin && (
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => onTogglePin(chat.id, !chat.isPinned)}
+            activeOpacity={0.7}
+          >
+            <Ionicons
+              name={chat.isPinned ? 'pin' : 'pin-outline'}
+              size={18}
+              color={chat.isPinned ? '#007AFF' : '#999999'}
+            />
+          </TouchableOpacity>
+        )}
+        {onDelete && (
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => onDelete(chat.id)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="trash-outline" size={18} color="#ff6b6b" />
+          </TouchableOpacity>
+        )}
+      </View>
+    </TouchableOpacity>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 12,
+    marginHorizontal: 16,
+    marginVertical: 6,
+    borderWidth: 1,
+    borderColor: '#e1e5e9',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  iconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f8f9fa',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  contentContainer: {
+    flex: 1,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  titleRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  pinIcon: {
+    marginRight: 4,
+  },
+  title: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000000',
+    fontFamily: 'System',
+    marginRight: 8,
+  },
+  timestamp: {
+    fontSize: 12,
+    color: '#999999',
+    fontFamily: 'System',
+  },
+  previewRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  preview: {
+    flex: 1,
+    fontSize: 14,
+    color: '#666666',
+    fontFamily: 'System',
+    marginRight: 8,
+  },
+  messageCountBadge: {
+    backgroundColor: '#f0f0f0',
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    minWidth: 24,
+    alignItems: 'center',
+  },
+  messageCountText: {
+    fontSize: 11,
+    color: '#666666',
+    fontWeight: '600',
+    fontFamily: 'System',
+  },
+  actionsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginLeft: 8,
+  },
+  actionButton: {
+    padding: 8,
+  },
+});

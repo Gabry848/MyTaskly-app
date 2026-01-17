@@ -1,12 +1,13 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { View, KeyboardAvoidingView, Platform, SafeAreaView, Alert, Keyboard, Dimensions } from 'react-native';
 import { sendMessageToBot, createNewChat, formatMessage, clearChatHistory } from '../../services/botservice';
-import { 
-  ChatHeader, 
-  ChatInput, 
-  ChatList, 
+import { getChatWithMessages, ChatMessage } from '../../services/chatHistoryService';
+import {
+  ChatHeader,
+  ChatInput,
+  ChatList,
   Message,
-  chatStyles 
+  chatStyles
 } from '../../components/BotChat';
 
 const BotChat: React.FC = () => {
@@ -14,6 +15,7 @@ const BotChat: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [modelType, setModelType] = useState<'base' | 'advanced'>('base');
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   
   // Costanti
   const USER = 'user';
@@ -82,53 +84,124 @@ const BotChat: React.FC = () => {
       keyboardDidHideListener?.remove();
     };
   }, [deviceType]);
-  // Funzione per inizializzare la chat con messaggi di benvenuto
+  // Funzione per inizializzare la chat creando una nuova sessione sul server
   const initializeChat = async () => {
-    const welcomeMessages = await createNewChat();
-    setMessages(welcomeMessages as Message[]);
+    try {
+      // Crea una nuova sessione chat sul server
+      const chatId = await createNewChat();
+      setCurrentChatId(chatId);
+      setMessages([]);
+      console.log('✅ Nuova chat inizializzata con ID:', chatId);
+    } catch (error) {
+      console.error('❌ Errore durante l\'inizializzazione della chat:', error);
+      // In caso di errore, continua comunque senza chat_id (modalità offline)
+      setCurrentChatId(null);
+      setMessages([]);
+    }
+  };
+
+  // Funzione per caricare una chat esistente dal server
+  const loadExistingChat = async (chatId: string) => {
+    try {
+      console.log('📥 Caricamento chat esistente:', chatId);
+
+      // Recupera la chat con tutti i suoi messaggi dal server
+      const chatData = await getChatWithMessages(chatId);
+
+      // Trasforma i messaggi dall'API al formato UI
+      const transformedMessages: Message[] = chatData.messages.map((apiMsg: ChatMessage) => ({
+        id: apiMsg.message_id.toString(),
+        text: apiMsg.content,
+        sender: apiMsg.role === 'user' ? USER : BOT,
+        start_time: new Date(apiMsg.created_at),
+        modelType: apiMsg.model as 'base' | 'advanced' | undefined,
+        isStreaming: false,
+        isComplete: true,
+      }));
+
+      setCurrentChatId(chatId);
+      setMessages(transformedMessages);
+
+      console.log('✅ Chat caricata con successo:', {
+        chatId,
+        title: chatData.title,
+        messageCount: transformedMessages.length
+      });
+    } catch (error) {
+      console.error('❌ Errore durante il caricamento della chat:', error);
+      Alert.alert(
+        'Errore',
+        'Impossibile caricare la chat. Riprova più tardi.',
+        [{ text: 'OK' }]
+      );
+    }
   };
 
   // Handler per creare una nuova chat
   const handleNewChat = () => {
-    Alert.alert(
-      "Nuova Chat",
-      "Vuoi creare una nuova chat? Tutti i messaggi attuali verranno eliminati sia localmente che dal server.",
-      [
-        {
-          text: "Annulla",
-          style: "cancel"
-        },
-        {
-          text: "Conferma",
-          onPress: async () => {
-            try {
-              // Elimina la cronologia dal server
-              const serverCleared = await clearChatHistory();
-              
-              if (!serverCleared) {
-                // Mostra un avviso ma procedi comunque con la pulizia locale
-                Alert.alert(
-                  "Avviso",
-                  "Non è stato possibile eliminare la cronologia dal server, ma la chat locale verrà comunque resettata.",
-                  [{ text: "OK", onPress: () => initializeChat() }]
-                );
-              } else {
-                // Tutto ok, procedi con la pulizia locale
-                await initializeChat();
-              }
-            } catch (error) {
-              console.error("Errore durante il reset della chat:", error);
-              // In caso di errore, procedi comunque con la pulizia locale
-              Alert.alert(
-                "Errore",
-                "Si è verificato un errore durante l'eliminazione della cronologia dal server, ma la chat locale verrà resettata.",
-                [{ text: "OK", onPress: () => initializeChat() }]
-              );
+    // Se c'è una chat aperta, semplicemente pulisci e esci dalla sessione
+    if (currentChatId) {
+      Alert.alert(
+        "Pulisci Chat",
+        "Vuoi pulire la chat corrente? I messaggi verranno rimossi localmente ma la cronologia sul server rimarrà intatta.",
+        [
+          {
+            text: "Annulla",
+            style: "cancel"
+          },
+          {
+            text: "Conferma",
+            onPress: () => {
+              // Pulisci solo localmente senza creare una nuova sessione
+              setMessages([]);
+              setCurrentChatId(null);
+              console.log('✅ Chat pulita e uscito dalla sessione');
             }
           }
-        }
-      ]
-    );
+        ]
+      );
+    } else {
+      // Se non c'è una chat aperta, crea una nuova sessione
+      Alert.alert(
+        "Nuova Chat",
+        "Vuoi creare una nuova chat? Tutti i messaggi attuali verranno eliminati sia localmente che dal server.",
+        [
+          {
+            text: "Annulla",
+            style: "cancel"
+          },
+          {
+            text: "Conferma",
+            onPress: async () => {
+              try {
+                // Elimina la cronologia dal server
+                const serverCleared = await clearChatHistory();
+
+                if (!serverCleared) {
+                  // Mostra un avviso ma procedi comunque con la pulizia locale
+                  Alert.alert(
+                    "Avviso",
+                    "Non è stato possibile eliminare la cronologia dal server, ma la chat locale verrà comunque resettata.",
+                    [{ text: "OK", onPress: () => initializeChat() }]
+                  );
+                } else {
+                  // Tutto ok, procedi con la pulizia locale
+                  await initializeChat();
+                }
+              } catch (error) {
+                console.error("Errore durante il reset della chat:", error);
+                // In caso di errore, procedi comunque con la pulizia locale
+                Alert.alert(
+                  "Errore",
+                  "Si è verificato un errore durante l'eliminazione della cronologia dal server, ma la chat locale verrà resettata.",
+                  [{ text: "OK", onPress: () => initializeChat() }]
+                );
+              }
+            }
+          }
+        ]
+      );
+    }
   };
 
   // Handler per cambiare il tipo di modello
@@ -185,15 +258,29 @@ const BotChat: React.FC = () => {
     // 3. Accumulo dati streaming
     let accumulatedText = "";
     let currentWidgets: any[] = [];
+    let receivedChatId: string | undefined;
 
     // 4. Callback per aggiornare UI durante streaming
-    const onStreamChunk = (chunk: string, isComplete: boolean, toolWidgets?: any[]) => {
+    const onStreamChunk = (
+      chunk: string,
+      isComplete: boolean,
+      toolWidgets?: any[],
+      chatInfo?: { chat_id: string; is_new: boolean }
+    ) => {
       if (chunk) {
         accumulatedText += chunk;
       }
 
       if (toolWidgets) {
         currentWidgets = toolWidgets;
+      }
+
+      // Se riceviamo chat_id dal server, aggiorniamo lo stato
+      if (chatInfo?.chat_id) {
+        receivedChatId = chatInfo.chat_id;
+        if (chatInfo.is_new) {
+          console.log('[BotChat] Nuova chat creata automaticamente dal server:', receivedChatId);
+        }
       }
 
       // Aggiorna il messaggio bot con testo + widgets accumulati
@@ -213,17 +300,19 @@ const BotChat: React.FC = () => {
     };
 
     try {
-      // 5. Otteniamo gli ultimi messaggi per contesto
-      const currentMessages = [...messages, userMessage];
-      const lastMessages = currentMessages.slice(-6); // Ultimi 6 messaggi
-
-      // 6. Invia richiesta con streaming callback
+      // 5. Invia richiesta con streaming callback e chat_id
       const result = await sendMessageToBot(
         text,
         modelType,
-        lastMessages,
-        onStreamChunk
+        onStreamChunk,
+        currentChatId || undefined
       );
+
+      // 6. Aggiorna currentChatId se il server ha restituito un chat_id
+      if (result.chat_id && result.chat_id !== currentChatId) {
+        console.log('[BotChat] Aggiornamento chat_id da:', currentChatId, 'a:', result.chat_id);
+        setCurrentChatId(result.chat_id);
+      }
 
       // 7. Aggiornamento finale con dati completi
       const formattedText = formatMessage(result.text);
@@ -261,7 +350,7 @@ const BotChat: React.FC = () => {
         )
       );
     }
-  }, [modelType, messages]);
+  }, [modelType, messages, currentChatId]);
 
   const keyboardConfig = getKeyboardAvoidingViewConfig();
   // Per iPad, usiamo un approccio ibrido: KeyboardAvoidingView con offset minimo
