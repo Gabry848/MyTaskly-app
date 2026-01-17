@@ -48,9 +48,18 @@ export const ChatHistory: React.FC<ChatHistoryProps> = ({
   const [hasMore, setHasMore] = useState<boolean>(true);
   const [skip, setSkip] = useState<number>(0);
   const LIMIT = 20;
+  const isLoadingRef = React.useRef<boolean>(false);
 
   const loadChatHistory = async (reset: boolean = false) => {
+    // Prevent concurrent loads
+    if (isLoadingRef.current && !reset) {
+      console.log('[ChatHistory] Already loading, skipping...');
+      return;
+    }
+
     try {
+      isLoadingRef.current = true;
+
       if (reset) {
         setLoading(true);
         setSkip(0);
@@ -81,6 +90,7 @@ export const ChatHistory: React.FC<ChatHistoryProps> = ({
       setLoading(false);
       setLoadingMore(false);
       setRefreshing(false);
+      isLoadingRef.current = false;
     }
   };
 
@@ -93,6 +103,7 @@ export const ChatHistory: React.FC<ChatHistoryProps> = ({
 
   const handlePullRefresh = async () => {
     setRefreshing(true);
+    isLoadingRef.current = false; // Reset flag to allow refresh
     await loadChatHistory(true);
     if (onRefresh) {
       onRefresh();
@@ -140,6 +151,7 @@ export const ChatHistory: React.FC<ChatHistoryProps> = ({
   };
 
   const handleRefresh = () => {
+    isLoadingRef.current = false; // Reset flag to allow refresh
     loadChatHistory(true);
     if (onRefresh) {
       onRefresh();
@@ -147,6 +159,7 @@ export const ChatHistory: React.FC<ChatHistoryProps> = ({
   };
 
   useEffect(() => {
+    // Load chat history only once on mount
     loadChatHistory(true);
   }, []);
   const renderHeader = () => (

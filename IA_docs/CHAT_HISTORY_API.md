@@ -36,18 +36,18 @@ Il sistema di **Chat History** di MyTaskly permette agli utenti di gestire sessi
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                     CLIENT APPLICATION                       │
+│                     CLIENT APPLICATION                      │
 └────────────────────┬────────────────────────────────────────┘
                      │
                      ▼
 ┌─────────────────────────────────────────────────────────────┐
-│              API Routes (chat_history.py)                    │
+│              API Routes (chat_history.py)                   │
 │  POST /           GET /         PATCH /{id}   DELETE /{id}  │
 └────────────────────┬────────────────────────────────────────┘
                      │
                      ▼
 ┌─────────────────────────────────────────────────────────────┐
-│          Service Layer (chat_history_service.py)             │
+│          Service Layer (chat_history_service.py)            │
 │  - create_new_chat()      - list_user_chats()               │
 │  - add_message_to_chat()  - update_chat_title()             │
 │  - get_chat_history()     - toggle_chat_pin()               │
@@ -56,7 +56,7 @@ Il sistema di **Chat History** di MyTaskly permette agli utenti di gestire sessi
                      │
                      ▼
 ┌─────────────────────────────────────────────────────────────┐
-│          CRUD Layer (chat_session & chat_message)            │
+│          CRUD Layer (chat_session & chat_message)           │
 │  - create_chat_session()   - get_user_chat_sessions()       │
 │  - create_chat_message()   - update_chat_session()          │
 │  - get_chat_session()      - delete_chat_session()          │
@@ -64,8 +64,8 @@ Il sistema di **Chat History** di MyTaskly permette agli utenti di gestire sessi
                      │
                      ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                  Database (PostgreSQL)                       │
-│         ChatSession Table    │    ChatMessage Table          │
+│                  Database (PostgreSQL)                      │
+│         ChatSession Table    │    ChatMessage Table         │
 └─────────────────────────────────────────────────────────────┘
 ```
 
