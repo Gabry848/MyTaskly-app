@@ -19,13 +19,15 @@ export type StreamingCallback = (
  * @param {string} modelType - Il tipo di modello da utilizzare ('base' o 'advanced')
  * @param {Array} previousMessages - Gli ultimi messaggi scambiati tra utente e bot per il contesto
  * @param {StreamingCallback} onStreamChunk - Callback per ricevere chunk in streaming + widgets (opzionale)
+ * @param {string} chatId - Optional chat ID to save messages to chat history
  * @returns {Promise<{text: string, toolWidgets: ToolWidget[]}>} - La risposta completa del bot con widgets
  */
 export async function sendMessageToBot(
   userMessage: string,
   modelType: "base" | "advanced" = "base",
   previousMessages: any[] = [],
-  onStreamChunk?: StreamingCallback
+  onStreamChunk?: StreamingCallback,
+  chatId?: string
 ): Promise<{text: string, toolWidgets: ToolWidget[]}> {
   try {
     // Verifica che l'utente sia autenticato
@@ -35,10 +37,15 @@ export async function sendMessageToBot(
     }
     
     // Costruisci il payload per la richiesta
-    const requestPayload = {
+    const requestPayload: any = {
       quest: userMessage,
       model: modelType,
     };
+
+    // Aggiungi chat_id se fornito per salvare i messaggi nella cronologia
+    if (chatId) {
+      requestPayload.chat_id = chatId;
+    }
 
     // Invia la richiesta al server con supporto streaming usando expo fetch
     const response = await fetch("https://taskly-production.up.railway.app/chat/text", {
@@ -295,12 +302,24 @@ export async function clearChatHistory(): Promise<boolean> {
 }
 
 /**
- * Crea una nuova chat vuota
- * @returns {Promise<Array>} - Array vuoto per inizializzare una nuova chat
+ * Crea una nuova sessione chat sul server
+ * @param {string} customChatId - Optional custom chat ID
+ * @returns {Promise<string>} - Il chat_id della nuova sessione creata
  */
-export async function createNewChat(): Promise<any[]> {
-  // Restituisce un array vuoto - i messaggi di benvenuto possono essere gestiti dall'UI
-  return [];
+export async function createNewChat(customChatId?: string): Promise<string> {
+  try {
+    // Importa la funzione createChat dal chatHistoryService
+    const { createChat } = await import('./chatHistoryService');
+
+    // Crea la sessione chat sul server
+    const chatData = await createChat(customChatId);
+
+    console.log('✅ Nuova chat creata con ID:', chatData.chat_id);
+    return chatData.chat_id;
+  } catch (error) {
+    console.error('❌ Errore durante la creazione della chat:', error);
+    throw error;
+  }
 }
 
 /**

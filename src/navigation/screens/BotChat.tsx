@@ -1,12 +1,13 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { View, KeyboardAvoidingView, Platform, SafeAreaView, Alert, Keyboard, Dimensions } from 'react-native';
 import { sendMessageToBot, createNewChat, formatMessage, clearChatHistory } from '../../services/botservice';
-import { 
-  ChatHeader, 
-  ChatInput, 
-  ChatList, 
+import { getChatWithMessages, ChatMessage } from '../../services/chatHistoryService';
+import {
+  ChatHeader,
+  ChatInput,
+  ChatList,
   Message,
-  chatStyles 
+  chatStyles
 } from '../../components/BotChat';
 
 const BotChat: React.FC = () => {
@@ -14,6 +15,7 @@ const BotChat: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [modelType, setModelType] = useState<'base' | 'advanced'>('base');
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   
   // Costanti
   const USER = 'user';
@@ -82,10 +84,57 @@ const BotChat: React.FC = () => {
       keyboardDidHideListener?.remove();
     };
   }, [deviceType]);
-  // Funzione per inizializzare la chat con messaggi di benvenuto
+  // Funzione per inizializzare la chat creando una nuova sessione sul server
   const initializeChat = async () => {
-    const welcomeMessages = await createNewChat();
-    setMessages(welcomeMessages as Message[]);
+    try {
+      // Crea una nuova sessione chat sul server
+      const chatId = await createNewChat();
+      setCurrentChatId(chatId);
+      setMessages([]);
+      console.log('✅ Nuova chat inizializzata con ID:', chatId);
+    } catch (error) {
+      console.error('❌ Errore durante l\'inizializzazione della chat:', error);
+      // In caso di errore, continua comunque senza chat_id (modalità offline)
+      setCurrentChatId(null);
+      setMessages([]);
+    }
+  };
+
+  // Funzione per caricare una chat esistente dal server
+  const loadExistingChat = async (chatId: string) => {
+    try {
+      console.log('📥 Caricamento chat esistente:', chatId);
+
+      // Recupera la chat con tutti i suoi messaggi dal server
+      const chatData = await getChatWithMessages(chatId);
+
+      // Trasforma i messaggi dall'API al formato UI
+      const transformedMessages: Message[] = chatData.messages.map((apiMsg: ChatMessage) => ({
+        id: apiMsg.message_id.toString(),
+        text: apiMsg.content,
+        sender: apiMsg.role === 'user' ? USER : BOT,
+        start_time: new Date(apiMsg.created_at),
+        modelType: apiMsg.model as 'base' | 'advanced' | undefined,
+        isStreaming: false,
+        isComplete: true,
+      }));
+
+      setCurrentChatId(chatId);
+      setMessages(transformedMessages);
+
+      console.log('✅ Chat caricata con successo:', {
+        chatId,
+        title: chatData.title,
+        messageCount: transformedMessages.length
+      });
+    } catch (error) {
+      console.error('❌ Errore durante il caricamento della chat:', error);
+      Alert.alert(
+        'Errore',
+        'Impossibile caricare la chat. Riprova più tardi.',
+        [{ text: 'OK' }]
+      );
+    }
   };
 
   // Handler per creare una nuova chat
@@ -217,12 +266,13 @@ const BotChat: React.FC = () => {
       const currentMessages = [...messages, userMessage];
       const lastMessages = currentMessages.slice(-6); // Ultimi 6 messaggi
 
-      // 6. Invia richiesta con streaming callback
+      // 6. Invia richiesta con streaming callback e chat_id
       const result = await sendMessageToBot(
         text,
         modelType,
         lastMessages,
-        onStreamChunk
+        onStreamChunk,
+        currentChatId || undefined
       );
 
       // 7. Aggiornamento finale con dati completi
@@ -261,7 +311,7 @@ const BotChat: React.FC = () => {
         )
       );
     }
-  }, [modelType, messages]);
+  }, [modelType, messages, currentChatId]);
 
   const keyboardConfig = getKeyboardAvoidingViewConfig();
   // Per iPad, usiamo un approccio ibrido: KeyboardAvoidingView con offset minimo
