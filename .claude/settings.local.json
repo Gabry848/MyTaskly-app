@@ -49,7 +49,8 @@
       "Bash(grep:*)",
       "Bash(powershell -Command \"Get-Content ''e:\\\\MyTaskly\\\\MyTaskly-app\\\\src\\\\locales\\\\en.json'' | Select-Object -Last 20\")",
       "Bash(powershell -Command \"Get-Content ''e:\\\\MyTaskly\\\\MyTaskly-app\\\\src\\\\locales\\\\it.json'' | Select-Object -Last 20\")",
-      "Bash(npm ls:*)"
+      "Bash(npm ls:*)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"

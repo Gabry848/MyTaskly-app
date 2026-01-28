@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Platform, Alert } from 'react-native';
+import { Platform, Alert, Linking } from 'react-native';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
@@ -15,14 +15,63 @@ const PENDING_TOKEN_KEY = '@MyTaskly:pendingNotificationToken';
 
 // ⚙️ CONFIGURA COME GESTIRE LE NOTIFICHE
 Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,    // Mostra il popup quando l'app è aperta
-    shouldPlaySound: true,    // Riproduce il suono
-    shouldSetBadge: true,     // Aggiorna il badge dell'app
-    shouldShowBanner: true,   // Mostra il banner
-    shouldShowList: true,     // Mostra nella lista notifiche
-  }),
+  handleNotification: async (notification) => {
+    console.log('🔔 [HANDLER] Notifica in arrivo:', notification.request.content.title);
+    console.log('🔔 [HANDLER] Dati notifica:', JSON.stringify(notification.request.content));
+    return {
+      shouldPlaySound: true,    // Riproduce il suono
+      shouldSetBadge: true,     // Aggiorna il badge dell'app
+      shouldShowBanner: true,   // Mostra il banner in foreground
+      shouldShowList: true,     // Mostra nella lista notifiche
+    };
+  },
 });
+
+console.log('🔔 [INIT] NotificationHandler configurato');
+
+/**
+ * Funzione per verificare e richiedere l'esclusione dalla battery optimization
+ * CRITICO per ricevere notifiche in stand-by su Android
+ */
+export async function checkBatteryOptimization(): Promise<void> {
+  if (Platform.OS !== 'android') {
+    return;
+  }
+
+  try {
+    console.log('🔋 Verifica battery optimization...');
+
+    // Mostra un alert educativo all'utente
+    Alert.alert(
+      '🔋 Impostazioni Batteria Importanti',
+      'Per ricevere notifiche anche quando il telefono è in stand-by, devi disabilitare l\'ottimizzazione della batteria per MyTaskly.\n\nQuesto permetterà all\'app di svegliarsi per mostrarti le notifiche dei task in scadenza.',
+      [
+        {
+          text: 'Annulla',
+          style: 'cancel',
+        },
+        {
+          text: 'Apri Impostazioni',
+          onPress: async () => {
+            try {
+              // Apri le impostazioni dell'app
+              await Linking.openSettings();
+              console.log('✅ Impostazioni aperte');
+            } catch (error) {
+              console.error('❌ Errore apertura impostazioni:', error);
+              Alert.alert(
+                'Errore',
+                'Non è stato possibile aprire le impostazioni automaticamente.\n\nApri manualmente: Impostazioni > App > MyTaskly > Batteria > Non ottimizzare'
+              );
+            }
+          },
+        },
+      ]
+    );
+  } catch (error) {
+    console.error('❌ Errore verifica battery optimization:', error);
+  }
+}
 
 /**
  * Funzione per ottenere i permessi e il token push
@@ -46,12 +95,19 @@ export async function registerForPushNotificationsAsync(): Promise<string | unde
   if (Platform.OS === 'android') {
     console.log('📱 Configurazione canale Android...');
     await Notifications.setNotificationChannelAsync('default', {
-      name: 'default',
+      name: 'Task Reminders',
+      description: 'Notifiche per i promemoria dei task',
       importance: Notifications.AndroidImportance.MAX,
       vibrationPattern: [0, 250, 250, 250],
       lightColor: '#FF231F7C',
+      sound: 'default',
+      enableLights: true,
+      enableVibrate: true,
+      showBadge: true,
+      lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+      bypassDnd: true, // Bypassare la modalità Non Disturbare
     });
-    console.log('✅ Canale Android configurato');
+    console.log('✅ Canale Android configurato con priorità massima');
   }
 
   // 📋 Controlla se è un dispositivo fisico
@@ -83,7 +139,18 @@ export async function registerForPushNotificationsAsync(): Promise<string | unde
     }
     
     console.log('✅ Permessi notifiche concessi');
-    
+
+    // 🔋 VERIFICA BATTERY OPTIMIZATION (critico per notifiche in stand-by)
+    // Mostra questo prompt solo una volta per non disturbare l'utente
+    const batteryPromptShown = await AsyncStorage.getItem('@MyTaskly:batteryPromptShown');
+    if (Platform.OS === 'android' && !batteryPromptShown) {
+      // Ritarda leggermente per non sovrapporre con altri alert
+      setTimeout(() => {
+        checkBatteryOptimization();
+        AsyncStorage.setItem('@MyTaskly:batteryPromptShown', 'true');
+      }, 1000);
+    }
+
     // 🎯 OTTIENI IL TOKEN EXPO
     const projectId = Constants?.expoConfig?.extra?.eas?.projectId 
                    ?? Constants?.easConfig?.projectId;
@@ -418,5 +485,6 @@ export function useNotifications() {
     expoPushToken,
     notification,
     sendTestNotification: () => sendTestNotification(),
+    checkBatteryOptimization: () => checkBatteryOptimization(),
   };
 }

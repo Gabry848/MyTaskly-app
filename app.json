@@ -31,7 +31,10 @@
       "package": "com.Gabry848Studio.Mytaskly",
       "permissions": [
         "android.permission.RECORD_AUDIO",
-        "android.permission.MODIFY_AUDIO_SETTINGS"
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.WAKE_LOCK"
       ],
       "googleServicesFile": "./google-services.json",
       "jsEngine": "jsc"

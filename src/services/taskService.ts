@@ -153,7 +153,6 @@ export async function getTasks(categoryIdentifier?: string | number, useCache: b
             "Content-Type": "application/json",
           },
         });
-        console.log(`[TASK_SERVICE] Risposta API per category_id ${categoryIdentifier}:`, response.data);
 
         // Salva i task ricevuti in cache per uso futuro
         if (useCache && response.data && Array.isArray(response.data)) {
@@ -173,21 +172,17 @@ export async function getTasks(categoryIdentifier?: string | number, useCache: b
           const categories = await cacheService.getCachedCategories();
 
           await cacheService.saveTasks(updatedCache, categories);
-          console.log(`[TASK_SERVICE] ✅ Salvati ${tasksToCache.length} task in cache per category_id ${categoryIdentifier}`);
         }
 
         return response.data;
       } else {
         // Fallback al vecchio endpoint per retrocompatibilità
-        console.log(`[TASK_SERVICE] Richiesta API per categoria (deprecato): "${categoryIdentifier}"`);
         const encodedCategoryName = String(categoryIdentifier).replace(/ /g, "%20");
-        console.log(`[TASK_SERVICE] Nome categoria codificato: "${encodedCategoryName}"`);
         const response = await axios.get(`/tasks/${encodedCategoryName}`, {
           headers: {
             "Content-Type": "application/json",
           },
         });
-        console.log(`[TASK_SERVICE] Risposta API per categoria "${categoryIdentifier}":`, response.data);
 
         // Salva i task ricevuti in cache per uso futuro
         if (useCache && response.data && Array.isArray(response.data)) {
@@ -208,7 +203,6 @@ export async function getTasks(categoryIdentifier?: string | number, useCache: b
           const categories = await cacheService.getCachedCategories();
 
           await cacheService.saveTasks(updatedCache, categories);
-          console.log(`[TASK_SERVICE] ✅ Salvati ${tasksToCache.length} task in cache per categoria "${categoryIdentifier}"`);
         }
 
         return response.data;
