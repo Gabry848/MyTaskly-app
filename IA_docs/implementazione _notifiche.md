@@ -155,9 +155,7 @@ export default function App() {
     });
 
     // 👆 ASCOLTA QUANDO L'UTENTE TOCCA UNA NOTIFICA
-    responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
-      console.log('👆 Notifica toccata:', response);
-      
+    responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {     
       const notificationData = response.notification.request.content.data;
       
       // Se è una notifica di task, naviga al task

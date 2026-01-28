@@ -16,18 +16,16 @@ const PENDING_TOKEN_KEY = '@MyTaskly:pendingNotificationToken';
 // ⚙️ CONFIGURA COME GESTIRE LE NOTIFICHE
 Notifications.setNotificationHandler({
   handleNotification: async (notification) => {
-    console.log('🔔 [HANDLER] Notifica in arrivo:', notification.request.content.title);
-    console.log('🔔 [HANDLER] Dati notifica:', JSON.stringify(notification.request.content));
+    console.log('🔔 Notifica ricevuta:', notification.request.content.title);
     return {
-      shouldPlaySound: true,    // Riproduce il suono
-      shouldSetBadge: true,     // Aggiorna il badge dell'app
-      shouldShowBanner: true,   // Mostra il banner in foreground
-      shouldShowList: true,     // Mostra nella lista notifiche
+      shouldPlaySound: true,
+      shouldSetBadge: true,
+      shouldShowBanner: true,
+      shouldShowList: true,
     };
   },
 });
 
-console.log('🔔 [INIT] NotificationHandler configurato');
 
 /**
  * Funzione per verificare e richiedere l'esclusione dalla battery optimization
@@ -442,7 +440,6 @@ export function useNotifications() {
 
     // 📨 ASCOLTA NOTIFICHE RICEVUTE (quando l'app è aperta)
     notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
-      console.log('📨 Notifica ricevuta:', notification);
       setNotification(notification);
       
       // Puoi fare azioni specifiche qui

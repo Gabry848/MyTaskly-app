@@ -344,13 +344,6 @@ function AppStack() {
     };
   }, []);
 
-  // Log delle notifiche ricevute per debug
-  useEffect(() => {
-    if (notification) {
-      console.log("🔔 Notifica ricevuta nell'app:", notification.request.content);
-    }
-  }, [notification]);
-
   // Mostra un loading screen mentre controlla l'autenticazione
   if (isLoading) {
     return null; // O un componente di loading se preferisci
