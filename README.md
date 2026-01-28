@@ -93,10 +93,33 @@ GOOGLE_WEB_CLIENT_ID=your_google_client_id
 GOOGLE_ANDROID_CLIENT_ID=your_google_android_client_id
 ```
 
-Place these files in root directory:
+### Firebase Configuration (Required)
 
-- `google-services.json` (Android)
-- `GoogleService-Info.plist` (iOS, in ios folder)
+MyTaskly uses Firebase for push notifications and Google Sign-In. You need to configure Firebase:
+
+#### Android Setup
+
+1. Go to [Firebase Console](https://console.firebase.google.com/)
+2. Create a new project or select an existing one
+3. Add an Android app with package name: `com.Gabry848Studio.Mytaskly`
+4. Download `google-services.json`
+5. Place it in the **root directory** of the project
+6. A template is provided: `google-services.json.example`
+
+#### iOS Setup
+
+1. In Firebase Console, add an iOS app
+2. Download `GoogleService-Info.plist`
+3. Place it in the `ios/` folder
+
+#### Security Best Practices
+
+> **IMPORTANT**: Never commit `google-services.json` or `GoogleService-Info.plist` to version control!
+> These files are already in `.gitignore` for your protection.
+
+For additional security, configure API key restrictions in [Google Cloud Console](https://console.cloud.google.com/apis/credentials):
+- Restrict Android API key to your app's package name and SHA-1 fingerprint
+- Restrict iOS API key to your app's bundle ID
 
 ### Run the App
 
