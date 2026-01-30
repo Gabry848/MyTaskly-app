@@ -12,7 +12,7 @@ import {
   Alert
 } from "react-native";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
-import { useVoiceChat, VoiceChatState } from '../../hooks/useVoiceChat';
+import { useVoiceChat } from '../../hooks/useVoiceChat';
 
 export interface VoiceChatModalProps {
   visible: boolean;
@@ -26,7 +26,6 @@ const { height } = Dimensions.get("window");
 const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
   visible,
   onClose,
-  isRecording: externalIsRecording = false,
   onVoiceResponse,
 }) => {
   const {
@@ -38,12 +37,13 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
     isProcessing,
     isSpeaking,
     isSpeechActive,
+    transcripts,
+    activeTools,
     connect,
     disconnect,
-    stopRecording,
     cancelRecording,
     stopPlayback,
-    sendControl,
+    sendInterrupt,
     requestPermissions,
   } = useVoiceChat();
 
@@ -53,6 +53,16 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
   const slideIn = useRef(new Animated.Value(height)).current;
   const fadeIn = useRef(new Animated.Value(0)).current;
   const recordingScale = useRef(new Animated.Value(1)).current;
+
+  // Notifica trascrizioni assistant al parent
+  useEffect(() => {
+    if (onVoiceResponse && transcripts.length > 0) {
+      const last = transcripts[transcripts.length - 1];
+      if (last.role === 'assistant') {
+        onVoiceResponse(last.content);
+      }
+    }
+  }, [transcripts, onVoiceResponse]);
 
   // Animazione di entrata del modal
   useEffect(() => {
@@ -199,32 +209,44 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
     }
   };
 
-  // Render dello stato - versione minimale
+  // Render dello stato
   const renderStateIndicator = () => {
-    if (state === 'connecting') {
-      return <Text style={styles.subtleText}>Connessione in corso...</Text>;
+    switch (state) {
+      case 'connecting':
+      case 'authenticating':
+        return <Text style={styles.subtleText}>Connessione in corso...</Text>;
+      case 'setting_up':
+        return <Text style={styles.subtleText}>Preparazione assistente...</Text>;
+      case 'error':
+        return <Text style={styles.subtleText}>Qualcosa è andato storto</Text>;
+      case 'recording':
+        return <Text style={styles.subtleText}>{isSpeechActive ? 'Ti ascolto...' : 'Parla quando vuoi'}</Text>;
+      case 'processing':
+        if (activeTools.some(t => t.status === 'running')) {
+          return <Text style={styles.subtleText}>Sto eseguendo azioni...</Text>;
+        }
+        return <Text style={styles.subtleText}>Sto pensando...</Text>;
+      case 'speaking':
+        return <Text style={styles.subtleText}>Rispondo...</Text>;
+      case 'ready':
+        return <Text style={styles.subtleText}>Parla quando vuoi</Text>;
+      default:
+        return null;
     }
-
-    if (state === 'error') {
-      return <Text style={styles.subtleText}>Qualcosa è andato storto</Text>;
-    }
-
-    if (isRecording && isSpeechActive) {
-      return <Text style={styles.subtleText}>Ti ascolto...</Text>;
-    }
-
-    if (isProcessing || isSpeaking) {
-      return <Text style={styles.subtleText}>Sto pensando...</Text>;
-    }
-
-    if (isConnected && !isRecording) {
-      return <Text style={styles.subtleText}>Parla quando vuoi</Text>;
-    }
-
-    return null;
   };
 
-  // Render del pulsante principale - versione minimale
+  // Mostra l'ultima trascrizione
+  const renderLastTranscript = () => {
+    if (transcripts.length === 0) return null;
+    const last = transcripts[transcripts.length - 1];
+    return (
+      <Text style={styles.transcriptText} numberOfLines={3}>
+        {last.role === 'user' ? 'Tu: ' : ''}{last.content}
+      </Text>
+    );
+  };
+
+  // Render del pulsante principale
   const renderMainButton = () => {
     // Stato: elaborazione o risposta in corso
     if (isProcessing || isSpeaking) {
@@ -239,8 +261,8 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
       );
     }
 
-    // Stato: connessione
-    if (state === 'connecting') {
+    // Stato: connessione / setup
+    if (state === 'connecting' || state === 'authenticating' || state === 'setting_up') {
       return (
         <Animated.View style={styles.microphoneCircle}>
           <ActivityIndicator size="large" color="#fff" />
@@ -305,8 +327,7 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
       <TouchableOpacity
         style={styles.stopButton}
         onPress={() => {
-          if (isSpeaking) stopPlayback();
-          if (isProcessing) sendControl('cancel');
+          sendInterrupt();
         }}
         activeOpacity={0.7}
       >
@@ -388,6 +409,9 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
           {/* Pulsante stop durante elaborazione */}
           {renderStopButton()}
 
+          {/* Ultima trascrizione */}
+          {renderLastTranscript()}
+
           {/* Messaggio di errore minimalista */}
           {error && (
             <View style={styles.errorContainer}>
@@ -448,6 +472,15 @@ const styles = StyleSheet.create({
     color: "rgba(255, 255, 255, 0.5)",
     textAlign: "center",
     marginBottom: 52,
+    fontFamily: "System",
+  },
+  transcriptText: {
+    fontSize: 13,
+    fontWeight: "300",
+    color: "rgba(255, 255, 255, 0.4)",
+    textAlign: "center",
+    marginTop: 32,
+    maxWidth: "85%",
     fontFamily: "System",
   },
   microphoneContainer: {

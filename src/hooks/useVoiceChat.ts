@@ -1,20 +1,21 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { VoiceBotWebSocket, VoiceChatCallbacks } from '../services/botservice';
+import { VoiceBotWebSocket, VoiceChatCallbacks, VoiceServerPhase } from '../services/botservice';
 import { AudioRecorder, AudioPlayer, checkAudioPermissions, VADCallbacks } from '../utils/audioUtils';
-import { debugAudioDependencies } from '../utils/audioDebug';
 
 /**
  * Stati possibili della chat vocale
  */
-export type VoiceChatState = 
-  | 'idle'           // Inattivo
-  | 'connecting'     // Connessione in corso
-  | 'connected'      // Connesso e pronto
-  | 'recording'      // Registrazione audio utente
-  | 'processing'     // Elaborazione server (trascrizione/IA)
-  | 'speaking'       // Riproduzione risposta bot
-  | 'error'          // Stato di errore
-  | 'disconnected';  // Disconnesso
+export type VoiceChatState =
+  | 'idle'            // Inattivo
+  | 'connecting'      // Connessione WebSocket in corso
+  | 'authenticating'  // Autenticazione in corso
+  | 'setting_up'      // Server sta configurando MCP + RealtimeAgent
+  | 'ready'           // Pronto per ricevere input
+  | 'recording'       // Registrazione audio utente
+  | 'processing'      // Agent sta elaborando
+  | 'speaking'        // Riproduzione risposta audio
+  | 'error'           // Stato di errore
+  | 'disconnected';   // Disconnesso
 
 /**
  * Informazioni sullo stato del server
@@ -25,8 +26,25 @@ export interface ServerStatus {
 }
 
 /**
+ * Trascrizione di un messaggio vocale
+ */
+export interface VoiceTranscript {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+/**
+ * Tool in esecuzione
+ */
+export interface ActiveTool {
+  name: string;
+  status: 'running' | 'complete';
+  output?: string;
+}
+
+/**
  * Hook personalizzato per la gestione della chat vocale
- * Integra WebSocket, registrazione audio, e riproduzione
+ * Compatibile con l'OpenAI Realtime API tramite WebSocket
  */
 export function useVoiceChat() {
   // Stati principali
@@ -35,25 +53,22 @@ export function useVoiceChat() {
   const [serverStatus, setServerStatus] = useState<ServerStatus | null>(null);
   const [recordingDuration, setRecordingDuration] = useState<number>(0);
   const [hasPermissions, setHasPermissions] = useState<boolean>(false);
+  const [chunksReceived, setChunksReceived] = useState<number>(0);
+
+  // Trascrizioni e tool
+  const [transcripts, setTranscripts] = useState<VoiceTranscript[]>([]);
+  const [activeTools, setActiveTools] = useState<ActiveTool[]>([]);
+
+  // VAD states (feedback UI)
+  const [audioLevel, setAudioLevel] = useState<number>(-160);
+  const [isSpeechActive, setIsSpeechActive] = useState<boolean>(false);
 
   // Refs per gestire le istanze
   const websocketRef = useRef<VoiceBotWebSocket | null>(null);
   const audioRecorderRef = useRef<AudioRecorder | null>(null);
   const audioPlayerRef = useRef<AudioPlayer | null>(null);
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const lastChunkIndexRef = useRef<number | null>(null);
-
-  const [isReceivingAudio, setIsReceivingAudio] = useState<boolean>(false);
-  const [chunksReceived, setChunksReceived] = useState<number>(0);
-
-  // Chunk timing diagnostics
-  const lastChunkTimeRef = useRef<number>(0);
-  const chunkTimingsRef = useRef<number[]>([]);
-
-  // VAD states (sempre attivo di default)
-  const [vadEnabled, setVadEnabled] = useState<boolean>(true);
-  const [audioLevel, setAudioLevel] = useState<number>(-160);
-  const [isSpeechActive, setIsSpeechActive] = useState<boolean>(false);
+  const shouldAutoStartRecordingRef = useRef<boolean>(false);
 
   /**
    * Verifica e richiede i permessi audio
@@ -62,12 +77,12 @@ export function useVoiceChat() {
     try {
       const granted = await checkAudioPermissions();
       setHasPermissions(granted);
-      
+
       if (!granted) {
         setError('Permessi microfono richiesti per la chat vocale');
         setState('error');
       }
-      
+
       return granted;
     } catch (err) {
       console.error('Errore richiesta permessi:', err);
@@ -77,29 +92,49 @@ export function useVoiceChat() {
     }
   }, []);
 
-
   /**
-   * Ref per gestire l'avvio automatico della registrazione dopo autenticazione
+   * VAD Callbacks — solo per feedback UI, il turn detection e' gestito dal server
    */
-  const shouldAutoStartRecordingRef = useRef<boolean>(false);
+  const vadCallbacks: VADCallbacks = {
+    onSpeechStart: () => {
+      setIsSpeechActive(true);
+    },
+    onSpeechEnd: () => {
+      setIsSpeechActive(false);
+    },
+    onSilenceDetected: () => {
+      setIsSpeechActive(false);
+    },
+    onAutoStop: async () => {
+      // Client-side VAD rileva silenzio prolungato: ferma registrazione e invia
+      await stopRecording();
+    },
+    onMeteringUpdate: (level: number) => {
+      setAudioLevel(level);
+    },
+  };
 
   /**
    * Callback per gestire i messaggi WebSocket
    */
   const websocketCallbacks: VoiceChatCallbacks = {
     onConnectionOpen: () => {
-      console.log('🎤 WebSocket connesso, in attesa di autenticazione...');
-      // Non impostare 'connected' qui, aspetta l'autenticazione
+      setState('authenticating');
       setError(null);
     },
 
     onAuthenticationSuccess: (message: string) => {
-      console.log('✅ Autenticazione completata:', message);
-      setState('connected');
+      console.log('Autenticazione completata:', message);
+      setState('setting_up');
+      // Aspetta il messaggio "ready" prima di fare qualsiasi cosa
+    },
 
-      // Avvia la registrazione se richiesto
+    onReady: () => {
+      console.log('Sessione vocale pronta');
+      setState('ready');
+
+      // Avvia la registrazione automaticamente se richiesto
       if (shouldAutoStartRecordingRef.current) {
-        console.log('🎤 Avvio registrazione automatica post-autenticazione...');
         shouldAutoStartRecordingRef.current = false;
         setTimeout(() => {
           startRecording();
@@ -107,134 +142,89 @@ export function useVoiceChat() {
       }
     },
 
-    onAuthenticationFailed: (error: string) => {
-      console.error('❌ Autenticazione fallita:', error);
-      setError(`Autenticazione fallita: ${error}`);
+    onAuthenticationFailed: (errorMsg: string) => {
+      console.error('Autenticazione fallita:', errorMsg);
+      setError(`Autenticazione fallita: ${errorMsg}`);
       setState('error');
     },
 
     onConnectionClose: () => {
-      console.log('🎤 WebSocket disconnesso');
       setState('disconnected');
       shouldAutoStartRecordingRef.current = false;
     },
 
-    onStatus: (phase: string, message: string) => {
-      console.log(`📡 Status Server: ${phase} - ${message}`);
+    onStatus: (phase: VoiceServerPhase, message: string) => {
       setServerStatus({ phase, message });
 
       switch (phase) {
-        case 'receiving_audio':
-          // Audio ricevuto dal server
-          console.log('📥 Server sta ricevendo audio...');
-          lastChunkIndexRef.current = null;
-          break;
-        case 'transcription':
-        case 'transcription_complete':
-        case 'ai_processing':
-        case 'ai_complete':
-        case 'tts_generation':
-        case 'tts_complete':
+        case 'agent_start':
           setState('processing');
           break;
-        case 'audio_streaming':
-          setIsReceivingAudio(true);
-          setChunksReceived(0);
-          lastChunkIndexRef.current = null;
-          if (audioPlayerRef.current) {
-            audioPlayerRef.current.clearChunks();
-          }
-          setState('speaking');
+
+        case 'agent_end':
+          // Agent ha finito di elaborare, l'audio potrebbe seguire
           break;
-        case 'complete':
-          console.log('✅ Pipeline completa!');
-          setIsReceivingAudio(false);
-          lastChunkIndexRef.current = null;
 
-          // Reset chunk timing per prossimo ciclo
-          lastChunkTimeRef.current = 0;
-          chunkTimingsRef.current = [];
-
+        case 'audio_end':
+          // Server ha finito di inviare chunk audio -> riproduci
           if (audioPlayerRef.current && audioPlayerRef.current.getChunksCount() > 0) {
-            const bufferedCount = audioPlayerRef.current.getBufferedChunksCount();
-            console.log(`🔊 Ricevuti ${bufferedCount} chunk totali. Avvio riproduzione sequenziale...`);
-
             setState('speaking');
-
-            // Riproduci i chunk uno dopo l'altro (sequenzialmente)
-            // Questo evita problemi di concatenazione MP3
-            audioPlayerRef.current.playChunksSequentially(() => {
-              console.log('🔊 Riproduzione completata, riavvio registrazione...');
-              setState('connected');
-              // Riavvia automaticamente la registrazione per la prossima domanda
+            audioPlayerRef.current.playPcm16Chunks(() => {
+              setState('ready');
+              // Riavvia automaticamente la registrazione per il prossimo turno
               setTimeout(() => {
                 startRecording();
-              }, 500);
+              }, 300);
             });
           } else {
-            console.log('⚠️ Nessun chunk audio ricevuto, riavvio registrazione...');
-            setState('connected');
-            // Riavvia automaticamente la registrazione anche se non ci sono chunk
+            setState('ready');
             setTimeout(() => {
               startRecording();
-            }, 500);
+            }, 300);
           }
+          break;
+
+        case 'interrupted':
+          // Risposta interrotta, torna pronto
+          if (audioPlayerRef.current) {
+            audioPlayerRef.current.stopPlayback();
+            audioPlayerRef.current.clearChunks();
+          }
+          setState('ready');
           break;
       }
     },
 
-    onAudioChunk: (audioData: string, chunkIndex?: number) => {
-      const currentTime = Date.now();
-      
-
-      // Traccia timing inter-arrival
-      if (lastChunkTimeRef.current > 0) {
-        const interArrivalMs = currentTime - lastChunkTimeRef.current;
-        chunkTimingsRef.current.push(interArrivalMs);
-
-        if (interArrivalMs < 10) {
-          console.warn(`🔊 ⚡ Chunk burst: ${interArrivalMs}ms tra chunk #${(lastChunkIndexRef.current ?? -1) + 1} e #${chunkIndex}`);
-        }
-      }
-      lastChunkTimeRef.current = currentTime;
-
-      console.log(`🔊 Ricevuto chunk audio ${typeof chunkIndex === 'number' ? `#${chunkIndex}` : '(senza indice)'}`);
-
-      if (!audioPlayerRef.current) {
-        console.error('🔊 AudioPlayer non inizializzato');
-        return;
-      }
-
-      if (typeof chunkIndex === 'number') {
-        const previousIndex = lastChunkIndexRef.current;
-
-        if (previousIndex !== null) {
-          if (chunkIndex === previousIndex) {
-            console.warn(`🔊 Chunk duplicato #${chunkIndex} ricevuto dal server`);
-          } else if (chunkIndex < previousIndex) {
-            console.warn(`🔊 Chunk fuori ordine: #${chunkIndex} ricevuto dopo #${previousIndex}`);
-          } else if (chunkIndex > previousIndex + 1) {
-            console.warn(`🔊 Mancano ${chunkIndex - previousIndex - 1} chunk prima di #${chunkIndex}`);
-          }
-        } else if (chunkIndex > 0) {
-          console.warn(`🔊 Primo chunk ricevuto con indice ${chunkIndex} (atteso 0)`);
-        }
-      }
-
-      const stored = audioPlayerRef.current.addChunk(audioData, chunkIndex);
-
-      if (stored) {
-        if (typeof chunkIndex === 'number') {
-          lastChunkIndexRef.current = lastChunkIndexRef.current === null
-            ? chunkIndex
-            : Math.max(lastChunkIndexRef.current, chunkIndex);
-        }
+    onAudioChunk: (audioData: string, chunkIndex: number) => {
+      if (audioPlayerRef.current) {
+        audioPlayerRef.current.addChunk(audioData, chunkIndex);
         setChunksReceived(prev => prev + 1);
       }
     },
 
+    onTranscript: (role: 'user' | 'assistant', content: string) => {
+      setTranscripts(prev => [...prev, { role, content }]);
+    },
+
+    onToolStart: (toolName: string) => {
+      setActiveTools(prev => [...prev, { name: toolName, status: 'running' }]);
+    },
+
+    onToolEnd: (toolName: string, output: string) => {
+      setActiveTools(prev => prev.map(t =>
+        t.name === toolName && t.status === 'running'
+          ? { ...t, status: 'complete' as const, output }
+          : t
+      ));
+    },
+
+    onDone: () => {
+      console.log('Sessione vocale terminata dal server');
+      setState('disconnected');
+    },
+
     onError: (errorMessage: string) => {
-      console.error('🎤 Errore WebSocket:', errorMessage);
+      console.error('Errore WebSocket:', errorMessage);
       setError(errorMessage);
       setState('error');
     }
@@ -245,21 +235,14 @@ export function useVoiceChat() {
    */
   const initialize = useCallback(async (): Promise<boolean> => {
     try {
-      debugAudioDependencies();
-
       const permissionsGranted = await requestPermissions();
-      if (!permissionsGranted) {
-        return false;
-      }
+      if (!permissionsGranted) return false;
 
       audioRecorderRef.current = new AudioRecorder();
       audioPlayerRef.current = new AudioPlayer();
-
       websocketRef.current = new VoiceBotWebSocket(websocketCallbacks);
 
-      console.log('🎤 Componenti audio inizializzati');
       return true;
-
     } catch (err) {
       console.error('Errore inizializzazione:', err);
       setError('Errore durante l\'inizializzazione');
@@ -269,7 +252,7 @@ export function useVoiceChat() {
   }, [requestPermissions]);
 
   /**
-   * Connette al servizio vocale e avvia automaticamente la registrazione
+   * Connette al servizio vocale
    */
   const connect = useCallback(async (): Promise<boolean> => {
     if (!websocketRef.current) {
@@ -279,55 +262,23 @@ export function useVoiceChat() {
 
     setState('connecting');
     setError(null);
+    setTranscripts([]);
+    setActiveTools([]);
+    setChunksReceived(0);
+    shouldAutoStartRecordingRef.current = true;
 
     try {
-      console.log('🔌 CONNECT: Connessione WebSocket in corso...');
       const connected = await websocketRef.current!.connect();
-
       if (!connected) {
-        console.error('❌ CONNECT: Connessione fallita');
         setError('Impossibile connettersi al servizio vocale');
-        setState('error');
-        return false;
-      }
-
-      console.log('✅ CONNECT: WebSocket connesso, attesa autenticazione...');
-
-      // Imposta il flag per avviare automaticamente la registrazione dopo l'autenticazione
-      shouldAutoStartRecordingRef.current = true;
-
-      // Aspetta che il WebSocket sia autenticato (non solo connesso)
-      let retries = 0;
-      const maxRetries = 30; // 3 secondi max per autenticazione
-
-      while (!websocketRef.current.isAuthenticated() && retries < maxRetries) {
-        console.log(`⏳ CONNECT: Attesa autenticazione... (${retries + 1}/${maxRetries})`);
-        await new Promise(resolve => setTimeout(resolve, 100));
-        retries++;
-
-        // Se il WebSocket si è disconnesso durante l'attesa, esci
-        if (!websocketRef.current.isConnected()) {
-          console.error('❌ CONNECT: WebSocket disconnesso durante autenticazione');
-          setError('WebSocket disconnesso');
-          setState('error');
-          shouldAutoStartRecordingRef.current = false;
-          return false;
-        }
-      }
-
-      if (!websocketRef.current.isAuthenticated()) {
-        console.error('❌ CONNECT: Timeout autenticazione WebSocket');
-        setError('Timeout autenticazione');
         setState('error');
         shouldAutoStartRecordingRef.current = false;
         return false;
       }
-
-      console.log('✅ CONNECT: Autenticazione completata! Registrazione verrà avviata automaticamente...');
+      // Le transizioni di stato avvengono via callback:
+      // connecting -> authenticating -> setting_up -> ready
       return true;
-
     } catch (err) {
-      console.error('❌ CONNECT: Errore connessione:', err);
       setError('Errore di connessione');
       setState('error');
       shouldAutoStartRecordingRef.current = false;
@@ -336,79 +287,26 @@ export function useVoiceChat() {
   }, [initialize]);
 
   /**
-   * VAD Callbacks
-   */
-  const vadCallbacks: VADCallbacks = {
-    onSpeechStart: () => {
-      console.log('🎙️ HOOK: ✅ Inizio voce rilevato - UI aggiornata');
-      setIsSpeechActive(true);
-    },
-    onSpeechEnd: () => {
-      console.log('🎙️ HOOK: ⏹️ Fine voce rilevata - UI aggiornata');
-      setIsSpeechActive(false);
-    },
-    onSilenceDetected: () => {
-      console.log('🎙️ HOOK: 🔇 Silenzio rilevato - Timer avviato');
-    },
-    onAutoStop: async () => {
-      console.log('🎙️ HOOK: 🛑 Auto-stop chiamato - Fermando registrazione...');
-      await stopRecording();
-    },
-    onMeteringUpdate: (level: number) => {
-      setAudioLevel(level);
-      // Log dettagliato del livello solo ogni secondo (invece di ogni 100ms)
-      if (Date.now() % 1000 < 150) {
-        console.log(`🎚️ HOOK: Audio level aggiornato → ${level.toFixed(1)} dB`);
-      }
-    },
-  };
-
-  /**
-   * Toggle VAD mode
-   */
-  const toggleVAD = useCallback(() => {
-    setVadEnabled(prev => !prev);
-  }, []);
-
-  /**
    * Avvia la registrazione audio
    */
   const startRecording = useCallback(async (): Promise<boolean> => {
-    console.log('🎬 START RECORDING: Chiamata startRecording()');
-
     if (!audioRecorderRef.current || !websocketRef.current) {
-      console.error('❌ START RECORDING: Servizio non inizializzato');
-      console.log('  - audioRecorderRef:', !!audioRecorderRef.current);
-      console.log('  - websocketRef:', !!websocketRef.current);
       setError('Servizio non inizializzato');
       return false;
     }
 
-    if (!websocketRef.current.isConnected()) {
-      console.error('❌ START RECORDING: WebSocket non connesso');
-      setError('WebSocket non connesso');
+    if (!websocketRef.current.isReady()) {
+      setError('Sessione vocale non pronta');
       return false;
     }
-
-    if (!websocketRef.current.isAuthenticated()) {
-      console.error('❌ START RECORDING: WebSocket non autenticato');
-      setError('WebSocket non autenticato');
-      return false;
-    }
-
-    console.log('✅ START RECORDING: Pre-check OK (connesso e autenticato), avvio registrazione...');
 
     try {
-      const started = await audioRecorderRef.current.startRecording(vadEnabled, vadCallbacks);
-      console.log('📝 START RECORDING: Risultato startRecording():', started);
-
+      const started = await audioRecorderRef.current.startRecording(true, vadCallbacks);
       if (!started) {
-        console.error('❌ START RECORDING: Impossibile avviare la registrazione');
         setError('Impossibile avviare la registrazione');
         return false;
       }
 
-      console.log('✅ START RECORDING: Registrazione avviata con successo!');
       setState('recording');
       setError(null);
       setIsSpeechActive(false);
@@ -417,29 +315,24 @@ export function useVoiceChat() {
       // Aggiorna la durata della registrazione ogni 100ms
       recordingIntervalRef.current = setInterval(() => {
         if (audioRecorderRef.current) {
-          const duration = audioRecorderRef.current.getRecordingDuration();
-          setRecordingDuration(duration);
+          setRecordingDuration(audioRecorderRef.current.getRecordingDuration());
         }
       }, 100);
 
-      console.log('🎤 Registrazione avviata', vadEnabled ? '(VAD attivo)' : '(VAD disattivo)');
       return true;
-
     } catch (err) {
-      console.error('❌ START RECORDING: Errore avvio registrazione:', err);
+      console.error('Errore avvio registrazione:', err);
       setError('Errore durante la registrazione');
       setState('error');
       return false;
     }
-  }, [vadEnabled]);
+  }, []);
 
   /**
    * Ferma la registrazione e invia l'audio al server
    */
   const stopRecording = useCallback(async (): Promise<boolean> => {
-    if (!audioRecorderRef.current || !websocketRef.current) {
-      return false;
-    }
+    if (!audioRecorderRef.current || !websocketRef.current) return false;
 
     // Ferma il timer della durata
     if (recordingIntervalRef.current) {
@@ -448,23 +341,22 @@ export function useVoiceChat() {
     }
 
     try {
-      const audioData = await audioRecorderRef.current.stopRecording();
-      if (!audioData) {
+      const pcm16Base64 = await audioRecorderRef.current.stopRecording();
+      if (!pcm16Base64) {
         setError('Nessun dato audio registrato');
         setState('error');
         return false;
       }
 
-      console.log('🎤 Invio audio al server...');
-      
-      // Invia l'audio al server tramite WebSocket
-      websocketRef.current.sendAudioChunk(audioData, true);
-      
+      // Invia audio PCM16 e committa
+      websocketRef.current.sendAudio(pcm16Base64);
+      websocketRef.current.sendAudioCommit();
+
       setState('processing');
       setRecordingDuration(0);
-      
+      setIsSpeechActive(false);
       return true;
-      
+
     } catch (err) {
       console.error('Errore stop registrazione:', err);
       setError('Errore durante l\'invio dell\'audio');
@@ -487,8 +379,8 @@ export function useVoiceChat() {
     }
 
     setRecordingDuration(0);
-    setState('connected');
-    console.log('🎤 Registrazione cancellata');
+    setIsSpeechActive(false);
+    setState('ready');
   }, []);
 
   /**
@@ -497,19 +389,33 @@ export function useVoiceChat() {
   const stopPlayback = useCallback(async (): Promise<void> => {
     if (audioPlayerRef.current) {
       await audioPlayerRef.current.stopPlayback();
+      audioPlayerRef.current.clearChunks();
     }
-    
-    setState('connected');
-    console.log('🔊 Riproduzione fermata');
+
+    setState('ready');
   }, []);
 
   /**
-   * Invia comando di controllo al server
+   * Interrompe la risposta corrente dell'assistente
    */
-  const sendControl = useCallback((action: 'pause' | 'resume' | 'cancel'): void => {
-    if (websocketRef.current && websocketRef.current.isConnected()) {
-      websocketRef.current.sendControl(action);
-      console.log(`🎤 Comando inviato: ${action}`);
+  const sendInterrupt = useCallback((): void => {
+    if (websocketRef.current?.isConnected()) {
+      websocketRef.current.sendInterrupt();
+    }
+    if (audioPlayerRef.current) {
+      audioPlayerRef.current.stopPlayback();
+      audioPlayerRef.current.clearChunks();
+    }
+    setState('ready');
+  }, []);
+
+  /**
+   * Invia un messaggio di testo all'assistente
+   */
+  const sendTextMessage = useCallback((content: string): void => {
+    if (websocketRef.current?.isReady()) {
+      websocketRef.current.sendText(content);
+      setState('processing');
     }
   }, []);
 
@@ -520,44 +426,37 @@ export function useVoiceChat() {
     if (websocketRef.current) {
       websocketRef.current.disconnect();
     }
-    
+
     setState('idle');
     setServerStatus(null);
     setError(null);
-    console.log('🎤 Disconnesso dal servizio');
+    setTranscripts([]);
+    setActiveTools([]);
   }, []);
 
   /**
    * Pulisce tutte le risorse
    */
   const cleanup = useCallback(async (): Promise<void> => {
-    // Ferma registrazione se attiva
     if (audioRecorderRef.current) {
       await audioRecorderRef.current.cancelRecording();
     }
-
-    // Ferma riproduzione se attiva
     if (audioPlayerRef.current) {
       await audioPlayerRef.current.destroy();
     }
-
-    // Disconnetti WebSocket
     if (websocketRef.current) {
       websocketRef.current.destroy();
     }
-
-    // Pulisci timer
     if (recordingIntervalRef.current) {
       clearInterval(recordingIntervalRef.current);
     }
 
-    // Reset stati
     setState('idle');
     setError(null);
     setServerStatus(null);
     setRecordingDuration(0);
-    
-    console.log('🎤 Risorse pulite');
+    setTranscripts([]);
+    setActiveTools([]);
   }, []);
 
   // Cleanup automatico quando il componente viene smontato
@@ -567,12 +466,12 @@ export function useVoiceChat() {
     };
   }, [cleanup]);
 
-  // Stati derivati per convenience
-  const isConnected = state === 'connected' || state === 'recording' || state === 'processing' || state === 'speaking';
+  // Stati derivati
+  const isConnected = ['ready', 'recording', 'processing', 'speaking'].includes(state);
   const isRecording = state === 'recording';
   const isProcessing = state === 'processing';
   const isSpeaking = state === 'speaking';
-  const canRecord = state === 'connected' && hasPermissions;
+  const canRecord = state === 'ready' && hasPermissions;
   const canStop = state === 'recording';
 
   return {
@@ -584,6 +483,10 @@ export function useVoiceChat() {
     hasPermissions,
     chunksReceived,
 
+    // Trascrizioni e tool
+    transcripts,
+    activeTools,
+
     // Stati derivati
     isConnected,
     isRecording,
@@ -593,7 +496,6 @@ export function useVoiceChat() {
     canStop,
 
     // VAD stati
-    vadEnabled,
     audioLevel,
     isSpeechActive,
 
@@ -605,9 +507,9 @@ export function useVoiceChat() {
     stopRecording,
     cancelRecording,
     stopPlayback,
-    sendControl,
+    sendInterrupt,
+    sendTextMessage,
     cleanup,
     requestPermissions,
-    toggleVAD,
   };
 }

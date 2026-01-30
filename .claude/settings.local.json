@@ -50,7 +50,12 @@
       "Bash(powershell -Command \"Get-Content ''e:\\\\MyTaskly\\\\MyTaskly-app\\\\src\\\\locales\\\\en.json'' | Select-Object -Last 20\")",
       "Bash(powershell -Command \"Get-Content ''e:\\\\MyTaskly\\\\MyTaskly-app\\\\src\\\\locales\\\\it.json'' | Select-Object -Last 20\")",
       "Bash(npm ls:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(export NVM_DIR=\"$HOME/.nvm\")",
+      "Bash([ -s \"$NVM_DIR/nvm.sh\" ])",
+      "Bash(. \"$NVM_DIR/nvm.sh\")",
+      "Bash(npm test:*)",
+      "Bash(xargs:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"
