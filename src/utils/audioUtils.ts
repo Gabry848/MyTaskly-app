@@ -80,11 +80,11 @@ export const AUDIO_CONFIG = {
 // Configurazioni VAD (Voice Activity Detection) - solo per feedback UI
 // Il server gestisce il turn detection con semantic VAD
 export const VAD_CONFIG = {
-  SPEECH_THRESHOLD_DB: -50,
-  SILENCE_THRESHOLD_DB: -60,
+  SPEECH_THRESHOLD_DB: -60,
+  SILENCE_THRESHOLD_DB: -70,
   SILENCE_DURATION_MS: 1200,
   METERING_POLL_INTERVAL_MS: 100,
-  MIN_RECORDING_DURATION_MS: 300,
+  MIN_RECORDING_DURATION_MS: 500,
 };
 
 // Configurazione per normalizzazione audio level

@@ -343,14 +343,28 @@ export function useVoiceChat() {
     try {
       const pcm16Base64 = await audioRecorderRef.current.stopRecording();
       if (!pcm16Base64) {
+        console.error('❌ Nessun dato audio registrato');
         setError('Nessun dato audio registrato');
         setState('error');
         return false;
       }
 
-      // Invia audio PCM16 e committa
+      // Calcola la durata approssimativa dell'audio
+      const audioBytes = Math.floor(pcm16Base64.length * 0.75);
+      const durationMs = (audioBytes / 2) / 24; // 2 bytes per sample, 24 samples per ms
+      
+      console.log(`📦 Audio pronto: ${durationMs.toFixed(0)}ms (${audioBytes} bytes)`);
+
+      // Invia audio PCM16
       websocketRef.current.sendAudio(pcm16Base64);
+      console.log('📤 Audio inviato al server');
+      
+      // IMPORTANTE: Aspetta 300ms per assicurare che il server processi l'audio
+      // prima di committare il buffer. Questo previene l'errore "buffer_empty"
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
       websocketRef.current.sendAudioCommit();
+      console.log('✅ Buffer committato');
 
       setState('processing');
       setRecordingDuration(0);
