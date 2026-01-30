@@ -175,8 +175,8 @@ function getPcm16RecordingOptions(enableMetering: boolean) {
     isMeteringEnabled: enableMetering,
     android: {
       extension: '.wav',
-      outputFormat: 6, // DEFAULT
-      audioEncoder: 0, // DEFAULT
+      outputFormat: 0, // AndroidOutputFormat.DEFAULT
+      audioEncoder: 0, // AndroidAudioEncoder.DEFAULT
       sampleRate: AUDIO_CONFIG.SAMPLE_RATE,
       numberOfChannels: AUDIO_CONFIG.CHANNELS,
       bitRate: AUDIO_CONFIG.SAMPLE_RATE * AUDIO_CONFIG.BIT_DEPTH * AUDIO_CONFIG.CHANNELS,
@@ -233,11 +233,17 @@ export class AudioRecorder {
         playThroughEarpieceAndroid: false,
       });
 
-      this.recording = new Audio.Recording();
       const recordingOptions = getPcm16RecordingOptions(enableVAD);
+      const { recording } = await Audio.Recording.createAsync(recordingOptions);
+      this.recording = recording;
 
-      await this.recording.prepareToRecordAsync(recordingOptions);
-      await this.recording.startAsync();
+      // Verifica che il recorder nativo sia effettivamente attivo
+      const status = await this.recording.getStatusAsync();
+      if (!status.isRecording) {
+        console.error('Il recorder nativo non è partito correttamente');
+        this.cleanup();
+        return false;
+      }
 
       this.isRecording = true;
       this.recordingStartTime = Date.now();
@@ -356,7 +362,9 @@ export class AudioRecorder {
           this.processMeteringLevel(meteringDB);
         }
       } catch (error) {
-        console.error('Errore monitoraggio VAD:', error);
+        // Il recorder nativo non è più disponibile, ferma il monitoraggio
+        console.warn('VAD: recorder non disponibile, monitoraggio fermato');
+        this.stopVADMonitoring();
       }
     }, VAD_CONFIG.METERING_POLL_INTERVAL_MS);
   }

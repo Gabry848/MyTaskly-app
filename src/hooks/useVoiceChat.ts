@@ -138,7 +138,7 @@ export function useVoiceChat() {
         shouldAutoStartRecordingRef.current = false;
         setTimeout(() => {
           startRecording();
-        }, 100);
+        }, 500);
       }
     },
 
