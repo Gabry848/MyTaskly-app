@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { VoiceBotWebSocket, VoiceChatCallbacks, VoiceServerPhase } from '../services/botservice';
-import { AudioRecorder, AudioPlayer, checkAudioPermissions, VADCallbacks } from '../utils/audioUtils';
+import { AudioRecorder, AudioPlayer, checkAudioPermissions } from '../utils/audioUtils';
 
 /**
  * Stati possibili della chat vocale
@@ -60,10 +60,6 @@ export function useVoiceChat() {
   const [transcripts, setTranscripts] = useState<VoiceTranscript[]>([]);
   const [activeTools, setActiveTools] = useState<ActiveTool[]>([]);
 
-  // VAD states (feedback UI)
-  const [audioLevel, setAudioLevel] = useState<number>(-160);
-  const [isSpeechActive, setIsSpeechActive] = useState<boolean>(false);
-
   // Refs per gestire le istanze
   const websocketRef = useRef<VoiceBotWebSocket | null>(null);
   const audioRecorderRef = useRef<AudioRecorder | null>(null);
@@ -92,28 +88,6 @@ export function useVoiceChat() {
       return false;
     }
   }, []);
-
-  /**
-   * VAD Callbacks — per feedback UI + auto-stop su silenzio prolungato
-   */
-  const vadCallbacks: VADCallbacks = {
-    onSpeechStart: () => {
-      setIsSpeechActive(true);
-    },
-    onSpeechEnd: () => {
-      setIsSpeechActive(false);
-    },
-    onSilenceDetected: () => {
-      setIsSpeechActive(false);
-    },
-    onAutoStop: async () => {
-      // VAD rileva silenzio prolungato: ferma registrazione e committa
-      await stopRecording();
-    },
-    onMeteringUpdate: (level: number) => {
-      setAudioLevel(level);
-    },
-  };
 
   /**
    * Callback per gestire i messaggi WebSocket
@@ -302,12 +276,12 @@ export function useVoiceChat() {
     }
 
     try {
-      // Callback invocato per ogni chunk audio resampled a 24kHz
+      // Callback invocato per ogni chunk audio PCM16 a 24kHz
       const onChunk = (base64Chunk: string) => {
         websocketRef.current?.sendAudio(base64Chunk);
       };
 
-      const started = await audioRecorderRef.current.startRecording(true, vadCallbacks, onChunk);
+      const started = await audioRecorderRef.current.startRecording(onChunk);
       if (!started) {
         setError('Impossibile avviare la registrazione');
         return false;
@@ -315,8 +289,6 @@ export function useVoiceChat() {
 
       setState('recording');
       setError(null);
-      setIsSpeechActive(false);
-      setAudioLevel(-160);
 
       // Aggiorna la durata della registrazione ogni 100ms
       recordingIntervalRef.current = setInterval(() => {
@@ -350,13 +322,11 @@ export function useVoiceChat() {
     try {
       await audioRecorderRef.current.stopRecording();
 
-      // I chunks sono gia' stati inviati in streaming, committa il buffer
       websocketRef.current.sendAudioCommit();
       console.log('Buffer committato (chunks inviati in streaming)');
 
       setState('processing');
       setRecordingDuration(0);
-      setIsSpeechActive(false);
       return true;
 
     } catch (err) {
@@ -381,7 +351,6 @@ export function useVoiceChat() {
     }
 
     setRecordingDuration(0);
-    setIsSpeechActive(false);
     setState('ready');
   }, []);
 
@@ -496,10 +465,6 @@ export function useVoiceChat() {
     isSpeaking,
     canRecord,
     canStop,
-
-    // VAD stati
-    audioLevel,
-    isSpeechActive,
 
     // Azioni
     initialize,

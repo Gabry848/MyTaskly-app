@@ -36,7 +36,6 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
     isRecording,
     isProcessing,
     isSpeaking,
-    isSpeechActive,
     transcripts,
     activeTools,
     connect,
@@ -103,7 +102,7 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
 
   // Animazione del cerchio pulsante - solo quando in ascolto
   useEffect(() => {
-    const shouldAnimate = isRecording && isSpeechActive;
+    const shouldAnimate = isRecording;
 
     if (shouldAnimate) {
       const pulseAnimation = Animated.loop(
@@ -138,7 +137,7 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
 
       return () => pulseAnimation.stop();
     }
-  }, [isRecording, isSpeechActive, pulseScale, pulseOpacity]);
+  }, [isRecording, pulseScale, pulseOpacity]);
 
   // Animazione durante elaborazione/risposta
   useEffect(() => {
@@ -220,7 +219,7 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
       case 'error':
         return <Text style={styles.subtleText}>Qualcosa è andato storto</Text>;
       case 'recording':
-        return <Text style={styles.subtleText}>{isSpeechActive ? 'Ti ascolto...' : 'Parla quando vuoi'}</Text>;
+        return <Text style={styles.subtleText}>Ti ascolto...</Text>;
       case 'processing':
         if (activeTools.some(t => t.status === 'running')) {
           return <Text style={styles.subtleText}>Sto eseguendo azioni...</Text>;
@@ -301,15 +300,13 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
     }
 
     // Stato: ascolto attivo con animazione semplice
-    const isListening = isRecording && isSpeechActive;
-
     return (
       <Animated.View style={[
         styles.microphoneCircle,
-        isListening && styles.listeningCircle,
+        isRecording && styles.listeningCircle,
       ]}>
         <Ionicons
-          name={isListening ? "mic" : "mic-outline"}
+          name={isRecording ? "mic" : "mic-outline"}
           size={56}
           color="#ffffff"
         />
@@ -377,7 +374,7 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
           {/* Cerchio animato centrale */}
           <View style={styles.microphoneContainer}>
             {/* Cerchi di pulsazione - solo quando in ascolto */}
-            {(isRecording && isSpeechActive) && (
+            {isRecording && (
               <>
                 <Animated.View
                   style={[

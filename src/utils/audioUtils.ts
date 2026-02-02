@@ -81,18 +81,6 @@ export const AUDIO_CONFIG = {
   MAX_RECORDING_TIME: 300000, // 5 minuti per sessioni conversazionali
 };
 
-// Configurazioni VAD (Voice Activity Detection) - implementata via analisi energia RMS
-export const VAD_CONFIG = {
-  VOICE_ACTIVITY_THRESHOLD: 0.5, // Sensibilita' VAD (0.0-1.0)
-  SILENCE_DURATION_MS: 1200,
-  MIN_RECORDING_DURATION_MS: 500,
-};
-
-// Configurazione per normalizzazione audio level
-export const AUDIO_LEVEL_CONFIG = {
-  MIN_DB: -80,
-  MAX_DB: -10,
-};
 
 /**
  * Converte un array di campioni Int16 (number[]) in Uint8Array little-endian PCM16.
@@ -105,23 +93,6 @@ function int16ArrayToBytes(samples: number[]): Uint8Array {
     view.setInt16(i * 2, samples[i], true); // little-endian
   }
   return buffer;
-}
-
-/**
- * Calcola il livello RMS in dB da un array di campioni Int16.
- * Usato per metering e per la VAD basata su energia.
- */
-function computeRmsDb(samples: number[]): number {
-  if (samples.length === 0) return AUDIO_LEVEL_CONFIG.MIN_DB;
-  let sumSquares = 0;
-  for (let i = 0; i < samples.length; i++) {
-    const normalized = samples[i] / 32768;
-    sumSquares += normalized * normalized;
-  }
-  const rms = Math.sqrt(sumSquares / samples.length);
-  if (rms === 0) return AUDIO_LEVEL_CONFIG.MIN_DB;
-  const db = 20 * Math.log10(rms);
-  return Math.max(AUDIO_LEVEL_CONFIG.MIN_DB, Math.min(AUDIO_LEVEL_CONFIG.MAX_DB, db));
 }
 
 /**
@@ -176,20 +147,8 @@ export function wrapPcm16InWav(pcm16Data: Uint8Array, sampleRate: number = 24000
 }
 
 /**
- * Callback per eventi VAD
- */
-export interface VADCallbacks {
-  onSpeechStart?: () => void;
-  onSpeechEnd?: () => void;
-  onSilenceDetected?: () => void;
-  onAutoStop?: () => void;
-  onMeteringUpdate?: (level: number) => void;
-}
-
-/**
  * Classe per gestire la registrazione audio con @picovoice/react-native-voice-processor.
- * Fornisce streaming di chunks PCM16 base64 a 24kHz direttamente (nessun resampling).
- * VAD implementata tramite analisi energia RMS dei frames.
+ * Fornisce streaming di chunks PCM16 base64 a 24kHz direttamente.
  */
 export class AudioRecorder {
   private isRecording: boolean = false;
@@ -197,10 +156,6 @@ export class AudioRecorder {
   private onChunkCallback: ((base64Chunk: string) => void) | null = null;
   private frameListener: ((frame: number[]) => void) | null = null;
   private errorListener: ((error: any) => void) | null = null;
-  private vadEnabled: boolean = false;
-  private vadCallbacks: VADCallbacks = {};
-  private isSpeechDetected: boolean = false;
-  private silenceStartTime: number | null = null;
   private voiceProcessor: VoiceProcessor = VoiceProcessor.instance;
 
   /**
@@ -208,16 +163,10 @@ export class AudioRecorder {
    * VoiceProcessor registra direttamente a 24kHz, ogni frame viene convertito in PCM16 base64.
    */
   async startRecording(
-    enableVAD: boolean = false,
-    vadCallbacks?: VADCallbacks,
     onChunk?: (base64Chunk: string) => void
   ): Promise<boolean> {
     try {
       this.onChunkCallback = onChunk || null;
-      this.vadEnabled = enableVAD;
-      this.vadCallbacks = vadCallbacks || {};
-      this.isSpeechDetected = false;
-      this.silenceStartTime = null;
 
       // Verifica permessi microfono
       if (!(await this.voiceProcessor.hasRecordAudioPermission())) {
@@ -236,15 +185,6 @@ export class AudioRecorder {
           // Encode in base64 e invia
           const base64Chunk = encodeBase64(pcm16Bytes);
           this.onChunkCallback?.(base64Chunk);
-
-          // Calcola livello audio per metering
-          const rmsDb = computeRmsDb(frame);
-          this.vadCallbacks.onMeteringUpdate?.(rmsDb);
-
-          // VAD basata su energia RMS
-          if (this.vadEnabled) {
-            this.processVAD(rmsDb);
-          }
         } catch (error) {
           console.error('Errore processamento frame audio:', error);
         }
@@ -264,7 +204,7 @@ export class AudioRecorder {
       this.isRecording = true;
       this.recordingStartTime = Date.now();
 
-      console.log('Registrazione VoiceProcessor avviata', enableVAD ? '(VAD attivo)' : '', '- streaming PCM16 a 24kHz');
+      console.log('Registrazione VoiceProcessor avviata - streaming PCM16 a 24kHz');
       return true;
 
     } catch (error) {
@@ -275,46 +215,7 @@ export class AudioRecorder {
   }
 
   /**
-   * Processa VAD basata su energia RMS.
-   * Soglia: se il livello dB supera il threshold -> voce rilevata, altrimenti silenzio.
-   */
-  private processVAD(rmsDb: number): void {
-    if (!this.isRecording) return;
-
-    const recordingDuration = this.getRecordingDuration();
-    if (recordingDuration < VAD_CONFIG.MIN_RECORDING_DURATION_MS) return;
-
-    // Mappa la soglia VAD (0.0-1.0) a un range dB
-    const dbThreshold = AUDIO_LEVEL_CONFIG.MIN_DB +
-      VAD_CONFIG.VOICE_ACTIVITY_THRESHOLD * (AUDIO_LEVEL_CONFIG.MAX_DB - AUDIO_LEVEL_CONFIG.MIN_DB);
-
-    const isVoice = rmsDb > dbThreshold;
-
-    if (isVoice) {
-      if (!this.isSpeechDetected) {
-        this.isSpeechDetected = true;
-        this.vadCallbacks.onSpeechStart?.();
-      }
-      this.silenceStartTime = null;
-    } else {
-      if (this.isSpeechDetected) {
-        if (this.silenceStartTime === null) {
-          this.silenceStartTime = Date.now();
-          this.vadCallbacks.onSilenceDetected?.();
-        } else {
-          const silenceDuration = Date.now() - this.silenceStartTime;
-          if (silenceDuration >= VAD_CONFIG.SILENCE_DURATION_MS) {
-            this.vadCallbacks.onAutoStop?.();
-            this.vadCallbacks.onSpeechEnd?.();
-          }
-        }
-      }
-    }
-  }
-
-  /**
    * Ferma la registrazione. I chunks sono gia' stati inviati in streaming.
-   * Restituisce null (non serve piu' il blob completo).
    */
   async stopRecording(): Promise<string | null> {
     if (!this.isRecording) {
@@ -368,9 +269,6 @@ export class AudioRecorder {
     this.isRecording = false;
     this.recordingStartTime = 0;
     this.onChunkCallback = null;
-    this.silenceStartTime = null;
-    this.vadEnabled = false;
-    this.isSpeechDetected = false;
   }
 }
 
