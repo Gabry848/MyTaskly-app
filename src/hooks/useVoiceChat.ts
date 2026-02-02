@@ -45,7 +45,7 @@ export interface ActiveTool {
 /**
  * Hook personalizzato per la gestione della chat vocale
  * Compatibile con l'OpenAI Realtime API tramite WebSocket
- * Usa expo-audio-studio per streaming chunks PCM16 base64 in tempo reale
+ * Usa @picovoice/react-native-voice-processor per streaming PCM16 base64 in tempo reale a 24kHz
  */
 export function useVoiceChat() {
   // Stati principali
@@ -288,7 +288,7 @@ export function useVoiceChat() {
 
   /**
    * Avvia la registrazione audio con streaming chunks via WebSocket.
-   * Ogni chunk viene resampled a 24kHz e inviato in tempo reale.
+   * Ogni frame PCM16 a 24kHz viene inviato in tempo reale.
    */
   const startRecording = useCallback(async (): Promise<boolean> => {
     if (!audioRecorderRef.current || !websocketRef.current) {

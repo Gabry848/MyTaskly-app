@@ -1,12 +1,12 @@
 import { Audio } from 'expo-av';
 import * as FileSystem from 'expo-file-system';
-import ExpoAudioStudio from 'expo-audio-studio';
+import { VoiceProcessor } from '@picovoice/react-native-voice-processor';
 
 /**
  * Utility per la gestione dell'audio nella chat vocale
- * Registrazione: expo-audio-studio (streaming chunks PCM16 base64)
+ * Registrazione: @picovoice/react-native-voice-processor (streaming frames PCM16)
  * Riproduzione: expo-av (playback WAV)
- * Server richiede PCM16 a 24kHz, expo-audio-studio registra a 16kHz -> resample necessario
+ * Server richiede PCM16 a 24kHz, VoiceProcessor registra a 16kHz -> resample necessario
  */
 
 /**
@@ -74,14 +74,14 @@ function encodeBase64(bytes: Uint8Array): string {
 
 // Configurazioni audio per OpenAI Realtime API
 export const AUDIO_CONFIG = {
-  SAMPLE_RATE: 24000, // Target sample rate richiesto dal server
-  SOURCE_SAMPLE_RATE: 16000, // Sample rate di expo-audio-studio (fisso)
+  SAMPLE_RATE: 24000, // Sample rate registrazione e server (VoiceProcessor supporta 24kHz diretto)
   CHANNELS: 1,
   BIT_DEPTH: 16,
+  FRAME_LENGTH: 1024, // Numero di campioni per frame (VoiceProcessor)
   MAX_RECORDING_TIME: 300000, // 5 minuti per sessioni conversazionali
 };
 
-// Configurazioni VAD (Voice Activity Detection) - expo-audio-studio ha VAD nativo
+// Configurazioni VAD (Voice Activity Detection) - implementata via analisi energia RMS
 export const VAD_CONFIG = {
   VOICE_ACTIVITY_THRESHOLD: 0.5, // Sensibilita' VAD (0.0-1.0)
   SILENCE_DURATION_MS: 1200,
@@ -95,43 +95,33 @@ export const AUDIO_LEVEL_CONFIG = {
 };
 
 /**
- * Resample PCM16 da 16kHz a 24kHz con interpolazione lineare.
- * Input/output: Uint8Array di campioni Int16 little-endian.
- * Rapporto 16000:24000 = 2:3
+ * Converte un array di campioni Int16 (number[]) in Uint8Array little-endian PCM16.
+ * VoiceProcessor fornisce frames come number[], il server richiede PCM16 bytes.
  */
-function resample16to24(pcm16Data: Uint8Array): Uint8Array {
-  const srcSamples = pcm16Data.length / 2; // 2 bytes per sample (Int16)
-  if (srcSamples === 0) return new Uint8Array(0);
-
-  const srcView = new DataView(pcm16Data.buffer, pcm16Data.byteOffset, pcm16Data.byteLength);
-
-  // Rapporto: per ogni sample di output, calcola la posizione nel sorgente
-  const ratio = AUDIO_CONFIG.SOURCE_SAMPLE_RATE / AUDIO_CONFIG.SAMPLE_RATE; // 16000/24000 = 0.6667
-  const dstSamples = Math.floor(srcSamples / ratio);
-  const dstBuffer = new Uint8Array(dstSamples * 2);
-  const dstView = new DataView(dstBuffer.buffer);
-
-  for (let i = 0; i < dstSamples; i++) {
-    const srcPos = i * ratio;
-    const srcIndex = Math.floor(srcPos);
-    const frac = srcPos - srcIndex;
-
-    // Leggi campione corrente
-    const sample0 = srcView.getInt16(srcIndex * 2, true);
-
-    if (srcIndex + 1 < srcSamples && frac > 0) {
-      // Interpolazione lineare tra due campioni
-      const sample1 = srcView.getInt16((srcIndex + 1) * 2, true);
-      const interpolated = Math.round(sample0 + frac * (sample1 - sample0));
-      // Clamp a Int16 range
-      const clamped = Math.max(-32768, Math.min(32767, interpolated));
-      dstView.setInt16(i * 2, clamped, true);
-    } else {
-      dstView.setInt16(i * 2, sample0, true);
-    }
+function int16ArrayToBytes(samples: number[]): Uint8Array {
+  const buffer = new Uint8Array(samples.length * 2);
+  const view = new DataView(buffer.buffer);
+  for (let i = 0; i < samples.length; i++) {
+    view.setInt16(i * 2, samples[i], true); // little-endian
   }
+  return buffer;
+}
 
-  return dstBuffer;
+/**
+ * Calcola il livello RMS in dB da un array di campioni Int16.
+ * Usato per metering e per la VAD basata su energia.
+ */
+function computeRmsDb(samples: number[]): number {
+  if (samples.length === 0) return AUDIO_LEVEL_CONFIG.MIN_DB;
+  let sumSquares = 0;
+  for (let i = 0; i < samples.length; i++) {
+    const normalized = samples[i] / 32768;
+    sumSquares += normalized * normalized;
+  }
+  const rms = Math.sqrt(sumSquares / samples.length);
+  if (rms === 0) return AUDIO_LEVEL_CONFIG.MIN_DB;
+  const db = 20 * Math.log10(rms);
+  return Math.max(AUDIO_LEVEL_CONFIG.MIN_DB, Math.min(AUDIO_LEVEL_CONFIG.MAX_DB, db));
 }
 
 /**
@@ -197,24 +187,25 @@ export interface VADCallbacks {
 }
 
 /**
- * Classe per gestire la registrazione audio con expo-audio-studio.
- * Fornisce streaming di chunks PCM16 base64 resampled a 24kHz.
+ * Classe per gestire la registrazione audio con @picovoice/react-native-voice-processor.
+ * Fornisce streaming di chunks PCM16 base64 a 24kHz direttamente (nessun resampling).
+ * VAD implementata tramite analisi energia RMS dei frames.
  */
 export class AudioRecorder {
   private isRecording: boolean = false;
   private recordingStartTime: number = 0;
   private onChunkCallback: ((base64Chunk: string) => void) | null = null;
-  private chunkSubscription: { remove: () => void } | null = null;
-  private vadSubscription: { remove: () => void } | null = null;
-  private statusSubscription: { remove: () => void } | null = null;
+  private frameListener: ((frame: number[]) => void) | null = null;
+  private errorListener: ((error: any) => void) | null = null;
   private vadEnabled: boolean = false;
   private vadCallbacks: VADCallbacks = {};
   private isSpeechDetected: boolean = false;
   private silenceStartTime: number | null = null;
+  private voiceProcessor: VoiceProcessor = VoiceProcessor.instance;
 
   /**
-   * Avvia la registrazione audio con streaming chunks.
-   * Ogni chunk viene resampled da 16kHz a 24kHz e inviato come base64 via onChunk callback.
+   * Avvia la registrazione audio con streaming frames.
+   * VoiceProcessor registra direttamente a 24kHz, ogni frame viene convertito in PCM16 base64.
    */
   async startRecording(
     enableVAD: boolean = false,
@@ -228,83 +219,96 @@ export class AudioRecorder {
       this.isSpeechDetected = false;
       this.silenceStartTime = null;
 
-      // Abilita streaming di chunks base64
-      ExpoAudioStudio.setListenToChunks(true);
-
-      // Sottoscrivi ai chunks audio: PCM16@16kHz in base64
-      this.chunkSubscription = ExpoAudioStudio.addListener('onAudioChunk', (event: { base64: string }) => {
-        if (!this.isRecording || !this.onChunkCallback) return;
-
-        try {
-          // Decodifica base64 -> PCM16 raw bytes @16kHz
-          const pcm16at16k = decodeBase64(event.base64);
-
-          // Resample 16kHz -> 24kHz
-          const pcm16at24k = resample16to24(pcm16at16k);
-
-          // Encode back to base64 e invia
-          const resampled64 = encodeBase64(pcm16at24k);
-          this.onChunkCallback(resampled64);
-        } catch (error) {
-          console.error('Errore processamento chunk audio:', error);
-        }
-      });
-
-      // Sottoscrivi allo stato del recorder per metering
-      this.statusSubscription = ExpoAudioStudio.addListener('onRecorderAmplitude', (event: { amplitude: number }) => {
-        if (this.vadCallbacks.onMeteringUpdate) {
-          // amplitude e' in dB
-          this.vadCallbacks.onMeteringUpdate(event.amplitude);
-        }
-      });
-
-      // Configura e abilita VAD nativo se richiesto
-      if (enableVAD) {
-        ExpoAudioStudio.setVADEnabled(true);
-        ExpoAudioStudio.setVoiceActivityThreshold(VAD_CONFIG.VOICE_ACTIVITY_THRESHOLD);
-        ExpoAudioStudio.setVADEventMode('onChange');
-
-        this.vadSubscription = ExpoAudioStudio.addListener('onVoiceActivityDetected', (event: {
-          isVoiceDetected: boolean;
-          confidence: number;
-          isStateChange: boolean;
-          eventType: string;
-        }) => {
-          if (!this.isRecording) return;
-
-          const recordingDuration = this.getRecordingDuration();
-          if (recordingDuration < VAD_CONFIG.MIN_RECORDING_DURATION_MS) return;
-
-          if (event.eventType === 'speech_start') {
-            this.isSpeechDetected = true;
-            this.silenceStartTime = null;
-            this.vadCallbacks.onSpeechStart?.();
-          } else if (event.eventType === 'silence_start') {
-            this.vadCallbacks.onSilenceDetected?.();
-            this.silenceStartTime = Date.now();
-          } else if (event.eventType === 'silence_continue' && this.isSpeechDetected && this.silenceStartTime) {
-            const silenceDuration = Date.now() - this.silenceStartTime;
-            if (silenceDuration >= VAD_CONFIG.SILENCE_DURATION_MS) {
-              this.vadCallbacks.onAutoStop?.();
-              this.vadCallbacks.onSpeechEnd?.();
-            }
-          }
-        });
+      // Verifica permessi microfono
+      if (!(await this.voiceProcessor.hasRecordAudioPermission())) {
+        console.error('Permesso microfono non concesso');
+        return false;
       }
 
-      // Avvia la registrazione
-      await ExpoAudioStudio.startRecording();
+      // Listener per i frames audio: number[] di campioni Int16 @ 24kHz
+      this.frameListener = (frame: number[]) => {
+        if (!this.isRecording) return;
+
+        try {
+          // Converti campioni Int16 in bytes PCM16 little-endian
+          const pcm16Bytes = int16ArrayToBytes(frame);
+
+          // Encode in base64 e invia
+          const base64Chunk = encodeBase64(pcm16Bytes);
+          this.onChunkCallback?.(base64Chunk);
+
+          // Calcola livello audio per metering
+          const rmsDb = computeRmsDb(frame);
+          this.vadCallbacks.onMeteringUpdate?.(rmsDb);
+
+          // VAD basata su energia RMS
+          if (this.vadEnabled) {
+            this.processVAD(rmsDb);
+          }
+        } catch (error) {
+          console.error('Errore processamento frame audio:', error);
+        }
+      };
+
+      // Listener per errori
+      this.errorListener = (error: any) => {
+        console.error('VoiceProcessor errore:', error);
+      };
+
+      this.voiceProcessor.addFrameListener(this.frameListener);
+      this.voiceProcessor.addErrorListener(this.errorListener);
+
+      // Avvia la registrazione a 24kHz
+      await this.voiceProcessor.start(AUDIO_CONFIG.FRAME_LENGTH, AUDIO_CONFIG.SAMPLE_RATE);
 
       this.isRecording = true;
       this.recordingStartTime = Date.now();
 
-      console.log('Registrazione expo-audio-studio avviata', enableVAD ? '(VAD attivo)' : '', '- streaming chunks a 24kHz');
+      console.log('Registrazione VoiceProcessor avviata', enableVAD ? '(VAD attivo)' : '', '- streaming PCM16 a 24kHz');
       return true;
 
     } catch (error) {
       console.error('Errore avvio registrazione:', error);
       this.cleanup();
       return false;
+    }
+  }
+
+  /**
+   * Processa VAD basata su energia RMS.
+   * Soglia: se il livello dB supera il threshold -> voce rilevata, altrimenti silenzio.
+   */
+  private processVAD(rmsDb: number): void {
+    if (!this.isRecording) return;
+
+    const recordingDuration = this.getRecordingDuration();
+    if (recordingDuration < VAD_CONFIG.MIN_RECORDING_DURATION_MS) return;
+
+    // Mappa la soglia VAD (0.0-1.0) a un range dB
+    const dbThreshold = AUDIO_LEVEL_CONFIG.MIN_DB +
+      VAD_CONFIG.VOICE_ACTIVITY_THRESHOLD * (AUDIO_LEVEL_CONFIG.MAX_DB - AUDIO_LEVEL_CONFIG.MIN_DB);
+
+    const isVoice = rmsDb > dbThreshold;
+
+    if (isVoice) {
+      if (!this.isSpeechDetected) {
+        this.isSpeechDetected = true;
+        this.vadCallbacks.onSpeechStart?.();
+      }
+      this.silenceStartTime = null;
+    } else {
+      if (this.isSpeechDetected) {
+        if (this.silenceStartTime === null) {
+          this.silenceStartTime = Date.now();
+          this.vadCallbacks.onSilenceDetected?.();
+        } else {
+          const silenceDuration = Date.now() - this.silenceStartTime;
+          if (silenceDuration >= VAD_CONFIG.SILENCE_DURATION_MS) {
+            this.vadCallbacks.onAutoStop?.();
+            this.vadCallbacks.onSpeechEnd?.();
+          }
+        }
+      }
     }
   }
 
@@ -319,10 +323,10 @@ export class AudioRecorder {
     }
 
     try {
-      await ExpoAudioStudio.stopRecording();
+      await this.voiceProcessor.stop();
       this.isRecording = false;
       console.log('Registrazione completata');
-      return null; // I chunks sono gia' stati inviati in streaming
+      return null;
     } catch (error) {
       console.error('Errore stop registrazione:', error);
       return null;
@@ -343,7 +347,7 @@ export class AudioRecorder {
   async cancelRecording(): Promise<void> {
     if (this.isRecording) {
       try {
-        await ExpoAudioStudio.stopRecording();
+        await this.voiceProcessor.stop();
       } catch (error) {
         console.error('Errore cancellazione registrazione:', error);
       }
@@ -352,22 +356,13 @@ export class AudioRecorder {
   }
 
   private cleanup(): void {
-    if (this.chunkSubscription) {
-      this.chunkSubscription.remove();
-      this.chunkSubscription = null;
+    if (this.frameListener) {
+      this.voiceProcessor.removeFrameListener(this.frameListener);
+      this.frameListener = null;
     }
-    if (this.vadSubscription) {
-      this.vadSubscription.remove();
-      this.vadSubscription = null;
-    }
-    if (this.statusSubscription) {
-      this.statusSubscription.remove();
-      this.statusSubscription = null;
-    }
-
-    ExpoAudioStudio.setListenToChunks(false);
-    if (this.vadEnabled) {
-      ExpoAudioStudio.setVADEnabled(false);
+    if (this.errorListener) {
+      this.voiceProcessor.removeErrorListener(this.errorListener);
+      this.errorListener = null;
     }
 
     this.isRecording = false;
