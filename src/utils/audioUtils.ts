@@ -1,9 +1,12 @@
 import { Audio } from 'expo-av';
 import * as FileSystem from 'expo-file-system';
+import ExpoAudioStudio from 'expo-audio-studio';
 
 /**
  * Utility per la gestione dell'audio nella chat vocale
- * Supporta il formato PCM16 a 24kHz richiesto dall'OpenAI Realtime API
+ * Registrazione: expo-audio-studio (streaming chunks PCM16 base64)
+ * Riproduzione: expo-av (playback WAV)
+ * Server richiede PCM16 a 24kHz, expo-audio-studio registra a 16kHz -> resample necessario
  */
 
 /**
@@ -71,19 +74,17 @@ function encodeBase64(bytes: Uint8Array): string {
 
 // Configurazioni audio per OpenAI Realtime API
 export const AUDIO_CONFIG = {
-  SAMPLE_RATE: 24000,
+  SAMPLE_RATE: 24000, // Target sample rate richiesto dal server
+  SOURCE_SAMPLE_RATE: 16000, // Sample rate di expo-audio-studio (fisso)
   CHANNELS: 1,
   BIT_DEPTH: 16,
   MAX_RECORDING_TIME: 300000, // 5 minuti per sessioni conversazionali
 };
 
-// Configurazioni VAD (Voice Activity Detection) - solo per feedback UI
-// Il server gestisce il turn detection con semantic VAD
+// Configurazioni VAD (Voice Activity Detection) - expo-audio-studio ha VAD nativo
 export const VAD_CONFIG = {
-  SPEECH_THRESHOLD_DB: -60,
-  SILENCE_THRESHOLD_DB: -70,
+  VOICE_ACTIVITY_THRESHOLD: 0.5, // Sensibilita' VAD (0.0-1.0)
   SILENCE_DURATION_MS: 1200,
-  METERING_POLL_INTERVAL_MS: 100,
   MIN_RECORDING_DURATION_MS: 500,
 };
 
@@ -92,6 +93,46 @@ export const AUDIO_LEVEL_CONFIG = {
   MIN_DB: -80,
   MAX_DB: -10,
 };
+
+/**
+ * Resample PCM16 da 16kHz a 24kHz con interpolazione lineare.
+ * Input/output: Uint8Array di campioni Int16 little-endian.
+ * Rapporto 16000:24000 = 2:3
+ */
+function resample16to24(pcm16Data: Uint8Array): Uint8Array {
+  const srcSamples = pcm16Data.length / 2; // 2 bytes per sample (Int16)
+  if (srcSamples === 0) return new Uint8Array(0);
+
+  const srcView = new DataView(pcm16Data.buffer, pcm16Data.byteOffset, pcm16Data.byteLength);
+
+  // Rapporto: per ogni sample di output, calcola la posizione nel sorgente
+  const ratio = AUDIO_CONFIG.SOURCE_SAMPLE_RATE / AUDIO_CONFIG.SAMPLE_RATE; // 16000/24000 = 0.6667
+  const dstSamples = Math.floor(srcSamples / ratio);
+  const dstBuffer = new Uint8Array(dstSamples * 2);
+  const dstView = new DataView(dstBuffer.buffer);
+
+  for (let i = 0; i < dstSamples; i++) {
+    const srcPos = i * ratio;
+    const srcIndex = Math.floor(srcPos);
+    const frac = srcPos - srcIndex;
+
+    // Leggi campione corrente
+    const sample0 = srcView.getInt16(srcIndex * 2, true);
+
+    if (srcIndex + 1 < srcSamples && frac > 0) {
+      // Interpolazione lineare tra due campioni
+      const sample1 = srcView.getInt16((srcIndex + 1) * 2, true);
+      const interpolated = Math.round(sample0 + frac * (sample1 - sample0));
+      // Clamp a Int16 range
+      const clamped = Math.max(-32768, Math.min(32767, interpolated));
+      dstView.setInt16(i * 2, clamped, true);
+    } else {
+      dstView.setInt16(i * 2, sample0, true);
+    }
+  }
+
+  return dstBuffer;
+}
 
 /**
  * Crea un header WAV per dati audio PCM16.
@@ -145,18 +186,6 @@ export function wrapPcm16InWav(pcm16Data: Uint8Array, sampleRate: number = 24000
 }
 
 /**
- * Rimuove l'header WAV (44 bytes) da dati audio, restituendo PCM16 raw.
- */
-function stripWavHeader(bytes: Uint8Array): Uint8Array {
-  if (bytes.length > 44 &&
-      bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46 &&
-      bytes[8] === 0x57 && bytes[9] === 0x41 && bytes[10] === 0x56 && bytes[11] === 0x45) {
-    return bytes.subarray(44);
-  }
-  return bytes;
-}
-
-/**
  * Callback per eventi VAD
  */
 export interface VADCallbacks {
@@ -168,93 +197,108 @@ export interface VADCallbacks {
 }
 
 /**
- * Opzioni di registrazione per PCM16 WAV a 24kHz
- */
-function getPcm16RecordingOptions(enableMetering: boolean) {
-  return {
-    isMeteringEnabled: enableMetering,
-    android: {
-      extension: '.wav',
-      outputFormat: 0, // AndroidOutputFormat.DEFAULT
-      audioEncoder: 0, // AndroidAudioEncoder.DEFAULT
-      sampleRate: AUDIO_CONFIG.SAMPLE_RATE,
-      numberOfChannels: AUDIO_CONFIG.CHANNELS,
-      bitRate: AUDIO_CONFIG.SAMPLE_RATE * AUDIO_CONFIG.BIT_DEPTH * AUDIO_CONFIG.CHANNELS,
-    },
-    ios: {
-      extension: '.wav',
-      outputFormat: Audio.IOSOutputFormat.LINEARPCM,
-      audioQuality: Audio.IOSAudioQuality.HIGH,
-      sampleRate: AUDIO_CONFIG.SAMPLE_RATE,
-      numberOfChannels: AUDIO_CONFIG.CHANNELS,
-      bitRate: AUDIO_CONFIG.SAMPLE_RATE * AUDIO_CONFIG.BIT_DEPTH * AUDIO_CONFIG.CHANNELS,
-      linearPCMBitDepth: AUDIO_CONFIG.BIT_DEPTH,
-      linearPCMIsBigEndian: false,
-      linearPCMIsFloat: false,
-    },
-    web: {
-      mimeType: 'audio/wav',
-      bitsPerSecond: AUDIO_CONFIG.SAMPLE_RATE * AUDIO_CONFIG.BIT_DEPTH * AUDIO_CONFIG.CHANNELS,
-    },
-  };
-}
-
-/**
- * Classe per gestire la registrazione audio in formato PCM16
+ * Classe per gestire la registrazione audio con expo-audio-studio.
+ * Fornisce streaming di chunks PCM16 base64 resampled a 24kHz.
  */
 export class AudioRecorder {
-  private recording: Audio.Recording | null = null;
   private isRecording: boolean = false;
   private recordingStartTime: number = 0;
-
-  // VAD properties
-  private meteringInterval: NodeJS.Timeout | null = null;
-  private silenceStartTime: number | null = null;
+  private onChunkCallback: ((base64Chunk: string) => void) | null = null;
+  private chunkSubscription: { remove: () => void } | null = null;
+  private vadSubscription: { remove: () => void } | null = null;
+  private statusSubscription: { remove: () => void } | null = null;
   private vadEnabled: boolean = false;
   private vadCallbacks: VADCallbacks = {};
   private isSpeechDetected: boolean = false;
+  private silenceStartTime: number | null = null;
 
   /**
-   * Avvia la registrazione audio in formato PCM16 WAV a 24kHz
+   * Avvia la registrazione audio con streaming chunks.
+   * Ogni chunk viene resampled da 16kHz a 24kHz e inviato come base64 via onChunk callback.
    */
-  async startRecording(enableVAD: boolean = false, vadCallbacks?: VADCallbacks): Promise<boolean> {
+  async startRecording(
+    enableVAD: boolean = false,
+    vadCallbacks?: VADCallbacks,
+    onChunk?: (base64Chunk: string) => void
+  ): Promise<boolean> {
     try {
-      const { granted } = await Audio.requestPermissionsAsync();
-      if (!granted) {
-        console.error('Permessi microfono non concessi');
-        return false;
-      }
+      this.onChunkCallback = onChunk || null;
+      this.vadEnabled = enableVAD;
+      this.vadCallbacks = vadCallbacks || {};
+      this.isSpeechDetected = false;
+      this.silenceStartTime = null;
 
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-        staysActiveInBackground: true,
-        shouldDuckAndroid: true,
-        playThroughEarpieceAndroid: false,
+      // Abilita streaming di chunks base64
+      ExpoAudioStudio.setListenToChunks(true);
+
+      // Sottoscrivi ai chunks audio: PCM16@16kHz in base64
+      this.chunkSubscription = ExpoAudioStudio.addListener('onAudioChunk', (event: { base64: string }) => {
+        if (!this.isRecording || !this.onChunkCallback) return;
+
+        try {
+          // Decodifica base64 -> PCM16 raw bytes @16kHz
+          const pcm16at16k = decodeBase64(event.base64);
+
+          // Resample 16kHz -> 24kHz
+          const pcm16at24k = resample16to24(pcm16at16k);
+
+          // Encode back to base64 e invia
+          const resampled64 = encodeBase64(pcm16at24k);
+          this.onChunkCallback(resampled64);
+        } catch (error) {
+          console.error('Errore processamento chunk audio:', error);
+        }
       });
 
-      const recordingOptions = getPcm16RecordingOptions(enableVAD);
-      const { recording } = await Audio.Recording.createAsync(recordingOptions);
-      this.recording = recording;
+      // Sottoscrivi allo stato del recorder per metering
+      this.statusSubscription = ExpoAudioStudio.addListener('onRecorderAmplitude', (event: { amplitude: number }) => {
+        if (this.vadCallbacks.onMeteringUpdate) {
+          // amplitude e' in dB
+          this.vadCallbacks.onMeteringUpdate(event.amplitude);
+        }
+      });
 
-      // Verifica che il recorder nativo sia effettivamente attivo
-      const status = await this.recording.getStatusAsync();
-      if (!status.isRecording) {
-        console.error('Il recorder nativo non è partito correttamente');
-        this.cleanup();
-        return false;
+      // Configura e abilita VAD nativo se richiesto
+      if (enableVAD) {
+        ExpoAudioStudio.setVADEnabled(true);
+        ExpoAudioStudio.setVoiceActivityThreshold(VAD_CONFIG.VOICE_ACTIVITY_THRESHOLD);
+        ExpoAudioStudio.setVADEventMode('onChange');
+
+        this.vadSubscription = ExpoAudioStudio.addListener('onVoiceActivityDetected', (event: {
+          isVoiceDetected: boolean;
+          confidence: number;
+          isStateChange: boolean;
+          eventType: string;
+        }) => {
+          if (!this.isRecording) return;
+
+          const recordingDuration = this.getRecordingDuration();
+          if (recordingDuration < VAD_CONFIG.MIN_RECORDING_DURATION_MS) return;
+
+          if (event.eventType === 'speech_start') {
+            this.isSpeechDetected = true;
+            this.silenceStartTime = null;
+            this.vadCallbacks.onSpeechStart?.();
+          } else if (event.eventType === 'silence_start') {
+            this.vadCallbacks.onSilenceDetected?.();
+            this.silenceStartTime = Date.now();
+          } else if (event.eventType === 'silence_continue' && this.isSpeechDetected && this.silenceStartTime) {
+            const silenceDuration = Date.now() - this.silenceStartTime;
+            if (silenceDuration >= VAD_CONFIG.SILENCE_DURATION_MS) {
+              this.vadCallbacks.onAutoStop?.();
+              this.vadCallbacks.onSpeechEnd?.();
+            }
+          }
+        });
       }
+
+      // Avvia la registrazione
+      await ExpoAudioStudio.startRecording();
 
       this.isRecording = true;
       this.recordingStartTime = Date.now();
-      this.vadEnabled = enableVAD;
-      this.vadCallbacks = vadCallbacks || {};
 
-      if (enableVAD) {
-        this.startVADMonitoring();
-      }
-
-      console.log('Registrazione PCM16 avviata', enableVAD ? '(VAD attivo)' : '');
+      console.log('Registrazione expo-audio-studio avviata', enableVAD ? '(VAD attivo)' : '', '- streaming chunks a 24kHz');
       return true;
 
     } catch (error) {
@@ -265,64 +309,25 @@ export class AudioRecorder {
   }
 
   /**
-   * Ferma la registrazione e restituisce i dati PCM16 raw in base64
+   * Ferma la registrazione. I chunks sono gia' stati inviati in streaming.
+   * Restituisce null (non serve piu' il blob completo).
    */
   async stopRecording(): Promise<string | null> {
-    if (!this.recording || !this.isRecording) {
+    if (!this.isRecording) {
       console.warn('Nessuna registrazione attiva');
       return null;
     }
 
     try {
-      await this.recording.stopAndUnloadAsync();
-      const uri = this.recording.getURI();
-
-      if (!uri) {
-        console.error('URI della registrazione non disponibile');
-        return null;
-      }
-
-      const base64Data = await this.convertToRawPcm16Base64(uri);
+      await ExpoAudioStudio.stopRecording();
       this.isRecording = false;
       console.log('Registrazione completata');
-      return base64Data;
-
+      return null; // I chunks sono gia' stati inviati in streaming
     } catch (error) {
       console.error('Errore stop registrazione:', error);
       return null;
     } finally {
       this.cleanup();
-    }
-  }
-
-  /**
-   * Legge il file audio e restituisce PCM16 raw (senza header WAV) in base64
-   */
-  private async convertToRawPcm16Base64(audioUri: string): Promise<string | null> {
-    try {
-      const fileInfo = await FileSystem.getInfoAsync(audioUri);
-      if (!fileInfo.exists) {
-        console.error('File audio non esiste:', audioUri);
-        return null;
-      }
-
-      const base64Data = await FileSystem.readAsStringAsync(audioUri, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
-
-      if (!base64Data) return null;
-
-      // Decodifica, rimuovi header WAV se presente, riencodifica
-      const fullBytes = decodeBase64(base64Data);
-      const pcm16Bytes = stripWavHeader(fullBytes);
-      const pcm16Base64 = encodeBase64(pcm16Bytes);
-
-      console.log(`Audio convertito: ${fullBytes.length} bytes -> ${pcm16Bytes.length} bytes PCM16 raw`);
-      return pcm16Base64;
-
-    } catch (error) {
-      console.error('Errore conversione PCM16:', error);
-      return null;
     }
   }
 
@@ -336,9 +341,9 @@ export class AudioRecorder {
   }
 
   async cancelRecording(): Promise<void> {
-    if (this.recording && this.isRecording) {
+    if (this.isRecording) {
       try {
-        await this.recording.stopAndUnloadAsync();
+        await ExpoAudioStudio.stopRecording();
       } catch (error) {
         console.error('Errore cancellazione registrazione:', error);
       }
@@ -346,73 +351,28 @@ export class AudioRecorder {
     this.cleanup();
   }
 
-  private startVADMonitoring(): void {
-    this.meteringInterval = setInterval(async () => {
-      if (!this.recording || !this.isRecording) {
-        this.stopVADMonitoring();
-        return;
-      }
-
-      try {
-        const status = await this.recording.getStatusAsync();
-
-        if (status.isRecording && status.metering !== undefined) {
-          const meteringDB = status.metering;
-          this.vadCallbacks.onMeteringUpdate?.(meteringDB);
-          this.processMeteringLevel(meteringDB);
-        }
-      } catch (error) {
-        // Il recorder nativo non è più disponibile, ferma il monitoraggio
-        console.warn('VAD: recorder non disponibile, monitoraggio fermato');
-        this.stopVADMonitoring();
-      }
-    }, VAD_CONFIG.METERING_POLL_INTERVAL_MS);
-  }
-
-  private stopVADMonitoring(): void {
-    if (this.meteringInterval) {
-      clearInterval(this.meteringInterval);
-      this.meteringInterval = null;
-    }
-  }
-
-  private processMeteringLevel(meteringDB: number): void {
-    const recordingDuration = this.getRecordingDuration();
-
-    if (recordingDuration < VAD_CONFIG.MIN_RECORDING_DURATION_MS) {
-      return;
-    }
-
-    // Rilevamento voce
-    if (meteringDB > VAD_CONFIG.SPEECH_THRESHOLD_DB) {
-      if (!this.isSpeechDetected) {
-        this.isSpeechDetected = true;
-        this.vadCallbacks.onSpeechStart?.();
-      }
-      if (this.silenceStartTime) {
-        this.silenceStartTime = null;
-      }
-    }
-    // Rilevamento silenzio
-    else if (meteringDB < VAD_CONFIG.SILENCE_THRESHOLD_DB) {
-      if (!this.silenceStartTime) {
-        this.silenceStartTime = Date.now();
-        this.vadCallbacks.onSilenceDetected?.();
-      } else {
-        const silenceDuration = Date.now() - this.silenceStartTime;
-        if (silenceDuration >= VAD_CONFIG.SILENCE_DURATION_MS && this.isSpeechDetected) {
-          this.vadCallbacks.onAutoStop?.();
-          this.vadCallbacks.onSpeechEnd?.();
-        }
-      }
-    }
-  }
-
   private cleanup(): void {
-    this.stopVADMonitoring();
-    this.recording = null;
+    if (this.chunkSubscription) {
+      this.chunkSubscription.remove();
+      this.chunkSubscription = null;
+    }
+    if (this.vadSubscription) {
+      this.vadSubscription.remove();
+      this.vadSubscription = null;
+    }
+    if (this.statusSubscription) {
+      this.statusSubscription.remove();
+      this.statusSubscription = null;
+    }
+
+    ExpoAudioStudio.setListenToChunks(false);
+    if (this.vadEnabled) {
+      ExpoAudioStudio.setVADEnabled(false);
+    }
+
     this.isRecording = false;
     this.recordingStartTime = 0;
+    this.onChunkCallback = null;
     this.silenceStartTime = null;
     this.vadEnabled = false;
     this.isSpeechDetected = false;
@@ -421,6 +381,7 @@ export class AudioRecorder {
 
 /**
  * Classe per gestire la riproduzione di chunk audio PCM16
+ * Usa expo-av per il playback
  */
 export class AudioPlayer {
   private currentSound: Audio.Sound | null = null;
@@ -611,7 +572,7 @@ export function arrayBufferToBase64(buffer: ArrayBuffer): string {
  */
 export function base64ToArrayBuffer(base64: string): ArrayBuffer {
   const bytes = decodeBase64(base64);
-  return bytes.buffer;
+  return bytes.buffer as ArrayBuffer;
 }
 
 /**

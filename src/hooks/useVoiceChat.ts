@@ -45,6 +45,7 @@ export interface ActiveTool {
 /**
  * Hook personalizzato per la gestione della chat vocale
  * Compatibile con l'OpenAI Realtime API tramite WebSocket
+ * Usa expo-audio-studio per streaming chunks PCM16 base64 in tempo reale
  */
 export function useVoiceChat() {
   // Stati principali
@@ -93,7 +94,7 @@ export function useVoiceChat() {
   }, []);
 
   /**
-   * VAD Callbacks — solo per feedback UI, il turn detection e' gestito dal server
+   * VAD Callbacks — per feedback UI + auto-stop su silenzio prolungato
    */
   const vadCallbacks: VADCallbacks = {
     onSpeechStart: () => {
@@ -106,7 +107,7 @@ export function useVoiceChat() {
       setIsSpeechActive(false);
     },
     onAutoStop: async () => {
-      // Client-side VAD rileva silenzio prolungato: ferma registrazione e invia
+      // VAD rileva silenzio prolungato: ferma registrazione e committa
       await stopRecording();
     },
     onMeteringUpdate: (level: number) => {
@@ -126,7 +127,6 @@ export function useVoiceChat() {
     onAuthenticationSuccess: (message: string) => {
       console.log('Autenticazione completata:', message);
       setState('setting_up');
-      // Aspetta il messaggio "ready" prima di fare qualsiasi cosa
     },
 
     onReady: () => {
@@ -287,7 +287,8 @@ export function useVoiceChat() {
   }, [initialize]);
 
   /**
-   * Avvia la registrazione audio
+   * Avvia la registrazione audio con streaming chunks via WebSocket.
+   * Ogni chunk viene resampled a 24kHz e inviato in tempo reale.
    */
   const startRecording = useCallback(async (): Promise<boolean> => {
     if (!audioRecorderRef.current || !websocketRef.current) {
@@ -301,7 +302,12 @@ export function useVoiceChat() {
     }
 
     try {
-      const started = await audioRecorderRef.current.startRecording(true, vadCallbacks);
+      // Callback invocato per ogni chunk audio resampled a 24kHz
+      const onChunk = (base64Chunk: string) => {
+        websocketRef.current?.sendAudio(base64Chunk);
+      };
+
+      const started = await audioRecorderRef.current.startRecording(true, vadCallbacks, onChunk);
       if (!started) {
         setError('Impossibile avviare la registrazione');
         return false;
@@ -329,7 +335,8 @@ export function useVoiceChat() {
   }, []);
 
   /**
-   * Ferma la registrazione e invia l'audio al server
+   * Ferma la registrazione e committa il buffer audio al server.
+   * I chunks sono gia' stati inviati in streaming durante la registrazione.
    */
   const stopRecording = useCallback(async (): Promise<boolean> => {
     if (!audioRecorderRef.current || !websocketRef.current) return false;
@@ -341,30 +348,11 @@ export function useVoiceChat() {
     }
 
     try {
-      const pcm16Base64 = await audioRecorderRef.current.stopRecording();
-      if (!pcm16Base64) {
-        console.error('❌ Nessun dato audio registrato');
-        setError('Nessun dato audio registrato');
-        setState('error');
-        return false;
-      }
+      await audioRecorderRef.current.stopRecording();
 
-      // Calcola la durata approssimativa dell'audio
-      const audioBytes = Math.floor(pcm16Base64.length * 0.75);
-      const durationMs = (audioBytes / 2) / 24; // 2 bytes per sample, 24 samples per ms
-      
-      console.log(`📦 Audio pronto: ${durationMs.toFixed(0)}ms (${audioBytes} bytes)`);
-
-      // Invia audio PCM16
-      websocketRef.current.sendAudio(pcm16Base64);
-      console.log('📤 Audio inviato al server');
-      
-      // IMPORTANTE: Aspetta 300ms per assicurare che il server processi l'audio
-      // prima di committare il buffer. Questo previene l'errore "buffer_empty"
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
+      // I chunks sono gia' stati inviati in streaming, committa il buffer
       websocketRef.current.sendAudioCommit();
-      console.log('✅ Buffer committato');
+      console.log('Buffer committato (chunks inviati in streaming)');
 
       setState('processing');
       setRecordingDuration(0);

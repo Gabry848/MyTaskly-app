@@ -55,7 +55,10 @@
       "Bash([ -s \"$NVM_DIR/nvm.sh\" ])",
       "Bash(. \"$NVM_DIR/nvm.sh\")",
       "Bash(npm test:*)",
-      "Bash(xargs:*)"
+      "Bash(xargs:*)",
+      "WebFetch(domain:www.npmjs.com)",
+      "WebFetch(domain:docs.expo.dev)",
+      "WebFetch(domain:github.com)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"

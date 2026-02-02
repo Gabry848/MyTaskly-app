@@ -74,7 +74,14 @@
         }
       ],
       "expo-dev-client",
-      "expo-router"
+      "expo-router",
+      "expo-audio",
+      [
+        "expo-audio-studio",
+        {
+          "microphonePermission": "Allow MyTaskly to access your microphone for voice chat"
+        }
+      ]
     ],
     "extra": {
       "eas": {

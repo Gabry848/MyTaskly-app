@@ -818,7 +818,12 @@ export class VoiceBotWebSocket {
    * Invia un chunk audio PCM16 base64 al server
    */
   sendAudio(base64Pcm16Data: string): void {
+    console.log(`🔍 DEBUG sendAudio: base64 length=${base64Pcm16Data.length}, approx bytes=${Math.floor(base64Pcm16Data.length * 0.75)}`);
+    console.log(`🔍 DEBUG sendAudio: primi 50 chars base64="${base64Pcm16Data.substring(0, 50)}"`);
+    console.log(`🔍 DEBUG sendAudio: WebSocket state=${this.ws?.readyState}, authState=${this.authState}, isReady=${this.isReady()}`);
     const msg: VoiceAudioMessage = { type: 'audio', data: base64Pcm16Data };
+    const jsonMsg = JSON.stringify(msg);
+    console.log(`🔍 DEBUG sendAudio: JSON message size=${jsonMsg.length} bytes`);
     this.sendOrQueue(msg);
   }
 
@@ -826,8 +831,10 @@ export class VoiceBotWebSocket {
    * Committa il buffer audio (opzionale - il server ha semantic VAD)
    */
   sendAudioCommit(): void {
+    console.log(`🔍 DEBUG sendAudioCommit: WebSocket state=${this.ws?.readyState}, authState=${this.authState}, isReady=${this.isReady()}`);
     const msg: VoiceAudioCommitMessage = { type: 'audio_commit' };
     this.sendOrQueue(msg);
+    console.log('🔍 DEBUG sendAudioCommit: messaggio inviato');
   }
 
   /**
@@ -852,16 +859,20 @@ export class VoiceBotWebSocket {
    */
   private sendOrQueue(message: VoiceClientMessage): void {
     if (!this.isConnected()) {
+      console.log(`🔍 DEBUG sendOrQueue: BLOCCATO - non connesso (type=${message.type})`);
       this.callbacks.onError?.('Connessione WebSocket non disponibile');
       return;
     }
 
     if (!this.isReady()) {
+      console.log(`🔍 DEBUG sendOrQueue: IN CODA - non pronto (type=${message.type}, authState=${this.authState})`);
       this.messageQueue.push(message);
       return;
     }
 
-    this.ws!.send(JSON.stringify(message));
+    const json = JSON.stringify(message);
+    console.log(`🔍 DEBUG sendOrQueue: INVIATO type=${message.type}, size=${json.length} bytes`);
+    this.ws!.send(json);
   }
 
   /**
