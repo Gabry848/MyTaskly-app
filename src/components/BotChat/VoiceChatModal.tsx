@@ -42,7 +42,6 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
     disconnect,
     cancelRecording,
     stopPlayback,
-    sendInterrupt,
     requestPermissions,
   } = useVoiceChat();
 
@@ -324,7 +323,7 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
       <TouchableOpacity
         style={styles.stopButton}
         onPress={() => {
-          sendInterrupt();
+          stopPlayback();
         }}
         activeOpacity={0.7}
       >

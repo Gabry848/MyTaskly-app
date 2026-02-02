@@ -3,20 +3,11 @@ import { getValidToken } from "./authService";
 // ============= VOICE CHAT WEBSOCKET (OpenAI Realtime API) =============
 
 /**
- * Tipi per i messaggi client -> server
+ * Tipi per i messaggi client -> server (JSON text frames)
  */
 export interface VoiceAuthMessage {
   type: 'auth';
   token: string;
-}
-
-export interface VoiceAudioMessage {
-  type: 'audio';
-  data: string; // base64 PCM16
-}
-
-export interface VoiceAudioCommitMessage {
-  type: 'audio_commit';
 }
 
 export interface VoiceTextMessage {
@@ -24,16 +15,14 @@ export interface VoiceTextMessage {
   content: string;
 }
 
-export interface VoiceInterruptMessage {
-  type: 'interrupt';
-}
-
 export type VoiceClientMessage =
   | VoiceAuthMessage
-  | VoiceAudioMessage
-  | VoiceAudioCommitMessage
-  | VoiceTextMessage
-  | VoiceInterruptMessage;
+  | VoiceTextMessage;
+
+/**
+ * NOTA: L'audio viene inviato come WebSocket binary frame (raw PCM16 bytes),
+ * NON come messaggio JSON. Vedere sendAudio() per i dettagli.
+ */
 
 /**
  * Tipi per i messaggi server -> client
@@ -124,11 +113,31 @@ export interface VoiceChatCallbacks {
   onDone?: () => void;
 }
 
-const MAX_AUDIO_CHUNK_BYTES = 2_500_000;
+/**
+ * Specifiche audio per il WebSocket vocale:
+ * - Formato: PCM16 (signed 16-bit little-endian)
+ * - Sample rate: 24000 Hz
+ * - Canali: 1 (mono)
+ * - Byte per sample: 2
+ * - Dimensione chunk consigliata: 4800 bytes (100ms di audio @ 24kHz)
+ * - Intervallo invio: ogni 100ms
+ */
+export const VOICE_AUDIO_SAMPLE_RATE = 24000;
+export const VOICE_AUDIO_CHANNELS = 1;
+export const VOICE_AUDIO_BYTES_PER_SAMPLE = 2;
+export const VOICE_RECOMMENDED_CHUNK_SIZE_BYTES = 4800; // 100ms @ 24kHz mono PCM16
+export const VOICE_CHUNK_INTERVAL_MS = 100; // Intervallo di invio consigliato
+const MAX_AUDIO_CHUNK_BYTES = 2_500_000; // Safety limit per validazione
 
 /**
  * Classe per gestire la connessione WebSocket per la chat vocale
  * Compatibile con l'OpenAI Realtime API tramite il backend
+ *
+ * IMPORTANTE:
+ * - L'audio viene inviato come binary frame (raw PCM16 bytes) continuamente
+ * - Il VAD (Voice Activity Detection) è gestito automaticamente da OpenAI
+ * - Non serve inviare messaggi di commit o interrupt (gestiti automaticamente)
+ * - Il microfono resta sempre attivo, anche durante le risposte dell'assistente
  */
 export class VoiceBotWebSocket {
   private ws: WebSocket | null = null;
@@ -363,26 +372,34 @@ export class VoiceBotWebSocket {
   }
 
   /**
-   * Invia un chunk audio PCM16 base64 al server
+   * Invia un chunk audio PCM16 raw al server come binary frame
+   *
+   * @param pcm16Data - Raw PCM16 bytes (ArrayBuffer o Uint8Array)
+   *                    Formato: 24kHz, mono, 16-bit little-endian
+   *                    Dimensione consigliata: 4800 bytes (100ms)
+   *
+   * IMPORTANTE: Il microfono deve inviare audio continuamente dal momento
+   * in cui si riceve "ready" fino alla chiusura del WebSocket.
+   * OpenAI gestisce automaticamente VAD e interruzioni.
    */
-  sendAudio(base64Pcm16Data: string): void {
-    console.log(`🔍 DEBUG sendAudio: base64 length=${base64Pcm16Data.length}, approx bytes=${Math.floor(base64Pcm16Data.length * 0.75)}`);
-    console.log(`🔍 DEBUG sendAudio: primi 50 chars base64="${base64Pcm16Data.substring(0, 50)}"`);
-    console.log(`🔍 DEBUG sendAudio: WebSocket state=${this.ws?.readyState}, authState=${this.authState}, isReady=${this.isReady()}`);
-    const msg: VoiceAudioMessage = { type: 'audio', data: base64Pcm16Data };
-    const jsonMsg = JSON.stringify(msg);
-    console.log(`🔍 DEBUG sendAudio: JSON message size=${jsonMsg.length} bytes`);
-    this.sendOrQueue(msg);
-  }
+  sendAudio(pcm16Data: ArrayBuffer | Uint8Array): void {
+    if (!this.isConnected()) {
+      console.log(`🔍 DEBUG sendAudio: BLOCCATO - non connesso`);
+      this.callbacks.onError?.('Connessione WebSocket non disponibile');
+      return;
+    }
 
-  /**
-   * Committa il buffer audio (opzionale - il server ha semantic VAD)
-   */
-  sendAudioCommit(): void {
-    console.log(`🔍 DEBUG sendAudioCommit: WebSocket state=${this.ws?.readyState}, authState=${this.authState}, isReady=${this.isReady()}`);
-    const msg: VoiceAudioCommitMessage = { type: 'audio_commit' };
-    this.sendOrQueue(msg);
-    console.log('🔍 DEBUG sendAudioCommit: messaggio inviato');
+    if (!this.isReady()) {
+      console.log(`🔍 DEBUG sendAudio: BLOCCATO - non pronto (authState=${this.authState})`);
+      // Non mettiamo in coda l'audio, lo scartiamo
+      return;
+    }
+
+    const bytes = pcm16Data instanceof Uint8Array ? pcm16Data.buffer : pcm16Data;
+    console.log(`🔍 DEBUG sendAudio: invio binary frame size=${bytes.byteLength} bytes`);
+
+    // Invia come binary frame (NON JSON)
+    this.ws!.send(bytes);
   }
 
   /**
@@ -391,15 +408,6 @@ export class VoiceBotWebSocket {
   sendText(content: string): void {
     const msg: VoiceTextMessage = { type: 'text', content };
     this.sendOrQueue(msg);
-  }
-
-  /**
-   * Interrompe la risposta corrente dell'assistente
-   */
-  sendInterrupt(): void {
-    if (this.isConnected()) {
-      this.ws!.send(JSON.stringify({ type: 'interrupt' } as VoiceInterruptMessage));
-    }
   }
 
   /**

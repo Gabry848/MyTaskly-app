@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { VoiceBotWebSocket, VoiceChatCallbacks, VoiceServerPhase } from '../services/voiceBotService';
-import { AudioRecorder, AudioPlayer, checkAudioPermissions } from '../utils/audioUtils';
+import { AudioRecorder, AudioPlayer, checkAudioPermissions, base64ToArrayBuffer } from '../utils/audioUtils';
 
 /**
  * Stati possibili della chat vocale
@@ -262,7 +262,10 @@ export function useVoiceChat() {
 
   /**
    * Avvia la registrazione audio con streaming chunks via WebSocket.
-   * Ogni frame PCM16 a 24kHz viene inviato in tempo reale.
+   * Ogni frame PCM16 a 24kHz viene inviato in tempo reale come binary frame.
+   *
+   * IMPORTANTE: Il microfono invia audio continuamente. OpenAI gestisce
+   * automaticamente VAD e interruzioni. Non serve commit o interrupt manuale.
    */
   const startRecording = useCallback(async (): Promise<boolean> => {
     if (!audioRecorderRef.current || !websocketRef.current) {
@@ -277,8 +280,14 @@ export function useVoiceChat() {
 
     try {
       // Callback invocato per ogni chunk audio PCM16 a 24kHz
+      // Converte base64 in ArrayBuffer e lo invia come binary frame
       const onChunk = (base64Chunk: string) => {
-        websocketRef.current?.sendAudio(base64Chunk);
+        try {
+          const arrayBuffer = base64ToArrayBuffer(base64Chunk);
+          websocketRef.current?.sendAudio(arrayBuffer);
+        } catch (error) {
+          console.error('Errore conversione chunk audio:', error);
+        }
       };
 
       const started = await audioRecorderRef.current.startRecording(onChunk);
@@ -307,8 +316,9 @@ export function useVoiceChat() {
   }, []);
 
   /**
-   * Ferma la registrazione e committa il buffer audio al server.
-   * I chunks sono gia' stati inviati in streaming durante la registrazione.
+   * Ferma la registrazione.
+   * I chunks sono già stati inviati in streaming durante la registrazione.
+   * Il VAD di OpenAI rileva automaticamente la fine della frase, non serve commit manuale.
    */
   const stopRecording = useCallback(async (): Promise<boolean> => {
     if (!audioRecorderRef.current || !websocketRef.current) return false;
@@ -322,8 +332,7 @@ export function useVoiceChat() {
     try {
       await audioRecorderRef.current.stopRecording();
 
-      websocketRef.current.sendAudioCommit();
-      console.log('Buffer committato (chunks inviati in streaming)');
+      console.log('Registrazione fermata (chunks già inviati in streaming, VAD automatico attivo)');
 
       setState('processing');
       setRecordingDuration(0);
@@ -331,7 +340,7 @@ export function useVoiceChat() {
 
     } catch (err) {
       console.error('Errore stop registrazione:', err);
-      setError('Errore durante l\'invio dell\'audio');
+      setError('Errore durante l\'arresto della registrazione');
       setState('error');
       return false;
     }
@@ -363,20 +372,6 @@ export function useVoiceChat() {
       audioPlayerRef.current.clearChunks();
     }
 
-    setState('ready');
-  }, []);
-
-  /**
-   * Interrompe la risposta corrente dell'assistente
-   */
-  const sendInterrupt = useCallback((): void => {
-    if (websocketRef.current?.isConnected()) {
-      websocketRef.current.sendInterrupt();
-    }
-    if (audioPlayerRef.current) {
-      audioPlayerRef.current.stopPlayback();
-      audioPlayerRef.current.clearChunks();
-    }
     setState('ready');
   }, []);
 
@@ -474,7 +469,6 @@ export function useVoiceChat() {
     stopRecording,
     cancelRecording,
     stopPlayback,
-    sendInterrupt,
     sendTextMessage,
     cleanup,
     requestPermissions,
