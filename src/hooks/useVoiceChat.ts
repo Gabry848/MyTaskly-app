@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { VoiceBotWebSocket, VoiceChatCallbacks, VoiceServerPhase } from '../services/botservice';
+import { VoiceBotWebSocket, VoiceChatCallbacks, VoiceServerPhase } from '../services/voiceBotService';
 import { AudioRecorder, AudioPlayer, checkAudioPermissions } from '../utils/audioUtils';
 
 /**

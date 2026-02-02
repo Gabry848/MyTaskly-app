@@ -20,7 +20,7 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ChatList, Message } from "../../components/BotChat";
 import { ToolWidget } from "../../components/BotChat/types";
-import { sendMessageToBot, formatMessage, StreamingCallback, createNewChat } from "../../services/botservice";
+import { sendMessageToBot, formatMessage, StreamingCallback, createNewChat } from "../../services/textBotService";
 import { getChatWithMessages, ChatMessage } from "../../services/chatHistoryService";
 import { STORAGE_KEYS } from "../../constants/authConstants";
 import { TaskCacheService } from '../../services/TaskCacheService';
