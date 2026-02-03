@@ -66,6 +66,7 @@ export function useVoiceChat() {
   const audioPlayerRef = useRef<AudioPlayer | null>(null);
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const shouldAutoStartRecordingRef = useRef<boolean>(false);
+  const agentEndedRef = useRef<boolean>(true); // true = agent ha finito, possiamo registrare
 
   /**
    * Verifica e richiede i permessi audio
@@ -147,24 +148,58 @@ export function useVoiceChat() {
       switch (phase) {
         case 'agent_start':
           setState('processing');
+          agentEndedRef.current = false; // Agent sta elaborando
+          // IMPORTANTE: Ferma la registrazione quando l'assistente inizia a rispondere
+          // per evitare che il microfono catturi l'audio della risposta (feedback loop)
+          if (audioRecorderRef.current?.isCurrentlyRecording()) {
+            console.log('Fermo registrazione - agent_start');
+            audioRecorderRef.current.stopRecording().catch(err => {
+              console.error('Errore fermando registrazione su agent_start:', err);
+            });
+            if (recordingIntervalRef.current) {
+              clearInterval(recordingIntervalRef.current);
+              recordingIntervalRef.current = null;
+            }
+          }
           break;
 
         case 'agent_end':
-          // Agent ha finito di elaborare, l'audio potrebbe seguire
+          // Agent ha finito di elaborare
+          console.log('Agent terminato');
+          agentEndedRef.current = true;
+          // Se ci sono chunk audio da riprodurre, aspettiamo audio_end
+          // Altrimenti, torniamo pronti
+          if (!audioPlayerRef.current || audioPlayerRef.current.getChunksCount() === 0) {
+            setState('ready');
+            setTimeout(() => {
+              startRecording();
+            }, 300);
+          }
           break;
 
         case 'audio_end':
-          // Server ha finito di inviare chunk audio -> riproduci
+          // Server ha finito di inviare chunk audio per questo segmento
           if (audioPlayerRef.current && audioPlayerRef.current.getChunksCount() > 0) {
             setState('speaking');
+            console.log(`Avvio riproduzione audio (${audioPlayerRef.current.getChunksCount()} chunk)`);
             audioPlayerRef.current.playPcm16Chunks(() => {
-              setState('ready');
-              // Riavvia automaticamente la registrazione per il prossimo turno
-              setTimeout(() => {
-                startRecording();
-              }, 300);
+              console.log('Riproduzione completata');
+              // Riavvia la registrazione SOLO se l'agent ha finito
+              if (agentEndedRef.current) {
+                console.log('Agent finito, riavvio registrazione');
+                setState('ready');
+                setTimeout(() => {
+                  startRecording();
+                }, 300);
+              } else {
+                // Agent non ha ancora finito, torna in processing
+                // e aspetta altri chunk audio o agent_end
+                console.log('Agent non ancora finito, attendo...');
+                setState('processing');
+              }
             });
-          } else {
+          } else if (agentEndedRef.current) {
+            // Nessun audio da riprodurre e agent finito, torna pronto
             setState('ready');
             setTimeout(() => {
               startRecording();
@@ -173,12 +208,20 @@ export function useVoiceChat() {
           break;
 
         case 'interrupted':
-          // Risposta interrotta, torna pronto
+          // Risposta interrotta dall'utente, torna pronto
+          console.log('Risposta interrotta');
+          agentEndedRef.current = true; // Reset
           if (audioPlayerRef.current) {
             audioPlayerRef.current.stopPlayback();
             audioPlayerRef.current.clearChunks();
           }
           setState('ready');
+          // L'utente ha interrotto, riavvia la registrazione
+          if (!audioRecorderRef.current?.isCurrentlyRecording()) {
+            setTimeout(() => {
+              startRecording();
+            }, 200);
+          }
           break;
       }
     },
@@ -254,6 +297,7 @@ export function useVoiceChat() {
     setActiveTools([]);
     setChunksReceived(0);
     shouldAutoStartRecordingRef.current = true;
+    agentEndedRef.current = true; // Reset per nuova sessione
 
     try {
       const connected = await websocketRef.current!.connect();
