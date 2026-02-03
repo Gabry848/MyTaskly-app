@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -9,9 +9,11 @@ import {
   Dimensions,
   StatusBar,
   ActivityIndicator,
-  Alert
+  Alert,
+  Platform
 } from "react-native";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { LinearGradient } from 'expo-linear-gradient';
 import { useVoiceChat } from '../../hooks/useVoiceChat';
 
 export interface VoiceChatModalProps {
@@ -38,10 +40,13 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
     isSpeaking,
     transcripts,
     activeTools,
+    isMuted,
     connect,
     disconnect,
     stopPlayback,
     requestPermissions,
+    mute,
+    unmute,
   } = useVoiceChat();
 
   // Animazioni
@@ -50,6 +55,8 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
   const slideIn = useRef(new Animated.Value(height)).current;
   const fadeIn = useRef(new Animated.Value(0)).current;
   const recordingScale = useRef(new Animated.Value(1)).current;
+  const breathingScale = useRef(new Animated.Value(1)).current;
+  const liveDotOpacity = useRef(new Animated.Value(1)).current;
 
   // Notifica trascrizioni assistant al parent
   useEffect(() => {
@@ -162,6 +169,57 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
     }
   }, [isProcessing, isSpeaking, recordingScale]);
 
+  // Breathing animation for idle state
+  useEffect(() => {
+    const shouldBreathe = isConnected && !isRecording && !isProcessing && !isSpeaking && state === 'ready';
+
+    if (shouldBreathe) {
+      const breathingAnimation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(breathingScale, {
+            toValue: 1.05,
+            duration: 2000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(breathingScale, {
+            toValue: 1,
+            duration: 2000,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      breathingAnimation.start();
+
+      return () => {
+        breathingAnimation.stop();
+        breathingScale.setValue(1);
+      };
+    }
+  }, [isConnected, isRecording, isProcessing, isSpeaking, state, breathingScale]);
+
+  // Live dot pulse animation
+  useEffect(() => {
+    if (isConnected) {
+      const dotPulse = Animated.loop(
+        Animated.sequence([
+          Animated.timing(liveDotOpacity, {
+            toValue: 0.3,
+            duration: 1000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(liveDotOpacity, {
+            toValue: 1,
+            duration: 1000,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      dotPulse.start();
+
+      return () => dotPulse.stop();
+    }
+  }, [isConnected, liveDotOpacity]);
+
   // Gestione connessione
   const handleConnect = async () => {
     if (!hasPermissions) {
@@ -249,11 +307,17 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
     if (isProcessing || isSpeaking) {
       return (
         <Animated.View style={[
-          styles.microphoneCircle,
-          styles.thinkingCircle,
+          styles.orbContainer,
           { transform: [{ scale: recordingScale }] }
         ]}>
-          <ActivityIndicator size="large" color="#fff" />
+          <LinearGradient
+            colors={['#0066FF', '#00CCFF']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.orbGradient}
+          >
+            <ActivityIndicator size="large" color="#FFFFFF" />
+          </LinearGradient>
         </Animated.View>
       );
     }
@@ -261,8 +325,15 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
     // Stato: connessione / setup
     if (state === 'connecting' || state === 'authenticating' || state === 'setting_up') {
       return (
-        <Animated.View style={styles.microphoneCircle}>
-          <ActivityIndicator size="large" color="#fff" />
+        <Animated.View style={styles.orbContainer}>
+          <LinearGradient
+            colors={['#0066FF', '#00CCFF']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.orbGradient}
+          >
+            <ActivityIndicator size="large" color="#FFFFFF" />
+          </LinearGradient>
         </Animated.View>
       );
     }
@@ -270,14 +341,23 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
     // Stato: errore
     if (state === 'error') {
       return (
-        <Animated.View style={styles.microphoneCircle}>
-          <TouchableOpacity
-            style={styles.microphoneButton}
-            onPress={handleErrorDismiss}
-            activeOpacity={0.8}
+        <Animated.View style={styles.orbContainer}>
+          <LinearGradient
+            colors={['#FF3B30', '#FF6B6B']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.orbGradient}
           >
-            <MaterialIcons name="refresh" size={52} color="#ffffff" />
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.orbButton}
+              onPress={handleErrorDismiss}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Riprova connessione"
+            >
+              <MaterialIcons name="refresh" size={52} color="#FFFFFF" />
+            </TouchableOpacity>
+          </LinearGradient>
         </Animated.View>
       );
     }
@@ -285,29 +365,48 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
     // Stato: non connesso
     if (!isConnected) {
       return (
-        <Animated.View style={styles.microphoneCircle}>
-          <TouchableOpacity
-            style={styles.microphoneButton}
-            onPress={handleConnect}
-            activeOpacity={0.8}
+        <Animated.View style={styles.orbContainer}>
+          <LinearGradient
+            colors={['#0066FF', '#00CCFF']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.orbGradient}
           >
-            <MaterialIcons name="wifi" size={52} color="#ffffff" />
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.orbButton}
+              onPress={handleConnect}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Connetti assistente vocale"
+            >
+              <MaterialIcons name="wifi" size={52} color="#FFFFFF" />
+            </TouchableOpacity>
+          </LinearGradient>
         </Animated.View>
       );
     }
 
-    // Stato: ascolto attivo con animazione semplice
+    // Determine scale for idle state
+    const orbScale = isRecording ? 1 : breathingScale;
+
+    // Stato: ascolto attivo o pronto
     return (
       <Animated.View style={[
-        styles.microphoneCircle,
-        isRecording && styles.listeningCircle,
+        styles.orbContainer,
+        { transform: [{ scale: orbScale }] }
       ]}>
-        <Ionicons
-          name={isRecording ? "mic" : "mic-outline"}
-          size={56}
-          color="#ffffff"
-        />
+        <LinearGradient
+          colors={['#0066FF', '#00CCFF']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.orbGradient}
+        >
+          <Ionicons
+            name="mic"
+            size={56}
+            color="#FFFFFF"
+          />
+        </LinearGradient>
       </Animated.View>
     );
   };
@@ -339,7 +438,7 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
       statusBarTranslucent={true}
       onRequestClose={handleClose}
     >
-      <StatusBar barStyle="light-content" backgroundColor="rgba(0,0,0,0.95)" />
+      <StatusBar barStyle="light-content" backgroundColor="#000000" />
 
       <Animated.View
         style={[
@@ -350,27 +449,40 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
           },
         ]}
       >
-        {/* Header */}
+        {/* Header with Live indicator and Close button */}
         <View style={styles.header}>
+          {/* Live Indicator */}
+          {isConnected && (
+            <View style={styles.liveIndicator}>
+              <Animated.View
+                style={[
+                  styles.liveDot,
+                  { opacity: liveDotOpacity }
+                ]}
+              />
+              <Text style={styles.liveText}>Live</Text>
+            </View>
+          )}
+
+          {/* Close Button */}
           <TouchableOpacity
             style={styles.closeButton}
             onPress={handleClose}
             activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Chiudi chat vocale"
           >
-            <Ionicons name="close" size={26} color="rgba(255, 255, 255, 0.8)" />
+            <Ionicons name="close" size={24} color="#FFFFFF" />
           </TouchableOpacity>
         </View>
 
         {/* Contenuto principale */}
         <View style={styles.content}>
-          {/* Titolo minimale */}
-          <Text style={styles.title}>Assistente Vocale</Text>
-
-          {/* Messaggio di stato semplice */}
+          {/* Messaggio di stato */}
           {renderStateIndicator()}
 
-          {/* Cerchio animato centrale */}
-          <View style={styles.microphoneContainer}>
+          {/* Orb animato centrale */}
+          <View style={styles.orbOuterContainer}>
             {/* Cerchi di pulsazione - solo quando in ascolto */}
             {isRecording && (
               <>
@@ -397,17 +509,21 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
               </>
             )}
 
-            {/* Pulsante principale */}
+            {/* Orb principale */}
             {renderMainButton()}
+
+            {/* Overlay microfono disabilitato */}
+            {isMuted && isConnected && (
+              <View style={styles.mutedOverlay}>
+                <View style={styles.mutedIconContainer}>
+                  <Ionicons name="mic-off" size={48} color="#FF3B30" />
+                  <Text style={styles.mutedText}>Microfono disattivato</Text>
+                </View>
+              </View>
+            )}
           </View>
 
-          {/* Pulsante stop durante elaborazione */}
-          {renderStopButton()}
-
-          {/* Ultima trascrizione */}
-          {renderLastTranscript()}
-
-          {/* Messaggio di errore minimalista */}
+          {/* Messaggio di errore */}
           {error && (
             <View style={styles.errorContainer}>
               <Text style={styles.errorText}>{error}</Text>
@@ -418,11 +534,56 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
           )}
         </View>
 
-        {/* Footer con istruzioni semplici */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            Parla naturalmente
-          </Text>
+        {/* Widget Area - Transcript */}
+        {transcripts.length > 0 && (
+          <View style={styles.widgetArea}>
+            <Text style={styles.widgetTitle}>Trascrizione</Text>
+            <Text style={styles.widgetText} numberOfLines={2}>
+              {transcripts[transcripts.length - 1].content}
+            </Text>
+          </View>
+        )}
+
+        {/* Bottom Control Bar */}
+        <View style={styles.controlBar}>
+          {/* Microphone Button - Primary */}
+          <TouchableOpacity
+            style={[
+              styles.controlButton,
+              styles.controlButtonPrimary,
+              isMuted && styles.controlButtonMuted,
+              isRecording && !isMuted && styles.controlButtonRecording
+            ]}
+            onPress={() => {
+              if (isMuted) {
+                unmute();
+              } else {
+                mute();
+              }
+            }}
+            disabled={!isConnected || state === 'connecting' || isProcessing || isSpeaking}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel={isMuted ? "Microfono disattivato" : "Microfono attivo"}
+            accessibilityState={{ selected: !isMuted }}
+          >
+            <Ionicons
+              name={isMuted ? "mic-off" : "mic"}
+              size={28}
+              color="#FFFFFF"
+            />
+          </TouchableOpacity>
+
+          {/* End Call Button */}
+          <TouchableOpacity
+            style={[styles.controlButton, styles.controlButtonEnd]}
+            onPress={handleClose}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Chiudi chat vocale"
+          >
+            <Ionicons name="close" size={28} color="#FFFFFF" />
+          </TouchableOpacity>
         </View>
       </Animated.View>
     </Modal>
@@ -432,19 +593,45 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.95)",
+    backgroundColor: "#000000",
     justifyContent: "space-between",
   },
   header: {
     paddingTop: StatusBar.currentHeight ? StatusBar.currentHeight + 16 : 44,
     paddingHorizontal: 20,
     paddingBottom: 16,
-    alignItems: "flex-end",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  liveIndicator: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  liveDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#34C759",
+    marginRight: 6,
+  },
+  liveText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#FFFFFF",
+    fontFamily: "System",
   },
   closeButton: {
-    padding: 10,
-    borderRadius: 24,
-    backgroundColor: "rgba(255, 255, 255, 0.06)",
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(58, 58, 60, 0.6)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   content: {
     flex: 1,
@@ -452,125 +639,193 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 32,
   },
-  title: {
-    fontSize: 26,
-    fontWeight: "200",
-    color: "#ffffff",
-    textAlign: "center",
-    marginBottom: 64,
-    fontFamily: "System",
-    letterSpacing: 0.8,
-  },
   subtleText: {
     fontSize: 15,
     fontWeight: "300",
     color: "rgba(255, 255, 255, 0.5)",
     textAlign: "center",
-    marginBottom: 52,
+    marginBottom: 40,
     fontFamily: "System",
   },
-  transcriptText: {
-    fontSize: 13,
-    fontWeight: "300",
-    color: "rgba(255, 255, 255, 0.4)",
-    textAlign: "center",
-    marginTop: 32,
-    maxWidth: "85%",
-    fontFamily: "System",
-  },
-  microphoneContainer: {
+  orbOuterContainer: {
     position: "relative",
     alignItems: "center",
     justifyContent: "center",
-    marginVertical: 48,
+    marginVertical: 32,
   },
   pulseCircle: {
     position: "absolute",
-    borderRadius: 150,
-    borderWidth: 1,
-    borderColor: "rgba(76, 175, 80, 0.4)",
+    borderRadius: 200,
+    borderWidth: 2,
+    borderColor: "rgba(0, 102, 255, 0.3)",
   },
   pulseCircle1: {
-    width: 240,
-    height: 240,
+    width: 280,
+    height: 280,
   },
   pulseCircle2: {
-    width: 300,
-    height: 300,
+    width: 340,
+    height: 340,
   },
-  microphoneCircle: {
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
+  orbContainer: {
+    width: 240,
+    height: 240,
+    borderRadius: 120,
+    ...Platform.select({
+      ios: {
+        shadowColor: "#0066FF",
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.6,
+        shadowRadius: 24,
+      },
+      android: {
+        elevation: 12,
+      },
+    }),
+  },
+  orbGradient: {
+    width: 240,
+    height: 240,
+    borderRadius: 120,
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 1.5,
-    borderColor: "rgba(255, 255, 255, 0.15)",
   },
-  listeningCircle: {
-    backgroundColor: "rgba(76, 175, 80, 0.15)",
-    borderColor: "rgba(76, 175, 80, 0.3)",
-  },
-  thinkingCircle: {
-    backgroundColor: "rgba(33, 150, 243, 0.15)",
-    borderColor: "rgba(33, 150, 243, 0.3)",
-  },
-  microphoneButton: {
+  orbButton: {
     width: "100%",
     height: "100%",
     justifyContent: "center",
     alignItems: "center",
-    borderRadius: 80,
-  },
-  footer: {
-    paddingHorizontal: 40,
-    paddingBottom: 64,
-    alignItems: "center",
-  },
-  footerText: {
-    fontSize: 12,
-    fontWeight: "300",
-    color: "rgba(255, 255, 255, 0.35)",
-    textAlign: "center",
-    fontFamily: "System",
-    letterSpacing: 0.3,
-  },
-  stopButton: {
-    paddingHorizontal: 28,
-    paddingVertical: 14,
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
-    borderRadius: 28,
-    marginTop: 40,
-  },
-  stopButtonText: {
-    fontSize: 14,
-    fontWeight: "400",
-    color: "rgba(255, 255, 255, 0.75)",
-    fontFamily: "System",
-    letterSpacing: 0.2,
+    borderRadius: 120,
   },
   errorContainer: {
     alignItems: "center",
-    paddingHorizontal: 28,
-    paddingVertical: 18,
-    backgroundColor: "rgba(244, 67, 54, 0.08)",
-    borderRadius: 20,
-    marginTop: 40,
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    backgroundColor: "rgba(244, 67, 54, 0.1)",
+    borderRadius: 16,
+    marginTop: 32,
     maxWidth: "85%",
   },
   errorText: {
-    color: "rgba(255, 107, 107, 0.85)",
+    color: "#FF6B6B",
     fontSize: 13,
-    fontWeight: "300",
+    fontWeight: "400",
     textAlign: "center",
-    marginBottom: 14,
+    marginBottom: 12,
     fontFamily: "System",
   },
   retryText: {
-    color: "rgba(255, 255, 255, 0.65)",
+    color: "#FFFFFF",
     fontSize: 13,
+    fontWeight: "600",
+    fontFamily: "System",
+  },
+  widgetArea: {
+    height: 120,
+    backgroundColor: "rgba(28, 28, 30, 0.95)",
+    marginHorizontal: 16,
+    marginBottom: 16,
+    borderRadius: 16,
+    padding: 16,
+    justifyContent: "flex-start",
+  },
+  widgetTitle: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "rgba(255, 255, 255, 0.6)",
+    marginBottom: 8,
+    fontFamily: "System",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  widgetText: {
+    fontSize: 14,
     fontWeight: "400",
+    color: "#FFFFFF",
+    fontFamily: "System",
+    lineHeight: 20,
+  },
+  controlBar: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 40,
+    paddingHorizontal: 32,
+    paddingVertical: 24,
+    paddingBottom: 40,
+    backgroundColor: "#000000",
+  },
+  controlButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "rgba(58, 58, 60, 0.8)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  controlButtonDisabled: {
+    backgroundColor: "rgba(58, 58, 60, 0.4)",
+  },
+  controlButtonActive: {
+    backgroundColor: "rgba(58, 58, 60, 1)",
+  },
+  controlButtonPrimary: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "#0066FF",
+    ...Platform.select({
+      ios: {
+        shadowColor: "#0066FF",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.4,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
+  },
+  controlButtonRecording: {
+    backgroundColor: "#00CCFF",
+  },
+  controlButtonMuted: {
+    backgroundColor: "#FF3B30",
+  },
+  controlButtonEnd: {
+    backgroundColor: "#FF3B30",
+    ...Platform.select({
+      ios: {
+        shadowColor: "#FF3B30",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
+  },
+  mutedOverlay: {
+    position: "absolute",
+    width: 240,
+    height: 240,
+    borderRadius: 120,
+    backgroundColor: "rgba(0, 0, 0, 0.85)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 10,
+  },
+  mutedIconContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  mutedText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#FF3B30",
+    marginTop: 8,
+    textAlign: "center",
     fontFamily: "System",
   },
 });

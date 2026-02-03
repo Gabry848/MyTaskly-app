@@ -55,6 +55,7 @@ export function useVoiceChat() {
   const [recordingDuration, setRecordingDuration] = useState<number>(0);
   const [hasPermissions, setHasPermissions] = useState<boolean>(false);
   const [chunksReceived, setChunksReceived] = useState<number>(0);
+  const [isMuted, setIsMuted] = useState<boolean>(false);
 
   // Trascrizioni e tool
   const [transcripts, setTranscripts] = useState<VoiceTranscript[]>([]);
@@ -67,6 +68,7 @@ export function useVoiceChat() {
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const shouldAutoStartRecordingRef = useRef<boolean>(false);
   const agentEndedRef = useRef<boolean>(true); // true = agent ha finito, possiamo registrare
+  const isMutedRef = useRef<boolean>(false);
 
   /**
    * Verifica e richiede i permessi audio
@@ -108,12 +110,14 @@ export function useVoiceChat() {
       console.log('Sessione vocale pronta');
       setState('ready');
 
-      // Avvia la registrazione automaticamente se richiesto
-      if (shouldAutoStartRecordingRef.current) {
+      // Avvia la registrazione automaticamente se richiesto e non mutato
+      if (shouldAutoStartRecordingRef.current && !isMutedRef.current) {
         shouldAutoStartRecordingRef.current = false;
         setTimeout(() => {
           startRecording();
         }, 500);
+      } else if (isMutedRef.current) {
+        shouldAutoStartRecordingRef.current = false;
       }
     },
 
@@ -171,9 +175,11 @@ export function useVoiceChat() {
           // Altrimenti, torniamo pronti
           if (!audioPlayerRef.current || audioPlayerRef.current.getChunksCount() === 0) {
             setState('ready');
-            setTimeout(() => {
-              startRecording();
-            }, 300);
+            if (!isMutedRef.current) {
+              setTimeout(() => {
+                startRecording();
+              }, 300);
+            }
           }
           break;
 
@@ -184,13 +190,15 @@ export function useVoiceChat() {
             console.log(`Avvio riproduzione audio (${audioPlayerRef.current.getChunksCount()} chunk)`);
             audioPlayerRef.current.playPcm16Chunks(() => {
               console.log('Riproduzione completata');
-              // Riavvia la registrazione SOLO se l'agent ha finito
+              // Riavvia la registrazione SOLO se l'agent ha finito e non è mutato
               if (agentEndedRef.current) {
                 console.log('Agent finito, riavvio registrazione');
                 setState('ready');
-                setTimeout(() => {
-                  startRecording();
-                }, 300);
+                if (!isMutedRef.current) {
+                  setTimeout(() => {
+                    startRecording();
+                  }, 300);
+                }
               } else {
                 // Agent non ha ancora finito, torna in processing
                 // e aspetta altri chunk audio o agent_end
@@ -201,9 +209,11 @@ export function useVoiceChat() {
           } else if (agentEndedRef.current) {
             // Nessun audio da riprodurre e agent finito, torna pronto
             setState('ready');
-            setTimeout(() => {
-              startRecording();
-            }, 300);
+            if (!isMutedRef.current) {
+              setTimeout(() => {
+                startRecording();
+              }, 300);
+            }
           }
           break;
 
@@ -216,8 +226,8 @@ export function useVoiceChat() {
             audioPlayerRef.current.clearChunks();
           }
           setState('ready');
-          // L'utente ha interrotto, riavvia la registrazione
-          if (!audioRecorderRef.current?.isCurrentlyRecording()) {
+          // L'utente ha interrotto, riavvia la registrazione se non mutato
+          if (!audioRecorderRef.current?.isCurrentlyRecording() && !isMutedRef.current) {
             setTimeout(() => {
               startRecording();
             }, 200);
@@ -444,6 +454,50 @@ export function useVoiceChat() {
   }, []);
 
   /**
+   * Muta il microfono
+   */
+  const mute = useCallback(async (): Promise<void> => {
+    setIsMuted(true);
+    isMutedRef.current = true;
+
+    // Ferma la registrazione se è attiva
+    if (audioRecorderRef.current?.isCurrentlyRecording()) {
+      try {
+        await audioRecorderRef.current.cancelRecording();
+
+        // Pulisci il timer della durata
+        if (recordingIntervalRef.current) {
+          clearInterval(recordingIntervalRef.current);
+          recordingIntervalRef.current = null;
+        }
+
+        setRecordingDuration(0);
+        // Mantieni lo stato 'ready' invece di tornare a 'recording'
+        if (state === 'recording') {
+          setState('ready');
+        }
+      } catch (err) {
+        console.error('Errore durante il mute:', err);
+      }
+    }
+  }, [state]);
+
+  /**
+   * Riattiva il microfono
+   */
+  const unmute = useCallback(async (): Promise<void> => {
+    setIsMuted(false);
+    isMutedRef.current = false;
+
+    // Riavvia la registrazione se siamo in stato 'ready'
+    if (state === 'ready' && websocketRef.current?.isReady()) {
+      setTimeout(() => {
+        startRecording();
+      }, 100);
+    }
+  }, [state, startRecording]);
+
+  /**
    * Disconnette dal servizio
    */
   const disconnect = useCallback(async (): Promise<void> => {
@@ -484,6 +538,8 @@ export function useVoiceChat() {
     setTranscripts([]);
     setActiveTools([]);
     setRecordingDuration(0);
+    setIsMuted(false); // Reset mute state
+    isMutedRef.current = false;
   }, []);
 
   /**
@@ -559,6 +615,7 @@ export function useVoiceChat() {
     recordingDuration,
     hasPermissions,
     chunksReceived,
+    isMuted,
 
     // Trascrizioni e tool
     transcripts,
@@ -583,5 +640,7 @@ export function useVoiceChat() {
     sendTextMessage,
     cleanup,
     requestPermissions,
+    mute,
+    unmute,
   };
 }
