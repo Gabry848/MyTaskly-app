@@ -383,20 +383,13 @@ export class VoiceBotWebSocket {
    * OpenAI gestisce automaticamente VAD e interruzioni.
    */
   sendAudio(pcm16Data: ArrayBuffer | Uint8Array): void {
-    if (!this.isConnected()) {
-      console.log(`🔍 DEBUG sendAudio: BLOCCATO - non connesso`);
-      this.callbacks.onError?.('Connessione WebSocket non disponibile');
-      return;
-    }
-
-    if (!this.isReady()) {
-      console.log(`🔍 DEBUG sendAudio: BLOCCATO - non pronto (authState=${this.authState})`);
-      // Non mettiamo in coda l'audio, lo scartiamo
+    // Non logghiamo errori se la connessione è già chiusa per evitare spam di log
+    // In questo caso semplicemente scartiamo l'audio silenziosamente
+    if (!this.isConnected() || !this.isReady()) {
       return;
     }
 
     const bytes = pcm16Data instanceof Uint8Array ? pcm16Data.buffer : pcm16Data;
-    console.log(`🔍 DEBUG sendAudio: invio binary frame size=${bytes.byteLength} bytes`);
 
     // Invia come binary frame (NON JSON)
     this.ws!.send(bytes);
@@ -415,19 +408,16 @@ export class VoiceBotWebSocket {
    */
   private sendOrQueue(message: VoiceClientMessage): void {
     if (!this.isConnected()) {
-      console.log(`🔍 DEBUG sendOrQueue: BLOCCATO - non connesso (type=${message.type})`);
-      this.callbacks.onError?.('Connessione WebSocket non disponibile');
+      // Non logghiamo errori se la connessione è già chiusa per evitare spam di log
       return;
     }
 
     if (!this.isReady()) {
-      console.log(`🔍 DEBUG sendOrQueue: IN CODA - non pronto (type=${message.type}, authState=${this.authState})`);
       this.messageQueue.push(message);
       return;
     }
 
     const json = JSON.stringify(message);
-    console.log(`🔍 DEBUG sendOrQueue: INVIATO type=${message.type}, size=${json.length} bytes`);
     this.ws!.send(json);
   }
 

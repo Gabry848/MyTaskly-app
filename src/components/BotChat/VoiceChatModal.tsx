@@ -40,7 +40,6 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
     activeTools,
     connect,
     disconnect,
-    cancelRecording,
     stopPlayback,
     requestPermissions,
   } = useVoiceChat();
@@ -93,11 +92,10 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
   // Cleanup quando il modal si chiude
   useEffect(() => {
     if (!visible) {
-      if (isRecording) cancelRecording();
-      if (isSpeaking) stopPlayback();
+      // Usa disconnect che gestisce internamente il cleanup di registrazione e player
       disconnect();
     }
-  }, [visible]);
+  }, [visible, disconnect]);
 
   // Animazione del cerchio pulsante - solo quando in ascolto
   useEffect(() => {
@@ -180,11 +178,8 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
     await connect();
   };
 
-  const handleClose = () => {
-    if (isRecording) cancelRecording();
-    if (isSpeaking) stopPlayback();
-    disconnect();
-
+  const handleClose = async () => {
+    // Avvia l'animazione di chiusura
     Animated.parallel([
       Animated.timing(slideIn, {
         toValue: height,
@@ -199,6 +194,10 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
     ]).start(() => {
       onClose();
     });
+
+    // Esegui il cleanup in parallelo all'animazione
+    // disconnect gestisce internamente il cleanup di registrazione e player
+    await disconnect();
   };
 
   const handleErrorDismiss = () => {

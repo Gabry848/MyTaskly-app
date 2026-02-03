@@ -123,8 +123,22 @@ export function useVoiceChat() {
     },
 
     onConnectionClose: () => {
+      console.log('WebSocket disconnesso - cleanup in corso');
       setState('disconnected');
       shouldAutoStartRecordingRef.current = false;
+
+      // Ferma la registrazione se attiva per evitare invio audio su connessione morta
+      if (audioRecorderRef.current?.isCurrentlyRecording()) {
+        audioRecorderRef.current.cancelRecording().catch(err => {
+          console.error('Errore fermando registrazione su disconnessione:', err);
+        });
+      }
+
+      // Pulisci il timer della durata
+      if (recordingIntervalRef.current) {
+        clearInterval(recordingIntervalRef.current);
+        recordingIntervalRef.current = null;
+      }
     },
 
     onStatus: (phase: VoiceServerPhase, message: string) => {
@@ -388,7 +402,34 @@ export function useVoiceChat() {
   /**
    * Disconnette dal servizio
    */
-  const disconnect = useCallback((): void => {
+  const disconnect = useCallback(async (): Promise<void> => {
+    console.log('Disconnessione in corso...');
+
+    // Prima ferma la registrazione per evitare invio audio su connessione che sta chiudendo
+    if (audioRecorderRef.current?.isCurrentlyRecording()) {
+      try {
+        await audioRecorderRef.current.cancelRecording();
+      } catch (err) {
+        console.error('Errore fermando registrazione durante disconnect:', err);
+      }
+    }
+
+    // Pulisci il timer della durata
+    if (recordingIntervalRef.current) {
+      clearInterval(recordingIntervalRef.current);
+      recordingIntervalRef.current = null;
+    }
+
+    // Ferma l'audio player
+    if (audioPlayerRef.current?.isCurrentlyPlaying()) {
+      try {
+        await audioPlayerRef.current.stopPlayback();
+      } catch (err) {
+        console.error('Errore fermando playback durante disconnect:', err);
+      }
+    }
+
+    // Poi chiudi il WebSocket
     if (websocketRef.current) {
       websocketRef.current.disconnect();
     }
@@ -398,23 +439,49 @@ export function useVoiceChat() {
     setError(null);
     setTranscripts([]);
     setActiveTools([]);
+    setRecordingDuration(0);
   }, []);
 
   /**
    * Pulisce tutte le risorse
    */
   const cleanup = useCallback(async (): Promise<void> => {
-    if (audioRecorderRef.current) {
-      await audioRecorderRef.current.cancelRecording();
-    }
-    if (audioPlayerRef.current) {
-      await audioPlayerRef.current.destroy();
-    }
-    if (websocketRef.current) {
-      websocketRef.current.destroy();
-    }
+    console.log('Cleanup risorse voice chat...');
+
+    // Pulisci il timer della durata
     if (recordingIntervalRef.current) {
       clearInterval(recordingIntervalRef.current);
+      recordingIntervalRef.current = null;
+    }
+
+    // Prima ferma la registrazione
+    if (audioRecorderRef.current) {
+      try {
+        await audioRecorderRef.current.cancelRecording();
+      } catch (err) {
+        console.error('Errore cleanup registrazione:', err);
+      }
+      audioRecorderRef.current = null;
+    }
+
+    // Poi ferma il player
+    if (audioPlayerRef.current) {
+      try {
+        await audioPlayerRef.current.destroy();
+      } catch (err) {
+        console.error('Errore cleanup player:', err);
+      }
+      audioPlayerRef.current = null;
+    }
+
+    // Infine chiudi il WebSocket
+    if (websocketRef.current) {
+      try {
+        websocketRef.current.destroy();
+      } catch (err) {
+        console.error('Errore cleanup websocket:', err);
+      }
+      websocketRef.current = null;
     }
 
     setState('idle');
