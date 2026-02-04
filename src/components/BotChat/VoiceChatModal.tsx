@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -10,11 +10,23 @@ import {
   StatusBar,
   ActivityIndicator,
   Alert,
-  Platform
+  Platform,
+  FlatList
 } from "react-native";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { LinearGradient } from 'expo-linear-gradient';
 import { useVoiceChat } from '../../hooks/useVoiceChat';
+
+// Tipi per i messaggi della voice chat
+type VoiceChatMessageType =
+  | { type: 'transcript'; role: 'user' | 'assistant'; content: string; timestamp: Date }
+  | { type: 'tool_call'; toolName: string; args: string; timestamp: Date }
+  | { type: 'tool_output'; toolName: string; output: string; timestamp: Date };
+
+interface VoiceChatMessage {
+  id: string;
+  data: VoiceChatMessageType;
+}
 
 export interface VoiceChatModalProps {
   visible: boolean;
@@ -50,13 +62,70 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
   } = useVoiceChat();
 
   // Animazioni
-  const pulseScale = useRef(new Animated.Value(1)).current;
-  const pulseOpacity = useRef(new Animated.Value(0.3)).current;
   const slideIn = useRef(new Animated.Value(height)).current;
   const fadeIn = useRef(new Animated.Value(0)).current;
-  const recordingScale = useRef(new Animated.Value(1)).current;
-  const breathingScale = useRef(new Animated.Value(1)).current;
   const liveDotOpacity = useRef(new Animated.Value(1)).current;
+  const flatListRef = useRef<FlatList>(null);
+
+  // Combina trascrizioni e tool calls/outputs in un'unica lista di messaggi
+  const chatMessages = useMemo<VoiceChatMessage[]>(() => {
+    const messages: VoiceChatMessage[] = [];
+    let messageIndex = 0;
+
+    // Aggiungi trascrizioni
+    transcripts.forEach((transcript, idx) => {
+      messages.push({
+        id: `transcript-${idx}`,
+        data: {
+          type: 'transcript',
+          role: transcript.role,
+          content: transcript.content,
+          timestamp: new Date()
+        }
+      });
+      messageIndex++;
+    });
+
+    // Aggiungi tool calls e outputs
+    activeTools.forEach((tool, idx) => {
+      // Tool call
+      messages.push({
+        id: `tool-call-${idx}`,
+        data: {
+          type: 'tool_call',
+          toolName: tool.name,
+          args: tool.args,
+          timestamp: new Date()
+        }
+      });
+      messageIndex++;
+
+      // Tool output (se presente)
+      if (tool.status === 'complete' && tool.output) {
+        messages.push({
+          id: `tool-output-${idx}`,
+          data: {
+            type: 'tool_output',
+            toolName: tool.name,
+            output: tool.output,
+            timestamp: new Date()
+          }
+        });
+        messageIndex++;
+      }
+    });
+
+    return messages;
+  }, [transcripts, activeTools]);
+
+  // Auto-scroll quando arrivano nuovi messaggi
+  useEffect(() => {
+    if (chatMessages.length > 0) {
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    }
+  }, [chatMessages.length]);
 
   // Notifica trascrizioni assistant al parent
   useEffect(() => {
@@ -103,99 +172,6 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
       disconnect();
     }
   }, [visible, disconnect]);
-
-  // Animazione del cerchio pulsante - solo quando in ascolto
-  useEffect(() => {
-    const shouldAnimate = isRecording;
-
-    if (shouldAnimate) {
-      const pulseAnimation = Animated.loop(
-        Animated.sequence([
-          Animated.parallel([
-            Animated.timing(pulseScale, {
-              toValue: 1.15,
-              duration: 800,
-              useNativeDriver: true,
-            }),
-            Animated.timing(pulseOpacity, {
-              toValue: 0,
-              duration: 800,
-              useNativeDriver: true,
-            }),
-          ]),
-          Animated.parallel([
-            Animated.timing(pulseScale, {
-              toValue: 1,
-              duration: 800,
-              useNativeDriver: true,
-            }),
-            Animated.timing(pulseOpacity, {
-              toValue: 0.4,
-              duration: 800,
-              useNativeDriver: true,
-            }),
-          ]),
-        ])
-      );
-      pulseAnimation.start();
-
-      return () => pulseAnimation.stop();
-    }
-  }, [isRecording, pulseScale, pulseOpacity]);
-
-  // Animazione durante elaborazione/risposta
-  useEffect(() => {
-    if (isProcessing || isSpeaking) {
-      const thinkingAnimation = Animated.loop(
-        Animated.sequence([
-          Animated.timing(recordingScale, {
-            toValue: 1.08,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(recordingScale, {
-            toValue: 1,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-        ])
-      );
-      thinkingAnimation.start();
-
-      return () => {
-        thinkingAnimation.stop();
-        recordingScale.setValue(1);
-      };
-    }
-  }, [isProcessing, isSpeaking, recordingScale]);
-
-  // Breathing animation for idle state
-  useEffect(() => {
-    const shouldBreathe = isConnected && !isRecording && !isProcessing && !isSpeaking && state === 'ready';
-
-    if (shouldBreathe) {
-      const breathingAnimation = Animated.loop(
-        Animated.sequence([
-          Animated.timing(breathingScale, {
-            toValue: 1.05,
-            duration: 2000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(breathingScale, {
-            toValue: 1,
-            duration: 2000,
-            useNativeDriver: true,
-          }),
-        ])
-      );
-      breathingAnimation.start();
-
-      return () => {
-        breathingAnimation.stop();
-        breathingScale.setValue(1);
-      };
-    }
-  }, [isConnected, isRecording, isProcessing, isSpeaking, state, breathingScale]);
 
   // Live dot pulse animation
   useEffect(() => {
@@ -290,144 +266,63 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
     }
   };
 
-  // Mostra l'ultima trascrizione
-  const renderLastTranscript = () => {
-    if (transcripts.length === 0) return null;
-    const last = transcripts[transcripts.length - 1];
-    return (
-      <Text style={styles.transcriptText} numberOfLines={3}>
-        {last.role === 'user' ? 'Tu: ' : ''}{last.content}
-      </Text>
-    );
-  };
+  // Render di un singolo messaggio della chat
+  const renderChatMessage = ({ item }: { item: VoiceChatMessage }) => {
+    const { data } = item;
 
-  // Render del pulsante principale
-  const renderMainButton = () => {
-    // Stato: elaborazione o risposta in corso
-    if (isProcessing || isSpeaking) {
+    if (data.type === 'transcript') {
+      const isUser = data.role === 'user';
       return (
-        <Animated.View style={[
-          styles.orbContainer,
-          { transform: [{ scale: recordingScale }] }
+        <View style={[
+          styles.chatMessageContainer,
+          isUser ? styles.userMessageContainer : styles.assistantMessageContainer
         ]}>
-          <LinearGradient
-            colors={['#0066FF', '#00CCFF']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.orbGradient}
-          >
-            <ActivityIndicator size="large" color="#FFFFFF" />
-          </LinearGradient>
-        </Animated.View>
+          <View style={[
+            styles.chatMessageBubble,
+            isUser ? styles.userBubble : styles.assistantBubble
+          ]}>
+            <Text style={[
+              styles.chatMessageText,
+              isUser ? styles.userText : styles.assistantText
+            ]}>
+              {data.content}
+            </Text>
+          </View>
+        </View>
       );
     }
 
-    // Stato: connessione / setup
-    if (state === 'connecting' || state === 'authenticating' || state === 'setting_up') {
+    if (data.type === 'tool_call') {
       return (
-        <Animated.View style={styles.orbContainer}>
-          <LinearGradient
-            colors={['#0066FF', '#00CCFF']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.orbGradient}
-          >
-            <ActivityIndicator size="large" color="#FFFFFF" />
-          </LinearGradient>
-        </Animated.View>
+        <View style={styles.toolMessageContainer}>
+          <View style={styles.toolCallBubble}>
+            <View style={styles.toolHeader}>
+              <MaterialIcons name="build" size={16} color="#0066FF" />
+              <Text style={styles.toolHeaderText}>Esecuzione tool</Text>
+            </View>
+            <Text style={styles.toolName}>{data.toolName}</Text>
+            <Text style={styles.toolArgs} numberOfLines={2}>{data.args}</Text>
+          </View>
+        </View>
       );
     }
 
-    // Stato: errore
-    if (state === 'error') {
+    if (data.type === 'tool_output') {
       return (
-        <Animated.View style={styles.orbContainer}>
-          <LinearGradient
-            colors={['#FF3B30', '#FF6B6B']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.orbGradient}
-          >
-            <TouchableOpacity
-              style={styles.orbButton}
-              onPress={handleErrorDismiss}
-              activeOpacity={0.8}
-              accessibilityRole="button"
-              accessibilityLabel="Riprova connessione"
-            >
-              <MaterialIcons name="refresh" size={52} color="#FFFFFF" />
-            </TouchableOpacity>
-          </LinearGradient>
-        </Animated.View>
+        <View style={styles.toolMessageContainer}>
+          <View style={styles.toolOutputBubble}>
+            <View style={styles.toolHeader}>
+              <MaterialIcons name="check-circle" size={16} color="#34C759" />
+              <Text style={styles.toolHeaderText}>Risultato</Text>
+            </View>
+            <Text style={styles.toolName}>{data.toolName}</Text>
+            <Text style={styles.toolOutput} numberOfLines={3}>{data.output}</Text>
+          </View>
+        </View>
       );
     }
 
-    // Stato: non connesso
-    if (!isConnected) {
-      return (
-        <Animated.View style={styles.orbContainer}>
-          <LinearGradient
-            colors={['#0066FF', '#00CCFF']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.orbGradient}
-          >
-            <TouchableOpacity
-              style={styles.orbButton}
-              onPress={handleConnect}
-              activeOpacity={0.8}
-              accessibilityRole="button"
-              accessibilityLabel="Connetti assistente vocale"
-            >
-              <MaterialIcons name="wifi" size={52} color="#FFFFFF" />
-            </TouchableOpacity>
-          </LinearGradient>
-        </Animated.View>
-      );
-    }
-
-    // Determine scale for idle state
-    const orbScale = isRecording ? 1 : breathingScale;
-
-    // Stato: ascolto attivo o pronto
-    return (
-      <Animated.View style={[
-        styles.orbContainer,
-        { transform: [{ scale: orbScale }] }
-      ]}>
-        <LinearGradient
-          colors={['#0066FF', '#00CCFF']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.orbGradient}
-        >
-          <Ionicons
-            name="mic"
-            size={56}
-            color="#FFFFFF"
-          />
-        </LinearGradient>
-      </Animated.View>
-    );
-  };
-
-  // Render pulsante di stop durante elaborazione/risposta
-  const renderStopButton = () => {
-    if (!isProcessing && !isSpeaking) {
-      return null;
-    }
-
-    return (
-      <TouchableOpacity
-        style={styles.stopButton}
-        onPress={() => {
-          stopPlayback();
-        }}
-        activeOpacity={0.7}
-      >
-        <Text style={styles.stopButtonText}>Interrompi</Text>
-      </TouchableOpacity>
-    );
+    return null;
   };
 
   return (
@@ -476,73 +371,62 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
           </TouchableOpacity>
         </View>
 
-        {/* Contenuto principale */}
+        {/* Contenuto principale - Chat */}
         <View style={styles.content}>
-          {/* Messaggio di stato */}
-          {renderStateIndicator()}
-
-          {/* Orb animato centrale */}
-          <View style={styles.orbOuterContainer}>
-            {/* Cerchi di pulsazione - solo quando in ascolto */}
-            {isRecording && (
-              <>
-                <Animated.View
-                  style={[
-                    styles.pulseCircle,
-                    styles.pulseCircle1,
-                    {
-                      transform: [{ scale: pulseScale }],
-                      opacity: pulseOpacity,
-                    },
-                  ]}
-                />
-                <Animated.View
-                  style={[
-                    styles.pulseCircle,
-                    styles.pulseCircle2,
-                    {
-                      transform: [{ scale: pulseScale }],
-                      opacity: pulseOpacity,
-                    },
-                  ]}
-                />
-              </>
-            )}
-
-            {/* Orb principale */}
-            {renderMainButton()}
-
-            {/* Overlay microfono disabilitato */}
+          {/* Messaggio di stato in alto */}
+          <View style={styles.statusBar}>
+            {renderStateIndicator()}
             {isMuted && isConnected && (
-              <View style={styles.mutedOverlay}>
-                <View style={styles.mutedIconContainer}>
-                  <Ionicons name="mic-off" size={48} color="#FF3B30" />
-                  <Text style={styles.mutedText}>Microfono disattivato</Text>
-                </View>
+              <View style={styles.mutedBadge}>
+                <Ionicons name="mic-off" size={14} color="#FF3B30" />
+                <Text style={styles.mutedBadgeText}>Muto</Text>
               </View>
             )}
           </View>
+
+          {/* Lista messaggi */}
+          {chatMessages.length > 0 ? (
+            <FlatList
+              ref={flatListRef}
+              data={chatMessages}
+              renderItem={renderChatMessage}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={styles.chatList}
+              showsVerticalScrollIndicator={false}
+              onLayout={() => flatListRef.current?.scrollToEnd({ animated: false })}
+            />
+          ) : (
+            <View style={styles.emptyChat}>
+              {state === 'connecting' || state === 'authenticating' || state === 'setting_up' ? (
+                <>
+                  <ActivityIndicator size="large" color="#0066FF" style={{ marginBottom: 16 }} />
+                  <Text style={styles.emptyChatText}>Connessione in corso...</Text>
+                </>
+              ) : state === 'error' ? (
+                <>
+                  <MaterialIcons name="error-outline" size={48} color="#FF3B30" style={{ marginBottom: 16 }} />
+                  <Text style={styles.emptyChatText}>Errore di connessione</Text>
+                  <TouchableOpacity onPress={handleErrorDismiss} style={styles.retryButton}>
+                    <Text style={styles.retryButtonText}>Riprova</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  <Ionicons name="mic" size={48} color="#0066FF" style={{ marginBottom: 16 }} />
+                  <Text style={styles.emptyChatText}>Inizia a parlare</Text>
+                  <Text style={styles.emptyChatSubtext}>La conversazione apparirà qui</Text>
+                </>
+              )}
+            </View>
+          )}
 
           {/* Messaggio di errore */}
           {error && (
             <View style={styles.errorContainer}>
               <Text style={styles.errorText}>{error}</Text>
-              <TouchableOpacity onPress={handleErrorDismiss}>
-                <Text style={styles.retryText}>Riprova</Text>
-              </TouchableOpacity>
             </View>
           )}
         </View>
-
-        {/* Widget Area - Transcript */}
-        {transcripts.length > 0 && (
-          <View style={styles.widgetArea}>
-            <Text style={styles.widgetTitle}>Trascrizione</Text>
-            <Text style={styles.widgetText} numberOfLines={2}>
-              {transcripts[transcripts.length - 1].content}
-            </Text>
-          </View>
-        )}
 
         {/* Bottom Control Bar */}
         <View style={styles.controlBar}>
@@ -635,115 +519,177 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+    paddingHorizontal: 0,
+  },
+  statusBar: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    backgroundColor: "rgba(0, 0, 0, 0.3)",
+  },
+  subtleText: {
+    fontSize: 13,
+    fontWeight: "300",
+    color: "rgba(255, 255, 255, 0.7)",
+    fontFamily: "System",
+  },
+  mutedBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255, 59, 48, 0.2)",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
+  },
+  mutedBadgeText: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#FF3B30",
+    fontFamily: "System",
+  },
+  chatList: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    paddingBottom: 32,
+  },
+  emptyChat: {
+    flex: 1,
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 32,
   },
-  subtleText: {
-    fontSize: 15,
-    fontWeight: "300",
-    color: "rgba(255, 255, 255, 0.5)",
+  emptyChatText: {
+    fontSize: 18,
+    fontWeight: "500",
+    color: "#FFFFFF",
     textAlign: "center",
-    marginBottom: 40,
+    marginBottom: 8,
     fontFamily: "System",
   },
-  orbOuterContainer: {
-    position: "relative",
-    alignItems: "center",
-    justifyContent: "center",
-    marginVertical: 32,
+  emptyChatSubtext: {
+    fontSize: 14,
+    fontWeight: "300",
+    color: "rgba(255, 255, 255, 0.6)",
+    textAlign: "center",
+    fontFamily: "System",
   },
-  pulseCircle: {
-    position: "absolute",
-    borderRadius: 200,
-    borderWidth: 2,
+  retryButton: {
+    marginTop: 16,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: "#0066FF",
+    borderRadius: 20,
+  },
+  retryButtonText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#FFFFFF",
+    fontFamily: "System",
+  },
+  chatMessageContainer: {
+    marginVertical: 6,
+  },
+  userMessageContainer: {
+    alignItems: "flex-end",
+  },
+  assistantMessageContainer: {
+    alignItems: "flex-start",
+  },
+  chatMessageBubble: {
+    maxWidth: "80%",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 18,
+  },
+  userBubble: {
+    backgroundColor: "#0066FF",
+    borderBottomRightRadius: 4,
+  },
+  assistantBubble: {
+    backgroundColor: "rgba(58, 58, 60, 0.8)",
+    borderBottomLeftRadius: 4,
+  },
+  chatMessageText: {
+    fontSize: 15,
+    lineHeight: 20,
+    fontFamily: "System",
+    fontWeight: "400",
+  },
+  userText: {
+    color: "#FFFFFF",
+  },
+  assistantText: {
+    color: "#FFFFFF",
+  },
+  toolMessageContainer: {
+    marginVertical: 6,
+    alignItems: "center",
+  },
+  toolCallBubble: {
+    backgroundColor: "rgba(0, 102, 255, 0.15)",
+    borderWidth: 1,
     borderColor: "rgba(0, 102, 255, 0.3)",
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+    maxWidth: "85%",
   },
-  pulseCircle1: {
-    width: 280,
-    height: 280,
+  toolOutputBubble: {
+    backgroundColor: "rgba(52, 199, 89, 0.15)",
+    borderWidth: 1,
+    borderColor: "rgba(52, 199, 89, 0.3)",
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+    maxWidth: "85%",
   },
-  pulseCircle2: {
-    width: 340,
-    height: 340,
-  },
-  orbContainer: {
-    width: 240,
-    height: 240,
-    borderRadius: 120,
-    ...Platform.select({
-      ios: {
-        shadowColor: "#0066FF",
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.6,
-        shadowRadius: 24,
-      },
-      android: {
-        elevation: 12,
-      },
-    }),
-  },
-  orbGradient: {
-    width: 240,
-    height: 240,
-    borderRadius: 120,
-    justifyContent: "center",
+  toolHeader: {
+    flexDirection: "row",
     alignItems: "center",
+    marginBottom: 6,
+    gap: 6,
   },
-  orbButton: {
-    width: "100%",
-    height: "100%",
-    justifyContent: "center",
-    alignItems: "center",
-    borderRadius: 120,
+  toolHeaderText: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "rgba(255, 255, 255, 0.7)",
+    textTransform: "uppercase",
+    fontFamily: "System",
+  },
+  toolName: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#FFFFFF",
+    marginBottom: 4,
+    fontFamily: "System",
+  },
+  toolArgs: {
+    fontSize: 12,
+    color: "rgba(255, 255, 255, 0.8)",
+    fontFamily: "System",
+  },
+  toolOutput: {
+    fontSize: 12,
+    color: "rgba(255, 255, 255, 0.8)",
+    fontFamily: "System",
   },
   errorContainer: {
-    alignItems: "center",
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-    backgroundColor: "rgba(244, 67, 54, 0.1)",
-    borderRadius: 16,
-    marginTop: 32,
-    maxWidth: "85%",
+    backgroundColor: "rgba(244, 67, 54, 0.15)",
+    borderRadius: 12,
+    marginHorizontal: 16,
+    marginVertical: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
   errorText: {
     color: "#FF6B6B",
     fontSize: 13,
     fontWeight: "400",
     textAlign: "center",
-    marginBottom: 12,
     fontFamily: "System",
-  },
-  retryText: {
-    color: "#FFFFFF",
-    fontSize: 13,
-    fontWeight: "600",
-    fontFamily: "System",
-  },
-  widgetArea: {
-    height: 120,
-    backgroundColor: "rgba(28, 28, 30, 0.95)",
-    marginHorizontal: 16,
-    marginBottom: 16,
-    borderRadius: 16,
-    padding: 16,
-    justifyContent: "flex-start",
-  },
-  widgetTitle: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "rgba(255, 255, 255, 0.6)",
-    marginBottom: 8,
-    fontFamily: "System",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  widgetText: {
-    fontSize: 14,
-    fontWeight: "400",
-    color: "#FFFFFF",
-    fontFamily: "System",
-    lineHeight: 20,
   },
   controlBar: {
     flexDirection: "row",
@@ -805,28 +751,6 @@ const styles = StyleSheet.create({
         elevation: 6,
       },
     }),
-  },
-  mutedOverlay: {
-    position: "absolute",
-    width: 240,
-    height: 240,
-    borderRadius: 120,
-    backgroundColor: "rgba(0, 0, 0, 0.85)",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 10,
-  },
-  mutedIconContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  mutedText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#FF3B30",
-    marginTop: 8,
-    textAlign: "center",
-    fontFamily: "System",
   },
 });
 

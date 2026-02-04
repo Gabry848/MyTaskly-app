@@ -53,14 +53,14 @@ export interface VoiceTranscriptResponse {
   content: string;
 }
 
-export interface VoiceToolStartResponse {
-  type: 'tool_start';
+export interface VoiceToolCallResponse {
+  type: 'tool_call';
   tool_name: string;
-  arguments: string;
+  tool_args: string;
 }
 
-export interface VoiceToolEndResponse {
-  type: 'tool_end';
+export interface VoiceToolOutputResponse {
+  type: 'tool_output';
   tool_name: string;
   output: string;
 }
@@ -78,8 +78,8 @@ export type VoiceServerMessage =
   | VoiceStatusResponse
   | VoiceAudioResponse
   | VoiceTranscriptResponse
-  | VoiceToolStartResponse
-  | VoiceToolEndResponse
+  | VoiceToolCallResponse
+  | VoiceToolOutputResponse
   | VoiceErrorResponse
   | VoiceDoneResponse;
 
@@ -102,8 +102,8 @@ export interface VoiceChatCallbacks {
   onStatus?: (phase: VoiceServerPhase, message: string) => void;
   onAudioChunk?: (audioData: string, chunkIndex: number) => void;
   onTranscript?: (role: 'user' | 'assistant', content: string) => void;
-  onToolStart?: (toolName: string, args: string) => void;
-  onToolEnd?: (toolName: string, output: string) => void;
+  onToolCall?: (toolName: string, args: string) => void;
+  onToolOutput?: (toolName: string, output: string) => void;
   onError?: (error: string) => void;
   onConnectionOpen?: () => void;
   onConnectionClose?: () => void;
@@ -277,17 +277,17 @@ export class VoiceBotWebSocket {
         this.handleTranscriptResponse(response as VoiceTranscriptResponse);
         break;
 
-      case 'tool_start':
-        this.callbacks.onToolStart?.(
-          (response as VoiceToolStartResponse).tool_name,
-          (response as VoiceToolStartResponse).arguments
+      case 'tool_call':
+        this.callbacks.onToolCall?.(
+          (response as VoiceToolCallResponse).tool_name,
+          (response as VoiceToolCallResponse).tool_args
         );
         break;
 
-      case 'tool_end':
-        this.callbacks.onToolEnd?.(
-          (response as VoiceToolEndResponse).tool_name,
-          (response as VoiceToolEndResponse).output
+      case 'tool_output':
+        this.callbacks.onToolOutput?.(
+          (response as VoiceToolOutputResponse).tool_name,
+          (response as VoiceToolOutputResponse).output
         );
         break;
 
@@ -441,7 +441,7 @@ export class VoiceBotWebSocket {
   private validateResponse(response: any): response is VoiceServerMessage {
     if (!response || typeof response !== 'object') return false;
 
-    const validTypes = ['status', 'audio', 'transcript', 'tool_start', 'tool_end', 'error', 'done'];
+    const validTypes = ['status', 'audio', 'transcript', 'tool_call', 'tool_output', 'error', 'done'];
     if (!validTypes.includes(response.type)) return false;
 
     // Verifica lunghezza messaggi

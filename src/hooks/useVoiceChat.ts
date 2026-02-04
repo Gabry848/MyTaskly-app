@@ -38,6 +38,7 @@ export interface VoiceTranscript {
  */
 export interface ActiveTool {
   name: string;
+  args: string;
   status: 'running' | 'complete';
   output?: string;
 }
@@ -247,11 +248,11 @@ export function useVoiceChat() {
       setTranscripts(prev => [...prev, { role, content }]);
     },
 
-    onToolStart: (toolName: string) => {
-      setActiveTools(prev => [...prev, { name: toolName, status: 'running' }]);
+    onToolCall: (toolName: string, args: string) => {
+      setActiveTools(prev => [...prev, { name: toolName, args, status: 'running' }]);
     },
 
-    onToolEnd: (toolName: string, output: string) => {
+    onToolOutput: (toolName: string, output: string) => {
       setActiveTools(prev => prev.map(t =>
         t.name === toolName && t.status === 'running'
           ? { ...t, status: 'complete' as const, output }
