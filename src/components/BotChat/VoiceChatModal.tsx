@@ -14,19 +14,11 @@ import {
   FlatList
 } from "react-native";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
-import { LinearGradient } from 'expo-linear-gradient';
 import { useVoiceChat } from '../../hooks/useVoiceChat';
+import MessageBubble from './MessageBubble';
+import WidgetBubble from './widgets/WidgetBubble';
+import { Message, ToolWidget } from './types';
 
-// Tipi per i messaggi della voice chat
-type VoiceChatMessageType =
-  | { type: 'transcript'; role: 'user' | 'assistant'; content: string; timestamp: Date }
-  | { type: 'tool_call'; toolName: string; args: string; timestamp: Date }
-  | { type: 'tool_output'; toolName: string; output: string; timestamp: Date };
-
-interface VoiceChatMessage {
-  id: string;
-  data: VoiceChatMessageType;
-}
 
 export interface VoiceChatModalProps {
   visible: boolean;
@@ -36,6 +28,37 @@ export interface VoiceChatModalProps {
 }
 
 const { height } = Dimensions.get("window");
+
+// Componente per il rendering di un singolo tool widget (memoizzato per evitare re-render)
+const ToolWidgetCard = React.memo<{ widget: ToolWidget }>(({ widget }) => {
+  const getStatusIcon = () => {
+    if (widget.status === 'loading') return 'hourglass-empty';
+    if (widget.status === 'success') return 'check-circle';
+    return 'error';
+  };
+
+  const getStatusColor = () => {
+    if (widget.status === 'loading') return '#666666';
+    if (widget.status === 'success') return '#34C759';
+    return '#FF3B30';
+  };
+
+  return (
+    <View style={styles.toolWidgetCard}>
+      <View style={styles.toolWidgetHeader}>
+        <MaterialIcons name={getStatusIcon()} size={20} color={getStatusColor()} />
+        <Text style={styles.toolWidgetName} numberOfLines={1}>
+          {widget.toolName || 'Tool sconosciuto'}
+        </Text>
+      </View>
+      <Text style={styles.toolWidgetStatus}>
+        {widget.status === 'loading' && 'In esecuzione...'}
+        {widget.status === 'success' && 'Completato'}
+        {widget.status === 'error' && (widget.errorMessage || 'Errore')}
+      </Text>
+    </View>
+  );
+});
 
 const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
   visible,
@@ -67,56 +90,62 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
   const liveDotOpacity = useRef(new Animated.Value(1)).current;
   const flatListRef = useRef<FlatList>(null);
 
-  // Combina trascrizioni e tool calls/outputs in un'unica lista di messaggi
-  const chatMessages = useMemo<VoiceChatMessage[]>(() => {
-    const messages: VoiceChatMessage[] = [];
-    let messageIndex = 0;
+  // Stato per la sezione tools collapsabile
+  const [toolsExpanded, setToolsExpanded] = useState(true);
+  const toolsHeight = useRef(new Animated.Value(1)).current;
 
-    // Aggiungi trascrizioni
-    transcripts.forEach((transcript, idx) => {
-      messages.push({
-        id: `transcript-${idx}`,
-        data: {
-          type: 'transcript',
-          role: transcript.role,
-          content: transcript.content,
-          timestamp: new Date()
+  // Converte le trascrizioni al formato Message per MessageBubble
+  const chatMessages = useMemo<Message[]>(() => {
+    return transcripts.map((transcript, idx) => ({
+      id: `transcript-${idx}`,
+      text: transcript.content,
+      sender: transcript.role === 'user' ? 'user' : 'bot',
+      start_time: new Date(),
+      isStreaming: false,
+      isComplete: true,
+    }));
+  }, [transcripts]);
+
+  // Converte i tools attivi al formato ToolWidget
+  const toolWidgets = useMemo<ToolWidget[]>(() => {
+    return activeTools.map((tool, idx) => {
+      let parsedOutput = undefined;
+      if (tool.output) {
+        try {
+          parsedOutput = JSON.parse(tool.output);
+        } catch (e) {
+          parsedOutput = { message: tool.output };
         }
-      });
-      messageIndex++;
-    });
-
-    // Aggiungi tool calls e outputs
-    activeTools.forEach((tool, idx) => {
-      // Tool call
-      messages.push({
-        id: `tool-call-${idx}`,
-        data: {
-          type: 'tool_call',
-          toolName: tool.name,
-          args: tool.args,
-          timestamp: new Date()
-        }
-      });
-      messageIndex++;
-
-      // Tool output (se presente)
-      if (tool.status === 'complete' && tool.output) {
-        messages.push({
-          id: `tool-output-${idx}`,
-          data: {
-            type: 'tool_output',
-            toolName: tool.name,
-            output: tool.output,
-            timestamp: new Date()
-          }
-        });
-        messageIndex++;
       }
-    });
 
-    return messages;
-  }, [transcripts, activeTools]);
+      // Converti args in stringa JSON se necessario
+      let toolArgsString = tool.args;
+      if (typeof tool.args === 'object') {
+        toolArgsString = JSON.stringify(tool.args);
+      }
+
+      return {
+        id: `tool-${tool.name}-${idx}`,
+        toolName: tool.name,
+        status: tool.status === 'complete' ? 'success' : tool.status === 'running' ? 'loading' : 'error',
+        itemIndex: idx,
+        toolArgs: toolArgsString,
+        toolOutput: parsedOutput,
+        errorMessage: tool.status === 'error' ? 'Errore durante l\'esecuzione' : undefined,
+      };
+    });
+  }, [activeTools]);
+
+  // Animazione per espandere/collassare la sezione tools
+  const toggleToolsSection = () => {
+    const toValue = toolsExpanded ? 0 : 1;
+    Animated.timing(toolsHeight, {
+      toValue,
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
+    setToolsExpanded(!toolsExpanded);
+  };
 
   // Auto-scroll quando arrivano nuovi messaggi
   useEffect(() => {
@@ -266,63 +295,47 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
     }
   };
 
-  // Render di un singolo messaggio della chat
-  const renderChatMessage = ({ item }: { item: VoiceChatMessage }) => {
-    const { data } = item;
+  // Render di un singolo messaggio usando MessageBubble
+  const renderChatMessage = ({ item }: { item: Message }) => {
+    return <MessageBubble message={item} />;
+  };
 
-    if (data.type === 'transcript') {
-      const isUser = data.role === 'user';
-      return (
-        <View style={[
-          styles.chatMessageContainer,
-          isUser ? styles.userMessageContainer : styles.assistantMessageContainer
-        ]}>
-          <View style={[
-            styles.chatMessageBubble,
-            isUser ? styles.userBubble : styles.assistantBubble
-          ]}>
-            <Text style={[
-              styles.chatMessageText,
-              isUser ? styles.userText : styles.assistantText
-            ]}>
-              {data.content}
+  // Render della sezione tools collapsabile
+  const renderToolsSection = () => {
+    if (toolWidgets.length === 0) return null;
+
+    const animatedHeight = toolsHeight.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0, 300], // Altezza massima della sezione
+    });
+
+    return (
+      <View style={styles.toolsSection}>
+        <TouchableOpacity
+          style={styles.toolsSectionHeader}
+          onPress={toggleToolsSection}
+          activeOpacity={0.7}
+        >
+          <View style={styles.toolsSectionHeaderLeft}>
+            <MaterialIcons name="build" size={18} color="#000000" />
+            <Text style={styles.toolsSectionTitle}>
+              Azioni in corso ({toolWidgets.length})
             </Text>
           </View>
-        </View>
-      );
-    }
+          <Ionicons
+            name={toolsExpanded ? "chevron-up" : "chevron-down"}
+            size={20}
+            color="#666666"
+          />
+        </TouchableOpacity>
 
-    if (data.type === 'tool_call') {
-      return (
-        <View style={styles.toolMessageContainer}>
-          <View style={styles.toolCallBubble}>
-            <View style={styles.toolHeader}>
-              <MaterialIcons name="build" size={16} color="#0066FF" />
-              <Text style={styles.toolHeaderText}>Esecuzione tool</Text>
-            </View>
-            <Text style={styles.toolName}>{data.toolName}</Text>
-            <Text style={styles.toolArgs} numberOfLines={2}>{data.args}</Text>
-          </View>
-        </View>
-      );
-    }
-
-    if (data.type === 'tool_output') {
-      return (
-        <View style={styles.toolMessageContainer}>
-          <View style={styles.toolOutputBubble}>
-            <View style={styles.toolHeader}>
-              <MaterialIcons name="check-circle" size={16} color="#34C759" />
-              <Text style={styles.toolHeaderText}>Risultato</Text>
-            </View>
-            <Text style={styles.toolName}>{data.toolName}</Text>
-            <Text style={styles.toolOutput} numberOfLines={3}>{data.output}</Text>
-          </View>
-        </View>
-      );
-    }
-
-    return null;
+        <Animated.View style={[styles.toolsSectionContent, { maxHeight: animatedHeight }]}>
+          {toolWidgets.map((widget) => (
+            <ToolWidgetCard key={widget.id} widget={widget} />
+          ))}
+        </Animated.View>
+      </View>
+    );
   };
 
   return (
@@ -333,7 +346,7 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
       statusBarTranslucent={true}
       onRequestClose={handleClose}
     >
-      <StatusBar barStyle="light-content" backgroundColor="#000000" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
       <Animated.View
         style={[
@@ -359,22 +372,8 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
             </View>
           )}
 
-          {/* Close Button */}
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={handleClose}
-            activeOpacity={0.7}
-            accessibilityRole="button"
-            accessibilityLabel="Chiudi chat vocale"
-          >
-            <Ionicons name="close" size={24} color="#FFFFFF" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Contenuto principale - Chat */}
-        <View style={styles.content}>
-          {/* Messaggio di stato in alto */}
-          <View style={styles.statusBar}>
+          {/* Status Badge */}
+          <View style={styles.headerCenter}>
             {renderStateIndicator()}
             {isMuted && isConnected && (
               <View style={styles.mutedBadge}>
@@ -384,6 +383,23 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
             )}
           </View>
 
+          {/* Close Button */}
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={handleClose}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Chiudi chat vocale"
+          >
+            <Ionicons name="close" size={24} color="#000000" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Sezione Tools Collapsabile */}
+        {renderToolsSection()}
+
+        {/* Contenuto principale - Chat */}
+        <View style={styles.content}>
           {/* Lista messaggi */}
           {chatMessages.length > 0 ? (
             <FlatList
@@ -399,7 +415,7 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
             <View style={styles.emptyChat}>
               {state === 'connecting' || state === 'authenticating' || state === 'setting_up' ? (
                 <>
-                  <ActivityIndicator size="large" color="#0066FF" style={{ marginBottom: 16 }} />
+                  <ActivityIndicator size="large" color="#000000" style={{ marginBottom: 16 }} />
                   <Text style={styles.emptyChatText}>Connessione in corso...</Text>
                 </>
               ) : state === 'error' ? (
@@ -412,7 +428,7 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
                 </>
               ) : (
                 <>
-                  <Ionicons name="mic" size={48} color="#0066FF" style={{ marginBottom: 16 }} />
+                  <Ionicons name="mic" size={48} color="#000000" style={{ marginBottom: 16 }} />
                   <Text style={styles.emptyChatText}>Inizia a parlare</Text>
                   <Text style={styles.emptyChatSubtext}>La conversazione apparirà qui</Text>
                 </>
@@ -454,19 +470,8 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
             <Ionicons
               name={isMuted ? "mic-off" : "mic"}
               size={28}
-              color="#FFFFFF"
+              color={isMuted ? "#000000" : "#FFFFFF"}
             />
-          </TouchableOpacity>
-
-          {/* End Call Button */}
-          <TouchableOpacity
-            style={[styles.controlButton, styles.controlButtonEnd]}
-            onPress={handleClose}
-            activeOpacity={0.7}
-            accessibilityRole="button"
-            accessibilityLabel="Chiudi chat vocale"
-          >
-            <Ionicons name="close" size={28} color="#FFFFFF" />
           </TouchableOpacity>
         </View>
       </Animated.View>
@@ -477,21 +482,30 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "#000000",
+    backgroundColor: "#FFFFFF",
     justifyContent: "space-between",
   },
   header: {
     paddingTop: StatusBar.currentHeight ? StatusBar.currentHeight + 16 : 44,
     paddingHorizontal: 20,
-    paddingBottom: 16,
+    paddingBottom: 12,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E1E5E9",
+  },
+  headerCenter: {
+    flex: 1,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 8,
   },
   liveIndicator: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    backgroundColor: "rgba(52, 199, 89, 0.1)",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
@@ -506,39 +520,34 @@ const styles = StyleSheet.create({
   liveText: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#FFFFFF",
+    color: "#34C759",
     fontFamily: "System",
   },
   closeButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "rgba(58, 58, 60, 0.6)",
+    backgroundColor: "#F8F9FA",
     justifyContent: "center",
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#E1E5E9",
   },
   content: {
     flex: 1,
     paddingHorizontal: 0,
-  },
-  statusBar: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    backgroundColor: "rgba(0, 0, 0, 0.3)",
+    backgroundColor: "#FFFFFF",
   },
   subtleText: {
     fontSize: 13,
-    fontWeight: "300",
-    color: "rgba(255, 255, 255, 0.7)",
+    fontWeight: "400",
+    color: "#666666",
     fontFamily: "System",
   },
   mutedBadge: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(255, 59, 48, 0.2)",
+    backgroundColor: "rgba(255, 59, 48, 0.1)",
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
@@ -551,7 +560,6 @@ const styles = StyleSheet.create({
     fontFamily: "System",
   },
   chatList: {
-    paddingHorizontal: 16,
     paddingVertical: 16,
     paddingBottom: 32,
   },
@@ -564,7 +572,7 @@ const styles = StyleSheet.create({
   emptyChatText: {
     fontSize: 18,
     fontWeight: "500",
-    color: "#FFFFFF",
+    color: "#000000",
     textAlign: "center",
     marginBottom: 8,
     fontFamily: "System",
@@ -572,7 +580,7 @@ const styles = StyleSheet.create({
   emptyChatSubtext: {
     fontSize: 14,
     fontWeight: "300",
-    color: "rgba(255, 255, 255, 0.6)",
+    color: "#666666",
     textAlign: "center",
     fontFamily: "System",
   },
@@ -580,7 +588,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingHorizontal: 24,
     paddingVertical: 12,
-    backgroundColor: "#0066FF",
+    backgroundColor: "#000000",
     borderRadius: 20,
   },
   retryButtonText: {
@@ -589,108 +597,79 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontFamily: "System",
   },
-  chatMessageContainer: {
-    marginVertical: 6,
-  },
-  userMessageContainer: {
-    alignItems: "flex-end",
-  },
-  assistantMessageContainer: {
-    alignItems: "flex-start",
-  },
-  chatMessageBubble: {
-    maxWidth: "80%",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 18,
-  },
-  userBubble: {
-    backgroundColor: "#0066FF",
-    borderBottomRightRadius: 4,
-  },
-  assistantBubble: {
-    backgroundColor: "rgba(58, 58, 60, 0.8)",
-    borderBottomLeftRadius: 4,
-  },
-  chatMessageText: {
-    fontSize: 15,
-    lineHeight: 20,
-    fontFamily: "System",
-    fontWeight: "400",
-  },
-  userText: {
-    color: "#FFFFFF",
-  },
-  assistantText: {
-    color: "#FFFFFF",
-  },
-  toolMessageContainer: {
-    marginVertical: 6,
-    alignItems: "center",
-  },
-  toolCallBubble: {
-    backgroundColor: "rgba(0, 102, 255, 0.15)",
-    borderWidth: 1,
-    borderColor: "rgba(0, 102, 255, 0.3)",
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 12,
-    maxWidth: "85%",
-  },
-  toolOutputBubble: {
-    backgroundColor: "rgba(52, 199, 89, 0.15)",
-    borderWidth: 1,
-    borderColor: "rgba(52, 199, 89, 0.3)",
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 12,
-    maxWidth: "85%",
-  },
-  toolHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 6,
-    gap: 6,
-  },
-  toolHeaderText: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: "rgba(255, 255, 255, 0.7)",
-    textTransform: "uppercase",
-    fontFamily: "System",
-  },
-  toolName: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#FFFFFF",
-    marginBottom: 4,
-    fontFamily: "System",
-  },
-  toolArgs: {
-    fontSize: 12,
-    color: "rgba(255, 255, 255, 0.8)",
-    fontFamily: "System",
-  },
-  toolOutput: {
-    fontSize: 12,
-    color: "rgba(255, 255, 255, 0.8)",
-    fontFamily: "System",
-  },
   errorContainer: {
-    backgroundColor: "rgba(244, 67, 54, 0.15)",
+    backgroundColor: "rgba(255, 59, 48, 0.1)",
     borderRadius: 12,
     marginHorizontal: 16,
     marginVertical: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255, 59, 48, 0.2)",
   },
   errorText: {
-    color: "#FF6B6B",
+    color: "#FF3B30",
     fontSize: 13,
     fontWeight: "400",
     textAlign: "center",
     fontFamily: "System",
   },
+  // Tools Section
+  toolsSection: {
+    backgroundColor: "#F8F9FA",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E1E5E9",
+  },
+  toolsSectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+  },
+  toolsSectionHeaderLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  toolsSectionTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#000000",
+    fontFamily: "System",
+  },
+  toolsSectionContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 12,
+    overflow: "hidden",
+  },
+  toolWidgetCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: "#E1E5E9",
+  },
+  toolWidgetHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 4,
+  },
+  toolWidgetName: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#000000",
+    fontFamily: "System",
+    flex: 1,
+  },
+  toolWidgetStatus: {
+    fontSize: 12,
+    color: "#666666",
+    fontFamily: "System",
+  },
+  // Control Bar
   controlBar: {
     flexDirection: "row",
     justifyContent: "center",
@@ -699,32 +678,38 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     paddingVertical: 24,
     paddingBottom: 40,
-    backgroundColor: "#000000",
+    backgroundColor: "#FFFFFF",
+    borderTopWidth: 1,
+    borderTopColor: "#E1E5E9",
   },
   controlButton: {
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: "rgba(58, 58, 60, 0.8)",
+    backgroundColor: "#F8F9FA",
     justifyContent: "center",
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#E1E5E9",
   },
   controlButtonDisabled: {
-    backgroundColor: "rgba(58, 58, 60, 0.4)",
+    backgroundColor: "#F8F9FA",
+    opacity: 0.5,
   },
   controlButtonActive: {
-    backgroundColor: "rgba(58, 58, 60, 1)",
+    backgroundColor: "#E1E5E9",
   },
   controlButtonPrimary: {
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: "#0066FF",
+    backgroundColor: "#000000",
+    borderWidth: 0,
     ...Platform.select({
       ios: {
-        shadowColor: "#0066FF",
+        shadowColor: "#000000",
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.4,
+        shadowOpacity: 0.3,
         shadowRadius: 8,
       },
       android: {
@@ -733,16 +718,17 @@ const styles = StyleSheet.create({
     }),
   },
   controlButtonRecording: {
-    backgroundColor: "#00CCFF",
+    backgroundColor: "#000000",
   },
   controlButtonMuted: {
-    backgroundColor: "#FF3B30",
+    backgroundColor: "#E1E5E9",
   },
   controlButtonEnd: {
-    backgroundColor: "#FF3B30",
+    backgroundColor: "#000000",
+    borderWidth: 0,
     ...Platform.select({
       ios: {
-        shadowColor: "#FF3B30",
+        shadowColor: "#000000",
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 8,
