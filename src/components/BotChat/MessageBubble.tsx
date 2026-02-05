@@ -5,6 +5,7 @@ import TaskListBubble from './TaskListBubble'; // Nuovo componente card-based
 import TaskTableBubble from './TaskTableBubble'; // Mantieni per backward compatibility
 import Markdown from 'react-native-markdown-display'; // Supporto per Markdown
 import WidgetBubble from './widgets/WidgetBubble';
+import InlineVisualizationWidget from './widgets/InlineVisualizationWidget';
 import VisualizationModal from './widgets/VisualizationModal';
 import ItemDetailModal from './widgets/ItemDetailModal';
 import TaskEditModal from '../Task/TaskEditModal';
@@ -13,7 +14,7 @@ import CategoryMenu from '../Category/CategoryMenu';
 import { Task as TaskType } from '../../services/taskService';
 import { updateTask, updateCategory, deleteCategory } from '../../services/taskService';
 
-const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style }) => {
+const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style, isVoiceChat = false }) => {
   const isBot = message.sender === 'bot';
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(20)).current;
@@ -362,38 +363,62 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style }) => {
       {/* WIDGETS SOPRA AL MESSAGGIO (come richiesto dall'utente) */}
       {isBot && message.toolWidgets && message.toolWidgets.length > 0 && (
         <View style={styles.widgetsContainer}>
-          {message.toolWidgets.map((widget) => (
-            <WidgetBubble
-              key={widget.id}
-              widget={widget}
-              onOpenVisualization={handleOpenVisualization}
-              onOpenItemDetail={handleOpenItemDetail}
-              onTaskPress={handleTaskPress}
-              onCategoryPress={handleCategoryPress}
-            />
-          ))}
+          {message.toolWidgets.map((widget) => {
+            console.log('[MessageBubble] Rendering widget:', {
+              id: widget.id,
+              toolName: widget.toolName,
+              isVoiceChat,
+              hasToolOutput: !!widget.toolOutput,
+            });
+
+            // In voice chat usa InlineVisualizationWidget
+            if (isVoiceChat) {
+              return (
+                <InlineVisualizationWidget
+                  key={widget.id}
+                  widget={widget}
+                  onTaskPress={handleTaskPress}
+                  onCategoryPress={handleCategoryPress}
+                />
+              );
+            }
+
+            // In text chat usa WidgetBubble (comportamento attuale)
+            return (
+              <WidgetBubble
+                key={widget.id}
+                widget={widget}
+                onOpenVisualization={handleOpenVisualization}
+                onOpenItemDetail={handleOpenItemDetail}
+                onTaskPress={handleTaskPress}
+                onCategoryPress={handleCategoryPress}
+              />
+            );
+          })}
         </View>
       )}
 
-      {/* BUBBLE DEL MESSAGGIO */}
-      <View style={[
-        styles.messageBubble,
-        isBot ? styles.botBubble : styles.userBubble
-      ]}>
-        {renderMessageContent()}
-        {message.isStreaming && isBot && (
-          <View style={styles.streamingIndicator}>
-            <Animated.View style={[styles.streamingDot, { opacity: streamingDot1 }]} />
-            <Animated.View style={[styles.streamingDot, { opacity: streamingDot2 }]} />
-            <Animated.View style={[styles.streamingDot, { opacity: streamingDot3 }]} />
-          </View>
-        )}
-        {message.modelType && isBot && !message.isStreaming && (
-          <Text style={styles.modelType}>
-            {message.modelType === 'advanced' ? 'Modello avanzato' : 'Modello base'}
-          </Text>
-        )}
-      </View>
+      {/* BUBBLE DEL MESSAGGIO - renderizza solo se c'è testo */}
+      {message.text && message.text.trim() !== '' && (
+        <View style={[
+          styles.messageBubble,
+          isBot ? styles.botBubble : styles.userBubble
+        ]}>
+          {renderMessageContent()}
+          {message.isStreaming && isBot && (
+            <View style={styles.streamingIndicator}>
+              <Animated.View style={[styles.streamingDot, { opacity: streamingDot1 }]} />
+              <Animated.View style={[styles.streamingDot, { opacity: streamingDot2 }]} />
+              <Animated.View style={[styles.streamingDot, { opacity: streamingDot3 }]} />
+            </View>
+          )}
+          {message.modelType && isBot && !message.isStreaming && (
+            <Text style={styles.modelType}>
+              {message.modelType === 'advanced' ? 'Modello avanzato' : 'Modello base'}
+            </Text>
+          )}
+        </View>
+      )}
 
       <Text style={[
         styles.messageTime,

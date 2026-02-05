@@ -47,6 +47,7 @@ export interface ChatSession {
 export interface MessageBubbleProps {
   message: Message;
   style?: StyleProp<ViewStyle>;
+  isVoiceChat?: boolean;  // Flag per distinguere voice chat da text chat
 }
 
 // Props per il componente ChatInput

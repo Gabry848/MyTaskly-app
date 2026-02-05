@@ -16,7 +16,6 @@ import {
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useVoiceChat } from '../../hooks/useVoiceChat';
 import MessageBubble from './MessageBubble';
-import WidgetBubble from './widgets/WidgetBubble';
 import { Message, ToolWidget } from './types';
 
 
@@ -28,37 +27,6 @@ export interface VoiceChatModalProps {
 }
 
 const { height } = Dimensions.get("window");
-
-// Componente per il rendering di un singolo tool widget (memoizzato per evitare re-render)
-const ToolWidgetCard = React.memo<{ widget: ToolWidget }>(({ widget }) => {
-  const getStatusIcon = () => {
-    if (widget.status === 'loading') return 'hourglass-empty';
-    if (widget.status === 'success') return 'check-circle';
-    return 'error';
-  };
-
-  const getStatusColor = () => {
-    if (widget.status === 'loading') return '#666666';
-    if (widget.status === 'success') return '#34C759';
-    return '#FF3B30';
-  };
-
-  return (
-    <View style={styles.toolWidgetCard}>
-      <View style={styles.toolWidgetHeader}>
-        <MaterialIcons name={getStatusIcon()} size={20} color={getStatusColor()} />
-        <Text style={styles.toolWidgetName} numberOfLines={1}>
-          {widget.toolName || 'Tool sconosciuto'}
-        </Text>
-      </View>
-      <Text style={styles.toolWidgetStatus}>
-        {widget.status === 'loading' && 'In esecuzione...'}
-        {widget.status === 'success' && 'Completato'}
-        {widget.status === 'error' && (widget.errorMessage || 'Errore')}
-      </Text>
-    </View>
-  );
-});
 
 const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
   visible,
@@ -78,7 +46,6 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
     isMuted,
     connect,
     disconnect,
-    stopPlayback,
     requestPermissions,
     mute,
     unmute,
@@ -89,10 +56,6 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
   const fadeIn = useRef(new Animated.Value(0)).current;
   const liveDotOpacity = useRef(new Animated.Value(1)).current;
   const flatListRef = useRef<FlatList>(null);
-
-  // Stato per la sezione tools collapsabile
-  const [toolsExpanded, setToolsExpanded] = useState(true);
-  const toolsHeight = useRef(new Animated.Value(1)).current;
 
   // Converte le trascrizioni al formato Message per MessageBubble
   const chatMessages = useMemo<Message[]>(() => {
@@ -108,12 +71,23 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
 
   // Converte i tools attivi al formato ToolWidget
   const toolWidgets = useMemo<ToolWidget[]>(() => {
+    console.log('[VoiceChatModal] Converting activeTools to toolWidgets:', activeTools);
+
     return activeTools.map((tool, idx) => {
+      console.log('[VoiceChatModal] Processing tool:', {
+        name: tool.name,
+        status: tool.status,
+        hasOutput: !!tool.output,
+        outputRaw: tool.output,
+      });
+
       let parsedOutput = undefined;
       if (tool.output) {
         try {
           parsedOutput = JSON.parse(tool.output);
+          console.log('[VoiceChatModal] Parsed output for', tool.name, ':', parsedOutput);
         } catch (e) {
+          console.error('[VoiceChatModal] Error parsing tool output:', e);
           parsedOutput = { message: tool.output };
         }
       }
@@ -124,37 +98,44 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
         toolArgsString = JSON.stringify(tool.args);
       }
 
-      return {
+      const toolWidget = {
         id: `tool-${tool.name}-${idx}`,
         toolName: tool.name,
-        status: tool.status === 'complete' ? 'success' : tool.status === 'running' ? 'loading' : 'error',
+        status: tool.status === 'complete' ? 'success' : 'loading',
         itemIndex: idx,
         toolArgs: toolArgsString,
         toolOutput: parsedOutput,
-        errorMessage: tool.status === 'error' ? 'Errore durante l\'esecuzione' : undefined,
+        errorMessage: undefined,
       };
+
+      console.log('[VoiceChatModal] Created toolWidget:', toolWidget);
+      return toolWidget;
     });
   }, [activeTools]);
 
-  // Animazione per espandere/collassare la sezione tools
-  const toggleToolsSection = () => {
-    const toValue = toolsExpanded ? 0 : 1;
-    Animated.timing(toolsHeight, {
-      toValue,
-      duration: 300,
-      useNativeDriver: false,
-    }).start();
-    setToolsExpanded(!toolsExpanded);
-  };
+  // Merge messaggi trascrizioni + tool widgets come messaggi inline
+  const allMessages = useMemo<Message[]>(() => {
+    const toolMessages: Message[] = toolWidgets.map((widget) => ({
+      id: widget.id,
+      text: '',                                 // Vuoto (widget-only message)
+      sender: 'bot' as const,
+      start_time: new Date(),
+      isStreaming: widget.status === 'loading',
+      isComplete: widget.status !== 'loading',
+      toolWidgets: [widget]                     // Array con singolo widget
+    }));
+
+    return [...chatMessages, ...toolMessages];
+  }, [chatMessages, toolWidgets]);
 
   // Auto-scroll quando arrivano nuovi messaggi
   useEffect(() => {
-    if (chatMessages.length > 0) {
+    if (allMessages.length > 0) {
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
       }, 100);
     }
-  }, [chatMessages.length]);
+  }, [allMessages.length]); // Solo length, non toolWidgets array intero
 
   // Notifica trascrizioni assistant al parent
   useEffect(() => {
@@ -297,45 +278,7 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
 
   // Render di un singolo messaggio usando MessageBubble
   const renderChatMessage = ({ item }: { item: Message }) => {
-    return <MessageBubble message={item} />;
-  };
-
-  // Render della sezione tools collapsabile
-  const renderToolsSection = () => {
-    if (toolWidgets.length === 0) return null;
-
-    const animatedHeight = toolsHeight.interpolate({
-      inputRange: [0, 1],
-      outputRange: [0, 300], // Altezza massima della sezione
-    });
-
-    return (
-      <View style={styles.toolsSection}>
-        <TouchableOpacity
-          style={styles.toolsSectionHeader}
-          onPress={toggleToolsSection}
-          activeOpacity={0.7}
-        >
-          <View style={styles.toolsSectionHeaderLeft}>
-            <MaterialIcons name="build" size={18} color="#000000" />
-            <Text style={styles.toolsSectionTitle}>
-              Azioni in corso ({toolWidgets.length})
-            </Text>
-          </View>
-          <Ionicons
-            name={toolsExpanded ? "chevron-up" : "chevron-down"}
-            size={20}
-            color="#666666"
-          />
-        </TouchableOpacity>
-
-        <Animated.View style={[styles.toolsSectionContent, { maxHeight: animatedHeight }]}>
-          {toolWidgets.map((widget) => (
-            <ToolWidgetCard key={widget.id} widget={widget} />
-          ))}
-        </Animated.View>
-      </View>
-    );
+    return <MessageBubble message={item} isVoiceChat={true} />;
   };
 
   return (
@@ -395,16 +338,13 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
           </TouchableOpacity>
         </View>
 
-        {/* Sezione Tools Collapsabile */}
-        {renderToolsSection()}
-
         {/* Contenuto principale - Chat */}
         <View style={styles.content}>
-          {/* Lista messaggi */}
-          {chatMessages.length > 0 ? (
+          {/* Lista messaggi (include tool widgets inline) */}
+          {allMessages.length > 0 ? (
             <FlatList
               ref={flatListRef}
-              data={chatMessages}
+              data={allMessages}
               renderItem={renderChatMessage}
               keyExtractor={(item) => item.id}
               contentContainerStyle={styles.chatList}
@@ -615,60 +555,6 @@ const styles = StyleSheet.create({
     fontFamily: "System",
   },
   // Tools Section
-  toolsSection: {
-    backgroundColor: "#F8F9FA",
-    borderBottomWidth: 1,
-    borderBottomColor: "#E1E5E9",
-  },
-  toolsSectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-  },
-  toolsSectionHeaderLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  toolsSectionTitle: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#000000",
-    fontFamily: "System",
-  },
-  toolsSectionContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 12,
-    overflow: "hidden",
-  },
-  toolWidgetCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: "#E1E5E9",
-  },
-  toolWidgetHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 4,
-  },
-  toolWidgetName: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#000000",
-    fontFamily: "System",
-    flex: 1,
-  },
-  toolWidgetStatus: {
-    fontSize: 12,
-    color: "#666666",
-    fontFamily: "System",
-  },
   // Control Bar
   controlBar: {
     flexDirection: "row",
