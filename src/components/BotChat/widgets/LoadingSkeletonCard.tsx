@@ -11,7 +11,7 @@ interface LoadingSkeletonCardProps {
  * Loading skeleton card per tool widgets in voice chat
  * Mostra animazioni pulse + shimmer mentre il tool è in esecuzione
  */
-const LoadingSkeletonCard: React.FC<LoadingSkeletonCardProps> = ({ widget }) => {
+const LoadingSkeletonCard: React.FC<LoadingSkeletonCardProps> = React.memo(({ widget }) => {
   const pulseAnim = useRef(new Animated.Value(0.3)).current;
   const shimmerAnim = useRef(new Animated.Value(-1)).current;
 
@@ -108,7 +108,7 @@ const LoadingSkeletonCard: React.FC<LoadingSkeletonCardProps> = ({ widget }) => 
       </View>
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {

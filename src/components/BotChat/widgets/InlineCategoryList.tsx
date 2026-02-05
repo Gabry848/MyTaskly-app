@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ToolWidget, CategoryListItem } from '../types';
@@ -12,16 +12,9 @@ interface InlineCategoryListProps {
  * Lista completa di categorie inline per voice chat
  * Mostra tutte le categorie come card semplificate
  */
-const InlineCategoryList: React.FC<InlineCategoryListProps> = ({ widget, onCategoryPress }) => {
-  console.log('[InlineCategoryList] Rendering with widget:', {
-    hasToolOutput: !!widget.toolOutput,
-    toolOutput: widget.toolOutput,
-    toolOutputKeys: widget.toolOutput ? Object.keys(widget.toolOutput) : [],
-  });
-
+const InlineCategoryList: React.FC<InlineCategoryListProps> = React.memo(({ widget, onCategoryPress }) => {
   // Nessun output disponibile
   if (!widget.toolOutput) {
-    console.log('[InlineCategoryList] No toolOutput, returning null');
     return null;
   }
 
@@ -30,7 +23,6 @@ const InlineCategoryList: React.FC<InlineCategoryListProps> = ({ widget, onCateg
   if (widget.toolOutput.type === 'text' && widget.toolOutput.text) {
     try {
       parsedData = JSON.parse(widget.toolOutput.text);
-      console.log('[InlineCategoryList] Parsed text field, data:', parsedData);
     } catch (e) {
       console.error('[InlineCategoryList] Error parsing text field:', e);
     }
@@ -42,26 +34,19 @@ const InlineCategoryList: React.FC<InlineCategoryListProps> = ({ widget, onCateg
   if (parsedData.type === 'category_list' && parsedData.categories) {
     // Formato con type wrapper (come text chat)
     categories = parsedData.categories;
-    console.log('[InlineCategoryList] Using wrapped format, categories:', categories.length);
   } else if (parsedData.categories) {
     // Formato diretto
     categories = parsedData.categories;
-    console.log('[InlineCategoryList] Using direct format, categories:', categories.length);
-  } else {
-    console.log('[InlineCategoryList] No categories found in output');
   }
 
   // Lista vuota
   if (categories.length === 0) {
-    console.log('[InlineCategoryList] Empty categories list');
     return (
       <View style={styles.emptyContainer}>
         <Text style={styles.emptyText}>Nessuna categoria trovata</Text>
       </View>
     );
   }
-
-  console.log('[InlineCategoryList] Rendering', categories.length, 'categories');
 
   return (
     <View style={styles.container}>
@@ -103,7 +88,7 @@ const InlineCategoryList: React.FC<InlineCategoryListProps> = ({ widget, onCateg
       })}
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {

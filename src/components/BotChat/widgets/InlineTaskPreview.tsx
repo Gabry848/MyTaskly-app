@@ -13,16 +13,9 @@ interface InlineTaskPreviewProps {
  * Preview inline di max 3 task per voice chat
  * Mostra task cards con testo "+ N altre task" se ce ne sono di più
  */
-const InlineTaskPreview: React.FC<InlineTaskPreviewProps> = ({ widget, onTaskPress }) => {
-  console.log('[InlineTaskPreview] Rendering with widget:', {
-    hasToolOutput: !!widget.toolOutput,
-    toolOutput: widget.toolOutput,
-    toolOutputKeys: widget.toolOutput ? Object.keys(widget.toolOutput) : [],
-  });
-
+const InlineTaskPreview: React.FC<InlineTaskPreviewProps> = React.memo(({ widget, onTaskPress }) => {
   // Nessun output disponibile
   if (!widget.toolOutput) {
-    console.log('[InlineTaskPreview] No toolOutput, returning null');
     return null;
   }
 
@@ -31,7 +24,6 @@ const InlineTaskPreview: React.FC<InlineTaskPreviewProps> = ({ widget, onTaskPre
   if (widget.toolOutput.type === 'text' && widget.toolOutput.text) {
     try {
       parsedData = JSON.parse(widget.toolOutput.text);
-      console.log('[InlineTaskPreview] Parsed text field, data:', parsedData);
     } catch (e) {
       console.error('[InlineTaskPreview] Error parsing text field:', e);
     }
@@ -43,26 +35,19 @@ const InlineTaskPreview: React.FC<InlineTaskPreviewProps> = ({ widget, onTaskPre
   if (parsedData.type === 'task_list' && parsedData.tasks) {
     // Formato con type wrapper (come text chat)
     tasks = parsedData.tasks;
-    console.log('[InlineTaskPreview] Using wrapped format, tasks:', tasks.length);
   } else if (parsedData.tasks) {
     // Formato diretto
     tasks = parsedData.tasks;
-    console.log('[InlineTaskPreview] Using direct format, tasks:', tasks.length);
-  } else {
-    console.log('[InlineTaskPreview] No tasks found in output');
   }
 
   // Lista vuota
   if (tasks.length === 0) {
-    console.log('[InlineTaskPreview] Empty tasks list');
     return (
       <View style={styles.emptyContainer}>
         <Text style={styles.emptyText}>Nessuna task trovata</Text>
       </View>
     );
   }
-
-  console.log('[InlineTaskPreview] Rendering', tasks.length, 'tasks (max 3)');
 
   // Converti TaskListItem → Task per TaskCard
   const convertTaskListItemToTask = (item: TaskListItem): Task => {
@@ -107,7 +92,7 @@ const InlineTaskPreview: React.FC<InlineTaskPreviewProps> = ({ widget, onTaskPre
       )}
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {

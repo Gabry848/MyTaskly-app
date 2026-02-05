@@ -11,7 +11,7 @@ interface ErrorWidgetCardProps {
  * Error card per tool widgets falliti in voice chat
  * Mostra messaggio di errore con icona rossa
  */
-const ErrorWidgetCard: React.FC<ErrorWidgetCardProps> = ({ widget }) => {
+const ErrorWidgetCard: React.FC<ErrorWidgetCardProps> = React.memo(({ widget }) => {
   const errorMessage = widget.errorMessage || 'Errore durante l\'esecuzione';
 
   // Determina il messaggio specifico in base al tool
@@ -35,7 +35,7 @@ const ErrorWidgetCard: React.FC<ErrorWidgetCardProps> = ({ widget }) => {
       </View>
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {

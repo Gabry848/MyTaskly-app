@@ -364,13 +364,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style, isVoiceCh
       {isBot && message.toolWidgets && message.toolWidgets.length > 0 && (
         <View style={styles.widgetsContainer}>
           {message.toolWidgets.map((widget) => {
-            console.log('[MessageBubble] Rendering widget:', {
-              id: widget.id,
-              toolName: widget.toolName,
-              isVoiceChat,
-              hasToolOutput: !!widget.toolOutput,
-            });
-
             // In voice chat usa InlineVisualizationWidget
             if (isVoiceChat) {
               return (

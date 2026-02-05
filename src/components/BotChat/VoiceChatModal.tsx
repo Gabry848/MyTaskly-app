@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useMemo } from "react";
+import React, { useRef, useEffect, useState, useMemo, useCallback } from "react";
 import {
   View,
   Text,
@@ -16,7 +16,7 @@ import {
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useVoiceChat } from '../../hooks/useVoiceChat';
 import MessageBubble from './MessageBubble';
-import { Message, ToolWidget } from './types';
+import { Message, ToolWidget, ToolOutputData } from './types';
 
 
 export interface VoiceChatModalProps {
@@ -71,21 +71,11 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
 
   // Converte i tools attivi al formato ToolWidget
   const toolWidgets = useMemo<ToolWidget[]>(() => {
-    console.log('[VoiceChatModal] Converting activeTools to toolWidgets:', activeTools);
-
     return activeTools.map((tool, idx) => {
-      console.log('[VoiceChatModal] Processing tool:', {
-        name: tool.name,
-        status: tool.status,
-        hasOutput: !!tool.output,
-        outputRaw: tool.output,
-      });
-
-      let parsedOutput = undefined;
+      let parsedOutput: ToolOutputData | undefined = undefined;
       if (tool.output) {
         try {
-          parsedOutput = JSON.parse(tool.output);
-          console.log('[VoiceChatModal] Parsed output for', tool.name, ':', parsedOutput);
+          parsedOutput = JSON.parse(tool.output) as ToolOutputData;
         } catch (e) {
           console.error('[VoiceChatModal] Error parsing tool output:', e);
           parsedOutput = { message: tool.output };
@@ -98,35 +88,42 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
         toolArgsString = JSON.stringify(tool.args);
       }
 
-      const toolWidget = {
+      const toolWidget: ToolWidget = {
         id: `tool-${tool.name}-${idx}`,
         toolName: tool.name,
-        status: tool.status === 'complete' ? 'success' : 'loading',
+        status: (tool.status === 'complete' ? 'success' : 'loading') as 'success' | 'loading' | 'error',
         itemIndex: idx,
         toolArgs: toolArgsString,
         toolOutput: parsedOutput,
         errorMessage: undefined,
       };
 
-      console.log('[VoiceChatModal] Created toolWidget:', toolWidget);
       return toolWidget;
     });
   }, [activeTools]);
 
+  // Crea chiavi serializzate DENTRO useMemo per stabilità
+  const chatMessagesKey = useMemo(() => chatMessages.map(m => m.id).join(','), [chatMessages]);
+  const toolWidgetsKey = useMemo(() => toolWidgets.map(w => `${w.id}:${w.status}`).join(','), [toolWidgets]);
+
   // Merge messaggi trascrizioni + tool widgets come messaggi inline
   const allMessages = useMemo<Message[]>(() => {
-    const toolMessages: Message[] = toolWidgets.map((widget) => ({
+
+    // Usa una data di riferimento stabile per i tool messages
+    const baseDate = new Date('2024-01-01');
+
+    const toolMessages: Message[] = toolWidgets.map((widget, idx) => ({
       id: widget.id,
       text: '',                                 // Vuoto (widget-only message)
       sender: 'bot' as const,
-      start_time: new Date(),
+      start_time: baseDate,                     // Data fissa per evitare loop!
       isStreaming: widget.status === 'loading',
       isComplete: widget.status !== 'loading',
       toolWidgets: [widget]                     // Array con singolo widget
     }));
 
     return [...chatMessages, ...toolMessages];
-  }, [chatMessages, toolWidgets]);
+  }, [chatMessagesKey, toolWidgetsKey]);
 
   // Auto-scroll quando arrivano nuovi messaggi
   useEffect(() => {
@@ -277,9 +274,9 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
   };
 
   // Render di un singolo messaggio usando MessageBubble
-  const renderChatMessage = ({ item }: { item: Message }) => {
+  const renderChatMessage = useCallback(({ item }: { item: Message }) => {
     return <MessageBubble message={item} isVoiceChat={true} />;
-  };
+  }, []);
 
   return (
     <Modal

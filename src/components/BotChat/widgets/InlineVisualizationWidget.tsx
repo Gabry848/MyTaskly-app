@@ -16,47 +16,32 @@ interface InlineVisualizationWidgetProps {
  * Router per widget inline in voice chat
  * Decide quale componente renderizzare in base allo stato del widget
  */
-const InlineVisualizationWidget: React.FC<InlineVisualizationWidgetProps> = ({
+const InlineVisualizationWidget: React.FC<InlineVisualizationWidgetProps> = React.memo(({
   widget,
   onTaskPress,
   onCategoryPress,
 }) => {
-  // LOG: Debug struttura widget
-  console.log('[InlineVisualizationWidget] Widget received:', {
-    id: widget.id,
-    toolName: widget.toolName,
-    status: widget.status,
-    hasToolOutput: !!widget.toolOutput,
-    toolOutput: widget.toolOutput,
-    toolArgs: widget.toolArgs,
-  });
-
   // Loading state
   if (widget.status === 'loading' && !widget.toolOutput) {
-    console.log('[InlineVisualizationWidget] Rendering LoadingSkeletonCard');
     return <LoadingSkeletonCard widget={widget} />;
   }
 
   // Error state
   if (widget.status === 'error') {
-    console.log('[InlineVisualizationWidget] Rendering ErrorWidgetCard');
     return <ErrorWidgetCard widget={widget} />;
   }
 
   // Success state - routing per tipo di tool
   if (widget.toolName === 'show_tasks_to_user') {
-    console.log('[InlineVisualizationWidget] Routing to InlineTaskPreview');
     return <InlineTaskPreview widget={widget} onTaskPress={onTaskPress} />;
   }
 
   if (widget.toolName === 'show_categories_to_user') {
-    console.log('[InlineVisualizationWidget] Routing to InlineCategoryList');
     return <InlineCategoryList widget={widget} onCategoryPress={onCategoryPress} />;
   }
 
   // Tool non supportato per inline rendering
-  console.log('[InlineVisualizationWidget] Tool not supported:', widget.toolName);
   return null;
-};
+});
 
 export default InlineVisualizationWidget;
