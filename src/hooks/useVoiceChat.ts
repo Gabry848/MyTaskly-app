@@ -70,6 +70,7 @@ export function useVoiceChat() {
   const shouldAutoStartRecordingRef = useRef<boolean>(false);
   const agentEndedRef = useRef<boolean>(true); // true = agent ha finito, possiamo registrare
   const isMutedRef = useRef<boolean>(false);
+  const isManuallyMutedRef = useRef<boolean>(false); // Distingue tra mute manuale e automatico
 
   /**
    * Verifica e richiede i permessi audio
@@ -148,16 +149,50 @@ export function useVoiceChat() {
     },
 
     onStatus: (phase: VoiceServerPhase, message: string) => {
+      console.log(`[useVoiceChat] onStatus: phase=${phase}, message=${message}`);
       setServerStatus({ phase, message });
 
       switch (phase) {
+        case 'speech_started':
+          // Utente ha iniziato a parlare (VAD di OpenAI)
+          console.log('[useVoiceChat] 🎤 SPEECH_STARTED: Utente sta parlando');
+          setState('recording');
+          break;
+
+        case 'speech_stopped':
+          // Utente ha finito di parlare (VAD di OpenAI)
+          // IMPORTANTE: Fermiamo il microfono QUI e non lo riattiveremo
+          // finché l'agent non ha completato TUTTO (elaborazione + riproduzione)
+          console.log('[useVoiceChat] 🛑 SPEECH_STOPPED: Utente ha finito di parlare - auto-mute attivo');
+
+          // Auto-mute: ferma la registrazione
+          if (audioRecorderRef.current?.isCurrentlyRecording()) {
+            audioRecorderRef.current.stopRecording().catch(err => {
+              console.error('Errore fermando registrazione su speech_stopped:', err);
+            });
+            if (recordingIntervalRef.current) {
+              clearInterval(recordingIntervalRef.current);
+              recordingIntervalRef.current = null;
+            }
+            setRecordingDuration(0);
+          }
+
+          // Aggiorna UI del mute (solo se non è mutato manualmente)
+          if (!isManuallyMutedRef.current) {
+            setIsMuted(true);
+            isMutedRef.current = true;
+          }
+
+          setState('processing');
+          break;
+
         case 'agent_start':
+          console.log('[useVoiceChat] Agent iniziato - assicuro auto-mute');
           setState('processing');
           agentEndedRef.current = false; // Agent sta elaborando
-          // IMPORTANTE: Ferma la registrazione quando l'assistente inizia a rispondere
-          // per evitare che il microfono catturi l'audio della risposta (feedback loop)
+
+          // Auto-mute (safety check): assicuriamoci che il microfono sia fermato
           if (audioRecorderRef.current?.isCurrentlyRecording()) {
-            console.log('Fermo registrazione - agent_start');
             audioRecorderRef.current.stopRecording().catch(err => {
               console.error('Errore fermando registrazione su agent_start:', err);
             });
@@ -165,22 +200,45 @@ export function useVoiceChat() {
               clearInterval(recordingIntervalRef.current);
               recordingIntervalRef.current = null;
             }
+            setRecordingDuration(0);
+          }
+
+          // Aggiorna UI del mute (solo se non è mutato manualmente)
+          if (!isManuallyMutedRef.current) {
+            setIsMuted(true);
+            isMutedRef.current = true;
           }
           break;
 
         case 'agent_end':
           // Agent ha finito di elaborare
-          console.log('Agent terminato');
+          console.log('[useVoiceChat] Agent terminato');
           agentEndedRef.current = true;
-          // Se ci sono chunk audio da riprodurre, aspettiamo audio_end
-          // Altrimenti, torniamo pronti
-          if (!audioPlayerRef.current || audioPlayerRef.current.getChunksCount() === 0) {
+
+          // IMPORTANTE: Non riattivare il microfono se:
+          // 1. Ci sono chunk audio in coda da riprodurre
+          // 2. L'audio player sta ATTIVAMENTE riproducendo
+          const hasQueuedChunks = audioPlayerRef.current && audioPlayerRef.current.getChunksCount() > 0;
+          const isPlaying = audioPlayerRef.current?.isCurrentlyPlaying();
+
+          if (!hasQueuedChunks && !isPlaying) {
+            console.log('[useVoiceChat] Nessun audio in riproduzione, auto-unmute');
             setState('ready');
-            if (!isMutedRef.current) {
+
+            // Auto-unmute: riattiva microfono (solo se non mutato manualmente)
+            if (!isManuallyMutedRef.current) {
+              setIsMuted(false);
+              isMutedRef.current = false;
+
+              // Riavvia registrazione dopo un breve delay
               setTimeout(() => {
-                startRecording();
+                if (audioRecorderRef.current && websocketRef.current?.isReady()) {
+                  startRecording();
+                }
               }, 300);
             }
+          } else {
+            console.log(`[useVoiceChat] Audio in corso (chunks: ${audioPlayerRef.current?.getChunksCount() || 0}, playing: ${isPlaying}), mantengo mute fino a fine riproduzione`);
           }
           break;
 
@@ -188,31 +246,48 @@ export function useVoiceChat() {
           // Server ha finito di inviare chunk audio per questo segmento
           if (audioPlayerRef.current && audioPlayerRef.current.getChunksCount() > 0) {
             setState('speaking');
-            console.log(`Avvio riproduzione audio (${audioPlayerRef.current.getChunksCount()} chunk)`);
+            console.log(`[useVoiceChat] Avvio riproduzione audio (${audioPlayerRef.current.getChunksCount()} chunk) - mantengo auto-mute`);
             audioPlayerRef.current.playPcm16Chunks(() => {
-              console.log('Riproduzione completata');
-              // Riavvia la registrazione SOLO se l'agent ha finito e non è mutato
+              console.log('[useVoiceChat] Riproduzione completata');
+              // Riattiva il microfono SOLO se l'agent ha finito completamente
               if (agentEndedRef.current) {
-                console.log('Agent finito, riavvio registrazione');
+                console.log('[useVoiceChat] Agent finito, auto-unmute e riavvio registrazione');
                 setState('ready');
-                if (!isMutedRef.current) {
+
+                // Auto-unmute: riattiva microfono (solo se non mutato manualmente)
+                if (!isManuallyMutedRef.current) {
+                  setIsMuted(false);
+                  isMutedRef.current = false;
+
+                  // Riavvia registrazione dopo un breve delay
                   setTimeout(() => {
-                    startRecording();
+                    if (audioRecorderRef.current && websocketRef.current?.isReady()) {
+                      startRecording();
+                    }
                   }, 300);
                 }
               } else {
                 // Agent non ha ancora finito, torna in processing
                 // e aspetta altri chunk audio o agent_end
-                console.log('Agent non ancora finito, attendo...');
+                console.log('[useVoiceChat] Agent non ancora finito, attendo...');
                 setState('processing');
               }
             });
           } else if (agentEndedRef.current) {
             // Nessun audio da riprodurre e agent finito, torna pronto
+            console.log('[useVoiceChat] Nessun audio da riprodurre, auto-unmute');
             setState('ready');
-            if (!isMutedRef.current) {
+
+            // Auto-unmute: riattiva microfono (solo se non mutato manualmente)
+            if (!isManuallyMutedRef.current) {
+              setIsMuted(false);
+              isMutedRef.current = false;
+
+              // Riavvia registrazione dopo un breve delay
               setTimeout(() => {
-                startRecording();
+                if (audioRecorderRef.current && websocketRef.current?.isReady()) {
+                  startRecording();
+                }
               }, 300);
             }
           }
@@ -220,17 +295,24 @@ export function useVoiceChat() {
 
         case 'interrupted':
           // Risposta interrotta dall'utente, torna pronto
-          console.log('Risposta interrotta');
+          console.log('[useVoiceChat] Risposta interrotta, auto-unmute');
           agentEndedRef.current = true; // Reset
           if (audioPlayerRef.current) {
             audioPlayerRef.current.stopPlayback();
             audioPlayerRef.current.clearChunks();
           }
           setState('ready');
-          // L'utente ha interrotto, riavvia la registrazione se non mutato
-          if (!audioRecorderRef.current?.isCurrentlyRecording() && !isMutedRef.current) {
+
+          // Auto-unmute: riattiva microfono (solo se non mutato manualmente)
+          if (!isManuallyMutedRef.current) {
+            setIsMuted(false);
+            isMutedRef.current = false;
+
+            // Riavvia registrazione dopo un breve delay
             setTimeout(() => {
-              startRecording();
+              if (audioRecorderRef.current && websocketRef.current?.isReady()) {
+                startRecording();
+              }
             }, 200);
           }
           break;
@@ -309,6 +391,7 @@ export function useVoiceChat() {
     setChunksReceived(0);
     shouldAutoStartRecordingRef.current = true;
     agentEndedRef.current = true; // Reset per nuova sessione
+    isManuallyMutedRef.current = false; // Reset mute manuale
 
     try {
       const connected = await websocketRef.current!.connect();
@@ -455,11 +538,13 @@ export function useVoiceChat() {
   }, []);
 
   /**
-   * Muta il microfono
+   * Muta il microfono (azione manuale dell'utente)
    */
   const mute = useCallback(async (): Promise<void> => {
+    console.log('[useVoiceChat] Mute manuale attivato');
     setIsMuted(true);
     isMutedRef.current = true;
+    isManuallyMutedRef.current = true; // Marca come mute manuale
 
     // Ferma la registrazione se è attiva
     if (audioRecorderRef.current?.isCurrentlyRecording()) {
@@ -484,11 +569,13 @@ export function useVoiceChat() {
   }, [state]);
 
   /**
-   * Riattiva il microfono
+   * Riattiva il microfono (azione manuale dell'utente)
    */
   const unmute = useCallback(async (): Promise<void> => {
+    console.log('[useVoiceChat] Unmute manuale attivato');
     setIsMuted(false);
     isMutedRef.current = false;
+    isManuallyMutedRef.current = false; // Rimuove il flag di mute manuale
 
     // Riavvia la registrazione se siamo in stato 'ready'
     if (state === 'ready' && websocketRef.current?.isReady()) {
@@ -541,6 +628,7 @@ export function useVoiceChat() {
     setRecordingDuration(0);
     setIsMuted(false); // Reset mute state
     isMutedRef.current = false;
+    isManuallyMutedRef.current = false; // Reset mute manuale
   }, []);
 
   /**

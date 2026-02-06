@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useMemo, useCallback } from "react";
+import React, { useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,15 +8,11 @@ import {
   Animated,
   Dimensions,
   StatusBar,
-  ActivityIndicator,
   Alert,
-  Platform,
-  FlatList
+  Platform
 } from "react-native";
-import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { useVoiceChat } from '../../hooks/useVoiceChat';
-import MessageBubble from './MessageBubble';
-import { Message, ToolWidget, ToolOutputData } from './types';
 
 
 export interface VoiceChatModalProps {
@@ -55,84 +51,6 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
   const slideIn = useRef(new Animated.Value(height)).current;
   const fadeIn = useRef(new Animated.Value(0)).current;
   const liveDotOpacity = useRef(new Animated.Value(1)).current;
-  const flatListRef = useRef<FlatList>(null);
-
-  // Converte le trascrizioni al formato Message per MessageBubble
-  const chatMessages = useMemo<Message[]>(() => {
-    return transcripts.map((transcript, idx) => ({
-      id: `transcript-${idx}`,
-      text: transcript.content,
-      sender: transcript.role === 'user' ? 'user' : 'bot',
-      start_time: new Date(),
-      isStreaming: false,
-      isComplete: true,
-    }));
-  }, [transcripts]);
-
-  // Converte i tools attivi al formato ToolWidget
-  const toolWidgets = useMemo<ToolWidget[]>(() => {
-    return activeTools.map((tool, idx) => {
-      let parsedOutput: ToolOutputData | undefined = undefined;
-      if (tool.output) {
-        try {
-          parsedOutput = JSON.parse(tool.output) as ToolOutputData;
-        } catch (e) {
-          console.error('[VoiceChatModal] Error parsing tool output:', e);
-          parsedOutput = { message: tool.output };
-        }
-      }
-
-      // Converti args in stringa JSON se necessario
-      let toolArgsString = tool.args;
-      if (typeof tool.args === 'object') {
-        toolArgsString = JSON.stringify(tool.args);
-      }
-
-      const toolWidget: ToolWidget = {
-        id: `tool-${tool.name}-${idx}`,
-        toolName: tool.name,
-        status: (tool.status === 'complete' ? 'success' : 'loading') as 'success' | 'loading' | 'error',
-        itemIndex: idx,
-        toolArgs: toolArgsString,
-        toolOutput: parsedOutput,
-        errorMessage: undefined,
-      };
-
-      return toolWidget;
-    });
-  }, [activeTools]);
-
-  // Crea chiavi serializzate DENTRO useMemo per stabilità
-  const chatMessagesKey = useMemo(() => chatMessages.map(m => m.id).join(','), [chatMessages]);
-  const toolWidgetsKey = useMemo(() => toolWidgets.map(w => `${w.id}:${w.status}`).join(','), [toolWidgets]);
-
-  // Merge messaggi trascrizioni + tool widgets come messaggi inline
-  const allMessages = useMemo<Message[]>(() => {
-
-    // Usa una data di riferimento stabile per i tool messages
-    const baseDate = new Date('2024-01-01');
-
-    const toolMessages: Message[] = toolWidgets.map((widget, idx) => ({
-      id: widget.id,
-      text: '',                                 // Vuoto (widget-only message)
-      sender: 'bot' as const,
-      start_time: baseDate,                     // Data fissa per evitare loop!
-      isStreaming: widget.status === 'loading',
-      isComplete: widget.status !== 'loading',
-      toolWidgets: [widget]                     // Array con singolo widget
-    }));
-
-    return [...chatMessages, ...toolMessages];
-  }, [chatMessagesKey, toolWidgetsKey]);
-
-  // Auto-scroll quando arrivano nuovi messaggi
-  useEffect(() => {
-    if (allMessages.length > 0) {
-      setTimeout(() => {
-        flatListRef.current?.scrollToEnd({ animated: true });
-      }, 100);
-    }
-  }, [allMessages.length]); // Solo length, non toolWidgets array intero
 
   // Notifica trascrizioni assistant al parent
   useEffect(() => {
@@ -241,11 +159,6 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
     await disconnect();
   };
 
-  const handleErrorDismiss = () => {
-    if (state === 'error') {
-      handleConnect();
-    }
-  };
 
   // Render dello stato
   const renderStateIndicator = () => {
@@ -273,10 +186,6 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
     }
   };
 
-  // Render di un singolo messaggio usando MessageBubble
-  const renderChatMessage = useCallback(({ item }: { item: Message }) => {
-    return <MessageBubble message={item} isVoiceChat={true} />;
-  }, []);
 
   return (
     <Modal
@@ -333,52 +242,6 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
           >
             <Ionicons name="close" size={24} color="#000000" />
           </TouchableOpacity>
-        </View>
-
-        {/* Contenuto principale - Chat */}
-        <View style={styles.content}>
-          {/* Lista messaggi (include tool widgets inline) */}
-          {allMessages.length > 0 ? (
-            <FlatList
-              ref={flatListRef}
-              data={allMessages}
-              renderItem={renderChatMessage}
-              keyExtractor={(item) => item.id}
-              contentContainerStyle={styles.chatList}
-              showsVerticalScrollIndicator={false}
-              onLayout={() => flatListRef.current?.scrollToEnd({ animated: false })}
-            />
-          ) : (
-            <View style={styles.emptyChat}>
-              {state === 'connecting' || state === 'authenticating' || state === 'setting_up' ? (
-                <>
-                  <ActivityIndicator size="large" color="#000000" style={{ marginBottom: 16 }} />
-                  <Text style={styles.emptyChatText}>Connessione in corso...</Text>
-                </>
-              ) : state === 'error' ? (
-                <>
-                  <MaterialIcons name="error-outline" size={48} color="#FF3B30" style={{ marginBottom: 16 }} />
-                  <Text style={styles.emptyChatText}>Errore di connessione</Text>
-                  <TouchableOpacity onPress={handleErrorDismiss} style={styles.retryButton}>
-                    <Text style={styles.retryButtonText}>Riprova</Text>
-                  </TouchableOpacity>
-                </>
-              ) : (
-                <>
-                  <Ionicons name="mic" size={48} color="#000000" style={{ marginBottom: 16 }} />
-                  <Text style={styles.emptyChatText}>Inizia a parlare</Text>
-                  <Text style={styles.emptyChatSubtext}>La conversazione apparirà qui</Text>
-                </>
-              )}
-            </View>
-          )}
-
-          {/* Messaggio di errore */}
-          {error && (
-            <View style={styles.errorContainer}>
-              <Text style={styles.errorText}>{error}</Text>
-            </View>
-          )}
         </View>
 
         {/* Bottom Control Bar */}
@@ -470,11 +333,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E1E5E9",
   },
-  content: {
-    flex: 1,
-    paddingHorizontal: 0,
-    backgroundColor: "#FFFFFF",
-  },
   subtleText: {
     fontSize: 13,
     fontWeight: "400",
@@ -496,62 +354,6 @@ const styles = StyleSheet.create({
     color: "#FF3B30",
     fontFamily: "System",
   },
-  chatList: {
-    paddingVertical: 16,
-    paddingBottom: 32,
-  },
-  emptyChat: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 32,
-  },
-  emptyChatText: {
-    fontSize: 18,
-    fontWeight: "500",
-    color: "#000000",
-    textAlign: "center",
-    marginBottom: 8,
-    fontFamily: "System",
-  },
-  emptyChatSubtext: {
-    fontSize: 14,
-    fontWeight: "300",
-    color: "#666666",
-    textAlign: "center",
-    fontFamily: "System",
-  },
-  retryButton: {
-    marginTop: 16,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    backgroundColor: "#000000",
-    borderRadius: 20,
-  },
-  retryButtonText: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#FFFFFF",
-    fontFamily: "System",
-  },
-  errorContainer: {
-    backgroundColor: "rgba(255, 59, 48, 0.1)",
-    borderRadius: 12,
-    marginHorizontal: 16,
-    marginVertical: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: "rgba(255, 59, 48, 0.2)",
-  },
-  errorText: {
-    color: "#FF3B30",
-    fontSize: 13,
-    fontWeight: "400",
-    textAlign: "center",
-    fontFamily: "System",
-  },
-  // Tools Section
   // Control Bar
   controlBar: {
     flexDirection: "row",

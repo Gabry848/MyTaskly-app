@@ -30,6 +30,8 @@ export type VoiceClientMessage =
 export type VoiceServerPhase =
   | 'authenticated'
   | 'ready'
+  | 'speech_started'    // Utente ha iniziato a parlare (VAD di OpenAI)
+  | 'speech_stopped'    // Utente ha finito di parlare (VAD di OpenAI)
   | 'interrupted'
   | 'audio_end'
   | 'agent_start'
@@ -308,6 +310,8 @@ export class VoiceBotWebSocket {
     const phase = response.phase;
     const message = response.message || '';
 
+    console.log(`[VoiceBotWebSocket] handleStatusResponse: phase=${phase}, message=${message}`);
+
     switch (phase) {
       case 'authenticated':
         console.log('Autenticazione WebSocket riuscita:', message);
@@ -326,6 +330,8 @@ export class VoiceBotWebSocket {
         this.callbacks.onStatus?.(phase, message);
         break;
 
+      case 'speech_started':
+      case 'speech_stopped':
       case 'interrupted':
       case 'audio_end':
       case 'agent_start':
