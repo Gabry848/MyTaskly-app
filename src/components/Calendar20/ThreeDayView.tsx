@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
     color: '#666666',
     fontFamily: 'System',
   },
-  todayColor: { color: '#007AFF' },
+  todayColor: { color: '#000000' },
   dateCircle: {
     width: 28,
     height: 28,
@@ -256,7 +256,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 2,
   },
-  todayCircle: { backgroundColor: '#007AFF' },
+  todayCircle: { backgroundColor: '#000000' },
   dateNum: { fontSize: 16, fontWeight: '400', color: '#000000', fontFamily: 'System' },
   todayDateNum: { color: '#ffffff', fontWeight: '600' },
   allDayRow: {
@@ -292,8 +292,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 10,
   },
-  currentTimeDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#EA4335' },
-  currentTimeBar: { flex: 1, height: 1.5, backgroundColor: '#EA4335' },
+  currentTimeDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#000000' },
+  currentTimeBar: { flex: 1, height: 1.5, backgroundColor: '#000000' },
 });
 
 export default React.memo(ThreeDayView);

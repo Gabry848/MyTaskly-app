@@ -124,14 +124,14 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    backgroundColor: 'rgba(0,0,0,0.4)',
   },
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
     marginTop: 40,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     overflow: 'hidden',
   },
   searchBar: {
@@ -158,7 +158,7 @@ const styles = StyleSheet.create({
   cancelText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#007AFF',
+    color: '#000000',
     fontFamily: 'System',
   },
   resultsList: {

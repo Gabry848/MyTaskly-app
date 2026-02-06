@@ -132,21 +132,21 @@ const MiniCalendar: React.FC<MiniCalendarProps> = ({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'flex-start',
     paddingTop: 80,
     alignItems: 'center',
   },
   container: {
     backgroundColor: '#ffffff',
-    borderRadius: 16,
+    borderRadius: 24,
     padding: 16,
     width: 320,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.08,
     shadowRadius: 12,
-    elevation: 8,
+    elevation: 3,
   },
   monthNav: {
     flexDirection: 'row',
@@ -183,12 +183,12 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   selectedCell: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#000000',
     borderRadius: 14,
   },
   todayCell: {
     borderWidth: 1,
-    borderColor: '#007AFF',
+    borderColor: '#000000',
     borderRadius: 14,
   },
   dayText: {
@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   todayText: {
-    color: '#007AFF',
+    color: '#000000',
     fontWeight: '600',
   },
   todayButton: {
@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
   todayButtonText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#007AFF',
+    color: '#000000',
     fontFamily: 'System',
   },
 });

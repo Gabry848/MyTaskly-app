@@ -29,7 +29,7 @@ const TimeBlock: React.FC<TimeBlockProps> = ({
   const left = column * (columnWidth / totalColumns) + 1;
 
   const isCompleted = task.status?.toLowerCase() === 'completato' || task.status?.toLowerCase() === 'completed';
-  const bgColor = task.displayColor || '#4285F4';
+  const bgColor = task.displayColor || '#007AFF';
 
   const startTime = task.startDayjs.format('HH:mm');
   const endTime = task.endDayjs.format('HH:mm');
@@ -82,7 +82,7 @@ const TimeBlock: React.FC<TimeBlockProps> = ({
 const styles = StyleSheet.create({
   block: {
     position: 'absolute',
-    borderRadius: 4,
+    borderRadius: 6,
     paddingHorizontal: 4,
     paddingVertical: 2,
     overflow: 'hidden',

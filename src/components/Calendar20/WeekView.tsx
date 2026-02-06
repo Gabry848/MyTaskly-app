@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
     fontFamily: 'System',
   },
   todayColor: {
-    color: '#007AFF',
+    color: '#000000',
   },
   dateCircle: {
     width: 24,
@@ -311,7 +311,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   todayCircle: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#000000',
   },
   dateNum: {
     fontSize: 14,
@@ -379,12 +379,12 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#EA4335',
+    backgroundColor: '#000000',
   },
   currentTimeBar: {
     flex: 1,
     height: 1.5,
-    backgroundColor: '#EA4335',
+    backgroundColor: '#000000',
   },
 });
 

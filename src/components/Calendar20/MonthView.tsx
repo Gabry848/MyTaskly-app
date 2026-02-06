@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
   },
   weekRow: {
     flexDirection: 'row',
-    minHeight: 72,
+    flex: 1,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#f0f0f0',
   },
@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   todayCircle: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#000000',
   },
   dateText: {
     fontSize: 13,

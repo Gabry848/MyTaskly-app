@@ -114,12 +114,12 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#007AFF',
+    borderColor: '#000000',
   },
   todayText: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#007AFF',
+    color: '#000000',
     fontFamily: 'System',
   },
 });

@@ -11,7 +11,7 @@ interface EventChipProps {
 }
 
 const EventChip: React.FC<EventChipProps> = ({ task, onPress, isSpanning, isStart = true, isEnd = true }) => {
-  const bgColor = task.displayColor || '#4285F4';
+  const bgColor = task.displayColor || '#007AFF';
   const isCompleted = task.status?.toLowerCase() === 'completato' || task.status?.toLowerCase() === 'completed';
 
   return (
@@ -37,7 +37,7 @@ const styles = StyleSheet.create({
   chip: {
     paddingHorizontal: 4,
     paddingVertical: 1,
-    borderRadius: 3,
+    borderRadius: 4,
     marginBottom: 1,
     minHeight: 16,
     justifyContent: 'center',

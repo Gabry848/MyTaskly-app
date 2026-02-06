@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const COLOR_POOL = [
-  '#4285F4', // Google Blue
+  '#007AFF', // App Blue
   '#34A853', // Green
   '#EA4335', // Red
   '#A142F4', // Purple

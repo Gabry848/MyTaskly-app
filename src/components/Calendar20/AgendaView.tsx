@@ -156,7 +156,7 @@ const AgendaView: React.FC<AgendaViewProps> = ({
       onEndReachedThreshold={0.5}
       ListFooterComponent={
         <TouchableOpacity style={styles.loadMoreButton} onPress={loadMore}>
-          <Ionicons name="chevron-down" size={20} color="#007AFF" />
+          <Ionicons name="chevron-down" size={20} color="#000000" />
           <Text style={styles.loadMoreText}>Load more</Text>
         </TouchableOpacity>
       }
@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e1e5e9',
   },
   todayHeader: {
-    backgroundColor: '#EBF2FF',
+    backgroundColor: '#f0f0f0',
   },
   sectionTitle: {
     fontSize: 14,
@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.3,
   },
   todayTitle: {
-    color: '#007AFF',
+    color: '#000000',
     fontWeight: '600',
   },
   taskRow: {
@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
   },
   loadMoreText: {
     fontSize: 14,
-    color: '#007AFF',
+    color: '#000000',
     fontWeight: '500',
     fontFamily: 'System',
   },

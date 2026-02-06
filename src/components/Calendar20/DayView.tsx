@@ -277,12 +277,12 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#EA4335',
+    backgroundColor: '#000000',
   },
   currentTimeBar: {
     flex: 1,
     height: 1.5,
-    backgroundColor: '#EA4335',
+    backgroundColor: '#000000',
   },
 });
 

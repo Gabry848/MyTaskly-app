@@ -66,13 +66,13 @@ const ViewDrawer: React.FC<ViewDrawerProps> = ({
                   <Ionicons
                     name={opt.icon}
                     size={20}
-                    color={isActive ? '#007AFF' : '#333333'}
+                    color={isActive ? '#000000' : '#333333'}
                   />
                   <Text style={[styles.viewLabel, isActive && styles.activeViewLabel]}>
                     {t(opt.labelKey)}
                   </Text>
                   {isActive && (
-                    <Ionicons name="checkmark" size={18} color="#007AFF" style={styles.checkmark} />
+                    <Ionicons name="checkmark" size={18} color="#000000" style={styles.checkmark} />
                   )}
                 </TouchableOpacity>
               );
@@ -89,7 +89,7 @@ const ViewDrawer: React.FC<ViewDrawerProps> = ({
                     {t('calendar20.drawer.showAll')}
                   </Text>
                   {enabledCategories.size === 0 && (
-                    <Ionicons name="checkmark" size={16} color="#007AFF" />
+                    <Ionicons name="checkmark" size={16} color="#000000" />
                   )}
                 </TouchableOpacity>
 
@@ -128,7 +128,7 @@ const ViewDrawer: React.FC<ViewDrawerProps> = ({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    backgroundColor: 'rgba(0,0,0,0.4)',
     flexDirection: 'row',
   },
   drawer: {
@@ -138,9 +138,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     shadowColor: '#000',
     shadowOffset: { width: 2, height: 0 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.08,
     shadowRadius: 12,
-    elevation: 8,
+    elevation: 3,
+    borderTopRightRadius: 24,
+    borderBottomRightRadius: 24,
   },
   sectionTitle: {
     fontSize: 12,
@@ -160,7 +162,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   activeViewOption: {
-    backgroundColor: '#EBF2FF',
+    backgroundColor: '#f0f0f0',
   },
   viewLabel: {
     fontSize: 15,
@@ -171,7 +173,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   activeViewLabel: {
-    color: '#007AFF',
+    color: '#000000',
     fontWeight: '500',
   },
   checkmark: {
@@ -197,7 +199,7 @@ const styles = StyleSheet.create({
     fontFamily: 'System',
   },
   activeShowAll: {
-    color: '#007AFF',
+    color: '#000000',
     fontWeight: '500',
   },
   categoryRow: {
