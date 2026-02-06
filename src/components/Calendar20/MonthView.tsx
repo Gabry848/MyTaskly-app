@@ -16,7 +16,7 @@ import { useTranslation } from 'react-i18next';
 dayjs.extend(isoWeek);
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const DAY_WIDTH = (SCREEN_WIDTH - 24) / 7;
+const DAY_WIDTH = (SCREEN_WIDTH - 32) / 7;
 const MAX_CHIPS = 3;
 
 interface MonthViewProps {
@@ -168,11 +168,11 @@ const MonthView: React.FC<MonthViewProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
   },
   headerRow: {
     flexDirection: 'row',
-    paddingVertical: 8,
+    paddingVertical: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#e1e5e9',
   },
@@ -201,9 +201,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 1,
   },
   dateCircle: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'center',
@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#000000',
   },
   dateText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '400',
     color: '#000000',
     fontFamily: 'System',
@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   moreText: {
-    fontSize: 10,
+    fontSize: 11,
     color: '#666666',
     fontFamily: 'System',
     textAlign: 'center',

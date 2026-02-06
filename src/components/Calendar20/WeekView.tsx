@@ -18,7 +18,7 @@ dayjs.extend(isoWeek);
 
 const TIME_LABEL_WIDTH = 44;
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const COLUMN_WIDTH = (SCREEN_WIDTH - TIME_LABEL_WIDTH - 12) / 7;
+const COLUMN_WIDTH = (SCREEN_WIDTH - TIME_LABEL_WIDTH - 16) / 7;
 const MIN_HOUR_HEIGHT = 30;
 const MAX_HOUR_HEIGHT = 120;
 const DEFAULT_HOUR_HEIGHT = 50;
@@ -285,8 +285,8 @@ const styles = StyleSheet.create({
   },
   headerRow: {
     flexDirection: 'row',
-    paddingHorizontal: 6,
-    paddingVertical: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#e1e5e9',
   },
@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
   },
   dayName: {
     fontSize: 11,
-    fontWeight: '500',
+    fontWeight: '400',
     color: '#666666',
     fontFamily: 'System',
   },
@@ -308,13 +308,13 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 2,
+    marginTop: 3,
   },
   todayCircle: {
     backgroundColor: '#000000',
   },
   dateNum: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '400',
     color: '#000000',
     fontFamily: 'System',
@@ -325,8 +325,8 @@ const styles = StyleSheet.create({
   },
   allDayRow: {
     flexDirection: 'row',
-    paddingHorizontal: 6,
-    paddingVertical: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#e1e5e9',
     backgroundColor: '#fafafa',
@@ -335,7 +335,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   allDayLabelText: {
-    fontSize: 10,
+    fontSize: 11,
     color: '#666666',
     fontFamily: 'System',
   },
@@ -347,7 +347,7 @@ const styles = StyleSheet.create({
   },
   gridContainer: {
     flexDirection: 'row',
-    paddingHorizontal: 6,
+    paddingHorizontal: 8,
   },
   dayColumn: {
     position: 'relative',
@@ -362,7 +362,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#e1e5e9',
   },
   timeLabel: {
-    fontSize: 10,
+    fontSize: 11,
     color: '#999999',
     fontFamily: 'System',
     marginTop: -5,

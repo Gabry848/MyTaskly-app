@@ -16,7 +16,7 @@ import { useTranslation } from 'react-i18next';
 const HOUR_HEIGHT = 60;
 const TIME_LABEL_WIDTH = 48;
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const COLUMN_WIDTH = SCREEN_WIDTH - TIME_LABEL_WIDTH - 12;
+const COLUMN_WIDTH = SCREEN_WIDTH - TIME_LABEL_WIDTH - 16;
 
 interface DayViewProps {
   currentDate: dayjs.Dayjs;
@@ -214,16 +214,16 @@ const styles = StyleSheet.create({
   allDayContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#e1e5e9',
     backgroundColor: '#fafafa',
   },
   allDayLabel: {
     width: TIME_LABEL_WIDTH - 12,
-    fontSize: 10,
-    fontWeight: '500',
+    fontSize: 11,
+    fontWeight: '400',
     color: '#666666',
     fontFamily: 'System',
   },
@@ -231,14 +231,14 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 4,
+    gap: 6,
   },
   scrollContainer: {
     flex: 1,
   },
   gridContainer: {
     flexDirection: 'row',
-    paddingHorizontal: 6,
+    paddingHorizontal: 8,
   },
   timeColumn: {
     width: TIME_LABEL_WIDTH,

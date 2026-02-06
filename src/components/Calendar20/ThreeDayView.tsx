@@ -16,7 +16,7 @@ import { useTranslation } from 'react-i18next';
 const HOUR_HEIGHT = 60;
 const TIME_LABEL_WIDTH = 44;
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const COLUMN_WIDTH = (SCREEN_WIDTH - TIME_LABEL_WIDTH - 12) / 3;
+const COLUMN_WIDTH = (SCREEN_WIDTH - TIME_LABEL_WIDTH - 16) / 3;
 
 interface ThreeDayViewProps {
   currentDate: dayjs.Dayjs;
@@ -235,15 +235,15 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   headerRow: {
     flexDirection: 'row',
-    paddingHorizontal: 6,
-    paddingVertical: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#e1e5e9',
   },
   dayHeader: { alignItems: 'center' },
   dayName: {
-    fontSize: 11,
-    fontWeight: '500',
+    fontSize: 12,
+    fontWeight: '400',
     color: '#666666',
     fontFamily: 'System',
   },
@@ -254,23 +254,23 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 2,
+    marginTop: 3,
   },
   todayCircle: { backgroundColor: '#000000' },
-  dateNum: { fontSize: 16, fontWeight: '400', color: '#000000', fontFamily: 'System' },
+  dateNum: { fontSize: 17, fontWeight: '400', color: '#000000', fontFamily: 'System' },
   todayDateNum: { color: '#ffffff', fontWeight: '600' },
   allDayRow: {
     flexDirection: 'row',
-    paddingHorizontal: 6,
-    paddingVertical: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#e1e5e9',
     backgroundColor: '#fafafa',
   },
-  allDayLabelText: { fontSize: 10, color: '#666666', fontFamily: 'System' },
+  allDayLabelText: { fontSize: 11, color: '#666666', fontFamily: 'System' },
   allDayCell: { paddingHorizontal: 1 },
   scrollContainer: { flex: 1 },
-  gridContainer: { flexDirection: 'row', paddingHorizontal: 6 },
+  gridContainer: { flexDirection: 'row', paddingHorizontal: 8 },
   dayColumn: {
     position: 'relative',
     borderLeftWidth: StyleSheet.hairlineWidth,
@@ -283,7 +283,7 @@ const styles = StyleSheet.create({
     height: StyleSheet.hairlineWidth,
     backgroundColor: '#e1e5e9',
   },
-  timeLabel: { fontSize: 10, color: '#999999', fontFamily: 'System', marginTop: -5 },
+  timeLabel: { fontSize: 11, color: '#999999', fontFamily: 'System', marginTop: -5 },
   currentTimeLine: {
     position: 'absolute',
     left: -2,

@@ -82,9 +82,9 @@ const TimeBlock: React.FC<TimeBlockProps> = ({
 const styles = StyleSheet.create({
   block: {
     position: 'absolute',
-    borderRadius: 6,
-    paddingHorizontal: 4,
-    paddingVertical: 2,
+    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
     overflow: 'hidden',
     borderLeftWidth: 3,
     borderLeftColor: 'rgba(0,0,0,0.15)',
@@ -100,11 +100,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   checkboxArea: {
-    marginRight: 3,
+    marginRight: 4,
   },
   title: {
-    fontSize: 11,
-    fontWeight: '500',
+    fontSize: 12,
+    fontWeight: '400',
     color: '#ffffff',
     fontFamily: 'System',
     flex: 1,
@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
     textDecorationLine: 'line-through',
   },
   time: {
-    fontSize: 10,
+    fontSize: 11,
     color: 'rgba(255,255,255,0.8)',
     fontFamily: 'System',
     marginTop: 1,
