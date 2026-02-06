@@ -36,10 +36,10 @@ const EventChip: React.FC<EventChipProps> = ({ task, onPress, isSpanning, isStar
 const styles = StyleSheet.create({
   chip: {
     paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingVertical: 3,
     borderRadius: 6,
-    marginBottom: 1,
-    minHeight: 18,
+    marginBottom: 2,
+    minHeight: 20,
     justifyContent: 'center',
   },
   spanningLeft: {
@@ -54,7 +54,7 @@ const styles = StyleSheet.create({
   },
   chipText: {
     color: '#ffffff',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '400',
     fontFamily: 'System',
   },

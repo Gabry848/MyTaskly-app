@@ -13,8 +13,8 @@ import TimeBlock from './TimeBlock';
 import EventChip from './EventChip';
 import { useTranslation } from 'react-i18next';
 
-const HOUR_HEIGHT = 60;
-const TIME_LABEL_WIDTH = 48;
+const HOUR_HEIGHT = 72;
+const TIME_LABEL_WIDTH = 52;
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const COLUMN_WIDTH = SCREEN_WIDTH - TIME_LABEL_WIDTH - 16;
 
@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
   },
   allDayLabel: {
     width: TIME_LABEL_WIDTH - 12,
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '400',
     color: '#666666',
     fontFamily: 'System',
@@ -247,11 +247,11 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
   },
   timeLabel: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#999999',
     fontFamily: 'System',
     fontWeight: '400',
-    marginTop: -6,
+    marginTop: -7,
   },
   eventsColumn: {
     flex: 1,

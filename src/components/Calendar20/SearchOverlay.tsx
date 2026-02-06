@@ -13,6 +13,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { CalendarTask } from './types';
 import { useTranslation } from 'react-i18next';
+import TaskCard from '../Task/TaskCard';
+import { Task } from '../../services/taskService';
 
 interface SearchOverlayProps {
   visible: boolean;
@@ -90,30 +92,17 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
             data={results}
             keyExtractor={(item, i) => (item.task_id || item.id || i).toString()}
             renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.resultRow}
+              <TaskCard
+                task={item as Task}
                 onPress={() => {
                   handleClose();
                   onTaskPress(item);
                 }}
-              >
-                <View style={[styles.colorDot, { backgroundColor: item.displayColor }]} />
-                <View style={styles.resultContent}>
-                  <Text style={styles.resultTitle} numberOfLines={1}>{item.title}</Text>
-                  <Text style={styles.resultDate}>
-                    {item.startDayjs.format('ddd, D MMM YYYY')}
-                    {!item.isAllDay && ` ${item.startDayjs.format('HH:mm')}`}
-                  </Text>
-                </View>
-                {item.category_name && (
-                  <Text style={[styles.resultCategory, { color: item.displayColor }]} numberOfLines={1}>
-                    {item.category_name}
-                  </Text>
-                )}
-              </TouchableOpacity>
+              />
             )}
             keyboardShouldPersistTaps="handled"
             style={styles.resultsList}
+            contentContainerStyle={styles.resultsContent}
           />
         </Pressable>
       </Pressable>
@@ -164,40 +153,9 @@ const styles = StyleSheet.create({
   resultsList: {
     flex: 1,
   },
-  resultRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#f0f0f0',
-  },
-  colorDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    marginRight: 14,
-  },
-  resultContent: {
-    flex: 1,
-  },
-  resultTitle: {
-    fontSize: 16,
-    fontWeight: '400',
-    color: '#000000',
-    fontFamily: 'System',
-  },
-  resultDate: {
-    fontSize: 13,
-    color: '#666666',
-    fontFamily: 'System',
-    marginTop: 2,
-  },
-  resultCategory: {
-    fontSize: 12,
-    fontWeight: '500',
-    fontFamily: 'System',
-    maxWidth: 80,
+  resultsContent: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
   },
   noResults: {
     alignItems: 'center',

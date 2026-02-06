@@ -13,8 +13,8 @@ import TimeBlock from './TimeBlock';
 import EventChip from './EventChip';
 import { useTranslation } from 'react-i18next';
 
-const HOUR_HEIGHT = 60;
-const TIME_LABEL_WIDTH = 44;
+const HOUR_HEIGHT = 72;
+const TIME_LABEL_WIDTH = 48;
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const COLUMN_WIDTH = (SCREEN_WIDTH - TIME_LABEL_WIDTH - 16) / 3;
 
@@ -236,13 +236,13 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: 'row',
     paddingHorizontal: 8,
-    paddingVertical: 6,
+    paddingVertical: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#e1e5e9',
   },
   dayHeader: { alignItems: 'center' },
   dayName: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '400',
     color: '#666666',
     fontFamily: 'System',
@@ -254,10 +254,10 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 3,
+    marginTop: 4,
   },
   todayCircle: { backgroundColor: '#000000' },
-  dateNum: { fontSize: 17, fontWeight: '400', color: '#000000', fontFamily: 'System' },
+  dateNum: { fontSize: 18, fontWeight: '400', color: '#000000', fontFamily: 'System' },
   todayDateNum: { color: '#ffffff', fontWeight: '600' },
   allDayRow: {
     flexDirection: 'row',
@@ -267,7 +267,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e1e5e9',
     backgroundColor: '#fafafa',
   },
-  allDayLabelText: { fontSize: 11, color: '#666666', fontFamily: 'System' },
+  allDayLabelText: { fontSize: 12, color: '#666666', fontFamily: 'System' },
   allDayCell: { paddingHorizontal: 1 },
   scrollContainer: { flex: 1 },
   gridContainer: { flexDirection: 'row', paddingHorizontal: 8 },
@@ -283,7 +283,7 @@ const styles = StyleSheet.create({
     height: StyleSheet.hairlineWidth,
     backgroundColor: '#e1e5e9',
   },
-  timeLabel: { fontSize: 11, color: '#999999', fontFamily: 'System', marginTop: -5 },
+  timeLabel: { fontSize: 12, color: '#999999', fontFamily: 'System', marginTop: -5 },
   currentTimeLine: {
     position: 'absolute',
     left: -2,

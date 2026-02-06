@@ -109,7 +109,7 @@ const AgendaView: React.FC<AgendaViewProps> = ({
         >
           <Ionicons
             name={isCompleted ? 'checkbox' : 'square-outline'}
-            size={20}
+            size={22}
             color={isCompleted ? '#999' : item.displayColor}
           />
         </TouchableOpacity>
@@ -149,7 +149,7 @@ const AgendaView: React.FC<AgendaViewProps> = ({
       renderItem={renderItem}
       renderSectionHeader={renderSectionHeader}
       keyExtractor={(item, index) => item.task_id || item.id || `empty-${index}`}
-      stickySectionHeadersEnabled={true}
+      stickySectionHeadersEnabled={false}
       style={styles.container}
       contentContainerStyle={styles.contentContainer}
       onEndReached={loadMore}
@@ -170,21 +170,20 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     paddingBottom: 80,
+    paddingHorizontal: 16,
   },
   sectionHeader: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    backgroundColor: '#f8f9fa',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#e1e5e9',
+    paddingHorizontal: 4,
+    paddingVertical: 14,
+    backgroundColor: 'transparent',
   },
   todayHeader: {
-    backgroundColor: '#f0f0f0',
+    backgroundColor: 'transparent',
   },
   sectionTitle: {
-    fontSize: 15,
-    fontWeight: '400',
-    color: '#333333',
+    fontSize: 17,
+    fontWeight: '300',
+    color: '#000000',
     fontFamily: 'System',
     letterSpacing: -0.3,
   },
@@ -195,52 +194,62 @@ const styles = StyleSheet.create({
   taskRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    marginBottom: 8,
     backgroundColor: '#ffffff',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#f0f0f0',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#e1e5e9',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 1,
   },
   checkbox: {
-    marginRight: 10,
+    marginRight: 12,
   },
   colorDot: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    marginRight: 12,
+    marginRight: 14,
   },
   taskContent: {
     flex: 1,
   },
   taskTitle: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '400',
     color: '#000000',
     fontFamily: 'System',
+    letterSpacing: -0.3,
   },
   completedTitle: {
     textDecorationLine: 'line-through',
     color: '#999999',
   },
   taskTime: {
-    fontSize: 13,
+    fontSize: 14,
     color: '#666666',
     fontFamily: 'System',
-    marginTop: 2,
+    marginTop: 4,
   },
   categoryBadge: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: 13,
+    fontWeight: '400',
     fontFamily: 'System',
-    maxWidth: 80,
+    maxWidth: 90,
   },
   emptyDay: {
-    paddingHorizontal: 20,
-    paddingVertical: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 20,
+    marginBottom: 8,
     backgroundColor: '#ffffff',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#f0f0f0',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
   },
   emptyText: {
     fontSize: 15,
@@ -252,13 +261,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 20,
+    paddingVertical: 24,
     gap: 8,
   },
   loadMoreText: {
-    fontSize: 15,
+    fontSize: 16,
     color: '#000000',
-    fontWeight: '500',
+    fontWeight: '400',
     fontFamily: 'System',
   },
 });

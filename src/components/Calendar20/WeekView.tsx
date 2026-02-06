@@ -19,9 +19,9 @@ dayjs.extend(isoWeek);
 const TIME_LABEL_WIDTH = 44;
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const COLUMN_WIDTH = (SCREEN_WIDTH - TIME_LABEL_WIDTH - 16) / 7;
-const MIN_HOUR_HEIGHT = 30;
-const MAX_HOUR_HEIGHT = 120;
-const DEFAULT_HOUR_HEIGHT = 50;
+const MIN_HOUR_HEIGHT = 40;
+const MAX_HOUR_HEIGHT = 140;
+const DEFAULT_HOUR_HEIGHT = 64;
 
 interface WeekViewProps {
   currentDate: dayjs.Dayjs;
@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: 'row',
     paddingHorizontal: 8,
-    paddingVertical: 6,
+    paddingVertical: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#e1e5e9',
   },
@@ -294,7 +294,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   dayName: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '400',
     color: '#666666',
     fontFamily: 'System',
@@ -303,18 +303,18 @@ const styles = StyleSheet.create({
     color: '#000000',
   },
   dateCircle: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 3,
+    marginTop: 4,
   },
   todayCircle: {
     backgroundColor: '#000000',
   },
   dateNum: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '400',
     color: '#000000',
     fontFamily: 'System',
@@ -335,7 +335,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   allDayLabelText: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#666666',
     fontFamily: 'System',
   },

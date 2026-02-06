@@ -17,7 +17,7 @@ dayjs.extend(isoWeek);
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const DAY_WIDTH = (SCREEN_WIDTH - 32) / 7;
-const MAX_CHIPS = 3;
+const MAX_CHIPS = 2;
 
 interface MonthViewProps {
   currentDate: dayjs.Dayjs;
@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
   },
   headerRow: {
     flexDirection: 'row',
-    paddingVertical: 10,
+    paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#e1e5e9',
   },
@@ -181,8 +181,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerText: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: 13,
+    fontWeight: '400',
     color: '#666666',
     fontFamily: 'System',
   },
@@ -194,26 +194,27 @@ const styles = StyleSheet.create({
     flex: 1,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#f0f0f0',
+    paddingVertical: 2,
   },
   dayCell: {
     width: DAY_WIDTH,
-    paddingTop: 2,
+    paddingTop: 6,
     paddingHorizontal: 1,
   },
   dateCircle: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'center',
-    marginBottom: 2,
+    marginBottom: 4,
   },
   todayCircle: {
     backgroundColor: '#000000',
   },
   dateText: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '400',
     color: '#000000',
     fontFamily: 'System',
@@ -232,11 +233,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   moreText: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#666666',
     fontFamily: 'System',
     textAlign: 'center',
-    marginTop: 1,
+    marginTop: 2,
   },
 });
 

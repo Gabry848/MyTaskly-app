@@ -459,7 +459,8 @@
     "drawer": {
       "views": "Views",
       "categories": "Categories",
-      "showAll": "Show all"
+      "showAll": "Show all",
+      "settings": "Settings"
     }
   },
   "statistics": {

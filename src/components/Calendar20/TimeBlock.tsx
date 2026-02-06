@@ -23,7 +23,7 @@ const TimeBlock: React.FC<TimeBlockProps> = ({
   onToggleComplete,
 }) => {
   const startHour = task.startDayjs.hour() + task.startDayjs.minute() / 60;
-  const height = Math.max((task.durationMinutes / 60) * hourHeight, 20);
+  const height = Math.max((task.durationMinutes / 60) * hourHeight, 24);
   const top = startHour * hourHeight;
   const width = columnWidth / totalColumns - 2;
   const left = column * (columnWidth / totalColumns) + 1;
@@ -33,7 +33,7 @@ const TimeBlock: React.FC<TimeBlockProps> = ({
 
   const startTime = task.startDayjs.format('HH:mm');
   const endTime = task.endDayjs.format('HH:mm');
-  const showEndTime = height > 35;
+  const showEndTime = height > 40;
 
   return (
     <TouchableOpacity
@@ -82,9 +82,9 @@ const TimeBlock: React.FC<TimeBlockProps> = ({
 const styles = StyleSheet.create({
   block: {
     position: 'absolute',
-    borderRadius: 8,
-    paddingHorizontal: 6,
-    paddingVertical: 3,
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     overflow: 'hidden',
     borderLeftWidth: 3,
     borderLeftColor: 'rgba(0,0,0,0.15)',
@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
     marginRight: 4,
   },
   title: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '400',
     color: '#ffffff',
     fontFamily: 'System',
@@ -113,10 +113,10 @@ const styles = StyleSheet.create({
     textDecorationLine: 'line-through',
   },
   time: {
-    fontSize: 11,
+    fontSize: 12,
     color: 'rgba(255,255,255,0.8)',
     fontFamily: 'System',
-    marginTop: 1,
+    marginTop: 2,
   },
 });
 

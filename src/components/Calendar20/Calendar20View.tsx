@@ -16,7 +16,7 @@ import ThreeDayView from './ThreeDayView';
 import DayView from './DayView';
 import AgendaView from './AgendaView';
 import MiniCalendar from './MiniCalendar';
-import ViewDrawer from './ViewDrawer';
+import ViewSelector from './ViewSelector';
 import SearchOverlay from './SearchOverlay';
 import FABMenu from './FABMenu';
 import AddTask from '../Task/AddTask';
@@ -26,14 +26,18 @@ dayjs.extend(isoWeek);
 
 const VIEW_PREF_KEY = '@calendar20_view_pref';
 
-const Calendar20View: React.FC = () => {
+interface Calendar20ViewProps {
+  onClose?: () => void;
+}
+
+const Calendar20View: React.FC<Calendar20ViewProps> = ({ onClose }) => {
   const [viewType, setViewType] = useState<CalendarViewType>('month');
   const [currentDate, setCurrentDate] = useState(dayjs());
   const [rawTasks, setRawTasks] = useState<Task[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [enabledCategories, setEnabledCategories] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
-  const [drawerVisible, setDrawerVisible] = useState(false);
+  const [viewSelectorVisible, setViewSelectorVisible] = useState(false);
   const [searchVisible, setSearchVisible] = useState(false);
   const [miniCalendarVisible, setMiniCalendarVisible] = useState(false);
   const [addTaskVisible, setAddTaskVisible] = useState(false);
@@ -217,7 +221,7 @@ const Calendar20View: React.FC = () => {
 
   const handleViewChange = useCallback(async (newView: CalendarViewType) => {
     setViewType(newView);
-    setDrawerVisible(false);
+    setViewSelectorVisible(false);
     try {
       await AsyncStorage.setItem(VIEW_PREF_KEY, newView);
     } catch {}
@@ -340,10 +344,11 @@ const Calendar20View: React.FC = () => {
       <TopBar
         currentDate={currentDate}
         viewType={viewType}
-        onMenuPress={() => setDrawerVisible(true)}
+        onMenuPress={() => setViewSelectorVisible(true)}
         onSearchPress={() => setSearchVisible(true)}
         onTodayPress={() => setCurrentDate(dayjs())}
         onTitlePress={() => setMiniCalendarVisible(true)}
+        onClose={onClose}
       />
 
       {renderView()}
@@ -352,8 +357,8 @@ const Calendar20View: React.FC = () => {
         onNewTask={() => setAddTaskVisible(true)}
       />
 
-      <ViewDrawer
-        visible={drawerVisible}
+      <ViewSelector
+        visible={viewSelectorVisible}
         currentView={viewType}
         categories={categories}
         enabledCategories={enabledCategories}
@@ -361,7 +366,7 @@ const Calendar20View: React.FC = () => {
         onViewChange={handleViewChange}
         onCategoryToggle={handleCategoryToggle}
         onShowAll={handleShowAll}
-        onClose={() => setDrawerVisible(false)}
+        onClose={() => setViewSelectorVisible(false)}
       />
 
       <SearchOverlay

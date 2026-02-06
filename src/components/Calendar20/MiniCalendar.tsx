@@ -112,17 +112,6 @@ const MiniCalendar: React.FC<MiniCalendarProps> = ({
               ))}
             </View>
           ))}
-
-          {/* Today button */}
-          <TouchableOpacity
-            style={styles.todayButton}
-            onPress={() => {
-              setDisplayMonth(dayjs());
-              onDateSelect(dayjs());
-            }}
-          >
-            <Text style={styles.todayButtonText}>{t('calendar20.today')}</Text>
-          </TouchableOpacity>
         </Pressable>
       </Pressable>
     </Modal>
