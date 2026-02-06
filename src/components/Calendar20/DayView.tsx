@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Dimensions,
   PanResponder,
+  TouchableOpacity,
 } from 'react-native';
 import dayjs from 'dayjs';
 import { CalendarTask, OverlapColumn } from './types';
@@ -86,6 +87,7 @@ function computeOverlapColumns(tasks: CalendarTask[]): OverlapColumn[] {
 const DayView: React.FC<DayViewProps> = ({
   currentDate,
   tasks,
+  onDatePress,
   onTaskPress,
   onToggleComplete,
   onSwipeLeft,
@@ -164,7 +166,7 @@ const DayView: React.FC<DayViewProps> = ({
           {/* Time labels */}
           <View style={styles.timeColumn}>
             {hours.map(hour => (
-              <View key={hour} style={[styles.timeSlot, { height: HOUR_HEIGHT }]}>
+              <View key={hour} style={[styles.timeLabelSlot, { height: HOUR_HEIGHT }]}>
                 <Text style={styles.timeLabel}>
                   {hour.toString().padStart(2, '0')}:00
                 </Text>
@@ -174,9 +176,22 @@ const DayView: React.FC<DayViewProps> = ({
 
           {/* Events column */}
           <View style={styles.eventsColumn}>
+            {/* Clickable time slots (every 30 minutes) */}
+            {hours.map(hour => [0, 30].map(minute => {
+              const slotTime = currentDate.hour(hour).minute(minute).second(0);
+              return (
+                <TouchableOpacity
+                  key={`${hour}-${minute}`}
+                  style={[styles.clickableSlot, { top: (hour + minute / 60) * HOUR_HEIGHT, height: HOUR_HEIGHT / 2 }]}
+                  activeOpacity={0.1}
+                  onPress={() => onDatePress(slotTime)}
+                />
+              );
+            }))}
+
             {/* Hour grid lines */}
             {hours.map(hour => (
-              <View key={hour} style={[styles.hourLine, { top: hour * HOUR_HEIGHT }]} />
+              <View key={hour} style={[styles.hourLine, { top: hour * HOUR_HEIGHT }]} pointerEvents="none" />
             ))}
 
             {/* Time blocks */}
@@ -195,7 +210,7 @@ const DayView: React.FC<DayViewProps> = ({
 
             {/* Current time indicator */}
             {isToday && currentTimeTop >= 0 && (
-              <View style={[styles.currentTimeLine, { top: currentTimeTop }]}>
+              <View style={[styles.currentTimeLine, { top: currentTimeTop }]} pointerEvents="none">
                 <View style={styles.currentTimeDot} />
                 <View style={styles.currentTimeBar} />
               </View>
@@ -243,8 +258,14 @@ const styles = StyleSheet.create({
   timeColumn: {
     width: TIME_LABEL_WIDTH,
   },
-  timeSlot: {
+  timeLabelSlot: {
     justifyContent: 'flex-start',
+  },
+  clickableSlot: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    backgroundColor: 'transparent',
   },
   timeLabel: {
     fontSize: 12,

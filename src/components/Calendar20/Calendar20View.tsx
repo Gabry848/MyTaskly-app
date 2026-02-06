@@ -41,6 +41,7 @@ const Calendar20View: React.FC<Calendar20ViewProps> = ({ onClose }) => {
   const [searchVisible, setSearchVisible] = useState(false);
   const [miniCalendarVisible, setMiniCalendarVisible] = useState(false);
   const [addTaskVisible, setAddTaskVisible] = useState(false);
+  const [selectedDateForTask, setSelectedDateForTask] = useState<dayjs.Dayjs | null>(null);
 
   const cacheService = useRef(TaskCacheService.getInstance()).current;
   const appInitializer = useRef(AppInitializer.getInstance()).current;
@@ -228,11 +229,10 @@ const Calendar20View: React.FC<Calendar20ViewProps> = ({ onClose }) => {
   }, []);
 
   const handleDatePress = useCallback((date: dayjs.Dayjs) => {
-    setCurrentDate(date);
-    if (viewType === 'month') {
-      setViewType('day');
-    }
-  }, [viewType]);
+    // Apri il modal per creare un task con la data selezionata
+    setSelectedDateForTask(date);
+    setAddTaskVisible(true);
+  }, []);
 
   const handleTaskPress = useCallback((task: CalendarTask) => {
     // Navigate to day view for the task
@@ -266,10 +266,12 @@ const Calendar20View: React.FC<Calendar20ViewProps> = ({ onClose }) => {
     const { addTask } = await import('../../services/taskService');
     const priorityString = priority === 1 ? 'Bassa' : priority === 2 ? 'Media' : 'Alta';
     const category = categoryNameParam || 'Calendario';
+    // Usa la data selezionata se disponibile, altrimenti usa la data corrente
+    const taskDate = selectedDateForTask || currentDate;
     const newTask: Task = {
       title: title.trim(),
       description: description || '',
-      start_time: currentDate.toISOString(),
+      start_time: taskDate.toISOString(),
       end_time: new Date(dueDate).toISOString(),
       priority: priorityString,
       status: 'In sospeso',
@@ -281,7 +283,8 @@ const Calendar20View: React.FC<Calendar20ViewProps> = ({ onClose }) => {
       console.error('[CALENDAR20] Error adding task:', error);
     }
     setAddTaskVisible(false);
-  }, [currentDate]);
+    setSelectedDateForTask(null);
+  }, [currentDate, selectedDateForTask]);
 
   const handleCategoryToggle = useCallback((categoryName: string) => {
     setEnabledCategories(prev => {
@@ -354,7 +357,10 @@ const Calendar20View: React.FC<Calendar20ViewProps> = ({ onClose }) => {
       {renderView()}
 
       <FABMenu
-        onNewTask={() => setAddTaskVisible(true)}
+        onNewTask={() => {
+          setSelectedDateForTask(null);
+          setAddTaskVisible(true);
+        }}
       />
 
       <ViewSelector
@@ -392,11 +398,14 @@ const Calendar20View: React.FC<Calendar20ViewProps> = ({ onClose }) => {
 
       <AddTask
         visible={addTaskVisible}
-        onClose={() => setAddTaskVisible(false)}
+        onClose={() => {
+          setAddTaskVisible(false);
+          setSelectedDateForTask(null);
+        }}
         onSave={handleSaveTask}
         allowCategorySelection={true}
         categoryName="Calendario"
-        initialDate={currentDate.format('YYYY-MM-DD')}
+        initialDate={(selectedDateForTask || currentDate).format('YYYY-MM-DD')}
       />
     </View>
   );

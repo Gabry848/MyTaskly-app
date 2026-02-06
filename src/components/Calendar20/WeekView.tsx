@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Dimensions,
   PanResponder,
+  TouchableOpacity,
 } from 'react-native';
 import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
@@ -241,11 +242,25 @@ const WeekView: React.FC<WeekViewProps> = ({
                   { width: COLUMN_WIDTH, height: 24 * hourHeight },
                 ]}
               >
+                {/* Clickable time slots (every 30 minutes) */}
+                {hours.map(hour => [0, 30].map(minute => {
+                  const slotTime = day.hour(hour).minute(minute).second(0);
+                  return (
+                    <TouchableOpacity
+                      key={`${hour}-${minute}`}
+                      style={[styles.clickableSlot, { top: (hour + minute / 60) * hourHeight, height: hourHeight / 2 }]}
+                      activeOpacity={0.1}
+                      onPress={() => onDatePress(slotTime)}
+                    />
+                  );
+                }))}
+
                 {/* Hour lines */}
                 {hours.map(hour => (
                   <View
                     key={hour}
                     style={[styles.hourLine, { top: hour * hourHeight }]}
+                    pointerEvents="none"
                   />
                 ))}
 
@@ -265,7 +280,7 @@ const WeekView: React.FC<WeekViewProps> = ({
 
                 {/* Current time */}
                 {isToday && currentTimeTop >= 0 && (
-                  <View style={[styles.currentTimeLine, { top: currentTimeTop }]}>
+                  <View style={[styles.currentTimeLine, { top: currentTimeTop }]} pointerEvents="none">
                     <View style={styles.currentTimeDot} />
                     <View style={styles.currentTimeBar} />
                   </View>
@@ -353,6 +368,12 @@ const styles = StyleSheet.create({
     position: 'relative',
     borderLeftWidth: StyleSheet.hairlineWidth,
     borderLeftColor: '#f0f0f0',
+  },
+  clickableSlot: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    backgroundColor: 'transparent',
   },
   hourLine: {
     position: 'absolute',

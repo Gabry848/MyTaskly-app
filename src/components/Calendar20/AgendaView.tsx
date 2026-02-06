@@ -34,6 +34,7 @@ interface AgendaSection {
 const AgendaView: React.FC<AgendaViewProps> = ({
   currentDate,
   tasks,
+  onDatePress,
   onTaskPress,
   onToggleComplete,
 }) => {
@@ -82,12 +83,17 @@ const AgendaView: React.FC<AgendaViewProps> = ({
     setDaysToShow(prev => prev + LOAD_MORE_DAYS);
   }, []);
 
-  const renderItem = useCallback(({ item }: { item: CalendarTask }) => {
+  const renderItem = useCallback(({ item, section }: { item: CalendarTask; section: AgendaSection }) => {
     if ((item as any)._empty) {
       return (
-        <View style={styles.emptyDay}>
+        <TouchableOpacity
+          style={styles.emptyDay}
+          activeOpacity={0.7}
+          onPress={() => onDatePress(section.date.hour(12).minute(0).second(0))}
+        >
           <Text style={styles.emptyText}>{t('calendar20.noEvents')}</Text>
-        </View>
+          <Ionicons name="add-circle-outline" size={20} color="#cccccc" style={{ marginTop: 4 }} />
+        </TouchableOpacity>
       );
     }
 
@@ -140,8 +146,15 @@ const AgendaView: React.FC<AgendaViewProps> = ({
       <Text style={[styles.sectionTitle, section.isToday && styles.todayTitle]}>
         {section.title}
       </Text>
+      <TouchableOpacity
+        style={styles.addButton}
+        onPress={() => onDatePress(section.date.hour(12).minute(0).second(0))}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      >
+        <Ionicons name="add-circle-outline" size={24} color="#000000" />
+      </TouchableOpacity>
     </View>
-  ), []);
+  ), [onDatePress]);
 
   return (
     <SectionList
@@ -173,6 +186,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 4,
     paddingVertical: 14,
     backgroundColor: 'transparent',
@@ -181,6 +197,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   sectionTitle: {
+    flex: 1,
     fontSize: 17,
     fontWeight: '300',
     color: '#000000',
@@ -190,6 +207,9 @@ const styles = StyleSheet.create({
   todayTitle: {
     color: '#000000',
     fontWeight: '500',
+  },
+  addButton: {
+    padding: 4,
   },
   taskRow: {
     flexDirection: 'row',
@@ -250,6 +270,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderColor: '#f0f0f0',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   emptyText: {
     fontSize: 15,

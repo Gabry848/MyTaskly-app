@@ -28,7 +28,6 @@ import LanguageScreen from "./screens/Language";
 import VoiceSettingsScreen from "./screens/VoiceSettings";
 import GoogleCalendarScreen from "./screens/GoogleCalendar";
 import CalendarScreen from "./screens/Calendar";
-import Calendar20Screen from "./screens/Calendar20";
 import NotificationDebugScreen from "./screens/NotificationDebug";
 import BugReportScreen from "./screens/BugReport";
 //import StatisticsScreen from "./screens/Statistics";
@@ -78,7 +77,6 @@ export type TabParamList = {
   Categories: undefined;
   Notes: undefined;
   Calendar: undefined;
-  Calendar20: undefined;
   Statistics: undefined;
 };
 
@@ -110,9 +108,6 @@ function HomeTabs() {
                 break;
               case "Calendar":
                 iconName = focused ? "calendar" : "calendar-outline";
-                break;
-              case "Calendar20":
-                iconName = focused ? "today" : "today-outline";
                 break;
               case "Statistics":
                 iconName = focused ? "stats-chart" : "stats-chart-outline";
@@ -148,11 +143,6 @@ function HomeTabs() {
           name="Calendar"
           component={CalendarScreen}
           options={{ title: t('navigation.tabs.calendar') }}
-        />
-        <Tab.Screen
-          name="Calendar20"
-          component={Calendar20Screen}
-          options={{ title: t('navigation.tabs.calendar20') }}
         />
         {/* <Tab.Screen
           name="Statistics"

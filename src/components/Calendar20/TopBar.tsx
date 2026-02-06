@@ -85,8 +85,8 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 14 : 14,
-    paddingBottom: 16,
+    paddingTop: 8,
+    paddingBottom: 12,
     paddingHorizontal: 20,
     backgroundColor: '#ffffff',
     borderBottomWidth: StyleSheet.hairlineWidth,
