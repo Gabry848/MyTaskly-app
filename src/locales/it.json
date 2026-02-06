@@ -5,6 +5,7 @@
       "categories": "Categorie",
       "notes": "Note",
       "calendar": "Calendario",
+      "calendar20": "Calendario 2.0",
       "statistics": "Statistiche"
     },
     "screens": {
@@ -432,6 +433,33 @@
       "friday": "Ven",
       "saturday": "Sab",
       "sunday": "Dom"
+    }
+  },
+  "calendar20": {
+    "title": "Calendario 2.0",
+    "views": {
+      "month": "Mese",
+      "week": "Settimana",
+      "threeDay": "3 Giorni",
+      "day": "Giorno",
+      "agenda": "Agenda"
+    },
+    "today": "Oggi",
+    "allDay": "Tutto il giorno",
+    "noEvents": "Nessun evento",
+    "more": "+{{count}} altri",
+    "search": {
+      "placeholder": "Cerca task...",
+      "noResults": "Nessun task trovato"
+    },
+    "fab": {
+      "newTask": "Nuovo Task",
+      "newEvent": "Nuovo Evento"
+    },
+    "drawer": {
+      "views": "Viste",
+      "categories": "Categorie",
+      "showAll": "Mostra tutto"
     }
   },
   "statistics": {

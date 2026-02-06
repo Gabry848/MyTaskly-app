@@ -51,3 +51,6 @@ docs/
 # Firebase secrets
 
 *firebase-adminsdk*.json
+
+# Auto Claude data directory
+.auto-claude/
