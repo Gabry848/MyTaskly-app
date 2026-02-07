@@ -172,6 +172,13 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
   const fadeIn = useRef(new Animated.Value(0)).current;
   const liveDotOpacity = useRef(new Animated.Value(1)).current;
 
+  // Animated loading dots for smooth state transitions
+  const dot1Opacity = useRef(new Animated.Value(0.3)).current;
+  const dot2Opacity = useRef(new Animated.Value(0.3)).current;
+  const dot3Opacity = useRef(new Animated.Value(0.3)).current;
+  const stateTextOpacity = useRef(new Animated.Value(1)).current;
+  const prevStateRef = useRef(state);
+
   // Notifica trascrizioni assistant al parent
   useEffect(() => {
     if (onVoiceResponse && transcripts.length > 0) {
@@ -217,6 +224,48 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
       disconnect();
     }
   }, [visible, disconnect]);
+
+  // Loading dots sequential pulse animation
+  const isLoadingState = state === 'connecting' || state === 'authenticating' || state === 'setting_up' || state === 'processing';
+  useEffect(() => {
+    if (isLoadingState) {
+      const animateDots = Animated.loop(
+        Animated.stagger(200, [
+          Animated.sequence([
+            Animated.timing(dot1Opacity, { toValue: 1, duration: 400, useNativeDriver: true }),
+            Animated.timing(dot1Opacity, { toValue: 0.3, duration: 400, useNativeDriver: true }),
+          ]),
+          Animated.sequence([
+            Animated.timing(dot2Opacity, { toValue: 1, duration: 400, useNativeDriver: true }),
+            Animated.timing(dot2Opacity, { toValue: 0.3, duration: 400, useNativeDriver: true }),
+          ]),
+          Animated.sequence([
+            Animated.timing(dot3Opacity, { toValue: 1, duration: 400, useNativeDriver: true }),
+            Animated.timing(dot3Opacity, { toValue: 0.3, duration: 400, useNativeDriver: true }),
+          ]),
+        ])
+      );
+      animateDots.start();
+      return () => animateDots.stop();
+    } else {
+      dot1Opacity.setValue(0.3);
+      dot2Opacity.setValue(0.3);
+      dot3Opacity.setValue(0.3);
+    }
+  }, [isLoadingState, dot1Opacity, dot2Opacity, dot3Opacity]);
+
+  // Smooth cross-fade when state changes
+  useEffect(() => {
+    if (prevStateRef.current !== state) {
+      prevStateRef.current = state;
+      stateTextOpacity.setValue(0);
+      Animated.timing(stateTextOpacity, {
+        toValue: 1,
+        duration: 250,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [state, stateTextOpacity]);
 
   // Live dot pulse animation
   useEffect(() => {
@@ -280,30 +329,46 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
   };
 
 
-  // Render dello stato
+  // Render loading dots
+  const renderLoadingDots = () => (
+    <View style={styles.loadingDots}>
+      <Animated.View style={[styles.loadingDot, { opacity: dot1Opacity }]} />
+      <Animated.View style={[styles.loadingDot, { opacity: dot2Opacity }]} />
+      <Animated.View style={[styles.loadingDot, { opacity: dot3Opacity }]} />
+    </View>
+  );
+
+  // Render dello stato con transizioni fluide
   const renderStateIndicator = () => {
+    // Stati di caricamento: mostra solo i dots animati
+    if (isLoadingState) {
+      return renderLoadingDots();
+    }
+
+    // Stati interattivi: mostra testo con fade-in
+    let label: string | null = null;
     switch (state) {
-      case 'connecting':
-      case 'authenticating':
-        return <Text style={styles.subtleText}>Connessione in corso...</Text>;
-      case 'setting_up':
-        return <Text style={styles.subtleText}>Preparazione assistente...</Text>;
       case 'error':
-        return <Text style={styles.subtleText}>Qualcosa è andato storto</Text>;
+        label = 'Qualcosa è andato storto';
+        break;
       case 'recording':
-        return <Text style={styles.subtleText}>Ti ascolto...</Text>;
-      case 'processing':
-        if (activeTools.some(t => t.status === 'running')) {
-          return <Text style={styles.subtleText}>Sto eseguendo azioni...</Text>;
-        }
-        return <Text style={styles.subtleText}>Sto pensando...</Text>;
+        label = 'Ti ascolto...';
+        break;
       case 'speaking':
-        return <Text style={styles.subtleText}>Rispondo...</Text>;
+        label = 'Rispondo...';
+        break;
       case 'ready':
-        return <Text style={styles.subtleText}>Parla quando vuoi</Text>;
+        label = 'Parla quando vuoi';
+        break;
       default:
         return null;
     }
+
+    return (
+      <Animated.Text style={[styles.subtleText, { opacity: stateTextOpacity }]}>
+        {label}
+      </Animated.Text>
+    );
   };
 
 
@@ -507,6 +572,19 @@ const styles = StyleSheet.create({
     fontWeight: "400",
     color: "#666666",
     fontFamily: "System",
+  },
+  loadingDots: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    height: 18,
+  },
+  loadingDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#999999",
   },
   mutedBadge: {
     flexDirection: "row",
