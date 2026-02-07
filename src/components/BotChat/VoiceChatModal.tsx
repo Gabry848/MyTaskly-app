@@ -16,9 +16,10 @@ import { Ionicons } from "@expo/vector-icons";
 import { useVoiceChat } from '../../hooks/useVoiceChat';
 import dayjs from 'dayjs';
 import CalendarGrid from '../Calendar/CalendarGrid';
-import { Task as TaskType, getAllTasks } from '../../services/taskService';
+import { Task as TaskType, getAllTasks, completeTask, disCompleteTask, updateTask, deleteTask } from '../../services/taskService';
 import { TaskCacheService } from '../../services/TaskCacheService';
 import eventEmitter, { EVENTS } from '../../utils/eventEmitter';
+import Task from '../Task/Task';
 
 
 export interface VoiceChatModalProps {
@@ -115,11 +116,56 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
     if (date) setSelectedDate(date);
   };
 
-  // Task per la data selezionata
+  // Task per la data selezionata (normalizzati con id/task_id)
   const tasksForSelectedDate = calendarTasks.filter(task => {
     if (!task.end_time) return false;
     return dayjs(task.end_time).format('YYYY-MM-DD') === selectedDate;
+  }).map(task => {
+    if (!task.id && task.task_id) return { ...task, id: task.task_id };
+    if (task.id && !task.task_id) return { ...task, task_id: task.id };
+    return task;
   });
+
+  // Task handlers
+  const handleTaskComplete = async (taskId: number | string) => {
+    try {
+      await completeTask(taskId);
+      fetchCalendarTasks();
+    } catch (error) {
+      console.error('[VoiceChatModal] Errore completamento task:', error);
+      Alert.alert('Errore', 'Impossibile completare il task.');
+    }
+  };
+
+  const handleTaskUncomplete = async (taskId: number | string) => {
+    try {
+      await disCompleteTask(taskId);
+      fetchCalendarTasks();
+    } catch (error) {
+      console.error('[VoiceChatModal] Errore annullamento completamento:', error);
+      Alert.alert('Errore', 'Impossibile riaprire il task.');
+    }
+  };
+
+  const handleTaskEdit = async (taskId: number | string, updatedTask: TaskType) => {
+    try {
+      await updateTask(taskId, updatedTask);
+      fetchCalendarTasks();
+    } catch (error) {
+      console.error('[VoiceChatModal] Errore modifica task:', error);
+      Alert.alert('Errore', 'Impossibile modificare il task.');
+    }
+  };
+
+  const handleTaskDelete = async (taskId: number | string) => {
+    try {
+      await deleteTask(taskId);
+      fetchCalendarTasks();
+    } catch (error) {
+      console.error('[VoiceChatModal] Errore eliminazione task:', error);
+      Alert.alert('Errore', 'Impossibile eliminare il task.');
+    }
+  };
 
   // Animazioni
   const slideIn = useRef(new Animated.Value(height)).current;
@@ -349,41 +395,14 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
           >
             {tasksForSelectedDate.length > 0 ? (
               tasksForSelectedDate.map(task => (
-                <View key={task.task_id || task.id} style={styles.taskItem}>
-                  <View style={styles.taskItemDot} />
-                  <View style={styles.taskItemBody}>
-                    <Text style={styles.taskItemTitle} numberOfLines={1}>
-                      {task.title}
-                    </Text>
-                    {task.description ? (
-                      <Text style={styles.taskItemDesc} numberOfLines={2}>
-                        {task.description}
-                      </Text>
-                    ) : null}
-                    <View style={styles.taskItemMeta}>
-                      {task.priority ? (
-                        <View style={[
-                          styles.taskPriorityBadge,
-                          task.priority === 'Alta' && styles.priorityHigh,
-                          task.priority === 'Media' && styles.priorityMedium,
-                          task.priority === 'Bassa' && styles.priorityLow,
-                        ]}>
-                          <Text style={[
-                            styles.taskPriorityText,
-                            task.priority === 'Alta' && styles.priorityHighText,
-                            task.priority === 'Media' && styles.priorityMediumText,
-                            task.priority === 'Bassa' && styles.priorityLowText,
-                          ]}>
-                            {task.priority}
-                          </Text>
-                        </View>
-                      ) : null}
-                      {task.category_name ? (
-                        <Text style={styles.taskCategoryText}>{task.category_name}</Text>
-                      ) : null}
-                    </View>
-                  </View>
-                </View>
+                <Task
+                  key={task.task_id || task.id}
+                  task={task}
+                  onTaskComplete={handleTaskComplete}
+                  onTaskUncomplete={handleTaskUncomplete}
+                  onTaskEdit={handleTaskEdit}
+                  onTaskDelete={handleTaskDelete}
+                />
               ))
             ) : (
               <View style={styles.emptyTaskList}>
@@ -538,81 +557,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   taskListContent: {
-    paddingTop: 8,
+    paddingTop: 4,
     paddingBottom: 16,
-  },
-  taskItem: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#F0F0F0",
-  },
-  taskItemDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#000000",
-    marginTop: 6,
-    marginRight: 12,
-  },
-  taskItemBody: {
-    flex: 1,
-  },
-  taskItemTitle: {
-    fontSize: 15,
-    fontWeight: "400",
-    color: "#000000",
-    fontFamily: "System",
-  },
-  taskItemDesc: {
-    fontSize: 13,
-    fontWeight: "300",
-    color: "#888888",
-    fontFamily: "System",
-    marginTop: 3,
-    lineHeight: 18,
-  },
-  taskItemMeta: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginTop: 6,
-  },
-  taskPriorityBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 8,
-    backgroundColor: "#F0F0F0",
-  },
-  priorityHigh: {
-    backgroundColor: "rgba(0, 0, 0, 0.08)",
-  },
-  priorityMedium: {
-    backgroundColor: "rgba(51, 51, 51, 0.06)",
-  },
-  priorityLow: {
-    backgroundColor: "rgba(102, 102, 102, 0.04)",
-  },
-  taskPriorityText: {
-    fontSize: 11,
-    fontWeight: "500",
-    fontFamily: "System",
-  },
-  priorityHighText: {
-    color: "#000000",
-  },
-  priorityMediumText: {
-    color: "#333333",
-  },
-  priorityLowText: {
-    color: "#888888",
-  },
-  taskCategoryText: {
-    fontSize: 11,
-    fontWeight: "400",
-    color: "#999999",
-    fontFamily: "System",
+    paddingHorizontal: 4,
   },
   emptyTaskList: {
     alignItems: "center",
