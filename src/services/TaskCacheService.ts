@@ -37,12 +37,21 @@ class TaskCacheService {
   private static instance: TaskCacheService;
   private currentCacheVersion = 1;
   private isSaving = false; // Flag per prevenire loop ricorsivi
+  
+  // In-memory cache per evitare letture ripetute da AsyncStorage
+  private memoryCache: { tasks: Task[]; categories: Category[]; timestamp: number } | null = null;
+  private memoryCacheTTL = 2000; // 2 secondi TTL per memoria cache
 
   static getInstance(): TaskCacheService {
     if (!TaskCacheService.instance) {
       TaskCacheService.instance = new TaskCacheService();
     }
     return TaskCacheService.instance;
+  }
+  
+  // Invalida la memory cache (da chiamare dopo modifiche)
+  private invalidateMemoryCache(): void {
+    this.memoryCache = null;
   }
 
   // Metodo interno per salvare direttamente senza confronto (evita loop ricorsivi)
@@ -56,6 +65,9 @@ class TaskCacheService {
 
     await AsyncStorage.setItem(CACHE_KEYS.TASKS_CACHE, JSON.stringify(cache));
     await AsyncStorage.setItem(CACHE_KEYS.LAST_SYNC_TIMESTAMP, cache.lastSync.toString());
+    
+    // Invalida memory cache
+    this.invalidateMemoryCache();
   }
 
   // Metodo interno per leggere i task dalla cache senza deduplicazione ricorsiva
@@ -81,14 +93,18 @@ class TaskCacheService {
     }
   }
 
-  // Carica i task dalla cache AsyncStorage
+  // Carica i task dalla cache AsyncStorage (con memory cache)
   async getCachedTasks(): Promise<Task[]> {
     try {
-      console.log('[CACHE] Caricamento task dalla cache...');
+      // Controlla memory cache prima
+      const now = Date.now();
+      if (this.memoryCache && (now - this.memoryCache.timestamp) < this.memoryCacheTTL) {
+        return this.memoryCache.tasks;
+      }
+
       const cachedData = await AsyncStorage.getItem(CACHE_KEYS.TASKS_CACHE);
 
       if (!cachedData) {
-        console.log('[CACHE] Nessun dato in cache trovato');
         return [];
       }
 
@@ -101,16 +117,14 @@ class TaskCacheService {
         return [];
       }
 
-      console.log(`[CACHE] Caricati ${cache.tasks.length} task dalla cache`);
-
       // Deduplica i task basandosi su task_id (mantieni solo l'ultimo)
       const taskMap = new Map<string | number, Task>();
+      let hasDuplicates = false;
       cache.tasks.forEach((task) => {
         const taskId = task.task_id || task.id;
         if (taskId) {
-          // Se esiste già, sovrascrivi (manteniamo l'ultimo)
           if (taskMap.has(taskId)) {
-            console.log(`[CACHE] 🔄 Duplicato trovato per task_id=${taskId}, mantengo l'ultimo`);
+            hasDuplicates = true;
           }
           taskMap.set(taskId, task);
         }
@@ -118,18 +132,19 @@ class TaskCacheService {
 
       const deduplicatedTasks = Array.from(taskMap.values());
 
-      if (deduplicatedTasks.length < cache.tasks.length) {
+      if (hasDuplicates) {
         console.log(`[CACHE] 🧹 Rimossi ${cache.tasks.length - deduplicatedTasks.length} duplicati dalla cache`);
-
         // Salva immediatamente la cache pulita usando il metodo diretto (evita loop ricorsivo)
         const categories = cache.categories || [];
         await this._saveTasksDirect(deduplicatedTasks, categories);
       }
 
-      // Log dettagliato di ogni task in cache per debug
-      deduplicatedTasks.forEach((task, index) => {
-        console.log(`[CACHE] Task ${index + 1}: titolo="${task.title}", categoria="${task.category_name}", status="${task.status}"`);
-      });
+      // Aggiorna memory cache
+      this.memoryCache = {
+        tasks: deduplicatedTasks,
+        categories: cache.categories || [],
+        timestamp: now
+      };
 
       return deduplicatedTasks;
     } catch (error) {
@@ -187,13 +202,13 @@ class TaskCacheService {
         });
       }
       
-      // Log di ogni task prima del salvataggio
-      tasks.forEach((task, index) => {
-        console.log(`[CACHE] Salvando Task ${index + 1}: titolo="${task.title}", categoria="${task.category_name}", status="${task.status}"`);
-        if (task.category_name === undefined || task.category_name === "undefined") {
-          console.warn(`[CACHE] ⚠️ ATTENZIONE: Task "${task.title}" ha category_name undefined!`);
-        }
-      });
+      // Verifica task con category_name problematici (log solo warning)
+      const problematicTasks = tasks.filter(task => 
+        task.category_name === undefined || task.category_name === "undefined"
+      );
+      if (problematicTasks.length > 0) {
+        console.warn(`[CACHE] ⚠️ ${problematicTasks.length} task hanno category_name undefined`);
+      }
       
       const cache: TasksCache = {
         tasks,
@@ -204,6 +219,9 @@ class TaskCacheService {
 
       await AsyncStorage.setItem(CACHE_KEYS.TASKS_CACHE, JSON.stringify(cache));
       await AsyncStorage.setItem(CACHE_KEYS.LAST_SYNC_TIMESTAMP, cache.lastSync.toString());
+      
+      // Invalida memory cache
+      this.invalidateMemoryCache();
       
       console.log(`[CACHE] ✅ Salvati ${tasks.length} task e ${categories.length} categorie in cache`);
       if (removedTasks.length > 0) {
@@ -395,6 +413,8 @@ class TaskCacheService {
         CACHE_KEYS.LAST_SYNC_TIMESTAMP,
         CACHE_KEYS.OFFLINE_CHANGES
       ]);
+      // Invalida memory cache
+      this.invalidateMemoryCache();
       console.log('[CACHE] Cache completamente pulita');
     } catch (error) {
       console.error('[CACHE] Errore nella pulizia cache:', error);
@@ -421,7 +441,7 @@ class TaskCacheService {
     }
   }
 
-  // Ottieni statistiche della cache
+  // Ottieni statistiche della cache (usa metodo raw per evitare log eccessivi)
   async getCacheStats(): Promise<{
     taskCount: number;
     categoryCount: number;
@@ -430,8 +450,8 @@ class TaskCacheService {
     cacheSize: number;
   }> {
     try {
-      const tasks = await this.getCachedTasks();
-      const categories = await this.getCachedCategories();
+      // Usa il metodo raw per evitare loop e log eccessivi
+      const { tasks, categories } = await this._getCachedTasksRaw();
       const lastSyncTimestamp = await this.getLastSyncTimestamp();
       const offlineChanges = await this.getOfflineChanges();
       

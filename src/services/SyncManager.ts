@@ -33,6 +33,8 @@ class SyncManager {
   private networkListener: (() => void) | null = null;
   private syncInterval: NodeJS.Timeout | null = null;
   private initialized = false;
+  private lastSyncDataFromServer: number = 0; // Timestamp ultimo sync per throttling
+  private syncDataThrottleMs: number = 5000; // Minimo 5 secondi tra sync dal server
 
   static getInstance(): SyncManager {
     if (!SyncManager.instance) {
@@ -203,14 +205,19 @@ class SyncManager {
     }
   }
 
-  // Sincronizza i dati dal server
+  // Sincronizza i dati dal server (con throttling)
   private async syncDataFromServer(): Promise<void> {
+    // Throttling: evita sync troppo frequenti
+    const now = Date.now();
+    const timeSinceLastSync = now - this.lastSyncDataFromServer;
+    if (timeSinceLastSync < this.syncDataThrottleMs) {
+      console.log(`[SYNC] ⏳ Throttling: sync saltato (ultimo sync ${timeSinceLastSync}ms fa, minimo ${this.syncDataThrottleMs}ms)`);
+      return;
+    }
+    this.lastSyncDataFromServer = now;
+
     try {
       console.log('[SYNC] 🔄 Aggiornamento dati dal server...');
-      
-      // Prima ottieni la situazione attuale della cache per confronto
-      const currentCachedTasks = await this.cacheService!.getCachedTasks();
-      console.log(`[SYNC] 📋 Task attualmente in cache: ${currentCachedTasks.length}`);
       
       // Carica tasks e categorie dal server
       const [tasks, categories] = await Promise.all([
@@ -219,15 +226,6 @@ class SyncManager {
       ]);
 
       console.log(`[SYNC] 📡 Ricevuti dal server: ${(tasks || []).length} task, ${(categories || []).length} categorie`);
-      
-      // Log dei task ricevuti dal server
-      if (tasks && tasks.length > 0) {
-        console.log('[SYNC] 📝 Task dal server:');
-        tasks.forEach((task, index) => {
-          const taskId = task.task_id || task.id;
-          console.log(`[SYNC]   ${index + 1}. "${task.title}" (ID: ${taskId}) - Status: ${task.status}`);
-        });
-      }
 
       // Salva nella cache (questo triggerà anche la rimozione dei task fantasma)
       await this.cacheService!.saveTasks(tasks || [], categories || []);
@@ -245,6 +243,15 @@ class SyncManager {
 
   // Aggiungi un'operazione alla coda di sincronizzazione
   addSyncOperation(type: SyncOperation['type'], data: any = {}): void {
+    // Deduplicazione: evita operazioni GET_TASKS duplicate nella coda
+    if (type === 'GET_TASKS') {
+      const existingGetTasks = this.syncQueue.find(op => op.type === 'GET_TASKS');
+      if (existingGetTasks) {
+        console.log('[SYNC] ⏭️ GET_TASKS già in coda, skip duplicato');
+        return;
+      }
+    }
+
     const operation: SyncOperation = {
       id: `${type}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       type,
