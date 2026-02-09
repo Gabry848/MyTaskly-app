@@ -6,6 +6,7 @@ import {
   PanResponder,
   ActivityIndicator,
   Text,
+  Keyboard,
 } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, {
@@ -52,6 +53,8 @@ export const NotesCanvas: React.FC = () => {
     initialDistance: null as number | null,
     initialScale: null as number | null,
     initialCenter: null as { x: number; y: number } | null,
+    initialTranslateX: null as number | null,
+    initialTranslateY: null as number | null,
   });
 
   const panResponder = useRef(
@@ -60,6 +63,8 @@ export const NotesCanvas: React.FC = () => {
         return Math.abs(state.dx) > 5 || Math.abs(state.dy) > 5;
       },
       onPanResponderGrant: () => {
+        // Chiudi tastiera quando si tocca il canvas
+        Keyboard.dismiss();
         lastTranslateX.value = translateX.value;
         lastTranslateY.value = translateY.value;
       },
@@ -91,10 +96,23 @@ export const NotesCanvas: React.FC = () => {
             gestureState.current.initialDistance = distance;
             gestureState.current.initialScale = scale.value;
             gestureState.current.initialCenter = { x: centerX, y: centerY };
+            gestureState.current.initialTranslateX = translateX.value;
+            gestureState.current.initialTranslateY = translateY.value;
           }
           
           const scaleRatio = distance / gestureState.current.initialDistance;
           const newScale = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, gestureState.current.initialScale * scaleRatio));
+          
+          // Zoom centrato sul punto focale (centro delle due dita)
+          const focalX = gestureState.current.initialCenter!.x;
+          const focalY = gestureState.current.initialCenter!.y;
+          const oldScale = gestureState.current.initialScale!;
+          const initTX = gestureState.current.initialTranslateX!;
+          const initTY = gestureState.current.initialTranslateY!;
+          
+          // Calcola la nuova traslazione per mantenere il punto focale stabile
+          translateX.value = focalX - (focalX - initTX) * (newScale / oldScale);
+          translateY.value = focalY - (focalY - initTY) * (newScale / oldScale);
           
           scale.value = newScale;
         }
@@ -111,6 +129,8 @@ export const NotesCanvas: React.FC = () => {
         gestureState.current.initialDistance = null;
         gestureState.current.initialScale = null;
         gestureState.current.initialCenter = null;
+        gestureState.current.initialTranslateX = null;
+        gestureState.current.initialTranslateY = null;
       },
     })
   ).current;

@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TextInput,
   TouchableOpacity,
+  Keyboard,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -66,7 +67,21 @@ export const StickyNote: React.FC<StickyNoteProps> = ({ note, canvasScale }) => 
 
   const isPressed = useSharedValue(false);
 
+  // Definiti PRIMA dei gesture per runOnJS
+  const handleStartEditing = useCallback(() => {
+    console.log('Tap detected on note:', note.id, '- toggling editor');
+    setIsEditing((prev) => {
+      if (prev) {
+        // Se era aperto, salva e chiudi
+        Keyboard.dismiss();
+        return false;
+      }
+      return true;
+    });
+  }, [note.id]);
+
   const panGesture = Gesture.Pan()
+    .enabled(!isEditing)
     .minDistance(10)
     .onStart(() => {
       'worklet';
@@ -131,22 +146,14 @@ export const StickyNote: React.FC<StickyNoteProps> = ({ note, canvasScale }) => 
 
   const tapGesture = Gesture.Tap()
     .numberOfTaps(1)
-    .maxDuration(200)
+    .maxDuration(250)
     .onStart(() => {
       'worklet';
-      // Tap semplice - per ora non fa nulla
-    });
-
-  const doubleTapGesture = Gesture.Tap()
-    .numberOfTaps(2)
-    .maxDuration(500)
-    .onStart(() => {
-      'worklet';
-      runOnJS(handleDoubleTap)();
+      // Tap singolo apre l'editing
+      runOnJS(handleStartEditing)();
     });
 
   const composedGesture = Gesture.Exclusive(
-    doubleTapGesture,
     Gesture.Simultaneous(panGesture, pinchGesture),
     tapGesture
   );
@@ -171,15 +178,6 @@ export const StickyNote: React.FC<StickyNoteProps> = ({ note, canvasScale }) => 
     }
   };
 
-  const handleDoubleTap = () => {
-    try {
-      console.log('Double tap detected on note:', note.id);
-      setIsEditing(true);
-    } catch (error) {
-      console.error('Error in handleDoubleTap:', error);
-    }
-  };
-
   const handleColorChange = (color: string) => {
     try {
       // Aggiorna il colore locale immediatamente
@@ -195,12 +193,13 @@ export const StickyNote: React.FC<StickyNoteProps> = ({ note, canvasScale }) => 
     }
   };
 
-  const handleTextSave = () => {
+  const handleTextSave = useCallback(() => {
     if (editText.trim() !== note.text) {
       updateNote(note.id, editText.trim());
     }
+    Keyboard.dismiss();
     setIsEditing(false);
-  };
+  }, [editText, note.text, note.id, updateNote]);
 
   const handleDelete = () => {
     deleteNote(note.id);
@@ -255,16 +254,11 @@ export const StickyNote: React.FC<StickyNoteProps> = ({ note, canvasScale }) => 
               placeholder="Scrivi qui..."
             />
           ) : (
-            <TouchableOpacity 
-              style={styles.textContainer} 
-              onPress={handleDoubleTap}
-              activeOpacity={0.7}
-            >
+            <View style={styles.textContainer} pointerEvents="none">
               <Text style={styles.text} numberOfLines={5}>
                 {note.text}
               </Text>
-              <Text style={styles.editHint}>Tap per modificare</Text>
-            </TouchableOpacity>
+            </View>
           )}
 
           {showColorPicker && <ColorPicker />}
@@ -325,13 +319,6 @@ const styles = StyleSheet.create({
     color: '#333',
     lineHeight: 18,
     flex: 1,
-  },
-  editHint: {
-    fontSize: 10,
-    color: '#999',
-    fontStyle: 'italic',
-    marginTop: 4,
-    textAlign: 'center',
   },
   textInput: {
     fontSize: 14,
