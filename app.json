@@ -74,7 +74,8 @@
         }
       ],
       "expo-dev-client",
-      "expo-router"
+      "expo-router",
+      "expo-audio"
     ],
     "extra": {
       "eas": {

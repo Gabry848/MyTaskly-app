@@ -47,6 +47,7 @@ export interface ChatSession {
 export interface MessageBubbleProps {
   message: Message;
   style?: StyleProp<ViewStyle>;
+  isVoiceChat?: boolean;  // Flag per distinguere voice chat da text chat
 }
 
 // Props per il componente ChatInput
@@ -90,9 +91,12 @@ export interface ToolWidget {
 // Output parsato dal tool MCP
 export interface ToolOutputData {
   type?: 'task_created' | 'category_created' | 'note_created' |
-         'task_list' | 'category_list' | 'note_list';
+         'task_list' | 'category_list' | 'note_list' | 'text';
   success?: boolean;
   message?: string;
+  text?: string; // Contenuto JSON stringificato (per voice chat MCP tools)
+  annotations?: any;
+  meta?: any;
 
   // Dati per tool di creazione
   task?: {

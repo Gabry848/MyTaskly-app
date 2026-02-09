@@ -20,7 +20,7 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ChatList, Message } from "../../components/BotChat";
 import { ToolWidget } from "../../components/BotChat/types";
-import { sendMessageToBot, formatMessage, StreamingCallback, createNewChat } from "../../services/botservice";
+import { sendMessageToBot, formatMessage, StreamingCallback, createNewChat } from "../../services/textBotService";
 import { getChatWithMessages, ChatMessage } from "../../services/chatHistoryService";
 import { STORAGE_KEYS } from "../../constants/authConstants";
 import { TaskCacheService } from '../../services/TaskCacheService';
@@ -195,6 +195,8 @@ const HomeScreen = () => {
       duration: 200,
       useNativeDriver: false,
     }).start();
+
+    console.log('[HOME] Mic button animation state:', { isInputFocused, targetValue: isInputFocused ? 0 : 1 });
   }, [isInputFocused, micButtonAnim]);
 
   // Effetto per gestire la visualizzazione della tastiera
@@ -216,6 +218,10 @@ const HomeScreen = () => {
     const keyboardDidHideListener = Keyboard.addListener(
       "keyboardDidHide",
       () => {
+        // Forza il reset del focus quando la tastiera si nasconde
+        console.log('[HOME] Keyboard hidden, resetting input focus state');
+        setIsInputFocused(false);
+
         if (chatStarted) {
           // Riporta l'input in posizione normale
           Animated.timing(inputBottomPosition, {
@@ -811,8 +817,14 @@ const HomeScreen = () => {
                       returnKeyType="send"
                       blurOnSubmit={true}
                       editable={!isLoading}
-                      onFocus={() => setIsInputFocused(true)}
-                      onBlur={() => setIsInputFocused(false)}
+                      onFocus={() => {
+                        console.log('[HOME] TextInput focused (under greeting)');
+                        setIsInputFocused(true);
+                      }}
+                      onBlur={() => {
+                        console.log('[HOME] TextInput blurred (under greeting)');
+                        setIsInputFocused(false);
+                      }}
                     />
                     <TouchableOpacity
                       style={styles.sendButton}
@@ -932,8 +944,14 @@ const HomeScreen = () => {
                 returnKeyType="send"
                 blurOnSubmit={true}
                 editable={!isLoading}
-                onFocus={() => setIsInputFocused(true)}
-                onBlur={() => setIsInputFocused(false)}
+                onFocus={() => {
+                  console.log('[HOME] TextInput focused (chat started)');
+                  setIsInputFocused(true);
+                }}
+                onBlur={() => {
+                  console.log('[HOME] TextInput blurred (chat started)');
+                  setIsInputFocused(false);
+                }}
               />
               <TouchableOpacity
                 style={styles.sendButton}

@@ -1,7 +1,6 @@
 import axios from "./axiosInterceptor";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { STORAGE_KEYS } from "../constants/authConstants";
-// eslint-disable-next-line import/no-named-as-default
 import TaskCacheService from './TaskCacheService';
 import SyncManager from './SyncManager';
 import { emitTaskAdded, emitTaskUpdated, emitTaskDeleted, emitTasksSynced } from '../utils/eventEmitter';

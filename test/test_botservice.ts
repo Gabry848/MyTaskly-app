@@ -1,4 +1,4 @@
-import { sendMessageToBot, validateMessage, formatMessage } from "../src/services/botservice";
+import { sendMessageToBot, validateMessage, formatMessage } from "../src/services/textBotService";
 
 /**
  * Script di test TypeScript per sendMessageToBot

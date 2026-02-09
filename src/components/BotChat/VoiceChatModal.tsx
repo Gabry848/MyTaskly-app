@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -8,11 +8,19 @@ import {
   Animated,
   Dimensions,
   StatusBar,
-  ActivityIndicator,
-  Alert
+  Alert,
+  Platform,
+  ScrollView
 } from "react-native";
-import { Ionicons, MaterialIcons } from "@expo/vector-icons";
-import { useVoiceChat, VoiceChatState } from '../../hooks/useVoiceChat';
+import { Ionicons } from "@expo/vector-icons";
+import { useVoiceChat } from '../../hooks/useVoiceChat';
+import dayjs from 'dayjs';
+import CalendarGrid from '../Calendar/CalendarGrid';
+import { Task as TaskType, getAllTasks, completeTask, disCompleteTask, updateTask, deleteTask } from '../../services/taskService';
+import { TaskCacheService } from '../../services/TaskCacheService';
+import eventEmitter, { EVENTS } from '../../utils/eventEmitter';
+import Task from '../Task/Task';
+
 
 export interface VoiceChatModalProps {
   visible: boolean;
@@ -26,7 +34,6 @@ const { height } = Dimensions.get("window");
 const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
   visible,
   onClose,
-  isRecording: externalIsRecording = false,
   onVoiceResponse,
 }) => {
   const {
@@ -37,22 +44,150 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
     isRecording,
     isProcessing,
     isSpeaking,
-    isSpeechActive,
+    transcripts,
+    activeTools,
+    isMuted,
     connect,
     disconnect,
-    stopRecording,
-    cancelRecording,
-    stopPlayback,
-    sendControl,
     requestPermissions,
+    mute,
+    unmute,
   } = useVoiceChat();
 
+  // Calendar state
+  const [selectedDate, setSelectedDate] = useState<string>(dayjs().format('YYYY-MM-DD'));
+  const [calendarTasks, setCalendarTasks] = useState<TaskType[]>([]);
+  const cacheService = useRef(TaskCacheService.getInstance()).current;
+
+  // Carica task per il calendario
+  const fetchCalendarTasks = useCallback(async () => {
+    try {
+      const cachedTasks = await cacheService.getCachedTasks();
+      if (cachedTasks.length > 0) {
+        const incomplete = cachedTasks.filter(t => {
+          const s = t.status?.toLowerCase() || '';
+          return s !== 'completato' && s !== 'completed' && s !== 'archiviato' && s !== 'archived';
+        });
+        setCalendarTasks(incomplete);
+        return;
+      }
+      const tasksData = await getAllTasks(true);
+      if (Array.isArray(tasksData)) {
+        const incomplete = tasksData.filter(t => {
+          const s = t.status?.toLowerCase() || '';
+          return s !== 'completato' && s !== 'completed' && s !== 'archiviato' && s !== 'archived';
+        });
+        setCalendarTasks(incomplete);
+      }
+    } catch (error) {
+      console.error('[VoiceChatModal] Errore caricamento task calendario:', error);
+    }
+  }, [cacheService]);
+
+  // Carica task quando il modal si apre
+  useEffect(() => {
+    if (visible) {
+      fetchCalendarTasks();
+    }
+  }, [visible, fetchCalendarTasks]);
+
+  // Ascolta eventi task per aggiornare il calendario
+  useEffect(() => {
+    const refresh = () => fetchCalendarTasks();
+    eventEmitter.on(EVENTS.TASK_ADDED, refresh);
+    eventEmitter.on(EVENTS.TASK_UPDATED, refresh);
+    eventEmitter.on(EVENTS.TASK_DELETED, refresh);
+    return () => {
+      eventEmitter.off(EVENTS.TASK_ADDED, refresh);
+      eventEmitter.off(EVENTS.TASK_UPDATED, refresh);
+      eventEmitter.off(EVENTS.TASK_DELETED, refresh);
+    };
+  }, [fetchCalendarTasks]);
+
+  const goToPreviousMonth = () => {
+    setSelectedDate(prev => dayjs(prev).subtract(1, 'month').format('YYYY-MM-DD'));
+  };
+
+  const goToNextMonth = () => {
+    setSelectedDate(prev => dayjs(prev).add(1, 'month').format('YYYY-MM-DD'));
+  };
+
+  const selectDate = (date: string | null) => {
+    if (date) setSelectedDate(date);
+  };
+
+  // Task per la data selezionata (normalizzati con id/task_id)
+  const tasksForSelectedDate = calendarTasks.filter(task => {
+    if (!task.end_time) return false;
+    return dayjs(task.end_time).format('YYYY-MM-DD') === selectedDate;
+  }).map(task => {
+    if (!task.id && task.task_id) return { ...task, id: task.task_id };
+    if (task.id && !task.task_id) return { ...task, task_id: task.id };
+    return task;
+  });
+
+  // Task handlers
+  const handleTaskComplete = async (taskId: number | string) => {
+    try {
+      await completeTask(taskId);
+      fetchCalendarTasks();
+    } catch (error) {
+      console.error('[VoiceChatModal] Errore completamento task:', error);
+      Alert.alert('Errore', 'Impossibile completare il task.');
+    }
+  };
+
+  const handleTaskUncomplete = async (taskId: number | string) => {
+    try {
+      await disCompleteTask(taskId);
+      fetchCalendarTasks();
+    } catch (error) {
+      console.error('[VoiceChatModal] Errore annullamento completamento:', error);
+      Alert.alert('Errore', 'Impossibile riaprire il task.');
+    }
+  };
+
+  const handleTaskEdit = async (taskId: number | string, updatedTask: TaskType) => {
+    try {
+      await updateTask(taskId, updatedTask);
+      fetchCalendarTasks();
+    } catch (error) {
+      console.error('[VoiceChatModal] Errore modifica task:', error);
+      Alert.alert('Errore', 'Impossibile modificare il task.');
+    }
+  };
+
+  const handleTaskDelete = async (taskId: number | string) => {
+    try {
+      await deleteTask(taskId);
+      fetchCalendarTasks();
+    } catch (error) {
+      console.error('[VoiceChatModal] Errore eliminazione task:', error);
+      Alert.alert('Errore', 'Impossibile eliminare il task.');
+    }
+  };
+
   // Animazioni
-  const pulseScale = useRef(new Animated.Value(1)).current;
-  const pulseOpacity = useRef(new Animated.Value(0.3)).current;
   const slideIn = useRef(new Animated.Value(height)).current;
   const fadeIn = useRef(new Animated.Value(0)).current;
-  const recordingScale = useRef(new Animated.Value(1)).current;
+  const liveDotOpacity = useRef(new Animated.Value(1)).current;
+
+  // Animated loading dots for smooth state transitions
+  const dot1Opacity = useRef(new Animated.Value(0.3)).current;
+  const dot2Opacity = useRef(new Animated.Value(0.3)).current;
+  const dot3Opacity = useRef(new Animated.Value(0.3)).current;
+  const stateTextOpacity = useRef(new Animated.Value(1)).current;
+  const prevStateRef = useRef(state);
+
+  // Notifica trascrizioni assistant al parent
+  useEffect(() => {
+    if (onVoiceResponse && transcripts.length > 0) {
+      const last = transcripts[transcripts.length - 1];
+      if (last.role === 'assistant') {
+        onVoiceResponse(last.content);
+      }
+    }
+  }, [transcripts, onVoiceResponse]);
 
   // Animazione di entrata del modal
   useEffect(() => {
@@ -85,76 +220,75 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
   // Cleanup quando il modal si chiude
   useEffect(() => {
     if (!visible) {
-      if (isRecording) cancelRecording();
-      if (isSpeaking) stopPlayback();
+      // Usa disconnect che gestisce internamente il cleanup di registrazione e player
       disconnect();
     }
-  }, [visible]);
+  }, [visible, disconnect]);
 
-  // Animazione del cerchio pulsante - solo quando in ascolto
+  // Loading dots sequential pulse animation
+  const isLoadingState = state === 'connecting' || state === 'authenticating' || state === 'setting_up' || state === 'processing';
   useEffect(() => {
-    const shouldAnimate = isRecording && isSpeechActive;
-
-    if (shouldAnimate) {
-      const pulseAnimation = Animated.loop(
-        Animated.sequence([
-          Animated.parallel([
-            Animated.timing(pulseScale, {
-              toValue: 1.15,
-              duration: 800,
-              useNativeDriver: true,
-            }),
-            Animated.timing(pulseOpacity, {
-              toValue: 0,
-              duration: 800,
-              useNativeDriver: true,
-            }),
+    if (isLoadingState) {
+      const animateDots = Animated.loop(
+        Animated.stagger(200, [
+          Animated.sequence([
+            Animated.timing(dot1Opacity, { toValue: 1, duration: 400, useNativeDriver: true }),
+            Animated.timing(dot1Opacity, { toValue: 0.3, duration: 400, useNativeDriver: true }),
           ]),
-          Animated.parallel([
-            Animated.timing(pulseScale, {
-              toValue: 1,
-              duration: 800,
-              useNativeDriver: true,
-            }),
-            Animated.timing(pulseOpacity, {
-              toValue: 0.4,
-              duration: 800,
-              useNativeDriver: true,
-            }),
+          Animated.sequence([
+            Animated.timing(dot2Opacity, { toValue: 1, duration: 400, useNativeDriver: true }),
+            Animated.timing(dot2Opacity, { toValue: 0.3, duration: 400, useNativeDriver: true }),
+          ]),
+          Animated.sequence([
+            Animated.timing(dot3Opacity, { toValue: 1, duration: 400, useNativeDriver: true }),
+            Animated.timing(dot3Opacity, { toValue: 0.3, duration: 400, useNativeDriver: true }),
           ]),
         ])
       );
-      pulseAnimation.start();
-
-      return () => pulseAnimation.stop();
+      animateDots.start();
+      return () => animateDots.stop();
+    } else {
+      dot1Opacity.setValue(0.3);
+      dot2Opacity.setValue(0.3);
+      dot3Opacity.setValue(0.3);
     }
-  }, [isRecording, isSpeechActive, pulseScale, pulseOpacity]);
+  }, [isLoadingState, dot1Opacity, dot2Opacity, dot3Opacity]);
 
-  // Animazione durante elaborazione/risposta
+  // Smooth cross-fade when state changes
   useEffect(() => {
-    if (isProcessing || isSpeaking) {
-      const thinkingAnimation = Animated.loop(
+    if (prevStateRef.current !== state) {
+      prevStateRef.current = state;
+      stateTextOpacity.setValue(0);
+      Animated.timing(stateTextOpacity, {
+        toValue: 1,
+        duration: 250,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [state, stateTextOpacity]);
+
+  // Live dot pulse animation
+  useEffect(() => {
+    if (isConnected) {
+      const dotPulse = Animated.loop(
         Animated.sequence([
-          Animated.timing(recordingScale, {
-            toValue: 1.08,
+          Animated.timing(liveDotOpacity, {
+            toValue: 0.3,
             duration: 1000,
             useNativeDriver: true,
           }),
-          Animated.timing(recordingScale, {
+          Animated.timing(liveDotOpacity, {
             toValue: 1,
             duration: 1000,
             useNativeDriver: true,
           }),
         ])
       );
-      thinkingAnimation.start();
+      dotPulse.start();
 
-      return () => {
-        thinkingAnimation.stop();
-        recordingScale.setValue(1);
-      };
+      return () => dotPulse.stop();
     }
-  }, [isProcessing, isSpeaking, recordingScale]);
+  }, [isConnected, liveDotOpacity]);
 
   // Gestione connessione
   const handleConnect = async () => {
@@ -172,11 +306,8 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
     await connect();
   };
 
-  const handleClose = () => {
-    if (isRecording) cancelRecording();
-    if (isSpeaking) stopPlayback();
-    disconnect();
-
+  const handleClose = async () => {
+    // Avvia l'animazione di chiusura
     Animated.parallel([
       Animated.timing(slideIn, {
         toValue: height,
@@ -191,129 +322,55 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
     ]).start(() => {
       onClose();
     });
+
+    // Esegui il cleanup in parallelo all'animazione
+    // disconnect gestisce internamente il cleanup di registrazione e player
+    await disconnect();
   };
 
-  const handleErrorDismiss = () => {
-    if (state === 'error') {
-      handleConnect();
-    }
-  };
 
-  // Render dello stato - versione minimale
+  // Render loading dots
+  const renderLoadingDots = () => (
+    <View style={styles.loadingDots}>
+      <Animated.View style={[styles.loadingDot, { opacity: dot1Opacity }]} />
+      <Animated.View style={[styles.loadingDot, { opacity: dot2Opacity }]} />
+      <Animated.View style={[styles.loadingDot, { opacity: dot3Opacity }]} />
+    </View>
+  );
+
+  // Render dello stato con transizioni fluide
   const renderStateIndicator = () => {
-    if (state === 'connecting') {
-      return <Text style={styles.subtleText}>Connessione in corso...</Text>;
+    // Stati di caricamento: mostra solo i dots animati
+    if (isLoadingState) {
+      return renderLoadingDots();
     }
 
-    if (state === 'error') {
-      return <Text style={styles.subtleText}>Qualcosa è andato storto</Text>;
-    }
-
-    if (isRecording && isSpeechActive) {
-      return <Text style={styles.subtleText}>Ti ascolto...</Text>;
-    }
-
-    if (isProcessing || isSpeaking) {
-      return <Text style={styles.subtleText}>Sto pensando...</Text>;
-    }
-
-    if (isConnected && !isRecording) {
-      return <Text style={styles.subtleText}>Parla quando vuoi</Text>;
-    }
-
-    return null;
-  };
-
-  // Render del pulsante principale - versione minimale
-  const renderMainButton = () => {
-    // Stato: elaborazione o risposta in corso
-    if (isProcessing || isSpeaking) {
-      return (
-        <Animated.View style={[
-          styles.microphoneCircle,
-          styles.thinkingCircle,
-          { transform: [{ scale: recordingScale }] }
-        ]}>
-          <ActivityIndicator size="large" color="#fff" />
-        </Animated.View>
-      );
-    }
-
-    // Stato: connessione
-    if (state === 'connecting') {
-      return (
-        <Animated.View style={styles.microphoneCircle}>
-          <ActivityIndicator size="large" color="#fff" />
-        </Animated.View>
-      );
-    }
-
-    // Stato: errore
-    if (state === 'error') {
-      return (
-        <Animated.View style={styles.microphoneCircle}>
-          <TouchableOpacity
-            style={styles.microphoneButton}
-            onPress={handleErrorDismiss}
-            activeOpacity={0.8}
-          >
-            <MaterialIcons name="refresh" size={52} color="#ffffff" />
-          </TouchableOpacity>
-        </Animated.View>
-      );
-    }
-
-    // Stato: non connesso
-    if (!isConnected) {
-      return (
-        <Animated.View style={styles.microphoneCircle}>
-          <TouchableOpacity
-            style={styles.microphoneButton}
-            onPress={handleConnect}
-            activeOpacity={0.8}
-          >
-            <MaterialIcons name="wifi" size={52} color="#ffffff" />
-          </TouchableOpacity>
-        </Animated.View>
-      );
-    }
-
-    // Stato: ascolto attivo con animazione semplice
-    const isListening = isRecording && isSpeechActive;
-
-    return (
-      <Animated.View style={[
-        styles.microphoneCircle,
-        isListening && styles.listeningCircle,
-      ]}>
-        <Ionicons
-          name={isListening ? "mic" : "mic-outline"}
-          size={56}
-          color="#ffffff"
-        />
-      </Animated.View>
-    );
-  };
-
-  // Render pulsante di stop durante elaborazione/risposta
-  const renderStopButton = () => {
-    if (!isProcessing && !isSpeaking) {
-      return null;
+    // Stati interattivi: mostra testo con fade-in
+    let label: string | null = null;
+    switch (state) {
+      case 'error':
+        label = 'Qualcosa è andato storto';
+        break;
+      case 'recording':
+        label = 'Ti ascolto...';
+        break;
+      case 'speaking':
+        label = 'Rispondo...';
+        break;
+      case 'ready':
+        label = 'Parla quando vuoi';
+        break;
+      default:
+        return null;
     }
 
     return (
-      <TouchableOpacity
-        style={styles.stopButton}
-        onPress={() => {
-          if (isSpeaking) stopPlayback();
-          if (isProcessing) sendControl('cancel');
-        }}
-        activeOpacity={0.7}
-      >
-        <Text style={styles.stopButtonText}>Interrompi</Text>
-      </TouchableOpacity>
+      <Animated.Text style={[styles.subtleText, { opacity: stateTextOpacity }]}>
+        {label}
+      </Animated.Text>
     );
   };
+
 
   return (
     <Modal
@@ -323,7 +380,7 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
       statusBarTranslucent={true}
       onRequestClose={handleClose}
     >
-      <StatusBar barStyle="light-content" backgroundColor="rgba(0,0,0,0.95)" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
       <Animated.View
         style={[
@@ -334,76 +391,122 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
           },
         ]}
       >
-        {/* Header */}
+        {/* Header with Live indicator and Close button */}
         <View style={styles.header}>
+          {/* Live Indicator */}
+          {isConnected && (
+            <View style={styles.liveIndicator}>
+              <Animated.View
+                style={[
+                  styles.liveDot,
+                  { opacity: liveDotOpacity }
+                ]}
+              />
+              <Text style={styles.liveText}>Live</Text>
+            </View>
+          )}
+
+          {/* Status Badge */}
+          <View style={styles.headerCenter}>
+            {renderStateIndicator()}
+            {isMuted && isConnected && (
+              <View style={styles.mutedBadge}>
+                <Ionicons name="mic-off" size={14} color="#FF3B30" />
+                <Text style={styles.mutedBadgeText}>Muto</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Close Button */}
           <TouchableOpacity
             style={styles.closeButton}
             onPress={handleClose}
             activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Chiudi chat vocale"
           >
-            <Ionicons name="close" size={26} color="rgba(255, 255, 255, 0.8)" />
+            <Ionicons name="close" size={24} color="#000000" />
           </TouchableOpacity>
         </View>
 
-        {/* Contenuto principale */}
-        <View style={styles.content}>
-          {/* Titolo minimale */}
-          <Text style={styles.title}>Assistente Vocale</Text>
-
-          {/* Messaggio di stato semplice */}
-          {renderStateIndicator()}
-
-          {/* Cerchio animato centrale */}
-          <View style={styles.microphoneContainer}>
-            {/* Cerchi di pulsazione - solo quando in ascolto */}
-            {(isRecording && isSpeechActive) && (
-              <>
-                <Animated.View
-                  style={[
-                    styles.pulseCircle,
-                    styles.pulseCircle1,
-                    {
-                      transform: [{ scale: pulseScale }],
-                      opacity: pulseOpacity,
-                    },
-                  ]}
-                />
-                <Animated.View
-                  style={[
-                    styles.pulseCircle,
-                    styles.pulseCircle2,
-                    {
-                      transform: [{ scale: pulseScale }],
-                      opacity: pulseOpacity,
-                    },
-                  ]}
-                />
-              </>
-            )}
-
-            {/* Pulsante principale */}
-            {renderMainButton()}
+        {/* Calendar + Task List Section */}
+        <View style={styles.calendarSection}>
+          {/* Calendario in alto */}
+          <View style={styles.calendarWrapper}>
+            <CalendarGrid
+              selectedDate={selectedDate}
+              tasks={calendarTasks}
+              onSelectDate={selectDate}
+              onPreviousMonth={goToPreviousMonth}
+              onNextMonth={goToNextMonth}
+            />
           </View>
 
-          {/* Pulsante stop durante elaborazione */}
-          {renderStopButton()}
+          {/* Header data selezionata */}
+          <View style={styles.selectedDateHeader}>
+            <Text style={styles.selectedDateTitle}>
+              {dayjs(selectedDate).format('DD MMMM YYYY')}
+            </Text>
+            <Text style={styles.taskCountLabel}>
+              {tasksForSelectedDate.length} {tasksForSelectedDate.length === 1 ? 'impegno' : 'impegni'}
+            </Text>
+          </View>
 
-          {/* Messaggio di errore minimalista */}
-          {error && (
-            <View style={styles.errorContainer}>
-              <Text style={styles.errorText}>{error}</Text>
-              <TouchableOpacity onPress={handleErrorDismiss}>
-                <Text style={styles.retryText}>Riprova</Text>
-              </TouchableOpacity>
-            </View>
-          )}
+          {/* Lista task scrollabile */}
+          <ScrollView
+            style={styles.taskListScroll}
+            contentContainerStyle={styles.taskListContent}
+            showsVerticalScrollIndicator={false}
+          >
+            {tasksForSelectedDate.length > 0 ? (
+              tasksForSelectedDate.map(task => (
+                <Task
+                  key={task.task_id || task.id}
+                  task={task}
+                  onTaskComplete={handleTaskComplete}
+                  onTaskUncomplete={handleTaskUncomplete}
+                  onTaskEdit={handleTaskEdit}
+                  onTaskDelete={handleTaskDelete}
+                />
+              ))
+            ) : (
+              <View style={styles.emptyTaskList}>
+                <Ionicons name="calendar-outline" size={36} color="#cccccc" />
+                <Text style={styles.emptyTaskText}>Nessun impegno per questa data</Text>
+              </View>
+            )}
+          </ScrollView>
         </View>
 
-        {/* Footer con istruzioni semplici */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            Parla naturalmente
-          </Text>
+        {/* Bottom Control Bar */}
+        <View style={styles.controlBar}>
+          {/* Microphone Button - Primary */}
+          <TouchableOpacity
+            style={[
+              styles.controlButton,
+              styles.controlButtonPrimary,
+              isMuted && styles.controlButtonMuted,
+              isRecording && !isMuted && styles.controlButtonRecording
+            ]}
+            onPress={() => {
+              if (isMuted) {
+                unmute();
+              } else {
+                mute();
+              }
+            }}
+            disabled={!isConnected || state === 'connecting' || isProcessing || isSpeaking}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel={isMuted ? "Microfono disattivato" : "Microfono attivo"}
+            accessibilityState={{ selected: !isMuted }}
+          >
+            <Ionicons
+              name={isMuted ? "mic-off" : "mic"}
+              size={28}
+              color={isMuted ? "#000000" : "#FFFFFF"}
+            />
+          </TouchableOpacity>
         </View>
       </Animated.View>
     </Modal>
@@ -413,137 +516,209 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.95)",
+    backgroundColor: "#FFFFFF",
     justifyContent: "space-between",
   },
   header: {
     paddingTop: StatusBar.currentHeight ? StatusBar.currentHeight + 16 : 44,
     paddingHorizontal: 20,
-    paddingBottom: 16,
-    alignItems: "flex-end",
+    paddingBottom: 12,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E1E5E9",
+  },
+  headerCenter: {
+    flex: 1,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 8,
+  },
+  liveIndicator: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(52, 199, 89, 0.1)",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  liveDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#34C759",
+    marginRight: 6,
+  },
+  liveText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#34C759",
+    fontFamily: "System",
   },
   closeButton: {
-    padding: 10,
-    borderRadius: 24,
-    backgroundColor: "rgba(255, 255, 255, 0.06)",
-  },
-  content: {
-    flex: 1,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#F8F9FA",
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 32,
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: "200",
-    color: "#ffffff",
-    textAlign: "center",
-    marginBottom: 64,
-    fontFamily: "System",
-    letterSpacing: 0.8,
+    borderWidth: 1,
+    borderColor: "#E1E5E9",
   },
   subtleText: {
-    fontSize: 15,
-    fontWeight: "300",
-    color: "rgba(255, 255, 255, 0.5)",
-    textAlign: "center",
-    marginBottom: 52,
+    fontSize: 13,
+    fontWeight: "400",
+    color: "#666666",
     fontFamily: "System",
   },
-  microphoneContainer: {
-    position: "relative",
+  loadingDots: {
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    marginVertical: 48,
+    gap: 6,
+    height: 18,
   },
-  pulseCircle: {
-    position: "absolute",
-    borderRadius: 150,
-    borderWidth: 1,
-    borderColor: "rgba(76, 175, 80, 0.4)",
+  loadingDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#999999",
   },
-  pulseCircle1: {
-    width: 240,
-    height: 240,
-  },
-  pulseCircle2: {
-    width: 300,
-    height: 300,
-  },
-  microphoneCircle: {
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
-    justifyContent: "center",
+  mutedBadge: {
+    flexDirection: "row",
     alignItems: "center",
-    borderWidth: 1.5,
-    borderColor: "rgba(255, 255, 255, 0.15)",
+    backgroundColor: "rgba(255, 59, 48, 0.1)",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
   },
-  listeningCircle: {
-    backgroundColor: "rgba(76, 175, 80, 0.15)",
-    borderColor: "rgba(76, 175, 80, 0.3)",
-  },
-  thinkingCircle: {
-    backgroundColor: "rgba(33, 150, 243, 0.15)",
-    borderColor: "rgba(33, 150, 243, 0.3)",
-  },
-  microphoneButton: {
-    width: "100%",
-    height: "100%",
-    justifyContent: "center",
-    alignItems: "center",
-    borderRadius: 80,
-  },
-  footer: {
-    paddingHorizontal: 40,
-    paddingBottom: 64,
-    alignItems: "center",
-  },
-  footerText: {
-    fontSize: 12,
-    fontWeight: "300",
-    color: "rgba(255, 255, 255, 0.35)",
-    textAlign: "center",
+  mutedBadgeText: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#FF3B30",
     fontFamily: "System",
-    letterSpacing: 0.3,
   },
-  stopButton: {
-    paddingHorizontal: 28,
-    paddingVertical: 14,
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
-    borderRadius: 28,
-    marginTop: 40,
+  // Calendar + Task List Section
+  calendarSection: {
+    flex: 1,
+    paddingHorizontal: 20,
   },
-  stopButtonText: {
+  calendarWrapper: {
+    paddingTop: 12,
+  },
+  selectedDateHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingTop: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E1E5E9",
+  },
+  selectedDateTitle: {
+    fontSize: 16,
+    fontWeight: "300",
+    color: "#000000",
+    fontFamily: "System",
+    letterSpacing: -0.5,
+  },
+  taskCountLabel: {
+    fontSize: 13,
+    fontWeight: "400",
+    color: "#999999",
+    fontFamily: "System",
+  },
+  taskListScroll: {
+    flex: 1,
+  },
+  taskListContent: {
+    paddingTop: 4,
+    paddingBottom: 16,
+    paddingHorizontal: 4,
+  },
+  emptyTaskList: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingTop: 40,
+  },
+  emptyTaskText: {
     fontSize: 14,
-    fontWeight: "400",
-    color: "rgba(255, 255, 255, 0.75)",
-    fontFamily: "System",
-    letterSpacing: 0.2,
-  },
-  errorContainer: {
-    alignItems: "center",
-    paddingHorizontal: 28,
-    paddingVertical: 18,
-    backgroundColor: "rgba(244, 67, 54, 0.08)",
-    borderRadius: 20,
-    marginTop: 40,
-    maxWidth: "85%",
-  },
-  errorText: {
-    color: "rgba(255, 107, 107, 0.85)",
-    fontSize: 13,
     fontWeight: "300",
-    textAlign: "center",
-    marginBottom: 14,
+    color: "#999999",
     fontFamily: "System",
+    marginTop: 10,
   },
-  retryText: {
-    color: "rgba(255, 255, 255, 0.65)",
-    fontSize: 13,
-    fontWeight: "400",
-    fontFamily: "System",
+  // Control Bar
+  controlBar: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 40,
+    paddingHorizontal: 32,
+    paddingVertical: 24,
+    paddingBottom: 40,
+    backgroundColor: "#FFFFFF",
+    borderTopWidth: 1,
+    borderTopColor: "#E1E5E9",
+  },
+  controlButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "#F8F9FA",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#E1E5E9",
+  },
+  controlButtonDisabled: {
+    backgroundColor: "#F8F9FA",
+    opacity: 0.5,
+  },
+  controlButtonActive: {
+    backgroundColor: "#E1E5E9",
+  },
+  controlButtonPrimary: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "#000000",
+    borderWidth: 0,
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
+  },
+  controlButtonRecording: {
+    backgroundColor: "#000000",
+  },
+  controlButtonMuted: {
+    backgroundColor: "#E1E5E9",
+  },
+  controlButtonEnd: {
+    backgroundColor: "#000000",
+    borderWidth: 0,
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
   },
 });
 
