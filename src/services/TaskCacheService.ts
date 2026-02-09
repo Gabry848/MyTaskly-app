@@ -36,12 +36,49 @@ export interface OfflineChange {
 class TaskCacheService {
   private static instance: TaskCacheService;
   private currentCacheVersion = 1;
+  private isSaving = false; // Flag per prevenire loop ricorsivi
 
   static getInstance(): TaskCacheService {
     if (!TaskCacheService.instance) {
       TaskCacheService.instance = new TaskCacheService();
     }
     return TaskCacheService.instance;
+  }
+
+  // Metodo interno per salvare direttamente senza confronto (evita loop ricorsivi)
+  private async _saveTasksDirect(tasks: Task[], categories: Category[]): Promise<void> {
+    const cache: TasksCache = {
+      tasks,
+      categories,
+      lastSync: Date.now(),
+      version: this.currentCacheVersion
+    };
+
+    await AsyncStorage.setItem(CACHE_KEYS.TASKS_CACHE, JSON.stringify(cache));
+    await AsyncStorage.setItem(CACHE_KEYS.LAST_SYNC_TIMESTAMP, cache.lastSync.toString());
+  }
+
+  // Metodo interno per leggere i task dalla cache senza deduplicazione ricorsiva
+  private async _getCachedTasksRaw(): Promise<{ tasks: Task[], categories: Category[] }> {
+    try {
+      const cachedData = await AsyncStorage.getItem(CACHE_KEYS.TASKS_CACHE);
+
+      if (!cachedData) {
+        return { tasks: [], categories: [] };
+      }
+
+      const cache: TasksCache = JSON.parse(cachedData);
+
+      // Verifica la versione della cache
+      if (cache.version !== this.currentCacheVersion) {
+        return { tasks: [], categories: [] };
+      }
+
+      return { tasks: cache.tasks || [], categories: cache.categories || [] };
+    } catch (error) {
+      console.error('[CACHE] Errore nel caricamento raw dalla cache:', error);
+      return { tasks: [], categories: [] };
+    }
   }
 
   // Carica i task dalla cache AsyncStorage
@@ -84,9 +121,9 @@ class TaskCacheService {
       if (deduplicatedTasks.length < cache.tasks.length) {
         console.log(`[CACHE] 🧹 Rimossi ${cache.tasks.length - deduplicatedTasks.length} duplicati dalla cache`);
 
-        // Salva immediatamente la cache pulita
-        const categories = await this.getCachedCategories();
-        await this.saveTasks(deduplicatedTasks, categories);
+        // Salva immediatamente la cache pulita usando il metodo diretto (evita loop ricorsivo)
+        const categories = cache.categories || [];
+        await this._saveTasksDirect(deduplicatedTasks, categories);
       }
 
       // Log dettagliato di ogni task in cache per debug
@@ -120,11 +157,18 @@ class TaskCacheService {
 
   // Salva i task nella cache
   async saveTasks(tasks: Task[], categories: Category[] = []): Promise<void> {
+    // Previeni loop ricorsivi
+    if (this.isSaving) {
+      console.log('[CACHE] ⚠️ saveTasks già in esecuzione, skip per prevenire loop');
+      return;
+    }
+
     try {
+      this.isSaving = true;
       console.log(`[CACHE] Salvando ${tasks.length} task in cache...`);
       
-      // Carica i task attuali dalla cache per confronto
-      const currentTasks = await this.getCachedTasks();
+      // Carica i task attuali dalla cache per confronto usando il metodo raw (evita loop)
+      const { tasks: currentTasks } = await this._getCachedTasksRaw();
       
       // Identifica task rimossi (presenti in cache ma non nei nuovi dati)
       const newTaskIds = new Set(tasks.map(task => task.task_id || task.id));
@@ -167,6 +211,8 @@ class TaskCacheService {
       }
     } catch (error) {
       console.error('[CACHE] Errore nel salvataggio in cache:', error);
+    } finally {
+      this.isSaving = false;
     }
   }
 
