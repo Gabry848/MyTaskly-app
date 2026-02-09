@@ -28,7 +28,7 @@ export const NotesFocusContext = React.createContext<{
 
 
 const GRID_POINTS = 50;
-const GRID_SIZE = 30;
+const GRID_SIZE = 60;
 const CANVAS_SIZE = GRID_POINTS * GRID_SIZE; // 50 * 30 = 1500px
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 2.5;
@@ -136,6 +136,7 @@ export const NotesCanvas: React.FC = () => {
   ).current;
 
   const canvasAnimatedStyle = useAnimatedStyle(() => ({
+    transformOrigin: 'left top',
     transform: [
       { translateX: translateX.value as number },
       { translateY: translateY.value as number },
