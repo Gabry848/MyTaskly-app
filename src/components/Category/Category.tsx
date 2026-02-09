@@ -164,7 +164,7 @@ const Category: React.FC<CategoryProps> = ({
             style: "destructive",
             onPress: async () => {
               try {
-                await deleteCategory(title);
+                await deleteCategory(categoryId || title, title);
 
                 closeMenu();
 
@@ -217,7 +217,7 @@ const Category: React.FC<CategoryProps> = ({
 
     setIsEditing(true);
     try {
-      await updateCategory(title, {
+      await updateCategory(categoryId || title, {
         name: editName.trim(),
         description: editDescription.trim()
       });

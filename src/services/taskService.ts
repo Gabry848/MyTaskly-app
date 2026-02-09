@@ -929,19 +929,19 @@ export async function getCategories(useCache: boolean = true) {
   }
 }
 
-// Funzione per eliminare una categoria tramite il suo nome
-export async function deleteCategory(categoryName: string) {
+// Funzione per eliminare una categoria tramite il suo ID (o nome come fallback)
+export async function deleteCategory(categoryId: string | number, categoryName?: string) {
   try {
-    console.log(categoryName)
-    const response = await axios.delete(`/categories/${categoryName}`, {
+    console.log(`[TASK_SERVICE] Eliminazione categoria ID: ${categoryId}, nome: ${categoryName || 'N/A'}`);
+    const response = await axios.delete(`/categories/id/${categoryId}`, {
       headers: {
         "Content-Type": "application/json",
       },
     });
 
     // Rimuovi la categoria dalla cache dopo l'eliminazione riuscita
-    await getServices().cacheService.removeCategoryFromCache(categoryName);
-    console.log(`[TASK_SERVICE] Categoria "${categoryName}" rimossa dalla cache`);
+    await getServices().cacheService.removeCategoryFromCache(categoryId, categoryName);
+    console.log(`[TASK_SERVICE] Categoria "${categoryId}" rimossa dalla cache`);
 
     return response.data;
   } catch (error) {
@@ -950,16 +950,17 @@ export async function deleteCategory(categoryName: string) {
   }
 }
 
-// Funzione per aggiornare una categoria esistente
+// Funzione per aggiornare una categoria esistente tramite ID (o nome come fallback)
 export async function updateCategory(
-  originalName: string, 
+  categoryId: string | number, 
   updatedCategory: { 
     name: string; 
     description?: string;
   }
 ) {
   try {
-    const response = await axios.put(`/categories/${originalName}`, updatedCategory, {
+    console.log(`[TASK_SERVICE] Aggiornamento categoria ID: ${categoryId}`);
+    const response = await axios.put(`/categories/${categoryId}`, updatedCategory, {
       headers: {
         "Content-Type": "application/json",
       },

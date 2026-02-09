@@ -290,7 +290,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style, isVoiceCh
 
     setIsEditingCategory(true);
     try {
-      await updateCategory(selectedCategoryForEdit.name, {
+      await updateCategory(selectedCategoryForEdit.category_id || selectedCategoryForEdit.id || selectedCategoryForEdit.name, {
         name: editCategoryName.trim(),
         description: editCategoryDescription.trim()
       });
@@ -328,7 +328,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style, isVoiceCh
           onPress: async () => {
             setIsDeletingCategory(true);
             try {
-              await deleteCategory(selectedCategoryForEdit.name);
+              await deleteCategory(selectedCategoryForEdit.category_id || selectedCategoryForEdit.id || selectedCategoryForEdit.name, selectedCategoryForEdit.name);
               Alert.alert('Successo', 'Categoria eliminata con successo');
               setCategoryMenuVisible(false);
               setSelectedCategoryForEdit(null);

@@ -14,6 +14,7 @@ export const CACHE_KEYS = {
 
 export interface Category {
   id?: string | number;
+  category_id?: number;
   name: string;
   description?: string;
 }
@@ -325,24 +326,41 @@ class TaskCacheService {
     }
   }
 
-  // Rimuovi categoria dalla cache
-  async removeCategoryFromCache(categoryName: string): Promise<void> {
+  // Rimuovi categoria dalla cache (per ID, con fallback su nome)
+  async removeCategoryFromCache(categoryId: string | number, categoryName?: string): Promise<void> {
     try {
       const cachedTasks = await this.getCachedTasks();
       const cachedCategories = await this.getCachedCategories();
 
-      // Filtra le categorie per rimuovere quella eliminata
-      const filteredCategories = cachedCategories.filter(category =>
-        category.name !== categoryName
-      );
+      // Filtra le categorie per rimuovere quella eliminata (match per ID)
+      const filteredCategories = cachedCategories.filter(category => {
+        // Prima prova a matchare per category_id o id
+        const catId = category.category_id ?? category.id;
+        if (catId !== undefined && catId !== null) {
+          return String(catId) !== String(categoryId);
+        }
+        // Fallback su nome solo se non c'è ID
+        return categoryName ? category.name !== categoryName : true;
+      });
+
+      // Trova il nome della categoria rimossa per filtrare i task associati
+      const removedCategory = cachedCategories.find(category => {
+        const catId = category.category_id ?? category.id;
+        if (catId !== undefined && catId !== null) {
+          return String(catId) === String(categoryId);
+        }
+        return categoryName ? category.name === categoryName : false;
+      });
+
+      const removedCategoryName = removedCategory?.name || categoryName;
 
       // Rimuovi anche tutti i task associati a quella categoria
-      const filteredTasks = cachedTasks.filter(task =>
-        task.category_name !== categoryName
-      );
+      const filteredTasks = removedCategoryName
+        ? cachedTasks.filter(task => task.category_name !== removedCategoryName)
+        : cachedTasks;
 
       await this.saveTasks(filteredTasks, filteredCategories);
-      console.log(`[CACHE] Categoria "${categoryName}" rimossa dalla cache`);
+      console.log(`[CACHE] Categoria ID "${categoryId}" (${removedCategoryName || 'nome sconosciuto'}) rimossa dalla cache`);
     } catch (error) {
       console.error('[CACHE] Errore nella rimozione categoria dalla cache:', error);
     }
