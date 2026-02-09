@@ -573,6 +573,14 @@
       "logoutSuccess": "Logout effettuato con successo"
     }
   },
+  "notifications": {
+    "enablePrompt": {
+      "title": "🔔 Abilita le notifiche",
+      "message": "Vuoi ricevere notifiche per i promemoria dei tuoi task? Ti avviseremo quando un task è in scadenza, così non perderai mai una scadenza importante.",
+      "enable": "Abilita",
+      "later": "Più tardi"
+    }
+  },
   "profile": {
     "user": {
       "subtitle": "Utente Mytaskly"

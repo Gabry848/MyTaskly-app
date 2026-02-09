@@ -6,6 +6,8 @@ import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axiosInstance from './axiosInstance';
 import eventEmitter from '../utils/eventEmitter';
+import { STORAGE_KEYS } from '../constants/authConstants';
+import i18n from './i18n';
 
 // Controllo se siamo in Expo Go o Development Build
 const isExpoGo = Constants.appOwnership === 'expo';
@@ -379,20 +381,8 @@ export function useNotifications() {
   const responseListener = useRef<Notifications.EventSubscription | null>(null);
 
   useEffect(() => {
-    // 🎯 REGISTRA PER LE NOTIFICHE ALL'AVVIO
-    registerForPushNotificationsAsync().then(token => {
-      if (token) {
-        setExpoPushToken(token);
-        console.log('🔔 Token ottenuto, attendendo autenticazione per l\'invio al backend');
-        // Il token verrà inviato solo dopo il login tramite il listener loginSuccess
-      } else if (isExpoGo) {
-        // In Expo Go, modalità silenziosa
-        console.log('ℹ️ Modalità Expo Go attiva');
-      }
-    });
-
-    // 🔄 Controlla e ritenta l'invio del token pendente all'avvio se l'utente è già autenticato
-    const checkAuthAndRetry = async () => {
+    // 🔄 Controlla se l'utente è già autenticato e ha già concesso i permessi notifiche
+    const initializeNotifications = async () => {
       try {
         const { checkAndRefreshAuth } = await import('./authService');
         const authResult = await checkAndRefreshAuth();
@@ -400,6 +390,15 @@ export function useNotifications() {
         if (authResult.isAuthenticated) {
           setIsAuthenticated(true);
           console.log('✅ Utente già autenticato all\'avvio');
+          
+          // Se già autenticato, registra normalmente (permessi già concessi in precedenza)
+          const permissionAsked = await AsyncStorage.getItem(STORAGE_KEYS.NOTIFICATION_PERMISSION_ASKED);
+          if (permissionAsked === 'true') {
+            const token = await registerForPushNotificationsAsync();
+            if (token) {
+              setExpoPushToken(token);
+            }
+          }
           
           // Riprova a inviare il token pendente se esiste
           await retryPendingTokenSend(true);
@@ -409,20 +408,53 @@ export function useNotifications() {
       }
     };
     
-    checkAuthAndRetry();
+    initializeNotifications();
 
-    // 👂 ASCOLTA EVENTI DI LOGIN per inviare il token quando l'utente si autentica
+    // 👂 ASCOLTA EVENTI DI LOGIN per mostrare il prompt notifiche al primo login
     const handleLoginSuccess = async () => {
-      console.log('🔐 Login riuscito, tentativo di invio token al backend...');
+      console.log('🔐 Login riuscito, verifica permessi notifiche...');
       setIsAuthenticated(true);
       
-      // Invia il token corrente se disponibile
-      if (expoPushToken) {
-        const success = await sendTokenToBackend(expoPushToken, true);
-        if (success) {
-          console.log('✅ Token inviato al backend dopo il login');
-        } else {
-          console.error('❌ Errore nell\'invio del token dopo il login');
+      // Controlla se il prompt notifiche è già stato mostrato
+      const permissionAsked = await AsyncStorage.getItem(STORAGE_KEYS.NOTIFICATION_PERMISSION_ASKED);
+      
+      if (!permissionAsked) {
+        // Primo login: mostra un avviso informativo prima di richiedere i permessi
+        console.log('🔔 Primo login, mostra prompt notifiche...');
+        setTimeout(() => {
+          Alert.alert(
+            i18n.t('notifications.enablePrompt.title'),
+            i18n.t('notifications.enablePrompt.message'),
+            [
+              {
+                text: i18n.t('notifications.enablePrompt.later'),
+                style: 'cancel',
+                onPress: async () => {
+                  console.log('⏸️ Utente ha rimandato i permessi notifiche');
+                  await AsyncStorage.setItem(STORAGE_KEYS.NOTIFICATION_PERMISSION_ASKED, 'true');
+                },
+              },
+              {
+                text: i18n.t('notifications.enablePrompt.enable'),
+                onPress: async () => {
+                  console.log('✅ Utente ha accettato di abilitare le notifiche');
+                  await AsyncStorage.setItem(STORAGE_KEYS.NOTIFICATION_PERMISSION_ASKED, 'true');
+                  const token = await registerForPushNotificationsAsync();
+                  if (token) {
+                    setExpoPushToken(token);
+                    await sendTokenToBackend(token, true);
+                  }
+                },
+              },
+            ]
+          );
+        }, 2000); // Ritardo per non sovrapporre con la notifica di login riuscito
+      } else {
+        // Login successivi: registra normalmente senza prompt
+        const token = await registerForPushNotificationsAsync();
+        if (token) {
+          setExpoPushToken(token);
+          await sendTokenToBackend(token, true);
         }
       }
       

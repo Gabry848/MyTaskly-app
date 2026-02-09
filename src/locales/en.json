@@ -574,6 +574,14 @@
       "logoutSuccess": "Logout successful"
     }
   },
+  "notifications": {
+    "enablePrompt": {
+      "title": "🔔 Enable notifications",
+      "message": "Would you like to receive notifications for your task reminders? We'll notify you when a task is due, so you never miss an important deadline.",
+      "enable": "Enable",
+      "later": "Later"
+    }
+  },
   "profile": {
     "user": {
       "subtitle": "Mytaskly User"
