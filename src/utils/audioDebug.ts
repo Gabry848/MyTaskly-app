@@ -6,15 +6,14 @@ export function debugAudioDependencies() {
   console.log('=== DEBUG AUDIO DEPENDENCIES ===');
   
   try {
-    // Test import expo-av
-    const Audio = require('expo-av').Audio;
-    console.log('✅ expo-av importato correttamente');
-    console.log('Audio object:', !!Audio);
-    console.log('Audio.requestPermissionsAsync:', !!Audio?.requestPermissionsAsync);
-    console.log('Audio.Recording:', !!Audio?.Recording);
-    console.log('Audio.Sound:', !!Audio?.Sound);
+    // Test import expo-audio
+    const expoAudio = require('expo-audio');
+    console.log('✅ expo-audio importato correttamente');
+    console.log('createAudioPlayer:', !!expoAudio?.createAudioPlayer);
+    console.log('setAudioModeAsync:', !!expoAudio?.setAudioModeAsync);
+    console.log('requestRecordingPermissionsAsync:', !!expoAudio?.requestRecordingPermissionsAsync);
   } catch (error) {
-    console.error('❌ Errore import expo-av:', error);
+    console.error('❌ Errore import expo-audio:', error);
   }
   
   try {
@@ -48,8 +47,8 @@ export async function debugAudioPermissions() {
   console.log('=== DEBUG AUDIO PERMISSIONS ===');
   
   try {
-    const { Audio } = require('expo-av');
-    const result = await Audio.requestPermissionsAsync();
+    const { requestRecordingPermissionsAsync } = require('expo-audio');
+    const result = await requestRecordingPermissionsAsync();
     console.log('Risultato richiesta permessi:', result);
     console.log('Permessi concessi:', result.granted);
     console.log('Status:', result.status);

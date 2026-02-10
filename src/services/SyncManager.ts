@@ -1,8 +1,19 @@
 import { TaskCacheService, OfflineChange } from './TaskCacheService';
 import StorageManager from './StorageManager';
 import NetworkService, { NetworkState } from './NetworkService';
-import { getAllTasks as getTasksFromAPI, getCategories as getCategoriesFromAPI, addTask as addTaskToAPI, updateTask as updateTaskToAPI, deleteTask as deleteTaskFromAPI } from './taskService';
 import { emitTasksSynced } from '../utils/eventEmitter';
+
+// Lazy import per evitare require cycle con taskService
+async function getTaskServiceFunctions() {
+  const taskService = await import('./taskService');
+  return {
+    getTasksFromAPI: taskService.getAllTasks,
+    getCategoriesFromAPI: taskService.getCategories,
+    addTaskToAPI: taskService.addTask,
+    updateTaskToAPI: taskService.updateTask,
+    deleteTaskFromAPI: taskService.deleteTask,
+  };
+}
 
 export interface SyncStatus {
   isOnline: boolean;
@@ -184,18 +195,21 @@ class SyncManager {
     switch (change.type) {
       case 'CREATE':
         if (change.entityType === 'TASK') {
+          const { addTaskToAPI } = await getTaskServiceFunctions();
           await addTaskToAPI(change.data);
         }
         break;
 
       case 'UPDATE':
         if (change.entityType === 'TASK') {
+          const { updateTaskToAPI } = await getTaskServiceFunctions();
           await updateTaskToAPI(change.data.id || change.data.task_id, change.data);
         }
         break;
 
       case 'DELETE':
         if (change.entityType === 'TASK') {
+          const { deleteTaskFromAPI } = await getTaskServiceFunctions();
           await deleteTaskFromAPI(change.data.id || change.data.task_id);
         }
         break;
@@ -220,6 +234,7 @@ class SyncManager {
       console.log('[SYNC] 🔄 Aggiornamento dati dal server...');
       
       // Carica tasks e categorie dal server
+      const { getTasksFromAPI, getCategoriesFromAPI } = await getTaskServiceFunctions();
       const [tasks, categories] = await Promise.all([
         getTasksFromAPI(),
         getCategoriesFromAPI()
@@ -312,17 +327,23 @@ class SyncManager {
         await this.syncDataFromServer();
         break;
         
-      case 'CREATE_TASK':
+      case 'CREATE_TASK': {
+        const { addTaskToAPI } = await getTaskServiceFunctions();
         await addTaskToAPI(operation.data);
         break;
+      }
         
-      case 'UPDATE_TASK':
+      case 'UPDATE_TASK': {
+        const { updateTaskToAPI } = await getTaskServiceFunctions();
         await updateTaskToAPI(operation.data.id, operation.data.task);
         break;
+      }
         
-      case 'DELETE_TASK':
+      case 'DELETE_TASK': {
+        const { deleteTaskFromAPI } = await getTaskServiceFunctions();
         await deleteTaskFromAPI(operation.data.id);
         break;
+      }
         
       default:
         throw new Error(`Operazione non supportata: ${operation.type}`);

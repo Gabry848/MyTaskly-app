@@ -44,7 +44,6 @@
     },
     "plugins": [
       "expo-asset",
-      "expo-av",
       [
         "expo-splash-screen",
         {

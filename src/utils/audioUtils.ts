@@ -1,4 +1,5 @@
-import { Audio } from 'expo-av';
+import { createAudioPlayer, setAudioModeAsync, requestRecordingPermissionsAsync } from 'expo-audio';
+import type { AudioPlayer as ExpoAudioPlayer } from 'expo-audio/build/AudioModule.types';
 import * as FileSystem from 'expo-file-system';
 import { VoiceProcessor } from '@picovoice/react-native-voice-processor';
 
@@ -274,10 +275,10 @@ export class AudioRecorder {
 
 /**
  * Classe per gestire la riproduzione di chunk audio PCM16
- * Usa expo-av per il playback
+ * Usa expo-audio per il playback
  */
 export class AudioPlayer {
-  private currentSound: Audio.Sound | null = null;
+  private currentPlayer: ExpoAudioPlayer | null = null;
   private chunkBuffer: { index?: number; data: string }[] = [];
   private seenChunkIndexes: Set<number> = new Set();
   private highestIndexedChunk: number = -1;
@@ -353,7 +354,7 @@ export class AudioPlayer {
 
       console.log(`AudioPlayer: ${totalChunks} chunk -> ${pcm16Data.length} bytes PCM16`);
 
-      // Wrappa in WAV per la riproduzione con expo-av
+      // Wrappa in WAV per la riproduzione con expo-audio
       const wavData = wrapPcm16InWav(pcm16Data, AUDIO_CONFIG.SAMPLE_RATE);
       const wavBase64 = encodeBase64(wavData);
 
@@ -362,25 +363,23 @@ export class AudioPlayer {
         encoding: FileSystem.EncodingType.Base64,
       });
 
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: false,
+      await setAudioModeAsync({
         playsInSilentModeIOS: true,
-        staysActiveInBackground: true,
-        shouldDuckAndroid: true,
-        playThroughEarpieceAndroid: false,
+        shouldPlayInBackground: true,
+        shouldRouteThroughEarpiece: false,
       });
 
-      const { sound } = await Audio.Sound.createAsync({ uri: tempPath });
-      this.currentSound = sound;
+      const player = createAudioPlayer({ uri: tempPath });
+      this.currentPlayer = player;
 
-      this.currentSound.setOnPlaybackStatusUpdate(async (status) => {
-        if (status.isLoaded && status.didJustFinish) {
+      player.addListener('playbackStatusUpdate', async (status) => {
+        if (status.didJustFinish) {
           console.log('AudioPlayer: Riproduzione completata');
           await this.onPlaybackComplete(onComplete, tempPath);
         }
       });
 
-      await this.currentSound.playAsync();
+      player.play();
       this.isPlaying = true;
       this.clearChunks();
 
@@ -404,13 +403,13 @@ export class AudioPlayer {
   }
 
   private async onPlaybackComplete(onComplete?: () => void, audioFilePath?: string): Promise<void> {
-    if (this.currentSound) {
+    if (this.currentPlayer) {
       try {
-        await this.currentSound.unloadAsync();
+        this.currentPlayer.remove();
       } catch (error) {
         console.error('Errore cleanup audio:', error);
       }
-      this.currentSound = null;
+      this.currentPlayer = null;
     }
 
     if (audioFilePath) {
@@ -426,14 +425,14 @@ export class AudioPlayer {
   }
 
   async stopPlayback(): Promise<void> {
-    if (this.currentSound) {
+    if (this.currentPlayer) {
       try {
-        await this.currentSound.stopAsync();
-        await this.currentSound.unloadAsync();
+        this.currentPlayer.pause();
+        this.currentPlayer.remove();
       } catch (error) {
         console.error('Errore stop riproduzione:', error);
       }
-      this.currentSound = null;
+      this.currentPlayer = null;
     }
     this.isPlaying = false;
   }
@@ -473,7 +472,7 @@ export function base64ToArrayBuffer(base64: string): ArrayBuffer {
  */
 export async function checkAudioPermissions(): Promise<boolean> {
   try {
-    const { status } = await Audio.requestPermissionsAsync();
+    const { status } = await requestRecordingPermissionsAsync();
     return status === 'granted';
   } catch (error) {
     console.error('Errore controllo permessi audio:', error);
