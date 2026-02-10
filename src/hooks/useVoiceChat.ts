@@ -117,7 +117,7 @@ export function useVoiceChat() {
         shouldAutoStartRecordingRef.current = false;
         setTimeout(() => {
           startRecording();
-        }, 500);
+        }, 150);
       } else if (isMutedRef.current) {
         shouldAutoStartRecordingRef.current = false;
       }
@@ -235,7 +235,7 @@ export function useVoiceChat() {
                 if (audioRecorderRef.current && websocketRef.current?.isReady()) {
                   startRecording();
                 }
-              }, 300);
+              }, 100);
             }
           } else {
             console.log(`[useVoiceChat] Audio in corso (chunks: ${audioPlayerRef.current?.getChunksCount() || 0}, playing: ${isPlaying}), mantengo mute fino a fine riproduzione`);
@@ -264,7 +264,7 @@ export function useVoiceChat() {
                     if (audioRecorderRef.current && websocketRef.current?.isReady()) {
                       startRecording();
                     }
-                  }, 300);
+                  }, 100);
                 }
               } else {
                 // Agent non ha ancora finito, torna in processing
@@ -288,7 +288,7 @@ export function useVoiceChat() {
                 if (audioRecorderRef.current && websocketRef.current?.isReady()) {
                   startRecording();
                 }
-              }, 300);
+              }, 100);
             }
           }
           break;
@@ -313,7 +313,7 @@ export function useVoiceChat() {
               if (audioRecorderRef.current && websocketRef.current?.isReady()) {
                 startRecording();
               }
-            }, 200);
+            }, 100);
           }
           break;
       }
