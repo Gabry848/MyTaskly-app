@@ -1,15 +1,18 @@
 import "./gesture-handler";
-
-import "@expo/metro-runtime"; // Necessary for Fast Refresh on Web
+import "@expo/metro-runtime";
 import { registerRootComponent } from "expo";
-
-// Polyfill for TextEncoder/TextDecoder
 import "fast-text-encoding";
 
-// Importa il navigatore definito in src/navigation/index.tsx
+// Importa Insights
+import * as Insights from 'expo-insights';
+
+// Importa il tuo App component
 import App from "./src/navigation";
 
-// registerRootComponent calls AppRegistry.registerComponent('main', () => App);
-// It also ensures that whether you load the app in Expo Go or in a native build,
-// the environment is set up appropriately
+// Opzionale: puoi aggiungere logica condizionale se vuoi 
+// che Insights tracci solo in produzione (build EAS)
+// if (!__DEV__) {
+//   // Configurazione extra se necessaria in futuro
+// }
+
 registerRootComponent(App);
