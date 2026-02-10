@@ -12,7 +12,6 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
-  withSpring,
 } from 'react-native-reanimated';
 import Svg, { Defs, Pattern, Rect, Circle } from 'react-native-svg';
 import { useNotesState } from '../../context/NotesContext';
@@ -57,31 +56,35 @@ export const NotesCanvas: React.FC = () => {
     initialTranslateY: null as number | null,
   });
 
+  // Traccia se stiamo facendo pinch-to-zoom per ignorare il pan con un solo dito subito dopo
+  const isPinching = useRef(false);
+
+  const clampTranslation = (tx: number, ty: number, currentScale: number) => {
+    const scaledCanvas = CANVAS_SIZE * currentScale;
+    const minX = -(scaledCanvas - screenWidth);
+    const maxX = 0;
+    const minY = -(scaledCanvas - screenHeight);
+    const maxY = 0;
+    return {
+      x: Math.max(minX, Math.min(maxX, tx)),
+      y: Math.max(minY, Math.min(maxY, ty)),
+    };
+  };
+
   const panResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (evt, state) => {
         return Math.abs(state.dx) > 5 || Math.abs(state.dy) > 5;
       },
       onPanResponderGrant: () => {
-        // Chiudi tastiera quando si tocca il canvas
         Keyboard.dismiss();
         lastTranslateX.value = translateX.value;
         lastTranslateY.value = translateY.value;
+        isPinching.current = false;
       },
       onPanResponderMove: (evt, state) => {
-        if (evt.nativeEvent.touches.length === 1) {
-          // Limita il movimento entro i confini della griglia
-          const newX = lastTranslateX.value + state.dx;
-          const newY = lastTranslateY.value + state.dy;
-          
-          const minX = -(CANVAS_SIZE - screenWidth);
-          const maxX = 0;
-          const minY = -(CANVAS_SIZE - screenHeight);
-          const maxY = 0;
-          
-          translateX.value = Math.max(minX, Math.min(maxX, newX));
-          translateY.value = Math.max(minY, Math.min(maxY, newY));
-        } else if (evt.nativeEvent.touches.length === 2) {
+        if (evt.nativeEvent.touches.length === 2) {
+          isPinching.current = true;
           const touch1 = evt.nativeEvent.touches[0];
           const touch2 = evt.nativeEvent.touches[1];
           const distance = Math.sqrt(
@@ -101,31 +104,37 @@ export const NotesCanvas: React.FC = () => {
           }
           
           const scaleRatio = distance / gestureState.current.initialDistance;
-          const newScale = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, gestureState.current.initialScale * scaleRatio));
+          const newScale = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, gestureState.current.initialScale! * scaleRatio));
           
-          // Zoom centrato sul punto focale (centro delle due dita)
           const focalX = gestureState.current.initialCenter!.x;
           const focalY = gestureState.current.initialCenter!.y;
           const oldScale = gestureState.current.initialScale!;
           const initTX = gestureState.current.initialTranslateX!;
           const initTY = gestureState.current.initialTranslateY!;
           
-          // Calcola la nuova traslazione per mantenere il punto focale stabile
           translateX.value = focalX - (focalX - initTX) * (newScale / oldScale);
           translateY.value = focalY - (focalY - initTY) * (newScale / oldScale);
           
           scale.value = newScale;
+        } else if (evt.nativeEvent.touches.length === 1 && !isPinching.current) {
+          const newX = lastTranslateX.value + state.dx;
+          const newY = lastTranslateY.value + state.dy;
+          const clamped = clampTranslation(newX, newY, scale.value);
+          translateX.value = clamped.x;
+          translateY.value = clamped.y;
         }
       },
       onPanResponderRelease: () => {
+        // Clamp position within valid bounds for current scale
+        const clamped = clampTranslation(translateX.value, translateY.value, scale.value);
+        translateX.value = clamped.x;
+        translateY.value = clamped.y;
+
         lastTranslateX.value = translateX.value;
         lastTranslateY.value = translateY.value;
         lastScale.value = scale.value;
         
-        translateX.value = withSpring(translateX.value);
-        translateY.value = withSpring(translateY.value);
-        scale.value = withSpring(scale.value);
-        
+        isPinching.current = false;
         gestureState.current.initialDistance = null;
         gestureState.current.initialScale = null;
         gestureState.current.initialCenter = null;
