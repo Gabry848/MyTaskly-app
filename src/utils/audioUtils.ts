@@ -283,6 +283,7 @@ export class AudioPlayer {
   private seenChunkIndexes: Set<number> = new Set();
   private highestIndexedChunk: number = -1;
   private isPlaying: boolean = false;
+  private playbackCompleteHandled: boolean = false;
 
   /**
    * Aggiunge un chunk PCM16 base64 al buffer
@@ -372,8 +373,11 @@ export class AudioPlayer {
       const player = createAudioPlayer({ uri: tempPath });
       this.currentPlayer = player;
 
+      this.playbackCompleteHandled = false;
+
       player.addListener('playbackStatusUpdate', async (status) => {
-        if (status.didJustFinish) {
+        if (status.didJustFinish && !this.playbackCompleteHandled) {
+          this.playbackCompleteHandled = true;
           console.log('AudioPlayer: Riproduzione completata');
           await this.onPlaybackComplete(onComplete, tempPath);
         }

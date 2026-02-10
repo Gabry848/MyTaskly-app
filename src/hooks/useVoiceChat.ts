@@ -71,6 +71,7 @@ export function useVoiceChat() {
   const agentEndedRef = useRef<boolean>(true); // true = agent ha finito, possiamo registrare
   const isMutedRef = useRef<boolean>(false);
   const isManuallyMutedRef = useRef<boolean>(false); // Distingue tra mute manuale e automatico
+  const isStartingRecordingRef = useRef<boolean>(false); // Previene avvii concorrenti di registrazione
 
   /**
    * Verifica e richiede i permessi audio
@@ -430,6 +431,14 @@ export function useVoiceChat() {
       return false;
     }
 
+    // Previeni avvii concorrenti (es. doppio onComplete)
+    if (isStartingRecordingRef.current || audioRecorderRef.current.isCurrentlyRecording()) {
+      console.log('[useVoiceChat] Registrazione già in corso o in avvio, ignorato');
+      return false;
+    }
+
+    isStartingRecordingRef.current = true;
+
     try {
       // Callback invocato per ogni chunk audio PCM16 a 24kHz
       // Converte base64 in ArrayBuffer e lo invia come binary frame
@@ -445,11 +454,13 @@ export function useVoiceChat() {
       const started = await audioRecorderRef.current.startRecording(onChunk);
       if (!started) {
         setError('Impossibile avviare la registrazione');
+        isStartingRecordingRef.current = false;
         return false;
       }
 
       setState('recording');
       setError(null);
+      isStartingRecordingRef.current = false;
 
       // Aggiorna la durata della registrazione ogni 100ms
       recordingIntervalRef.current = setInterval(() => {
@@ -463,6 +474,7 @@ export function useVoiceChat() {
       console.error('Errore avvio registrazione:', err);
       setError('Errore durante la registrazione');
       setState('error');
+      isStartingRecordingRef.current = false;
       return false;
     }
   }, []);
