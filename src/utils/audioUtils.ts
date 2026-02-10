@@ -1,13 +1,13 @@
-import { createAudioPlayer, setAudioModeAsync, requestRecordingPermissionsAsync } from 'expo-audio';
-import type { AudioPlayer as ExpoAudioPlayer } from 'expo-audio/build/AudioModule.types';
+import { requestRecordingPermissionsAsync } from 'expo-audio';
 import * as FileSystem from 'expo-file-system';
 import { VoiceProcessor } from '@picovoice/react-native-voice-processor';
+import TrackPlayer, { State, Event, AndroidAudioContentType } from 'react-native-track-player';
 
 /**
  * Utility per la gestione dell'audio nella chat vocale
  * Registrazione: @picovoice/react-native-voice-processor (streaming frames PCM16)
- * Riproduzione: expo-av (playback WAV)
- * Server richiede PCM16 a 24kHz, VoiceProcessor registra a 16kHz -> resample necessario
+ * Riproduzione: react-native-track-player (streaming playback con queue)
+ * Server richiede PCM16 a 24kHz, VoiceProcessor registra a 24kHz direttamente
  */
 
 /**
@@ -274,171 +274,191 @@ export class AudioRecorder {
 }
 
 /**
- * Classe per gestire la riproduzione di chunk audio PCM16
- * Usa expo-audio per il playback
+ * Classe per gestire la riproduzione streaming di chunk audio PCM16 con react-native-track-player.
+ * Ogni chunk viene scritto come file WAV temporaneo e aggiunto alla queue di TrackPlayer,
+ * consentendo la riproduzione in streaming senza attendere tutti i chunk.
  */
 export class AudioPlayer {
-  private currentPlayer: ExpoAudioPlayer | null = null;
-  private chunkBuffer: { index?: number; data: string }[] = [];
-  private seenChunkIndexes: Set<number> = new Set();
-  private highestIndexedChunk: number = -1;
   private isPlaying: boolean = false;
-  private playbackCompleteHandled: boolean = false;
+  private isSetup: boolean = false;
+  private tempFiles: string[] = [];
+  private chunkCounter: number = 0;
+  private onCompleteCallback: (() => void) | null = null;
+  private queueEndedListener: any = null;
+  private allChunksReceived: boolean = false;
 
   /**
-   * Aggiunge un chunk PCM16 base64 al buffer
+   * Inizializza TrackPlayer se non ancora configurato
    */
-  addChunk(base64Data: string, chunkIndex?: number): boolean {
-    if (typeof chunkIndex === 'number') {
-      if (this.seenChunkIndexes.has(chunkIndex)) {
-        console.warn(`Chunk duplicato (indice ${chunkIndex}) - ignorato`);
-        return false;
-      }
+  async setup(): Promise<void> {
+    if (this.isSetup) return;
 
-      if (this.highestIndexedChunk >= 0 && chunkIndex < this.highestIndexedChunk) {
-        console.warn(`Chunk fuori ordine: indice ${chunkIndex} dopo ${this.highestIndexedChunk}`);
+    try {
+      await TrackPlayer.setupPlayer({
+        autoHandleInterruptions: true,
+        androidAudioContentType: AndroidAudioContentType.Speech,
+      });
+      this.isSetup = true;
+      console.log('TrackPlayer: Setup completato');
+    } catch (error: any) {
+      // Il player potrebbe essere già inizializzato da una sessione precedente
+      if (error?.message?.includes('already been initialized')) {
+        this.isSetup = true;
+      } else {
+        console.error('TrackPlayer: Errore setup:', error);
+        throw error;
       }
-
-      this.seenChunkIndexes.add(chunkIndex);
-      this.highestIndexedChunk = Math.max(this.highestIndexedChunk, chunkIndex);
     }
-
-    this.chunkBuffer.push({ index: chunkIndex, data: base64Data });
-    return true;
   }
 
   /**
-   * Concatena tutti i chunk PCM16, li wrappa in WAV e li riproduce
+   * Aggiunge un chunk PCM16 base64 direttamente alla queue di TrackPlayer.
+   * Il chunk viene wrappato in WAV, scritto su file e aggiunto alla queue.
+   * Se è il primo chunk, avvia la riproduzione immediatamente.
    */
-  async playPcm16Chunks(onComplete?: () => void): Promise<boolean> {
-    const totalChunks = this.getChunksCount();
-    if (totalChunks === 0) {
-      console.log('AudioPlayer: Nessun chunk da riprodurre');
-      return false;
-    }
-
+  async addChunk(base64Data: string, chunkIndex?: number): Promise<boolean> {
     try {
-      // Ordina i chunk per indice
-      const indexedChunks = this.chunkBuffer
-        .filter(chunk => typeof chunk.index === 'number')
-        .sort((a, b) => (a.index as number) - (b.index as number));
-      const nonIndexedChunks = this.chunkBuffer.filter(chunk => typeof chunk.index !== 'number');
-      const allChunks = [...indexedChunks, ...nonIndexedChunks];
+      await this.setup();
 
-      if (allChunks.length === 0) {
-        this.clearChunks();
-        return false;
-      }
+      const binary = decodeBase64(base64Data);
+      if (binary.length === 0) return false;
 
-      // Decodifica tutti i chunk in binario
-      const binaryChunks: Uint8Array[] = [];
-      for (const chunk of allChunks) {
-        const binary = decodeBase64(chunk.data);
-        if (binary.length > 0) {
-          binaryChunks.push(binary);
-        }
-      }
-
-      if (binaryChunks.length === 0) {
-        this.clearChunks();
-        return false;
-      }
-
-      // Concatena tutti i dati PCM16
-      const totalLength = binaryChunks.reduce((acc, c) => acc + c.length, 0);
-      const pcm16Data = new Uint8Array(totalLength);
-      let offset = 0;
-      for (const chunk of binaryChunks) {
-        pcm16Data.set(chunk, offset);
-        offset += chunk.length;
-      }
-
-      console.log(`AudioPlayer: ${totalChunks} chunk -> ${pcm16Data.length} bytes PCM16`);
-
-      // Wrappa in WAV per la riproduzione con expo-audio
-      const wavData = wrapPcm16InWav(pcm16Data, AUDIO_CONFIG.SAMPLE_RATE);
+      // Wrappa in WAV
+      const wavData = wrapPcm16InWav(binary, AUDIO_CONFIG.SAMPLE_RATE);
       const wavBase64 = encodeBase64(wavData);
 
-      const tempPath = `${FileSystem.documentDirectory}voice_response_${Date.now()}.wav`;
+      // Scrivi file temporaneo
+      const tempPath = `${FileSystem.cacheDirectory}voice_chunk_${Date.now()}_${this.chunkCounter}.wav`;
       await FileSystem.writeAsStringAsync(tempPath, wavBase64, {
         encoding: FileSystem.EncodingType.Base64,
       });
+      this.tempFiles.push(tempPath);
 
-      await setAudioModeAsync({
-        playsInSilentModeIOS: true,
-        shouldPlayInBackground: true,
-        shouldRouteThroughEarpiece: false,
+      // Aggiungi alla queue di TrackPlayer
+      await TrackPlayer.add({
+        id: `voice_chunk_${this.chunkCounter}`,
+        url: tempPath,
+        title: 'Risposta vocale',
+        artist: 'MyTaskly',
       });
 
-      const player = createAudioPlayer({ uri: tempPath });
-      this.currentPlayer = player;
+      this.chunkCounter++;
 
-      this.playbackCompleteHandled = false;
+      // Avvia la riproduzione al primo chunk
+      if (!this.isPlaying) {
+        this.isPlaying = true;
+        await TrackPlayer.play();
+        console.log('TrackPlayer: Riproduzione streaming avviata');
+      }
 
-      player.addListener('playbackStatusUpdate', async (status) => {
-        if (status.didJustFinish && !this.playbackCompleteHandled) {
-          this.playbackCompleteHandled = true;
-          console.log('AudioPlayer: Riproduzione completata');
-          await this.onPlaybackComplete(onComplete, tempPath);
-        }
-      });
-
-      player.play();
-      this.isPlaying = true;
-      this.clearChunks();
-
-      console.log('AudioPlayer: Riproduzione WAV avviata');
       return true;
-
     } catch (error) {
-      console.error('AudioPlayer: Errore riproduzione PCM16:', error);
-      this.clearChunks();
+      console.error('TrackPlayer: Errore aggiunta chunk:', error);
       return false;
     }
   }
 
   /**
-   * Svuota i chunk accumulati
+   * Segnala che tutti i chunk sono stati ricevuti (audio_end).
+   * Registra il listener per la fine della queue per invocare onComplete.
    */
-  clearChunks(): void {
-    this.chunkBuffer = [];
-    this.seenChunkIndexes.clear();
-    this.highestIndexedChunk = -1;
-  }
+  async signalAllChunksReceived(onComplete?: () => void): Promise<void> {
+    this.allChunksReceived = true;
+    this.onCompleteCallback = onComplete || null;
 
-  private async onPlaybackComplete(onComplete?: () => void, audioFilePath?: string): Promise<void> {
-    if (this.currentPlayer) {
-      try {
-        this.currentPlayer.remove();
-      } catch (error) {
-        console.error('Errore cleanup audio:', error);
-      }
-      this.currentPlayer = null;
+    // Se non sta riproducendo (nessun chunk ricevuto), completa subito
+    if (!this.isPlaying) {
+      this.handlePlaybackComplete();
+      return;
     }
 
-    if (audioFilePath) {
-      try {
-        await FileSystem.deleteAsync(audioFilePath);
-      } catch {
-        // Ignora errore eliminazione file temp
+    // Controlla se la riproduzione è già terminata
+    const state = await TrackPlayer.getPlaybackState();
+    if (state.state === State.Ended || state.state === State.Stopped) {
+      this.handlePlaybackComplete();
+      return;
+    }
+
+    // Registra listener per la fine della queue
+    this.queueEndedListener = TrackPlayer.addEventListener(
+      Event.PlaybackQueueEnded,
+      () => {
+        console.log('TrackPlayer: Queue terminata');
+        this.handlePlaybackComplete();
       }
+    );
+  }
+
+  /**
+   * Gestisce la fine della riproduzione: cleanup e callback
+   */
+  private async handlePlaybackComplete(): Promise<void> {
+    // Rimuovi il listener
+    if (this.queueEndedListener) {
+      this.queueEndedListener.remove();
+      this.queueEndedListener = null;
     }
 
     this.isPlaying = false;
-    onComplete?.();
+    console.log('TrackPlayer: Riproduzione completata');
+
+    // Reset TrackPlayer
+    try {
+      await TrackPlayer.reset();
+    } catch (error) {
+      console.error('TrackPlayer: Errore reset:', error);
+    }
+
+    // Pulisci file temporanei
+    await this.cleanupTempFiles();
+
+    // Invoca callback
+    const callback = this.onCompleteCallback;
+    this.onCompleteCallback = null;
+    this.allChunksReceived = false;
+    this.chunkCounter = 0;
+    callback?.();
+  }
+
+  /**
+   * Elimina i file WAV temporanei
+   */
+  private async cleanupTempFiles(): Promise<void> {
+    for (const filePath of this.tempFiles) {
+      try {
+        await FileSystem.deleteAsync(filePath, { idempotent: true });
+      } catch {
+        // Ignora errori di eliminazione
+      }
+    }
+    this.tempFiles = [];
+  }
+
+  /**
+   * Svuota lo stato interno (senza fermare la riproduzione)
+   */
+  clearChunks(): void {
+    this.allChunksReceived = false;
+    this.chunkCounter = 0;
   }
 
   async stopPlayback(): Promise<void> {
-    if (this.currentPlayer) {
-      try {
-        this.currentPlayer.pause();
-        this.currentPlayer.remove();
-      } catch (error) {
-        console.error('Errore stop riproduzione:', error);
-      }
-      this.currentPlayer = null;
+    if (this.queueEndedListener) {
+      this.queueEndedListener.remove();
+      this.queueEndedListener = null;
     }
+
+    try {
+      await TrackPlayer.reset();
+    } catch (error) {
+      console.error('TrackPlayer: Errore stop:', error);
+    }
+
     this.isPlaying = false;
+    this.onCompleteCallback = null;
+    this.allChunksReceived = false;
+    this.chunkCounter = 0;
+    await this.cleanupTempFiles();
   }
 
   isCurrentlyPlaying(): boolean {
@@ -446,12 +466,11 @@ export class AudioPlayer {
   }
 
   getChunksCount(): number {
-    return this.chunkBuffer.length;
+    return this.chunkCounter;
   }
 
   async destroy(): Promise<void> {
     await this.stopPlayback();
-    this.clearChunks();
   }
 }
 

@@ -244,12 +244,14 @@ export function useVoiceChat() {
           break;
 
         case 'audio_end':
-          // Server ha finito di inviare chunk audio per questo segmento
+          // Server ha finito di inviare chunk audio per questo segmento.
+          // Con TrackPlayer la riproduzione è già in corso in streaming.
+          // Segnaliamo che non arriveranno altri chunk per gestire il completamento.
           if (audioPlayerRef.current && audioPlayerRef.current.getChunksCount() > 0) {
             setState('speaking');
-            console.log(`[useVoiceChat] Avvio riproduzione audio (${audioPlayerRef.current.getChunksCount()} chunk) - mantengo auto-mute`);
-            audioPlayerRef.current.playPcm16Chunks(() => {
-              console.log('[useVoiceChat] Riproduzione completata');
+            console.log(`[useVoiceChat] audio_end ricevuto (${audioPlayerRef.current.getChunksCount()} chunk) - riproduzione streaming in corso`);
+            audioPlayerRef.current.signalAllChunksReceived(() => {
+              console.log('[useVoiceChat] Riproduzione streaming completata');
               // Riattiva il microfono SOLO se l'agent ha finito completamente
               if (agentEndedRef.current) {
                 console.log('[useVoiceChat] Agent finito, auto-unmute e riavvio registrazione');
@@ -322,8 +324,14 @@ export function useVoiceChat() {
 
     onAudioChunk: (audioData: string, chunkIndex: number) => {
       if (audioPlayerRef.current) {
-        audioPlayerRef.current.addChunk(audioData, chunkIndex);
+        // Aggiunge il chunk alla queue di TrackPlayer e avvia riproduzione streaming
+        audioPlayerRef.current.addChunk(audioData, chunkIndex).catch(err => {
+          console.error('[useVoiceChat] Errore aggiunta chunk a TrackPlayer:', err);
+        });
         setChunksReceived(prev => prev + 1);
+
+        // Transiziona a 'speaking' al primo chunk ricevuto
+        setState(prev => prev !== 'speaking' ? 'speaking' : prev);
       }
     },
 

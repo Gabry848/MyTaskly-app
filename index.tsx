@@ -2,6 +2,8 @@ import "./gesture-handler";
 import "@expo/metro-runtime";
 import { registerRootComponent } from "expo";
 import "fast-text-encoding";
+import TrackPlayer from "react-native-track-player";
+import { PlaybackService } from "./src/services/PlaybackService";
 
 // Importa Insights
 import * as Insights from 'expo-insights';
@@ -16,3 +18,6 @@ import App from "./src/navigation";
 // }
 
 registerRootComponent(App);
+
+// Registra il playback service per react-native-track-player
+TrackPlayer.registerPlaybackService(() => PlaybackService);
