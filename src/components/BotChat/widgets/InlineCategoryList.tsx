@@ -82,7 +82,7 @@ const InlineCategoryList: React.FC<InlineCategoryListProps> = React.memo(({ widg
             )}
 
             {/* Arrow icon */}
-            <Ionicons name="chevron-forward" size={20} color="#CCCCCC" />
+            <Ionicons name="chevron-forward" size={20} color="#999999" />
           </TouchableOpacity>
         );
       })}
@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
     marginVertical: 4,
   },
   emptyContainer: {
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#F8F8F8',
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',

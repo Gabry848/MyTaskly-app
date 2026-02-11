@@ -230,7 +230,7 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                     : 'document-text'
                 }
                 size={48}
-                color={itemType === 'note' ? '#FFFFFF' : '#007AFF'}
+                color={itemType === 'note' ? '#FFFFFF' : '#000000'}
               />
             </View>
           </View>
@@ -316,7 +316,7 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: '#E5F1FF',
+    backgroundColor: '#F0F0F0',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -347,12 +347,12 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   completedText: {
-    color: '#34C759',
+    color: '#000000',
     fontWeight: '600',
   },
   categoryBadge: {
     alignSelf: 'flex-start',
-    backgroundColor: '#E5F1FF',
+    backgroundColor: '#F0F0F0',
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -360,7 +360,7 @@ const styles = StyleSheet.create({
   categoryBadgeText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#007AFF',
+    color: '#000000',
   },
   actionsContainer: {
     paddingHorizontal: 16,
@@ -379,10 +379,10 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   primaryButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#000000',
   },
   destructiveButton: {
-    backgroundColor: '#FF3B30',
+    backgroundColor: '#666666',
   },
   actionButtonText: {
     fontSize: 16,

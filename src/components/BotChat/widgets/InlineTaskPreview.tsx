@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
     marginVertical: 4,
   },
   emptyContainer: {
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#F8F8F8',
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
@@ -112,11 +112,13 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   moreTasksContainer: {
-    backgroundColor: '#F0F0F0',
+    backgroundColor: '#FFFFFF',
     borderRadius: 8,
     padding: 12,
     alignItems: 'center',
     marginTop: 4,
+    borderWidth: 1,
+    borderColor: '#E1E5E9',
   },
   moreTasksText: {
     fontSize: 13,
