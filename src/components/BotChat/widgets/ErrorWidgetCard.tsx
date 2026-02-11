@@ -41,12 +41,14 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFE5E5',
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 12,
     marginVertical: 8,
-    borderWidth: 1,
-    borderColor: '#FFCCCC',
+    borderWidth: 1.5,
+    borderColor: '#E1E5E9',
+    borderLeftWidth: 4,
+    borderLeftColor: '#FF3B30',
   },
   iconContainer: {
     marginRight: 12,
