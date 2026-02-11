@@ -101,7 +101,7 @@ export enum WebSocketAuthState {
  * Callback per gestire i diversi tipi di risposta dal WebSocket vocale
  */
 export interface VoiceChatCallbacks {
-  onStatus?: (phase: VoiceServerPhase, message: string) => void;
+  onStatus?: (phase: VoiceServerPhase, message: string) => void | Promise<void>;
   onAudioChunk?: (audioData: string, chunkIndex: number) => void;
   onTranscript?: (role: 'user' | 'assistant', content: string) => void;
   onToolCall?: (toolName: string, args: string) => void;

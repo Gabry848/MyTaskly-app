@@ -281,18 +281,40 @@ export class AudioRecorder {
 export class AudioPlayer {
   private isPlaying: boolean = false;
   private isSetup: boolean = false;
+  private isSettingUp: boolean = false;
+  private setupPromise: Promise<void> | null = null;
   private tempFiles: string[] = [];
   private chunkCounter: number = 0;
+  private pendingChunks: number = 0; // Incrementato SINCRONAMENTE prima dell'async
   private onCompleteCallback: (() => void) | null = null;
   private queueEndedListener: any = null;
   private allChunksReceived: boolean = false;
 
   /**
-   * Inizializza TrackPlayer se non ancora configurato
+   * Inizializza TrackPlayer se non ancora configurato.
+   * Usa un pattern singleton per evitare setup multipli concorrenti.
    */
   async setup(): Promise<void> {
     if (this.isSetup) return;
 
+    // Se è già in corso un setup, attendi quello
+    if (this.isSettingUp && this.setupPromise) {
+      await this.setupPromise;
+      return;
+    }
+
+    this.isSettingUp = true;
+    this.setupPromise = this._doSetup();
+
+    try {
+      await this.setupPromise;
+    } finally {
+      this.isSettingUp = false;
+      this.setupPromise = null;
+    }
+  }
+
+  private async _doSetup(): Promise<void> {
     try {
       await TrackPlayer.setupPlayer({
         autoHandleInterruptions: true,
@@ -312,16 +334,37 @@ export class AudioPlayer {
   }
 
   /**
+   * Pre-inizializza TrackPlayer anticipatamente (da chiamare all'avvio sessione).
+   * Evita il ritardo del primo addChunk().
+   */
+  async preSetup(): Promise<void> {
+    try {
+      await this.setup();
+    } catch (error) {
+      console.error('TrackPlayer: Errore pre-setup:', error);
+    }
+  }
+
+  /**
    * Aggiunge un chunk PCM16 base64 direttamente alla queue di TrackPlayer.
    * Il chunk viene wrappato in WAV, scritto su file e aggiunto alla queue.
    * Se è il primo chunk, avvia la riproduzione immediatamente.
    */
   async addChunk(base64Data: string, chunkIndex?: number): Promise<boolean> {
+    // Incrementa il contatore SINCRONAMENTE prima di qualsiasi operazione async.
+    // Questo garantisce che getChunksCount() e hasPendingChunks() riflettano
+    // immediatamente la presenza di chunk in arrivo, evitando race conditions
+    // con agent_end/audio_end che controllano se c'è audio da riprodurre.
+    this.pendingChunks++;
+
     try {
       await this.setup();
 
       const binary = decodeBase64(base64Data);
-      if (binary.length === 0) return false;
+      if (binary.length === 0) {
+        this.pendingChunks--;
+        return false;
+      }
 
       // Wrappa in WAV
       const wavData = wrapPcm16InWav(binary, AUDIO_CONFIG.SAMPLE_RATE);
@@ -343,6 +386,7 @@ export class AudioPlayer {
       });
 
       this.chunkCounter++;
+      this.pendingChunks--;
 
       // Avvia la riproduzione al primo chunk
       if (!this.isPlaying) {
@@ -351,8 +395,25 @@ export class AudioPlayer {
         console.log('TrackPlayer: Riproduzione streaming avviata');
       }
 
+      // Se tutti i chunk sono stati segnalati (audio_end ricevuto) e non ci sono
+      // altri chunk in attesa, ora possiamo configurare il listener di completamento.
+      // Questo gestisce il caso in cui audio_end arriva mentre i chunk sono ancora
+      // in fase di scrittura su file.
+      if (this.allChunksReceived && this.pendingChunks === 0 && !this.queueEndedListener) {
+        console.log(`TrackPlayer: Ultimo chunk pending processato, configuro listener completamento (${this.chunkCounter} chunk totali)`);
+        this.setupQueueEndedListener();
+      }
+
       return true;
     } catch (error) {
+      this.pendingChunks--;
+
+      // Anche in caso di errore, se era l'ultimo pending e allChunksReceived,
+      // dobbiamo configurare il completamento
+      if (this.allChunksReceived && this.pendingChunks === 0 && !this.queueEndedListener) {
+        this.setupQueueEndedListener();
+      }
+
       console.error('TrackPlayer: Errore aggiunta chunk:', error);
       return false;
     }
@@ -360,23 +421,60 @@ export class AudioPlayer {
 
   /**
    * Segnala che tutti i chunk sono stati ricevuti (audio_end).
-   * Registra il listener per la fine della queue per invocare onComplete.
+   * Se ci sono chunk ancora in fase di processamento (pendingChunks > 0),
+   * il listener di completamento verrà configurato da addChunk() quando
+   * l'ultimo chunk pending viene processato.
    */
   async signalAllChunksReceived(onComplete?: () => void): Promise<void> {
     this.allChunksReceived = true;
     this.onCompleteCallback = onComplete || null;
 
-    // Se non sta riproducendo (nessun chunk ricevuto), completa subito
+    // Se ci sono chunk ancora in fase di processamento async (scrittura file WAV),
+    // NON configurare il listener ora. addChunk() lo farà dopo aver processato
+    // l'ultimo chunk pending.
+    if (this.pendingChunks > 0) {
+      console.log(`TrackPlayer: ${this.pendingChunks} chunk ancora in elaborazione, listener differito`);
+      return;
+    }
+
+    // Nessun chunk pending. Se non sta nemmeno riproducendo (nessun chunk mai ricevuto),
+    // completa subito.
+    if (!this.isPlaying && this.chunkCounter === 0) {
+      console.log('TrackPlayer: Nessun chunk ricevuto, completamento immediato');
+      this.handlePlaybackComplete();
+      return;
+    }
+
+    // Tutti i chunk sono stati aggiunti alla queue, configura il listener
+    this.setupQueueEndedListener();
+  }
+
+  /**
+   * Configura il listener per la fine della riproduzione della queue.
+   * Controlla prima se la riproduzione è già terminata.
+   */
+  private async setupQueueEndedListener(): Promise<void> {
+    // Safety: rimuovi listener precedente se presente
+    if (this.queueEndedListener) {
+      this.queueEndedListener.remove();
+      this.queueEndedListener = null;
+    }
+
+    // Se non sta riproducendo (tutti i chunk sono falliti?), completa subito
     if (!this.isPlaying) {
       this.handlePlaybackComplete();
       return;
     }
 
     // Controlla se la riproduzione è già terminata
-    const state = await TrackPlayer.getPlaybackState();
-    if (state.state === State.Ended || state.state === State.Stopped) {
-      this.handlePlaybackComplete();
-      return;
+    try {
+      const state = await TrackPlayer.getPlaybackState();
+      if (state.state === State.Ended || state.state === State.Stopped) {
+        this.handlePlaybackComplete();
+        return;
+      }
+    } catch (error) {
+      console.error('TrackPlayer: Errore verifica stato:', error);
     }
 
     // Registra listener per la fine della queue
@@ -440,6 +538,7 @@ export class AudioPlayer {
   clearChunks(): void {
     this.allChunksReceived = false;
     this.chunkCounter = 0;
+    this.pendingChunks = 0;
   }
 
   async stopPlayback(): Promise<void> {
@@ -458,6 +557,7 @@ export class AudioPlayer {
     this.onCompleteCallback = null;
     this.allChunksReceived = false;
     this.chunkCounter = 0;
+    this.pendingChunks = 0;
     await this.cleanupTempFiles();
   }
 
@@ -467,6 +567,14 @@ export class AudioPlayer {
 
   getChunksCount(): number {
     return this.chunkCounter;
+  }
+
+  /**
+   * Restituisce true se ci sono chunk in fase di processamento (non ancora aggiunti alla queue)
+   * o già aggiunti alla queue. Utile per evitare premature auto-unmute.
+   */
+  hasPendingOrQueuedChunks(): boolean {
+    return this.pendingChunks > 0 || this.chunkCounter > 0;
   }
 
   async destroy(): Promise<void> {
