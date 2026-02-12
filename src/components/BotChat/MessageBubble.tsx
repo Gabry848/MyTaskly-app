@@ -42,6 +42,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style, isVoiceCh
   const [editCategoryDescription, setEditCategoryDescription] = useState('');
   const [isEditingCategory, setIsEditingCategory] = useState(false);
   const [isDeletingCategory, setIsDeletingCategory] = useState(false);
+  const [, forceWidgetRerender] = useState(0);
 
   // Animazioni per i punti di streaming
   const streamingDot1 = useRef(new Animated.Value(0.5)).current;
@@ -294,6 +295,28 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style, isVoiceCh
         name: editCategoryName.trim(),
         description: editCategoryDescription.trim()
       });
+
+      // Aggiorna il widget inline con i nuovi dati della categoria
+      if (selectedCategoryForEdit._sourceWidgetId && message.toolWidgets) {
+        const widget = message.toolWidgets.find(w => w.id === selectedCategoryForEdit._sourceWidgetId);
+        if (widget) {
+          if (widget.toolOutput?.category) {
+            widget.toolOutput.category.name = editCategoryName.trim();
+            widget.toolOutput.category.description = editCategoryDescription.trim();
+          }
+          if (widget.toolArgs) {
+            try {
+              const args = typeof widget.toolArgs === 'string' ? JSON.parse(widget.toolArgs) : widget.toolArgs;
+              args.name = editCategoryName.trim();
+              args.description = editCategoryDescription.trim();
+              widget.toolArgs = typeof widget.toolArgs === 'string' ? JSON.stringify(args) : args;
+            } catch (e) {
+              // Ignora errori di parsing
+            }
+          }
+          forceWidgetRerender(c => c + 1);
+        }
+      }
 
       setCategoryEditModalVisible(false);
       setSelectedCategoryForEdit(null);

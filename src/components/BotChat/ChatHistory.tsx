@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  ActivityIndicator,
+  Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ChatHistoryItem, ChatHistoryItemData } from './ChatHistoryItem';
@@ -49,6 +49,39 @@ export const ChatHistory: React.FC<ChatHistoryProps> = ({
   const [skip, setSkip] = useState<number>(0);
   const LIMIT = 20;
   const isLoadingRef = React.useRef<boolean>(false);
+
+  // 3-dot loading animation (same pattern as VoiceChatModal)
+  const dot1Opacity = useRef(new Animated.Value(0.3)).current;
+  const dot2Opacity = useRef(new Animated.Value(0.3)).current;
+  const dot3Opacity = useRef(new Animated.Value(0.3)).current;
+
+  useEffect(() => {
+    if (loading) {
+      const animateDots = Animated.loop(
+        Animated.stagger(200, [
+          Animated.sequence([
+            Animated.timing(dot1Opacity, { toValue: 1, duration: 400, useNativeDriver: true }),
+            Animated.timing(dot1Opacity, { toValue: 0.3, duration: 400, useNativeDriver: true }),
+          ]),
+          Animated.sequence([
+            Animated.timing(dot2Opacity, { toValue: 1, duration: 400, useNativeDriver: true }),
+            Animated.timing(dot2Opacity, { toValue: 0.3, duration: 400, useNativeDriver: true }),
+          ]),
+          Animated.sequence([
+            Animated.timing(dot3Opacity, { toValue: 1, duration: 400, useNativeDriver: true }),
+            Animated.timing(dot3Opacity, { toValue: 0.3, duration: 400, useNativeDriver: true }),
+          ]),
+        ])
+      );
+      animateDots.start();
+      return () => {
+        animateDots.stop();
+        dot1Opacity.setValue(0.3);
+        dot2Opacity.setValue(0.3);
+        dot3Opacity.setValue(0.3);
+      };
+    }
+  }, [loading]);
 
   const loadChatHistory = async (reset: boolean = false) => {
     // Prevent concurrent loads
@@ -196,12 +229,20 @@ export const ChatHistory: React.FC<ChatHistoryProps> = ({
     </View>
   );
 
+  const renderLoadingDots = () => (
+    <View style={styles.loadingDots}>
+      <Animated.View style={[styles.loadingDot, { opacity: dot1Opacity }]} />
+      <Animated.View style={[styles.loadingDot, { opacity: dot2Opacity }]} />
+      <Animated.View style={[styles.loadingDot, { opacity: dot3Opacity }]} />
+    </View>
+  );
+
   const renderEmptyState = () => {
     if (loading) {
       return (
         <View style={styles.emptyContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
-          <Text style={styles.emptySubtitle}>Loading chat history...</Text>
+          {renderLoadingDots()}
+          <Text style={[styles.emptySubtitle, { marginTop: 16 }]}>Loading chat history...</Text>
         </View>
       );
     }
@@ -244,13 +285,7 @@ export const ChatHistory: React.FC<ChatHistoryProps> = ({
   );
 
   const renderFooter = () => {
-    if (!loadingMore) return null;
-
-    return (
-      <View style={styles.footerLoader}>
-        <ActivityIndicator size="small" color="#007AFF" />
-      </View>
-    );
+    return null;
   };
 
   return (
@@ -264,7 +299,7 @@ export const ChatHistory: React.FC<ChatHistoryProps> = ({
         ListEmptyComponent={renderEmptyState}
         ListFooterComponent={renderFooter}
         showsVerticalScrollIndicator={false}
-        refreshing={refreshing}
+        refreshing={!loading && refreshing}
         onRefresh={handlePullRefresh}
         onEndReached={loadMoreChats}
         onEndReachedThreshold={0.5}
@@ -364,5 +399,18 @@ const styles = StyleSheet.create({
   footerLoader: {
     paddingVertical: 20,
     alignItems: 'center',
+  },
+  loadingDots: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    height: 24,
+  },
+  loadingDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#333333',
   },
 });

@@ -8,8 +8,8 @@ import VisualizationWidget from './VisualizationWidget';
  * Router component che decide quale widget renderizzare in base al tipo di tool
  */
 const WidgetBubble: React.FC<WidgetBubbleProps> = ({ widget, onOpenVisualization, onOpenItemDetail, onTaskPress, onCategoryPress }) => {
-  // Lista dei tool di visualizzazione
-  const visualizationTools = ['show_tasks_to_user', 'show_categories_to_user', 'show_notes_to_user'];
+  // Lista dei tool di visualizzazione (include anche i tool "get" che recuperano dati)
+  const visualizationTools = ['show_tasks_to_user', 'show_categories_to_user', 'show_notes_to_user', 'get_my_categories', 'get_my_tasks', 'get_my_notes'];
 
   // Se è un tool di visualizzazione (anche in loading)
   const isVisualizationTool = visualizationTools.includes(widget.toolName);
@@ -80,6 +80,8 @@ const WidgetBubble: React.FC<WidgetBubbleProps> = ({ widget, onOpenVisualization
           // Assicurati che i campi necessari per CategoryMenu siano presenti
           isOwned: output.category.isOwned !== undefined ? output.category.isOwned : true,
           permissionLevel: output.category.permissionLevel || "READ_WRITE",
+          // Riferimento al widget sorgente per aggiornamento inline dopo modifica
+          _sourceWidgetId: widget.id,
         };
         console.log('[WidgetBubble] Category item to pass:', categoryItem);
         console.log('[WidgetBubble] toolArgsData:', toolArgsData);

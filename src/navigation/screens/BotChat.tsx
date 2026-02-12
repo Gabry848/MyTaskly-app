@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { View, KeyboardAvoidingView, Platform, SafeAreaView, Alert, Keyboard, Dimensions } from 'react-native';
 import { sendMessageToBot, createNewChat, formatMessage, clearChatHistory } from '../../services/textBotService';
 import { getChatWithMessages, ChatMessage } from '../../services/chatHistoryService';
+import { reconstructMessagesFromHistory } from '../../components/BotChat/utils/chatHistoryUtils';
 import {
   ChatHeader,
   ChatInput,
@@ -108,16 +109,12 @@ const BotChat: React.FC = () => {
       // Recupera la chat con tutti i suoi messaggi dal server
       const chatData = await getChatWithMessages(chatId);
 
-      // Trasforma i messaggi dall'API al formato UI
-      const transformedMessages: Message[] = chatData.messages.map((apiMsg: ChatMessage) => ({
-        id: apiMsg.message_id.toString(),
-        text: apiMsg.content,
-        sender: apiMsg.role === 'user' ? USER : BOT,
-        start_time: new Date(apiMsg.created_at),
-        modelType: apiMsg.model as 'base' | 'advanced' | undefined,
-        isStreaming: false,
-        isComplete: true,
-      }));
+      // Trasforma i messaggi dall'API al formato UI (con ricostruzione widget tool)
+      const transformedMessages = reconstructMessagesFromHistory(
+        chatData.messages,
+        USER,
+        BOT,
+      );
 
       setCurrentChatId(chatId);
       setMessages(transformedMessages);

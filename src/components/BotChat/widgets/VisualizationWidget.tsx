@@ -25,7 +25,36 @@ const VisualizationWidget: React.FC<VisualizationWidgetProps> = ({ widget, onOpe
     return <LoadingWidget widget={widget} />;
   }
 
-  if (!output) return null;
+  // Se non c'è output (es. caricato dalla cronologia dove tool_output è null),
+  // mostra un widget di fallback con info sul tipo di tool eseguito
+  if (!output) {
+    let fallbackTitle = 'Dati visualizzati';
+    let fallbackIcon: keyof typeof Ionicons.glyphMap = 'checkmark-circle';
+
+    if (widget.toolName === 'show_tasks_to_user') {
+      fallbackTitle = 'Task visualizzati';
+      fallbackIcon = 'calendar-outline';
+    } else if (widget.toolName === 'show_categories_to_user' || widget.toolName === 'get_my_categories') {
+      fallbackTitle = 'Categorie visualizzate';
+      fallbackIcon = 'folder-outline';
+    } else if (widget.toolName === 'show_notes_to_user') {
+      fallbackTitle = 'Note visualizzate';
+      fallbackIcon = 'document-text-outline';
+    }
+
+    return (
+      <View style={styles.card}>
+        <View style={styles.iconContainer}>
+          <Ionicons name={fallbackIcon} size={24} color="#000000" />
+        </View>
+        <View style={styles.textContainer}>
+          <Text style={styles.title}>{fallbackTitle}</Text>
+          <Text style={styles.subtitle}>Completato</Text>
+        </View>
+        <Ionicons name="checkmark-circle" size={20} color="#34C759" />
+      </View>
+    );
+  }
 
   // Per task, categorie e note, usa il design semplice con bottone
   let title = '';
@@ -112,13 +141,13 @@ const LoadingWidget: React.FC<{ widget: ToolWidget }> = ({ widget }) => {
   let loadingText = 'Caricamento dati...';
   let icon: keyof typeof Ionicons.glyphMap = 'list';
 
-  if (widget.toolName === 'show_tasks_to_user') {
+  if (widget.toolName === 'show_tasks_to_user' || widget.toolName === 'get_my_tasks') {
     loadingText = 'Recupero task dal server...';
     icon = 'calendar-outline';
-  } else if (widget.toolName === 'show_categories_to_user') {
+  } else if (widget.toolName === 'show_categories_to_user' || widget.toolName === 'get_my_categories') {
     loadingText = 'Recupero categorie dal server...';
     icon = 'folder-outline';
-  } else if (widget.toolName === 'show_notes_to_user') {
+  } else if (widget.toolName === 'show_notes_to_user' || widget.toolName === 'get_my_notes') {
     loadingText = 'Recupero note dal server...';
     icon = 'document-text-outline';
   }
