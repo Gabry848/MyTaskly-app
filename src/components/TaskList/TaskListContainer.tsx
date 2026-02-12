@@ -312,7 +312,8 @@ export const TaskListContainer = ({
     dueDate: string,
     priority: number,
     categoryName?: string,
-    recurrence?: any
+    recurrence?: any,
+    durationMinutes?: number | null
   ) => {
     const priorityString = priority === 1 ? "Bassa" : priority === 2 ? "Media" : "Alta";
 
@@ -326,6 +327,11 @@ export const TaskListContainer = ({
         category_id: parseInt(categoryId as string) || 0,
         status: "In sospeso",
       };
+
+      // Add duration_minutes if provided (API v2.1.0)
+      if (durationMinutes !== undefined && durationMinutes !== null) {
+        taskData.duration_minutes = durationMinutes;
+      }
 
       // Add recurring task fields if this is a recurring task (NEW API v2.2.0)
       if (recurrence) {
