@@ -64,7 +64,11 @@ const Calendar20View: React.FC<Calendar20ViewProps> = ({ onClose }) => {
       const displayColor = colorService.getColor(categoryName);
       const startDayjs = task.start_time ? dayjs(task.start_time) : dayjs();
       const endDayjs = task.end_time ? dayjs(task.end_time) : startDayjs;
-      const durationMinutes = endDayjs.diff(startDayjs, 'minute');
+      const computedDuration = endDayjs.diff(startDayjs, 'minute');
+      // Use server-provided duration_minutes if available, otherwise compute from dates
+      const durationMinutes = (task.duration_minutes && task.duration_minutes > 0)
+        ? task.duration_minutes
+        : computedDuration;
       const isMultiDay = !startDayjs.isSame(endDayjs, 'day');
       const isAllDay = durationMinutes >= 1440 || (!task.start_time && !!task.end_time);
 
@@ -261,7 +265,9 @@ const Calendar20View: React.FC<Calendar20ViewProps> = ({ onClose }) => {
     description: string,
     dueDate: string,
     priority: number,
-    categoryNameParam?: string
+    categoryNameParam?: string,
+    recurrence?: any,
+    durationMinutes?: number | null
   ) => {
     const { addTask } = await import('../../services/taskService');
     const priorityString = priority === 1 ? 'Bassa' : priority === 2 ? 'Media' : 'Alta';
@@ -277,6 +283,10 @@ const Calendar20View: React.FC<Calendar20ViewProps> = ({ onClose }) => {
       status: 'In sospeso',
       category_name: category,
     };
+    // Add duration_minutes if provided (API v2.1.0)
+    if (durationMinutes !== undefined && durationMinutes !== null) {
+      newTask.duration_minutes = durationMinutes;
+    }
     try {
       await addTask(newTask);
     } catch (error) {
