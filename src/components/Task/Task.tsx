@@ -91,6 +91,9 @@ const Task = ({
   const toggleExpand = () => {
     if (animationInProgress.current) return;
     
+    // Non permettere l'espansione se non c'è descrizione
+    if (!task.description || task.description.trim() === '') return;
+    
     animationInProgress.current = true;
     const isExpanding = !expanded;
 
@@ -189,6 +192,7 @@ const Task = ({
         end_time: editedTaskData.end_time,
         priority: editedTaskData.priority,
         status: editedTaskData.status,
+        duration_minutes: editedTaskData.duration_minutes,
         completed: editedTaskData.status === "Completato" ? true : task.completed
       };
       
@@ -199,7 +203,8 @@ const Task = ({
         task.end_time !== updatedTask.end_time ||
         task.priority !== updatedTask.priority ||
         task.status !== updatedTask.status ||
-        task.completed !== updatedTask.completed;
+        task.completed !== updatedTask.completed ||
+        task.duration_minutes !== updatedTask.duration_minutes;
       
       if (hasChanged) {
         console.log("Salvataggio modifiche per task:", updatedTask);
@@ -380,19 +385,6 @@ const Task = ({
           onLayout={onDescriptionLayout}
           descriptionRef={descriptionRef}
         />
-
-        {/* Pulsante di espansione */}
-        <TouchableOpacity 
-          style={styles.expandButton} 
-          onPress={toggleExpand}
-          disabled={animationInProgress.current}
-        >
-          <MaterialIcons
-            name={expanded ? "expand-less" : "expand-more"}
-            size={20}
-            color="#888"
-          />
-        </TouchableOpacity>
 
         {/* Modal menu azioni */}
         <TaskActionMenu 
