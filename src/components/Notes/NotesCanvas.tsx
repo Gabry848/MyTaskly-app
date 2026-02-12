@@ -16,6 +16,7 @@ import Animated, {
 import Svg, { Defs, Pattern, Rect, Circle } from 'react-native-svg';
 import { useNotesState } from '../../context/NotesContext';
 import { StickyNote } from './StickyNote';
+import { canvasViewport } from '../../utils/canvasViewport';
 
 // Context per gestire il focus globale delle note
 export const NotesFocusContext = React.createContext<{
@@ -133,6 +134,13 @@ export const NotesCanvas: React.FC = () => {
         lastTranslateX.value = translateX.value;
         lastTranslateY.value = translateY.value;
         lastScale.value = scale.value;
+
+        // Update shared viewport state for note positioning
+        canvasViewport.translateX = translateX.value;
+        canvasViewport.translateY = translateY.value;
+        canvasViewport.scale = scale.value;
+        canvasViewport.screenWidth = screenWidth;
+        canvasViewport.screenHeight = screenHeight;
         
         isPinching.current = false;
         gestureState.current.initialDistance = null;

@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Dimensions } from "react-native";
 import {
   Note,
   addNote,
@@ -9,6 +8,7 @@ import {
   updateNotePosition,
 } from "../services/noteService";
 import { useFocusEffect } from "@react-navigation/native";
+import { canvasViewport, CANVAS_SIZE as ACTUAL_CANVAS_SIZE } from "../utils/canvasViewport";
 
 const COLORS = [
   "#FFCDD2", // Rosa chiaro
@@ -58,7 +58,6 @@ export function useNotes(
     nextZIndex: 1,
   });
 
-  const { width, height } = Dimensions.get("window");
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const updateState = useCallback((updates: Partial<NotesState>) => {
@@ -66,29 +65,26 @@ export function useNotes(
   }, []);
 
   const generateRandomPosition = useCallback(() => {
-    const padding = 50;
     const noteWidth = 200;
     const noteHeight = 160;
 
-    // Griglia 50x50 con punti ogni 40px = 2000x2000px totali
-    const GRID_SIZE = 40;
-    const GRID_POINTS = 50;
-    const CANVAS_SIZE = GRID_POINTS * GRID_SIZE;
+    // Calcola il centro del viewport corrente in coordinate canvas
+    const { translateX: tx, translateY: ty, scale: s, screenWidth: sw, screenHeight: sh } = canvasViewport;
+    const currentScale = s || 1;
 
-    // Genera posizioni al centro della griglia (intorno al punto 25,25)
-    const centerArea = CANVAS_SIZE / 2;
-    const areaSize = Math.min(width, height); // Area del viewport
+    const viewportCenterX = (-tx + sw / 2) / currentScale;
+    const viewportCenterY = (-ty + sh / 2) / currentScale;
 
-    const minX = centerArea - areaSize / 2 + padding;
-    const maxX = centerArea + areaSize / 2 - noteWidth - padding;
-    const minY = centerArea - areaSize / 2 + padding;
-    const maxY = centerArea + areaSize / 2 - noteHeight - padding;
+    // Aggiungi un piccolo offset casuale per evitare sovrapposizioni
+    const offsetRange = 40;
+    const x = viewportCenterX - noteWidth / 2 + (Math.random() * offsetRange * 2 - offsetRange);
+    const y = viewportCenterY - noteHeight / 2 + (Math.random() * offsetRange * 2 - offsetRange);
 
     return {
-      x: Math.random() * (maxX - minX) + minX,
-      y: Math.random() * (maxY - minY) + minY,
+      x: Math.max(0, Math.min(ACTUAL_CANVAS_SIZE - noteWidth, x)),
+      y: Math.max(0, Math.min(ACTUAL_CANVAS_SIZE - noteHeight, y)),
     };
-  }, [width, height]);
+  }, []);
 
   const getRandomColor = useCallback(() => {
     return COLORS[Math.floor(Math.random() * COLORS.length)];

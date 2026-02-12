@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   TextInput,
   TouchableOpacity,
   Keyboard,
+  Modal,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -52,6 +53,7 @@ export const StickyNote: React.FC<StickyNoteProps> = ({ note, canvasScale }) => 
   const [editText, setEditText] = useState(note.text);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [currentColor, setCurrentColor] = useState(note.color);
+  const justPressedButtonRef = useRef(false);
 
   console.log('StickyNote render:', note.id, 'position:', note.position, 'text:', note.text);
 
@@ -69,6 +71,11 @@ export const StickyNote: React.FC<StickyNoteProps> = ({ note, canvasScale }) => 
 
   // Definiti PRIMA dei gesture per runOnJS
   const handleStartEditing = useCallback(() => {
+    // Ignora il tap se l'utente ha appena premuto un bottone (palette/delete)
+    if (justPressedButtonRef.current) {
+      justPressedButtonRef.current = false;
+      return;
+    }
     console.log('Tap detected on note:', note.id, '- toggling editor');
     setIsEditing((prev) => {
       if (prev) {
@@ -171,8 +178,12 @@ export const StickyNote: React.FC<StickyNoteProps> = ({ note, canvasScale }) => 
 
   const handleLongPress = () => {
     try {
-      console.log('Long press detected on note:', note.id);
+      console.log('Palette pressed on note:', note.id);
+      justPressedButtonRef.current = true;
+      Keyboard.dismiss();
+      setIsEditing(false);
       setShowColorPicker(true);
+      setTimeout(() => { justPressedButtonRef.current = false; }, 300);
     } catch (error) {
       console.error('Error in handleLongPress:', error);
     }
@@ -193,6 +204,10 @@ export const StickyNote: React.FC<StickyNoteProps> = ({ note, canvasScale }) => 
     }
   };
 
+  const handleCloseColorPicker = () => {
+    setShowColorPicker(false);
+  };
+
   const handleTextSave = useCallback(() => {
     if (editText.trim() !== note.text) {
       updateNote(note.id, editText.trim());
@@ -202,69 +217,83 @@ export const StickyNote: React.FC<StickyNoteProps> = ({ note, canvasScale }) => 
   }, [editText, note.text, note.id, updateNote]);
 
   const handleDelete = () => {
+    justPressedButtonRef.current = true;
     deleteNote(note.id);
+    setTimeout(() => { justPressedButtonRef.current = false; }, 300);
   };
 
-  const ColorPicker: React.FC = () => (
-    <View style={styles.colorPicker}>
-      <View style={styles.colorGrid}>
-        {COLORS.map((color) => (
-          <TouchableOpacity
-            key={color}
-            style={[
-              styles.colorOption, 
-              { backgroundColor: color },
-              currentColor === color && styles.selectedColor
-            ]}
-            onPress={() => handleColorChange(color)}
-          />
-        ))}
-      </View>
-      <TouchableOpacity 
-        style={styles.closeColorPicker}
-        onPress={() => setShowColorPicker(false)}
-      >
-        <Text style={styles.closeText}>Chiudi</Text>
-      </TouchableOpacity>
-    </View>
-  );
-
   return (
-    <GestureDetector gesture={composedGesture}>
-      <Animated.View style={[styles.container, animatedStyle]}>
-        <View style={[styles.note, { backgroundColor: currentColor }]}>
-          <View style={styles.buttonRow}>
-            <TouchableOpacity style={styles.colorButton} onPress={handleLongPress}>
-              <Palette size={14} color="#666" />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
-              <X size={14} color="#666" />
+    <>
+      <GestureDetector gesture={composedGesture}>
+        <Animated.View style={[styles.container, animatedStyle]}>
+          <View style={[styles.note, { backgroundColor: currentColor }]}>
+            <View style={styles.buttonRow}>
+              <TouchableOpacity style={styles.colorButton} onPress={handleLongPress}>
+                <Palette size={14} color="#666" />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
+                <X size={14} color="#666" />
+              </TouchableOpacity>
+            </View>
+
+            {isEditing ? (
+              <TextInput
+                style={styles.textInput}
+                value={editText}
+                onChangeText={setEditText}
+                onBlur={handleTextSave}
+                onSubmitEditing={handleTextSave}
+                multiline
+                autoFocus
+                placeholder="Scrivi qui..."
+              />
+            ) : (
+              <View style={styles.textContainer} pointerEvents="none">
+                <Text style={styles.text} numberOfLines={5}>
+                  {note.text}
+                </Text>
+              </View>
+            )}
+          </View>
+        </Animated.View>
+      </GestureDetector>
+
+      <Modal
+        visible={showColorPicker}
+        transparent
+        animationType="fade"
+        onRequestClose={handleCloseColorPicker}
+      >
+        <TouchableOpacity
+          style={styles.colorPickerOverlay}
+          activeOpacity={1}
+          onPress={handleCloseColorPicker}
+        >
+          <View style={styles.colorPickerModal}>
+            <Text style={styles.colorPickerTitle}>Scegli un colore</Text>
+            <View style={styles.colorGrid}>
+              {COLORS.map((color) => (
+                <TouchableOpacity
+                  key={color}
+                  style={[
+                    styles.colorOption,
+                    { backgroundColor: color },
+                    currentColor === color && styles.selectedColor,
+                  ]}
+                  onPress={() => handleColorChange(color)}
+                />
+              ))}
+            </View>
+            <TouchableOpacity
+              style={styles.closeColorPicker}
+              onPress={handleCloseColorPicker}
+            >
+              <Text style={styles.closeText}>Chiudi</Text>
             </TouchableOpacity>
           </View>
-
-          {isEditing ? (
-            <TextInput
-              style={styles.textInput}
-              value={editText}
-              onChangeText={setEditText}
-              onBlur={handleTextSave}
-              onSubmitEditing={handleTextSave}
-              multiline
-              autoFocus
-              placeholder="Scrivi qui..."
-            />
-          ) : (
-            <View style={styles.textContainer} pointerEvents="none">
-              <Text style={styles.text} numberOfLines={5}>
-                {note.text}
-              </Text>
-            </View>
-          )}
-
-          {showColorPicker && <ColorPicker />}
-        </View>
-      </Animated.View>
-    </GestureDetector>
+        </TouchableOpacity>
+      </Modal>
+    </>
   );
 };
 
@@ -329,30 +358,40 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
     padding: 0,
   },
-  colorPicker: {
-    position: 'absolute',
-    top: 30,
-    left: -10,
-    right: -10,
+  colorPickerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  colorPickerModal: {
     backgroundColor: 'white',
-    borderRadius: 8,
-    padding: 8,
-    elevation: 8,
+    borderRadius: 16,
+    padding: 20,
+    width: 260,
+    alignItems: 'center',
+    elevation: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
-    shadowRadius: 4,
+    shadowRadius: 8,
+  },
+  colorPickerTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 16,
   },
   colorGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
+    gap: 8,
   },
   colorOption: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    margin: 2,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     borderWidth: 2,
     borderColor: '#ddd',
   },
@@ -362,14 +401,16 @@ const styles = StyleSheet.create({
     transform: [{ scale: 1.1 }],
   },
   closeColorPicker: {
-    marginTop: 8,
-    padding: 8,
+    marginTop: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 24,
     backgroundColor: '#f0f0f0',
-    borderRadius: 4,
+    borderRadius: 8,
     alignItems: 'center',
   },
   closeText: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#666',
+    fontWeight: '500',
   },
 });
