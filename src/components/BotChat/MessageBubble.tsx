@@ -295,7 +295,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style, isVoiceCh
         description: editCategoryDescription.trim()
       });
 
-      Alert.alert('Successo', 'Categoria aggiornata con successo');
       setCategoryEditModalVisible(false);
       setSelectedCategoryForEdit(null);
     } catch (error) {

@@ -59,7 +59,23 @@ const CreationWidgetCard: React.FC<CreationWidgetCardProps> = ({ widget, onPress
 
     // Success state
     const output = widget.toolOutput;
-    if (!output) return null;
+
+    // Helper: converte nome tool in titolo leggibile (es: "add_task" → "Add Task")
+    const formatToolName = (name: string) =>
+      name.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+
+    if (!output) {
+      // Nessun output ma success → mostra almeno il nome del tool
+      return (
+        <View style={styles.contentRow}>
+          <Ionicons name="checkmark-circle" size={24} color="#000000" style={styles.icon} />
+          <View style={styles.textContainer}>
+            <Text style={styles.title} numberOfLines={1}>{formatToolName(widget.toolName)}</Text>
+            <Text style={styles.subtitle} numberOfLines={1}>Completato</Text>
+          </View>
+        </View>
+      );
+    }
 
     let title = '';
     let subtitle = '';
@@ -103,6 +119,28 @@ const CreationWidgetCard: React.FC<CreationWidgetCardProps> = ({ widget, onPress
       title = output.note?.title || toolArgsData.title || 'Nota creata';
       subtitle = 'Nota creata';
       icon = 'document-text';
+    } else {
+      // Tipo sconosciuto → mostra almeno il nome del tool e il messaggio se presente
+      title = output.message || formatToolName(widget.toolName);
+      subtitle = output.type
+        ? output.type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+        : 'Completato';
+      icon = 'checkmark-circle';
+    }
+
+    // Per tipi sconosciuti non mostrare la freccia né il TouchableOpacity
+    const isKnownType = output.type && ['task_created', 'category_created', 'note_created'].includes(output.type);
+
+    if (!isKnownType) {
+      return (
+        <View style={styles.contentRow}>
+          <Ionicons name={icon} size={24} color="#000000" style={styles.icon} />
+          <View style={styles.textContainer}>
+            <Text style={styles.title} numberOfLines={1}>{title}</Text>
+            <Text style={styles.subtitle} numberOfLines={1}>{subtitle}</Text>
+          </View>
+        </View>
+      );
     }
 
     return (

@@ -960,7 +960,7 @@ export async function updateCategory(
 ) {
   try {
     console.log(`[TASK_SERVICE] Aggiornamento categoria ID: ${categoryId}`);
-    const response = await axios.put(`/categories/${categoryId}`, updatedCategory, {
+    const response = await axios.put(`/categories/id/${categoryId}`, updatedCategory, {
       headers: {
         "Content-Type": "application/json",
       },
