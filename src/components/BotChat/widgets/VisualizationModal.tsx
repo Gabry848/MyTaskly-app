@@ -9,6 +9,7 @@ import {
   SafeAreaView,
   TextInput,
   Image,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { VisualizationModalProps, TaskListItem } from '../types';
@@ -56,9 +57,23 @@ const VisualizationModal: React.FC<VisualizationModalProps> = ({
     firstItem: items?.[0]
   });
 
+  // Filtra note per ricerca semantica (titolo + contenuto)
+  const filteredNotes = useMemo(() => {
+    if (!isNoteList || !output.notes) return output.notes;
+    if (!searchQuery.trim()) return output.notes;
+
+    const query = searchQuery.toLowerCase();
+    return output.notes.filter((note: any) => {
+      const title = (note.title || '').toLowerCase();
+      const content = (note.content || '').toLowerCase();
+      const text = (note.text || '').toLowerCase();
+      return title.includes(query) || content.includes(query) || text.includes(query);
+    });
+  }, [searchQuery, isNoteList, output.notes]);
+
   // Filtra task per data, ricerca, priorità e stato
   const filteredItems = useMemo(() => {
-    if (!isTaskList || !output.tasks) return items;
+    if (!isTaskList || !output.tasks) return isNoteList ? filteredNotes : items;
 
     let filtered = output.tasks;
 
@@ -117,9 +132,9 @@ const VisualizationModal: React.FC<VisualizationModalProps> = ({
     }
 
     return filtered;
-  }, [selectedDate, searchQuery, priorityFilter, statusFilter, isTaskList, output.tasks, items]);
+  }, [selectedDate, searchQuery, priorityFilter, statusFilter, isTaskList, output.tasks, items, isNoteList, filteredNotes]);
 
-  const displayItems = filteredItems || items;
+  const displayItems = isNoteList ? filteredNotes : (filteredItems || items);
 
   // Debug filtro
   if (isTaskList && selectedDate) {
@@ -265,27 +280,25 @@ const VisualizationModal: React.FC<VisualizationModalProps> = ({
 
     if (isNoteList) {
       return (
-        <TouchableOpacity
+        <View
           key={index}
-          style={styles.itemCard}
-          activeOpacity={0.7}
-          onPress={() => onItemPress && onItemPress(item, 'note')}
+          style={styles.noteCard}
         >
-          <View style={[styles.itemIconContainer, { backgroundColor: item.color || '#FFD60A' }]}>
-            <Ionicons name="document-text" size={24} color="#FFFFFF" />
-          </View>
-          <View style={styles.itemTextContainer}>
-            <Text style={styles.itemTitle} numberOfLines={1}>
-              {item.title}
-            </Text>
-            {item.content && (
-              <Text style={styles.itemSubtitle} numberOfLines={2}>
-                {item.content}
+          {/* Black accent strip */}
+          <View style={styles.noteColorStrip} />
+
+          <View style={styles.noteCardContent}>
+            {/* Header row with icon and title */}
+            <View style={styles.noteCardHeader}>
+              <View style={styles.noteIconBadge}>
+                <Ionicons name="document-text" size={16} color="#FFFFFF" />
+              </View>
+              <Text style={styles.noteCardTitle} numberOfLines={2}>
+                {item.title}
               </Text>
-            )}
+            </View>
           </View>
-          <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
-        </TouchableOpacity>
+        </View>
       );
     }
 
@@ -335,6 +348,27 @@ const VisualizationModal: React.FC<VisualizationModalProps> = ({
               >
                 <Ionicons name="calendar-outline" size={22} color="#FFFFFF" />
               </TouchableOpacity>
+            </View>
+          )}
+
+          {/* SEARCH BAR per note */}
+          {isNoteList && (
+            <View style={styles.searchContainer}>
+              <View style={styles.searchBar}>
+                <Ionicons name="search" size={20} color="#8E8E93" />
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Cerca note per titolo o contenuto..."
+                  placeholderTextColor="#8E8E93"
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                />
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity onPress={() => setSearchQuery('')}>
+                    <Ionicons name="close-circle" size={20} color="#8E8E93" />
+                  </TouchableOpacity>
+                )}
+              </View>
             </View>
           )}
 
@@ -652,7 +686,7 @@ const styles = StyleSheet.create({
   categoryCardWrapper: {
     marginBottom: 0,
   },
-  // Stili per categorie/note (mantieni per retrocompatibilità)
+  // Stili per categorie (mantieni per retrocompatibilità)
   itemCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -687,6 +721,87 @@ const styles = StyleSheet.create({
   itemSubtitle: {
     fontSize: 14,
     color: '#8E8E93',
+  },
+  // Stili per le note card moderne (tema bianco e nero)
+  noteCard: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    marginBottom: 12,
+    borderWidth: 1.5,
+    borderColor: '#E1E5E9',
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.08,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
+  },
+  noteColorStrip: {
+    width: 5,
+    backgroundColor: '#000000',
+  },
+  noteCardContent: {
+    flex: 1,
+    padding: 13,
+    paddingLeft: 10,
+  },
+  noteCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  noteIconBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: '#000000',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  noteCardTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000000',
+    fontFamily: 'System',
+    letterSpacing: -0.3,
+    flex: 1,
+  },
+  noteCardContent_text: {
+    fontSize: 14,
+    color: '#555555',
+    lineHeight: 20,
+    fontFamily: 'System',
+    fontWeight: '300',
+    marginLeft: 44,
+  },
+  noteCardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 44,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+  },
+  noteColorDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#000000',
+    marginRight: 6,
+  },
+  noteCardMeta: {
+    fontSize: 12,
+    color: '#999999',
+    fontFamily: 'System',
+    fontWeight: '400',
   },
   categoryBadge: {
     alignSelf: 'flex-start',
