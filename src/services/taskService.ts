@@ -45,6 +45,9 @@ export interface Task {
   next_occurrence?: string; // When the task is next due (ISO 8601)
   last_completed_at?: string; // When the task was last completed (ISO 8601)
 
+  // Task duration (API v2.1.0)
+  duration_minutes?: number | null; // Estimated duration in minutes (1-10080, i.e. 1 min to 7 days)
+
   // DEPRECATED: Old recurring task system (kept for backward compatibility)
   is_generated_instance?: boolean; // Indicates if this task is a generated instance from a recurring template
   parent_template_id?: number; // ID of the parent recurring template (if this is an instance)
@@ -413,6 +416,11 @@ export async function updateTask(
       status: status,
     };
 
+    // Add duration_minutes if provided (API v2.1.0) - supports null to remove duration
+    if (updatedTask.duration_minutes !== undefined) {
+      taskData.duration_minutes = updatedTask.duration_minutes;
+    }
+
     // Usa category_id se disponibile (preferito), altrimenti fallback su category_name
     if (updatedTask.category_id !== undefined) {
       taskData.category_id = updatedTask.category_id;
@@ -712,6 +720,11 @@ export async function addTask(task: Task) {
       status: task.status || "In sospeso",
       user: task.user || username,
     };
+
+    // Add duration_minutes if provided (API v2.1.0)
+    if (task.duration_minutes !== undefined) {
+      data.duration_minutes = task.duration_minutes;
+    }
 
     // Usa category_id se disponibile, altrimenti fallback su category_name
     if (task.category_id !== undefined) {

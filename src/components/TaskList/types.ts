@@ -14,6 +14,7 @@ export interface Task {
   category_id?: number | string;
   category_name?: string;
   isOptimistic?: boolean;
+  duration_minutes?: number | null;
 }
 
 // Riferimento globale per i task condivisi tra componenti
