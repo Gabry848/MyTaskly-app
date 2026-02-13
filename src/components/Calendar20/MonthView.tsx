@@ -24,6 +24,7 @@ interface MonthViewProps {
   tasks: CalendarTask[];
   onDatePress: (date: dayjs.Dayjs) => void;
   onTaskPress: (task: CalendarTask) => void;
+  onTaskLongPress?: (task: CalendarTask) => void;
   onSwipeLeft: () => void;
   onSwipeRight: () => void;
 }
@@ -33,6 +34,7 @@ const MonthView: React.FC<MonthViewProps> = ({
   tasks,
   onDatePress,
   onTaskPress,
+  onTaskLongPress,
   onSwipeLeft,
   onSwipeRight,
 }) => {
@@ -150,6 +152,7 @@ const MonthView: React.FC<MonthViewProps> = ({
                       key={task.task_id || task.id}
                       task={task}
                       onPress={onTaskPress}
+                      onLongPress={onTaskLongPress}
                     />
                   ))}
                   {extraCount > 0 && (

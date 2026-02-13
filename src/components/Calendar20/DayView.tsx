@@ -24,6 +24,7 @@ interface DayViewProps {
   tasks: CalendarTask[];
   onDatePress: (date: dayjs.Dayjs) => void;
   onTaskPress: (task: CalendarTask) => void;
+  onTaskLongPress?: (task: CalendarTask) => void;
   onToggleComplete: (task: CalendarTask) => void;
   onSwipeLeft: () => void;
   onSwipeRight: () => void;
@@ -89,6 +90,7 @@ const DayView: React.FC<DayViewProps> = ({
   tasks,
   onDatePress,
   onTaskPress,
+  onTaskLongPress,
   onToggleComplete,
   onSwipeLeft,
   onSwipeRight,
@@ -160,7 +162,7 @@ const DayView: React.FC<DayViewProps> = ({
           <Text style={styles.allDayLabel}>{t('calendar20.allDay')}</Text>
           <View style={styles.allDayChips}>
             {allDayTasks.map(task => (
-              <EventChip key={task.task_id || task.id} task={task} onPress={onTaskPress} />
+              <EventChip key={task.task_id || task.id} task={task} onPress={onTaskPress} onLongPress={onTaskLongPress} />
             ))}
           </View>
         </View>
@@ -209,6 +211,7 @@ const DayView: React.FC<DayViewProps> = ({
                 totalColumns={totalColumns}
                 columnWidth={COLUMN_WIDTH}
                 onPress={onTaskPress}
+                onLongPress={onTaskLongPress}
                 onToggleComplete={onToggleComplete}
               />
             ))}

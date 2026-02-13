@@ -29,6 +29,7 @@ interface WeekViewProps {
   tasks: CalendarTask[];
   onDatePress: (date: dayjs.Dayjs) => void;
   onTaskPress: (task: CalendarTask) => void;
+  onTaskLongPress?: (task: CalendarTask) => void;
   onToggleComplete: (task: CalendarTask) => void;
   onSwipeLeft: () => void;
   onSwipeRight: () => void;
@@ -80,6 +81,7 @@ const WeekView: React.FC<WeekViewProps> = ({
   tasks,
   onDatePress,
   onTaskPress,
+  onTaskLongPress,
   onToggleComplete,
   onSwipeLeft,
   onSwipeRight,
@@ -272,6 +274,7 @@ const WeekView: React.FC<WeekViewProps> = ({
                     totalColumns={totalColumns}
                     columnWidth={COLUMN_WIDTH - 2}
                     onPress={onTaskPress}
+                    onLongPress={onTaskLongPress}
                     onToggleComplete={onToggleComplete}
                   />
                 ))}

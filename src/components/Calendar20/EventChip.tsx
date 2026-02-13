@@ -5,6 +5,7 @@ import { CalendarTask } from './types';
 interface EventChipProps {
   task: CalendarTask;
   onPress?: (task: CalendarTask) => void;
+  onLongPress?: (task: CalendarTask) => void;
   isSpanning?: boolean;
   isStart?: boolean;
   isEnd?: boolean;
@@ -20,7 +21,7 @@ function hexToRgba(hex: string, alpha: number): string {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-const EventChip: React.FC<EventChipProps> = ({ task, onPress, isSpanning, isStart = true, isEnd = true }) => {
+const EventChip: React.FC<EventChipProps> = ({ task, onPress, onLongPress, isSpanning, isStart = true, isEnd = true }) => {
   const baseColor = task.displayColor || '#3A3A3C';
   const isCompleted = task.status?.toLowerCase() === 'completato' || task.status?.toLowerCase() === 'completed';
 
@@ -28,6 +29,7 @@ const EventChip: React.FC<EventChipProps> = ({ task, onPress, isSpanning, isStar
     <TouchableOpacity
       activeOpacity={0.7}
       onPress={() => onPress?.(task)}
+      onLongPress={() => onLongPress?.(task)}
       style={[
         styles.chip,
         {

@@ -42,6 +42,7 @@ const Calendar20View: React.FC<Calendar20ViewProps> = ({ onClose }) => {
   const [miniCalendarVisible, setMiniCalendarVisible] = useState(false);
   const [addTaskVisible, setAddTaskVisible] = useState(false);
   const [selectedDateForTask, setSelectedDateForTask] = useState<dayjs.Dayjs | null>(null);
+  const [editingTask, setEditingTask] = useState<CalendarTask | null>(null);
 
   const cacheService = useRef(TaskCacheService.getInstance()).current;
   const appInitializer = useRef(AppInitializer.getInstance()).current;
@@ -58,8 +59,9 @@ const Calendar20View: React.FC<Calendar20ViewProps> = ({ onClose }) => {
   }, []);
 
   // Enrich tasks with colors and dayjs
+  // Only show tasks that have a deadline (end_time) in the calendar
   const calendarTasks = useMemo((): CalendarTask[] => {
-    return rawTasks.map(task => {
+    return rawTasks.filter(task => !!task.end_time).map(task => {
       const categoryName = task.category_name || '';
       const displayColor = colorService.getColor(categoryName);
 
@@ -92,9 +94,9 @@ const Calendar20View: React.FC<Calendar20ViewProps> = ({ onClose }) => {
         startDayjs = endDayjs.subtract(30, 'minute');
         durationMinutes = 30;
       } else {
-        // No end_time: fall back to start_time
-        startDayjs = rawStartDayjs;
-        endDayjs = startDayjs.add(30, 'minute');
+        // Fallback (shouldn't reach here due to filter, but safe default)
+        endDayjs = rawEndDayjs;
+        startDayjs = endDayjs.subtract(30, 'minute');
         durationMinutes = 30;
       }
 
@@ -277,6 +279,12 @@ const Calendar20View: React.FC<Calendar20ViewProps> = ({ onClose }) => {
     }
   }, [viewType]);
 
+  const handleTaskLongPress = useCallback((task: CalendarTask) => {
+    // Open edit modal for the task
+    setEditingTask(task);
+    setAddTaskVisible(true);
+  }, []);
+
   const handleToggleComplete = useCallback(async (task: CalendarTask) => {
     const taskId = task.task_id || task.id;
     const isCompleted = task.status?.toLowerCase() === 'completato' || task.status?.toLowerCase() === 'completed';
@@ -327,6 +335,38 @@ const Calendar20View: React.FC<Calendar20ViewProps> = ({ onClose }) => {
     setSelectedDateForTask(null);
   }, [currentDate, selectedDateForTask]);
 
+  const handleUpdateTask = useCallback(async (
+    taskId: string | number,
+    title: string,
+    description: string,
+    dueDate: string,
+    priority: number,
+    categoryNameParam?: string,
+    durationMinutes?: number | null
+  ) => {
+    const { updateTask } = await import('../../services/taskService');
+    const priorityString = priority === 1 ? 'Bassa' : priority === 2 ? 'Media' : 'Alta';
+    const updatedTask: Partial<Task> = {
+      title: title.trim(),
+      description: description || '',
+      end_time: new Date(dueDate).toISOString(),
+      priority: priorityString,
+    };
+    if (categoryNameParam) {
+      updatedTask.category_name = categoryNameParam;
+    }
+    if (durationMinutes !== undefined && durationMinutes !== null) {
+      updatedTask.duration_minutes = durationMinutes;
+    }
+    try {
+      await updateTask(taskId, updatedTask);
+    } catch (error) {
+      console.error('[CALENDAR20] Error updating task:', error);
+    }
+    setAddTaskVisible(false);
+    setEditingTask(null);
+  }, []);
+
   const handleCategoryToggle = useCallback((categoryName: string) => {
     setEnabledCategories(prev => {
       const next = new Set(prev);
@@ -354,6 +394,7 @@ const Calendar20View: React.FC<Calendar20ViewProps> = ({ onClose }) => {
       tasks: filteredTasks,
       onDatePress: handleDatePress,
       onTaskPress: handleTaskPress,
+      onTaskLongPress: handleTaskLongPress,
       onToggleComplete: handleToggleComplete,
       onSwipeLeft: () => navigateDate('next'),
       onSwipeRight: () => navigateDate('prev'),
@@ -442,8 +483,11 @@ const Calendar20View: React.FC<Calendar20ViewProps> = ({ onClose }) => {
         onClose={() => {
           setAddTaskVisible(false);
           setSelectedDateForTask(null);
+          setEditingTask(null);
         }}
         onSave={handleSaveTask}
+        onUpdate={handleUpdateTask}
+        task={editingTask}
         allowCategorySelection={true}
         categoryName="Calendario"
         initialDate={(selectedDateForTask || currentDate).format('YYYY-MM-DD')}

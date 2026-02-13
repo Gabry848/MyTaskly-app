@@ -1,6 +1,5 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { CalendarTask } from './types';
 
 interface TimeBlockProps {
@@ -10,6 +9,7 @@ interface TimeBlockProps {
   totalColumns: number;
   columnWidth: number;
   onPress?: (task: CalendarTask) => void;
+  onLongPress?: (task: CalendarTask) => void;
   onToggleComplete?: (task: CalendarTask) => void;
 }
 
@@ -30,7 +30,7 @@ const TimeBlock: React.FC<TimeBlockProps> = ({
   totalColumns,
   columnWidth,
   onPress,
-  onToggleComplete,
+  onLongPress,
 }) => {
   const startHour = task.startDayjs.hour() + task.startDayjs.minute() / 60;
   const height = Math.max((task.durationMinutes / 60) * hourHeight, 24);
@@ -41,14 +41,8 @@ const TimeBlock: React.FC<TimeBlockProps> = ({
   const isCompleted = task.status?.toLowerCase() === 'completato' || task.status?.toLowerCase() === 'completed';
   const baseColor = task.displayColor || '#3A3A3C';
 
-  const startTime = task.startDayjs.format('HH:mm');
-  const endTime = task.endDayjs.format('HH:mm');
-  const showEndTime = height > 40;
-
   return (
-    <TouchableOpacity
-      activeOpacity={0.8}
-      onPress={() => onPress?.(task)}
+    <View
       style={[
         styles.block,
         {
@@ -56,37 +50,21 @@ const TimeBlock: React.FC<TimeBlockProps> = ({
           height,
           left,
           width,
-          backgroundColor: hexToRgba(baseColor, 0.10),
-          borderLeftColor: baseColor,
         },
         isCompleted && styles.completed,
       ]}
     >
-      <View style={styles.content}>
-        <View style={styles.header}>
-          <TouchableOpacity
-            onPress={(e) => {
-              e.stopPropagation?.();
-              onToggleComplete?.(task);
-            }}
-            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-            style={styles.checkboxArea}
-          >
-            <Ionicons
-              name={isCompleted ? 'checkbox' : 'square-outline'}
-              size={14}
-              color={baseColor}
-            />
-          </TouchableOpacity>
-          <Text style={[styles.title, { color: baseColor }, isCompleted && styles.completedText]} numberOfLines={1}>
-            {task.title}
-          </Text>
-        </View>
-        {showEndTime && (
-          <Text style={[styles.time, { color: hexToRgba(baseColor, 0.6) }]}>{startTime} - {endTime}</Text>
-        )}
-      </View>
-    </TouchableOpacity>
+      <TouchableOpacity
+        activeOpacity={0.8}
+        onPress={() => onPress?.(task)}
+        onLongPress={() => onLongPress?.(task)}
+        style={[styles.touchable, { backgroundColor: hexToRgba(baseColor, 0.10) }]}
+      >
+        <Text style={[styles.title, { color: baseColor }, isCompleted && styles.completedText]} numberOfLines={1}>
+          {task.title}
+        </Text>
+      </TouchableOpacity>
+    </View>
   );
 };
 
@@ -94,23 +72,16 @@ const styles = StyleSheet.create({
   block: {
     position: 'absolute',
     borderRadius: 8,
+    overflow: 'hidden',
+  },
+  touchable: {
+    flex: 1,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    overflow: 'hidden',
-    borderLeftWidth: 3,
+    justifyContent: 'center',
   },
   completed: {
     opacity: 0.4,
-  },
-  content: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  checkboxArea: {
-    marginRight: 4,
   },
   title: {
     fontSize: 13,
@@ -120,11 +91,6 @@ const styles = StyleSheet.create({
   },
   completedText: {
     textDecorationLine: 'line-through',
-  },
-  time: {
-    fontSize: 12,
-    fontFamily: 'System',
-    marginTop: 2,
   },
 });
 

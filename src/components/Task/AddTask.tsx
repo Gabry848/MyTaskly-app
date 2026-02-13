@@ -37,6 +37,16 @@ export type AddTaskProps = {
     recurrence?: RecurrenceConfigType,
     durationMinutes?: number | null
   ) => void;
+  onUpdate?: (
+    taskId: string | number,
+    title: string,
+    description: string,
+    dueDate: string,
+    priority: number,
+    categoryName?: string,
+    durationMinutes?: number | null
+  ) => void;
+  task?: any; // Task da modificare (se presente, siamo in modalità modifica)
   categoryName?: string;
   initialDate?: string; // Nuova prop per la data iniziale
   allowCategorySelection?: boolean; // Abilita campo categoria
@@ -46,11 +56,14 @@ const AddTask: React.FC<AddTaskProps> = ({
   visible,
   onClose,
   onSave,
+  onUpdate,
+  task,
   categoryName,
   initialDate,
   allowCategorySelection = false,
 }) => {
   const { t } = useTranslation();
+  const isEditMode = !!task;
   const [categoriesOptions, setCategoriesOptions] = useState<
     { label: string; value: string }[]
   >([]);
@@ -95,14 +108,49 @@ const AddTask: React.FC<AddTaskProps> = ({
     if (visible) {
       animationValue.value = withSpring(1, { damping: 12 });
 
-      // Se initialDate è fornito, imposta la data iniziale
-      if (initialDate) {
+      // Se siamo in modalità modifica, inizializza i campi con i dati del task
+      if (isEditMode && task) {
+        setTitle(task.title || "");
+        setDescription(task.description || "");
+        
+        // Imposta la priorità
+        const priorityMap: { [key: string]: number } = {
+          'Bassa': 1,
+          'Media': 2,
+          'Alta': 3,
+        };
+        setPriority(priorityMap[task.priority] || 1);
+        
+        // Imposta la categoria
+        if (task.category_name) {
+          setLocalCategory(task.category_name);
+        }
+        
+        // Imposta la data di scadenza
+        if (task.end_time) {
+          const endDate = new Date(task.end_time);
+          setSelectedDateTime(endDate);
+          setDueDate(endDate.toISOString());
+          setDate(endDate);
+        }
+        
+        // Imposta la durata
+        if (task.duration_minutes) {
+          setDurationMinutes(task.duration_minutes);
+          // Se non è un preset, mostra nel campo custom
+          const isPreset = DURATION_PRESETS.some(p => p.value === task.duration_minutes);
+          if (!isPreset) {
+            setCustomDuration(task.duration_minutes.toString());
+          }
+        }
+      } else if (initialDate) {
+        // Se initialDate è fornito, imposta la data iniziale
         initializeWithDate(initialDate);
       }
     } else {
       animationValue.value = withSpring(0, { damping: 12 });
     }
-  }, [visible, initialDate, animationValue]);
+  }, [visible, initialDate, animationValue, isEditMode, task]);
 
   // Carica le categorie se necessario
   useEffect(() => {
@@ -179,49 +227,21 @@ const AddTask: React.FC<AddTaskProps> = ({
     const priorityString =
       priority === 1 ? "Bassa" : priority === 2 ? "Media" : "Alta";
 
-    const taskObject: any = {
-      id: Date.now(),
-      title: title.trim(),
-      description: description.trim() || "", // Assicurarsi che description non sia mai null
-      end_time: dueDate || null, // Se non c'è una data di scadenza, imposta null
-      start_time: new Date().toISOString(),
-      priority: priorityString,
-      status: "In sospeso", // Aggiornato per coerenza con altri componenti
-      category_name: allowCategorySelection
-        ? localCategory
-        : categoryName || "", // Aggiungere il nome della categoria
-      user: "", // Campo richiesto dal server
-      completed: false,
-      duration_minutes: durationMinutes || null, // Durata stimata in minuti
-    };
-
-    // Add recurring task fields if enabled
-    if (isRecurring) {
-      taskObject.is_recurring = true;
-      taskObject.recurrence_pattern = recurrenceConfig.pattern;
-      taskObject.recurrence_interval = recurrenceConfig.interval;
-      taskObject.recurrence_end_type = recurrenceConfig.end_type;
-
-      // Add pattern-specific fields
-      if (recurrenceConfig.pattern === "weekly" && recurrenceConfig.days_of_week) {
-        taskObject.recurrence_days_of_week = recurrenceConfig.days_of_week;
-      }
-      if (recurrenceConfig.pattern === "monthly" && recurrenceConfig.day_of_month) {
-        taskObject.recurrence_day_of_month = recurrenceConfig.day_of_month;
-      }
-
-      // Add end-type-specific fields
-      if (recurrenceConfig.end_type === "on_date" && recurrenceConfig.end_date) {
-        taskObject.recurrence_end_date = recurrenceConfig.end_date;
-      }
-      if (recurrenceConfig.end_type === "after_count" && recurrenceConfig.end_count) {
-        taskObject.recurrence_end_count = recurrenceConfig.end_count;
-      }
-    }
-
     try {
-      if (onSave) {
-        // Se c'è onSave, usa quello (TaskListContainer gestirà la chiamata al server)
+      if (isEditMode && onUpdate && task) {
+        // Modalità modifica
+        const taskId = task.task_id || task.id;
+        onUpdate(
+          taskId,
+          title,
+          description,
+          dueDate,
+          priority,
+          allowCategorySelection ? localCategory : categoryName,
+          durationMinutes
+        );
+      } else if (onSave) {
+        // Modalità creazione con onSave personalizzato
         onSave(
           title,
           description,
@@ -232,7 +252,47 @@ const AddTask: React.FC<AddTaskProps> = ({
           durationMinutes
         );
       } else if (categoryName) {
-        // Solo se non c'è onSave, usa addTaskToList per compatibilità
+        // Modalità creazione con addTaskToList (fallback per compatibilità)
+        const taskObject: any = {
+          id: Date.now(),
+          title: title.trim(),
+          description: description.trim() || "",
+          end_time: dueDate || null,
+          start_time: new Date().toISOString(),
+          priority: priorityString,
+          status: "In sospeso",
+          category_name: allowCategorySelection
+            ? localCategory
+            : categoryName || "",
+          user: "",
+          completed: false,
+          duration_minutes: durationMinutes || null,
+        };
+
+        // Add recurring task fields if enabled
+        if (isRecurring) {
+          taskObject.is_recurring = true;
+          taskObject.recurrence_pattern = recurrenceConfig.pattern;
+          taskObject.recurrence_interval = recurrenceConfig.interval;
+          taskObject.recurrence_end_type = recurrenceConfig.end_type;
+
+          // Add pattern-specific fields
+          if (recurrenceConfig.pattern === "weekly" && recurrenceConfig.days_of_week) {
+            taskObject.recurrence_days_of_week = recurrenceConfig.days_of_week;
+          }
+          if (recurrenceConfig.pattern === "monthly" && recurrenceConfig.day_of_month) {
+            taskObject.recurrence_day_of_month = recurrenceConfig.day_of_month;
+          }
+
+          // Add end-type-specific fields
+          if (recurrenceConfig.end_type === "on_date" && recurrenceConfig.end_date) {
+            taskObject.recurrence_end_date = recurrenceConfig.end_date;
+          }
+          if (recurrenceConfig.end_type === "after_count" && recurrenceConfig.end_count) {
+            taskObject.recurrence_end_count = recurrenceConfig.end_count;
+          }
+        }
+
         console.log(
           "Direct call to addTaskToList from AddTask with category:",
           categoryName
@@ -302,7 +362,7 @@ const AddTask: React.FC<AddTaskProps> = ({
       <View style={styles.modalOverlay}>
         <Animated.View style={[styles.formContainer, animatedStyle]}>
           <View style={styles.formHeader}>
-            <Text style={styles.formTitle}>Aggiungi Task</Text>
+            <Text style={styles.formTitle}>{isEditMode ? 'Modifica Task' : 'Aggiungi Task'}</Text>
             <TouchableOpacity onPress={handleCancel}>
               <Ionicons name="close" size={24} color="#666666" />
             </TouchableOpacity>
