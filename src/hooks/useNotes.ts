@@ -36,7 +36,7 @@ export interface NotesState {
 
 export interface NotesActions {
   addNote: (text: string) => Promise<void>;
-  updateNote: (id: string, text: string) => Promise<void>;
+  updateNote: (id: string, updates: { text?: string; color?: string }) => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
   updateNotePosition: (
     id: string,
@@ -243,19 +243,33 @@ export function useNotes(
   );
 
   const updateNoteAction = useCallback(
-    async (id: string, newText: string) => {
-      if (!id.trim() || !newText.trim()) return;
+    async (id: string, updates: { text?: string; color?: string }) => {
+      if (!id.trim()) return;
+      
+      // Valida che ci sia almeno un campo da aggiornare
+      if (!updates.text && !updates.color) return;
+
+      // Prepara gli aggiornamenti
+      const noteUpdates: Partial<Note> = {};
+      if (updates.text !== undefined) {
+        const trimmedText = updates.text.trim();
+        if (!trimmedText) return; // Non permettere testo vuoto
+        noteUpdates.text = trimmedText;
+      }
+      if (updates.color !== undefined) {
+        noteUpdates.color = updates.color;
+      }
 
       // Aggiornamento ottimistico
       setState((prevState) => ({
         ...prevState,
         notes: prevState.notes.map((note) =>
-          note.id === id ? { ...note, text: newText.trim() } : note
+          note.id === id ? { ...note, ...noteUpdates } : note
         ),
       }));
 
       try {
-        await updateNote(id, { text: newText.trim() });
+        await updateNote(id, noteUpdates);
       } catch (error: any) {
         console.error("Errore nell'aggiornamento della nota:", error);
         updateState({ error: "Impossibile aggiornare la nota" });

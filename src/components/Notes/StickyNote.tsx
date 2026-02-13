@@ -194,6 +194,9 @@ export const StickyNote: React.FC<StickyNoteProps> = ({ note, canvasScale }) => 
       // Aggiorna il colore locale immediatamente
       setCurrentColor(color);
       
+      // Salva il colore sul server
+      updateNote(note.id, { color });
+      
       // Chiudi il picker
       setShowColorPicker(false);
       
@@ -210,7 +213,7 @@ export const StickyNote: React.FC<StickyNoteProps> = ({ note, canvasScale }) => 
 
   const handleTextSave = useCallback(() => {
     if (editText.trim() !== note.text) {
-      updateNote(note.id, editText.trim());
+      updateNote(note.id, { text: editText.trim() });
     }
     Keyboard.dismiss();
     setIsEditing(false);
