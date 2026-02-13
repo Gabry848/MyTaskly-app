@@ -62,15 +62,46 @@ const Calendar20View: React.FC<Calendar20ViewProps> = ({ onClose }) => {
     return rawTasks.map(task => {
       const categoryName = task.category_name || '';
       const displayColor = colorService.getColor(categoryName);
-      const startDayjs = task.start_time ? dayjs(task.start_time) : dayjs();
-      const endDayjs = task.end_time ? dayjs(task.end_time) : startDayjs;
-      const computedDuration = endDayjs.diff(startDayjs, 'minute');
-      // Use server-provided duration_minutes if available, otherwise compute from dates
-      const durationMinutes = (task.duration_minutes && task.duration_minutes > 0)
+
+      // In this app, start_time = creation time, end_time = deadline/due date.
+      // For calendar display, the task should appear on its end_time (deadline) date.
+      // If end_time exists, use it as the reference date for the calendar.
+      const rawStartDayjs = task.start_time ? dayjs(task.start_time) : dayjs();
+      const rawEndDayjs = task.end_time ? dayjs(task.end_time) : rawStartDayjs;
+
+      // Use server-provided duration_minutes if available
+      const serverDuration = (task.duration_minutes && task.duration_minutes > 0)
         ? task.duration_minutes
-        : computedDuration;
-      const isMultiDay = !startDayjs.isSame(endDayjs, 'day');
-      const isAllDay = durationMinutes >= 1440 || (!task.start_time && !!task.end_time);
+        : 0;
+
+      // For calendar positioning: 
+      // - If duration_minutes is set, the task spans (end_time - duration) to end_time
+      // - If no duration, the task is a point-in-time at end_time (default 30 min for display)
+      let startDayjs: dayjs.Dayjs;
+      let endDayjs: dayjs.Dayjs;
+      let durationMinutes: number;
+
+      if (serverDuration > 0) {
+        // Task has explicit duration: ends at end_time, starts (duration) before
+        endDayjs = rawEndDayjs;
+        startDayjs = endDayjs.subtract(serverDuration, 'minute');
+        durationMinutes = serverDuration;
+      } else if (task.end_time) {
+        // Task has deadline but no duration: show at end_time with default 30 min
+        endDayjs = rawEndDayjs;
+        startDayjs = endDayjs.subtract(30, 'minute');
+        durationMinutes = 30;
+      } else {
+        // No end_time: fall back to start_time
+        startDayjs = rawStartDayjs;
+        endDayjs = startDayjs.add(30, 'minute');
+        durationMinutes = 30;
+      }
+
+      // Tasks in this app are never truly "all-day" or "multi-day" events.
+      // They are tasks with a deadline. Never mark them as spanning multiple days.
+      const isAllDay = false;
+      const isMultiDay = false;
 
       return {
         ...task,

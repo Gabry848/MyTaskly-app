@@ -76,14 +76,16 @@ const MonthView: React.FC<MonthViewProps> = ({
         const dateStr = current.format('YYYY-MM-DD');
         const dayTasks = tasks.filter(task => {
           if (!task.endDayjs && !task.startDayjs) return false;
-          const taskStart = task.startDayjs;
-          const taskEnd = task.endDayjs;
-          // Task falls on this day if the day is between start and end (inclusive)
-          return (
-            current.isSame(taskEnd, 'day') ||
-            current.isSame(taskStart, 'day') ||
-            (current.isAfter(taskStart, 'day') && current.isBefore(taskEnd, 'day'))
-          );
+          // Multi-day/all-day tasks span across days
+          if (task.isMultiDay || task.isAllDay) {
+            return (
+              current.isSame(task.startDayjs, 'day') ||
+              current.isSame(task.endDayjs, 'day') ||
+              (current.isAfter(task.startDayjs, 'day') && current.isBefore(task.endDayjs, 'day'))
+            );
+          }
+          // Regular tasks only show on their start day
+          return current.isSame(task.startDayjs, 'day');
         });
 
         week.push({
@@ -211,7 +213,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   todayCircle: {
-    backgroundColor: '#000000',
+    backgroundColor: '#007AFF',
   },
   dateText: {
     fontSize: 15,

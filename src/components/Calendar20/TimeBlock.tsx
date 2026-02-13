@@ -13,6 +13,16 @@ interface TimeBlockProps {
   onToggleComplete?: (task: CalendarTask) => void;
 }
 
+/**
+ * Converts a hex color to an rgba string with the given alpha.
+ */
+function hexToRgba(hex: string, alpha: number): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 const TimeBlock: React.FC<TimeBlockProps> = ({
   task,
   hourHeight,
@@ -29,7 +39,7 @@ const TimeBlock: React.FC<TimeBlockProps> = ({
   const left = column * (columnWidth / totalColumns) + 1;
 
   const isCompleted = task.status?.toLowerCase() === 'completato' || task.status?.toLowerCase() === 'completed';
-  const bgColor = task.displayColor || '#007AFF';
+  const baseColor = task.displayColor || '#3A3A3C';
 
   const startTime = task.startDayjs.format('HH:mm');
   const endTime = task.endDayjs.format('HH:mm');
@@ -46,7 +56,8 @@ const TimeBlock: React.FC<TimeBlockProps> = ({
           height,
           left,
           width,
-          backgroundColor: bgColor,
+          backgroundColor: hexToRgba(baseColor, 0.10),
+          borderLeftColor: baseColor,
         },
         isCompleted && styles.completed,
       ]}
@@ -64,15 +75,15 @@ const TimeBlock: React.FC<TimeBlockProps> = ({
             <Ionicons
               name={isCompleted ? 'checkbox' : 'square-outline'}
               size={14}
-              color="#ffffff"
+              color={baseColor}
             />
           </TouchableOpacity>
-          <Text style={[styles.title, isCompleted && styles.completedText]} numberOfLines={1}>
+          <Text style={[styles.title, { color: baseColor }, isCompleted && styles.completedText]} numberOfLines={1}>
             {task.title}
           </Text>
         </View>
         {showEndTime && (
-          <Text style={styles.time}>{startTime} - {endTime}</Text>
+          <Text style={[styles.time, { color: hexToRgba(baseColor, 0.6) }]}>{startTime} - {endTime}</Text>
         )}
       </View>
     </TouchableOpacity>
@@ -82,15 +93,14 @@ const TimeBlock: React.FC<TimeBlockProps> = ({
 const styles = StyleSheet.create({
   block: {
     position: 'absolute',
-    borderRadius: 10,
+    borderRadius: 8,
     paddingHorizontal: 8,
     paddingVertical: 4,
     overflow: 'hidden',
     borderLeftWidth: 3,
-    borderLeftColor: 'rgba(0,0,0,0.15)',
   },
   completed: {
-    opacity: 0.5,
+    opacity: 0.4,
   },
   content: {
     flex: 1,
@@ -104,8 +114,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 13,
-    fontWeight: '400',
-    color: '#ffffff',
+    fontWeight: '500',
     fontFamily: 'System',
     flex: 1,
   },
@@ -114,7 +123,6 @@ const styles = StyleSheet.create({
   },
   time: {
     fontSize: 12,
-    color: 'rgba(255,255,255,0.8)',
     fontFamily: 'System',
     marginTop: 2,
   },

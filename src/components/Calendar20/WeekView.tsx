@@ -138,6 +138,7 @@ const WeekView: React.FC<WeekViewProps> = ({
     return weekDays.map(day => {
       return tasks.filter(task => {
         if (!task.isAllDay) return false;
+        // All-day tasks can span multiple days
         return (
           day.isSame(task.startDayjs, 'day') ||
           day.isSame(task.endDayjs, 'day') ||
@@ -149,16 +150,13 @@ const WeekView: React.FC<WeekViewProps> = ({
 
   const hasAllDay = allDayTasksByDay.some(d => d.length > 0);
 
-  // Timed tasks per day
+  // Timed tasks per day - only show on start day
   const timedTasksByDay = useMemo(() => {
     return weekDays.map(day => {
       const dayTasks = tasks.filter(task => {
         if (task.isAllDay) return false;
-        return (
-          day.isSame(task.startDayjs, 'day') ||
-          day.isSame(task.endDayjs, 'day') ||
-          (day.isAfter(task.startDayjs, 'day') && day.isBefore(task.endDayjs, 'day'))
-        );
+        // Regular timed tasks only show on their start day
+        return day.isSame(task.startDayjs, 'day');
       });
       return computeOverlapColumns(dayTasks);
     });
@@ -315,7 +313,7 @@ const styles = StyleSheet.create({
     fontFamily: 'System',
   },
   todayColor: {
-    color: '#000000',
+    color: '#007AFF',
   },
   dateCircle: {
     width: 28,
@@ -326,7 +324,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   todayCircle: {
-    backgroundColor: '#000000',
+    backgroundColor: '#007AFF',
   },
   dateNum: {
     fontSize: 16,
@@ -400,12 +398,12 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#000000',
+    backgroundColor: '#007AFF',
   },
   currentTimeBar: {
     flex: 1,
     height: 1.5,
-    backgroundColor: '#000000',
+    backgroundColor: '#007AFF',
   },
 });
 

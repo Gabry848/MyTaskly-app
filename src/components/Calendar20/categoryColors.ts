@@ -1,21 +1,24 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const COLOR_POOL = [
-  '#007AFF', // App Blue
-  '#34A853', // Green
-  '#EA4335', // Red
-  '#A142F4', // Purple
-  '#F4A125', // Orange
-  '#00ACC1', // Teal
-  '#E91E63', // Pink
-  '#795548', // Brown
-  '#607D8B', // Blue Grey
-  '#FF7043', // Deep Orange
-  '#66BB6A', // Light Green
-  '#AB47BC', // Medium Purple
+  '#3A3A3C', // Charcoal (primary, matches black theme)
+  '#636366', // Medium Gray
+  '#48484A', // Dark Gray
+  '#8E8E93', // System Gray
+  '#5E5CE6', // Indigo (muted)
+  '#6E6E73', // Warm Gray
+  '#007AFF', // App Blue (accent)
+  '#A2845E', // Warm Brown
+  '#787880', // Cool Gray
+  '#98989D', // Light Gray
+  '#545456', // Graphite
+  '#6C6C70', // Ash Gray
 ];
 
 const STORAGE_KEY = '@calendar20_category_colors';
+// Bump this version when COLOR_POOL changes to force a re-assignment
+const COLOR_VERSION_KEY = '@calendar20_color_version';
+const CURRENT_COLOR_VERSION = '2';
 
 class CategoryColorService {
   private static instance: CategoryColorService;
@@ -32,9 +35,17 @@ class CategoryColorService {
   async load(): Promise<void> {
     if (this.loaded) return;
     try {
-      const stored = await AsyncStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        this.colorMap = JSON.parse(stored);
+      const version = await AsyncStorage.getItem(COLOR_VERSION_KEY);
+      if (version !== CURRENT_COLOR_VERSION) {
+        // Color palette changed: clear old cached colors and re-assign
+        await AsyncStorage.removeItem(STORAGE_KEY);
+        await AsyncStorage.setItem(COLOR_VERSION_KEY, CURRENT_COLOR_VERSION);
+        this.colorMap = {};
+      } else {
+        const stored = await AsyncStorage.getItem(STORAGE_KEY);
+        if (stored) {
+          this.colorMap = JSON.parse(stored);
+        }
       }
     } catch {
       this.colorMap = {};

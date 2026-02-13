@@ -103,6 +103,7 @@ const ThreeDayView: React.FC<ThreeDayViewProps> = ({
     return days.map(day =>
       tasks.filter(task => {
         if (!task.isAllDay) return false;
+        // All-day tasks can span multiple days
         return (
           day.isSame(task.startDayjs, 'day') ||
           day.isSame(task.endDayjs, 'day') ||
@@ -118,11 +119,8 @@ const ThreeDayView: React.FC<ThreeDayViewProps> = ({
     return days.map(day => {
       const dayTasks = tasks.filter(task => {
         if (task.isAllDay) return false;
-        return (
-          day.isSame(task.startDayjs, 'day') ||
-          day.isSame(task.endDayjs, 'day') ||
-          (day.isAfter(task.startDayjs, 'day') && day.isBefore(task.endDayjs, 'day'))
-        );
+        // Regular timed tasks only show on their start day
+        return day.isSame(task.startDayjs, 'day');
       });
       return computeOverlapColumns(dayTasks);
     });
@@ -261,7 +259,7 @@ const styles = StyleSheet.create({
     color: '#666666',
     fontFamily: 'System',
   },
-  todayColor: { color: '#000000' },
+  todayColor: { color: '#007AFF' },
   dateCircle: {
     width: 28,
     height: 28,
@@ -270,7 +268,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 4,
   },
-  todayCircle: { backgroundColor: '#000000' },
+  todayCircle: { backgroundColor: '#007AFF' },
   dateNum: { fontSize: 18, fontWeight: '400', color: '#000000', fontFamily: 'System' },
   todayDateNum: { color: '#ffffff', fontWeight: '600' },
   allDayRow: {
@@ -312,8 +310,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 10,
   },
-  currentTimeDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#000000' },
-  currentTimeBar: { flex: 1, height: 1.5, backgroundColor: '#000000' },
+  currentTimeDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#007AFF' },
+  currentTimeBar: { flex: 1, height: 1.5, backgroundColor: '#007AFF' },
 });
 
 export default React.memo(ThreeDayView);

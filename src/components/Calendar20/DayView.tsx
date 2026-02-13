@@ -129,11 +129,16 @@ const DayView: React.FC<DayViewProps> = ({
 
   const dayTasks = useMemo(() => {
     return tasks.filter(task => {
-      return (
-        currentDate.isSame(task.startDayjs, 'day') ||
-        currentDate.isSame(task.endDayjs, 'day') ||
-        (currentDate.isAfter(task.startDayjs, 'day') && currentDate.isBefore(task.endDayjs, 'day'))
-      );
+      // Multi-day/all-day tasks can span across days
+      if (task.isMultiDay || task.isAllDay) {
+        return (
+          currentDate.isSame(task.startDayjs, 'day') ||
+          currentDate.isSame(task.endDayjs, 'day') ||
+          (currentDate.isAfter(task.startDayjs, 'day') && currentDate.isBefore(task.endDayjs, 'day'))
+        );
+      }
+      // Regular timed tasks only show on their start day
+      return currentDate.isSame(task.startDayjs, 'day');
     });
   }, [tasks, currentDate]);
 
@@ -298,12 +303,12 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#000000',
+    backgroundColor: '#007AFF',
   },
   currentTimeBar: {
     flex: 1,
     height: 1.5,
-    backgroundColor: '#000000',
+    backgroundColor: '#007AFF',
   },
 });
 

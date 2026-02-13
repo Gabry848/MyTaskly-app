@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { CalendarTask } from './types';
 
 interface EventChipProps {
@@ -10,8 +10,18 @@ interface EventChipProps {
   isEnd?: boolean;
 }
 
+/**
+ * Converts a hex color to an rgba string with the given alpha.
+ */
+function hexToRgba(hex: string, alpha: number): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 const EventChip: React.FC<EventChipProps> = ({ task, onPress, isSpanning, isStart = true, isEnd = true }) => {
-  const bgColor = task.displayColor || '#007AFF';
+  const baseColor = task.displayColor || '#3A3A3C';
   const isCompleted = task.status?.toLowerCase() === 'completato' || task.status?.toLowerCase() === 'completed';
 
   return (
@@ -20,13 +30,23 @@ const EventChip: React.FC<EventChipProps> = ({ task, onPress, isSpanning, isStar
       onPress={() => onPress?.(task)}
       style={[
         styles.chip,
-        { backgroundColor: bgColor },
+        {
+          backgroundColor: hexToRgba(baseColor, 0.12),
+          borderLeftColor: baseColor,
+        },
         isSpanning && !isStart && styles.spanningLeft,
         isSpanning && !isEnd && styles.spanningRight,
         isCompleted && styles.completed,
       ]}
     >
-      <Text style={[styles.chipText, isCompleted && styles.completedText]} numberOfLines={1}>
+      <Text
+        style={[
+          styles.chipText,
+          { color: baseColor },
+          isCompleted && styles.completedText,
+        ]}
+        numberOfLines={1}
+      >
         {task.title}
       </Text>
     </TouchableOpacity>
@@ -37,15 +57,17 @@ const styles = StyleSheet.create({
   chip: {
     paddingHorizontal: 6,
     paddingVertical: 3,
-    borderRadius: 6,
+    borderRadius: 4,
     marginBottom: 2,
     minHeight: 20,
     justifyContent: 'center',
+    borderLeftWidth: 3,
   },
   spanningLeft: {
     borderTopLeftRadius: 0,
     borderBottomLeftRadius: 0,
     marginLeft: -1,
+    borderLeftWidth: 0,
   },
   spanningRight: {
     borderTopRightRadius: 0,
@@ -53,13 +75,12 @@ const styles = StyleSheet.create({
     marginRight: -1,
   },
   chipText: {
-    color: '#ffffff',
     fontSize: 12,
-    fontWeight: '400',
+    fontWeight: '500',
     fontFamily: 'System',
   },
   completed: {
-    opacity: 0.5,
+    opacity: 0.4,
   },
   completedText: {
     textDecorationLine: 'line-through',

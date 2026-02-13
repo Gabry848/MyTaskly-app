@@ -49,11 +49,16 @@ const AgendaView: React.FC<AgendaViewProps> = ({
       const day = currentDate.add(i, 'day');
       const dayStr = day.format('YYYY-MM-DD');
       const dayTasks = tasks.filter(task => {
-        return (
-          day.isSame(task.startDayjs, 'day') ||
-          day.isSame(task.endDayjs, 'day') ||
-          (day.isAfter(task.startDayjs, 'day') && day.isBefore(task.endDayjs, 'day'))
-        );
+        // Multi-day/all-day tasks can span across days
+        if (task.isMultiDay || task.isAllDay) {
+          return (
+            day.isSame(task.startDayjs, 'day') ||
+            day.isSame(task.endDayjs, 'day') ||
+            (day.isAfter(task.startDayjs, 'day') && day.isBefore(task.endDayjs, 'day'))
+          );
+        }
+        // Regular tasks only show on their start day
+        return day.isSame(task.startDayjs, 'day');
       });
 
       // Sort by time
