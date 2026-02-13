@@ -34,7 +34,8 @@ export type AddTaskProps = {
     dueDate: string,
     priority: number,
     categoryName?: string,
-    recurrence?: RecurrenceConfigType
+    recurrence?: RecurrenceConfigType,
+    durationMinutes?: number | null
   ) => void;
   categoryName?: string;
   initialDate?: string; // Nuova prop per la data iniziale
@@ -76,6 +77,18 @@ const AddTask: React.FC<AddTaskProps> = ({
     interval: 1,
     end_type: "never",
   });
+
+  // Duration state
+  const [durationMinutes, setDurationMinutes] = useState<number | null>(null);
+  const [customDuration, setCustomDuration] = useState<string>("");
+
+  const DURATION_PRESETS = [
+    { label: "15 min", value: 15 },
+    { label: "30 min", value: 30 },
+    { label: "1 ora", value: 60 },
+    { label: "2 ore", value: 120 },
+    { label: "4 ore", value: 240 },
+  ];
 
   // Gestisce l'animazione all'apertura del modale
   useEffect(() => {
@@ -140,6 +153,8 @@ const AddTask: React.FC<AddTaskProps> = ({
       interval: 1,
       end_type: "never",
     });
+    setDurationMinutes(null);
+    setCustomDuration("");
   };
 
   const handleSave = () => {
@@ -177,6 +192,7 @@ const AddTask: React.FC<AddTaskProps> = ({
         : categoryName || "", // Aggiungere il nome della categoria
       user: "", // Campo richiesto dal server
       completed: false,
+      duration_minutes: durationMinutes || null, // Durata stimata in minuti
     };
 
     // Add recurring task fields if enabled
@@ -212,7 +228,8 @@ const AddTask: React.FC<AddTaskProps> = ({
           dueDate,
           priority,
           allowCategorySelection ? localCategory : categoryName,
-          isRecurring ? recurrenceConfig : undefined
+          isRecurring ? recurrenceConfig : undefined,
+          durationMinutes
         );
       } else if (categoryName) {
         // Solo se non c'è onSave, usa addTaskToList per compatibilità
@@ -461,6 +478,67 @@ const AddTask: React.FC<AddTaskProps> = ({
                   Alta
                 </Text>
               </TouchableOpacity>
+            </View>
+
+            {/* Duration selector */}
+            <Text style={styles.inputLabel}>Durata stimata (opzionale)</Text>
+            <View style={styles.durationContainer}>
+              {DURATION_PRESETS.map((preset) => (
+                <TouchableOpacity
+                  key={preset.value}
+                  style={[
+                    styles.durationChip,
+                    durationMinutes === preset.value && styles.durationChipActive,
+                  ]}
+                  onPress={() => {
+                    if (durationMinutes === preset.value) {
+                      setDurationMinutes(null);
+                      setCustomDuration("");
+                    } else {
+                      setDurationMinutes(preset.value);
+                      setCustomDuration("");
+                    }
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.durationChipText,
+                      durationMinutes === preset.value && styles.durationChipTextActive,
+                    ]}
+                  >
+                    {preset.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <View style={styles.customDurationRow}>
+              <TextInput
+                style={styles.customDurationInput}
+                placeholder="Personalizzata (minuti)"
+                keyboardType="numeric"
+                value={customDuration}
+                onChangeText={(text) => {
+                  const numericText = text.replace(/[^0-9]/g, "");
+                  setCustomDuration(numericText);
+                  const val = parseInt(numericText, 10);
+                  if (val >= 1 && val <= 10080) {
+                    setDurationMinutes(val);
+                  } else if (numericText === "") {
+                    setDurationMinutes(null);
+                  }
+                }}
+              />
+              {durationMinutes && (
+                <TouchableOpacity
+                  style={styles.clearDurationButton}
+                  onPress={() => {
+                    setDurationMinutes(null);
+                    setCustomDuration("");
+                  }}
+                >
+                  <Ionicons name="close-circle" size={20} color="#999" />
+                </TouchableOpacity>
+              )}
             </View>
 
             {/* Recurring Task Toggle */}
@@ -749,6 +827,55 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderColor: "#e1e5e9",
+  },
+  durationContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 12,
+  },
+  durationChip: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: "#e1e5e9",
+    backgroundColor: "#ffffff",
+  },
+  durationChipActive: {
+    borderColor: "#000000",
+    backgroundColor: "#f8f8f8",
+    borderWidth: 2,
+  },
+  durationChipText: {
+    fontSize: 14,
+    color: "#666666",
+    fontFamily: "System",
+    fontWeight: "400",
+  },
+  durationChipTextActive: {
+    color: "#000000",
+    fontWeight: "500",
+  },
+  customDurationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 24,
+  },
+  customDurationInput: {
+    flex: 1,
+    borderWidth: 1.5,
+    borderColor: "#e1e5e9",
+    borderRadius: 16,
+    padding: 14,
+    fontSize: 15,
+    backgroundColor: "#ffffff",
+    fontFamily: "System",
+    color: "#000000",
+  },
+  clearDurationButton: {
+    marginLeft: 8,
+    padding: 4,
   },
 });
 

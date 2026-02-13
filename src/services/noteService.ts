@@ -52,7 +52,7 @@ const mapServerNoteToClientNote = (serverNote: ServerNote): Note => {
   
   // Assicurati che il title sia sempre una stringa
   const noteText = typeof serverNote.title === 'string' ? serverNote.title : '';
-  if (noteText === '' && serverNote.title !== '') {
+  if (noteText === '' && serverNote.title != null && serverNote.title !== '') {
     console.warn('[DEBUG] mapServerNoteToClientNote: Non-string title converted to empty string:', serverNote.title);
   }
   const result = {

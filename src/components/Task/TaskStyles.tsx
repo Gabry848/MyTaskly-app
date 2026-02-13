@@ -6,7 +6,7 @@ export const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     borderRadius: 16,
     padding: 16,
-    marginVertical: 8,
+    marginVertical: 4,
     marginHorizontal: 16,
     borderWidth: 1,
     borderColor: "#e1e5e9",
@@ -97,6 +97,7 @@ export const styles = StyleSheet.create({
     marginLeft: 'auto',
     marginRight: 8,
     justifyContent: 'center',
+    alignItems: 'flex-end',
   },
   daysRemaining: {
     fontSize: 13,
@@ -392,5 +393,68 @@ export const styles = StyleSheet.create({
     fontWeight: '400',
     color: '#000000',
     paddingHorizontal: 16,
+  },
+  // Duration styles
+  durationContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 12,
+  },
+  durationChip: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: '#e1e5e9',
+    backgroundColor: '#ffffff',
+  },
+  durationChipActive: {
+    borderColor: '#000000',
+    backgroundColor: '#f8f8f8',
+    borderWidth: 2,
+  },
+  durationChipText: {
+    fontSize: 14,
+    color: '#666666',
+    fontFamily: 'System',
+    fontWeight: '400',
+  },
+  durationChipTextActive: {
+    color: '#000000',
+    fontWeight: '500',
+  },
+  customDurationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  customDurationInput: {
+    flex: 1,
+    borderWidth: 1.5,
+    borderColor: '#e1e5e9',
+    borderRadius: 16,
+    padding: 14,
+    fontSize: 15,
+    backgroundColor: '#ffffff',
+    fontFamily: 'System',
+    color: '#000000',
+  },
+  clearDurationButton: {
+    marginLeft: 8,
+    padding: 4,
+  },
+  // Duration display (for TaskHeader/BasicComponents)
+  durationContainer2: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  durationText: {
+    fontSize: 12,
+    color: '#666666',
+    marginLeft: 4,
+    fontWeight: '400',
+    fontFamily: 'System',
   },
 });

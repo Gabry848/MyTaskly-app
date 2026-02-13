@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Pressable } from "react-native";
 import { styles } from "./TaskStyles";
-import { Checkbox, TaskTitle, DateDisplay, DaysRemaining } from "./BasicComponents";
+import { Checkbox, TaskTitle, DateDisplay, DaysRemaining, DurationDisplay } from "./BasicComponents";
 
 // Componente per l'intestazione del task (checkbox, titolo, info)
 const TaskHeader = ({
@@ -40,15 +40,12 @@ const TaskHeader = ({
           numberOfLines={expanded ? undefined : 1}
           priority={task.priority}
         />
-
-        <View style={styles.infoRow}>
-          <DateDisplay date={task.end_time} />
-        </View>
       </Pressable>
 
-      {/* Giorni rimanenti (spostato a destra) */}
+      {/* Giorni rimanenti e durata (spostato a destra) */}
       <View style={styles.daysRemainingContainer}>
         <DaysRemaining endDate={task.end_time} />
+        <DurationDisplay durationMinutes={task.duration_minutes} />
       </View>
     </View>
   );

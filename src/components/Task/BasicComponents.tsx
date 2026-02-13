@@ -5,6 +5,18 @@ import { useTranslation } from "react-i18next";
 import { styles } from "./TaskStyles";
 import { getDaysRemainingText, getDaysRemainingColor, getPriorityTextColor } from "./TaskUtils";
 
+// Helper per formattare la durata
+const formatDuration = (minutes?: number | null): string | null => {
+  if (!minutes) return null;
+  if (minutes < 60) return `${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  if (remainingMinutes === 0) {
+    return hours === 1 ? '1 ora' : `${hours} ore`;
+  }
+  return `${hours}h ${remainingMinutes}min`;
+};
+
 // Componente Checkbox riutilizzabile
 export const Checkbox = ({ checked, onPress, isOptimistic = false }) => (
   <TouchableOpacity
@@ -47,6 +59,18 @@ export const DateDisplay = ({ date }) => {
     <View style={styles.dateContainer}>
       <Ionicons name="calendar-outline" size={14} color="#666666" />
       <Text style={styles.dateText}>{formattedDate}</Text>
+    </View>
+  );
+};
+
+// Componente per visualizzare la durata stimata
+export const DurationDisplay = ({ durationMinutes }: { durationMinutes?: number | null }) => {
+  const formatted = formatDuration(durationMinutes);
+  if (!formatted) return null;
+
+  return (
+    <View style={styles.durationContainer2}>
+      <Text style={styles.durationText}>{formatted}</Text>
     </View>
   );
 };

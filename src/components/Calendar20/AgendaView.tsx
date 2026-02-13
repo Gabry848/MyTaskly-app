@@ -102,6 +102,17 @@ const AgendaView: React.FC<AgendaViewProps> = ({
       ? t('calendar20.allDay')
       : `${item.startDayjs.format('HH:mm')} - ${item.endDayjs.format('HH:mm')}`;
 
+    // Format duration from server data if available
+    const durationStr = (() => {
+      const mins = item.duration_minutes;
+      if (!mins || mins <= 0) return null;
+      if (mins < 60) return `${mins} min`;
+      const h = Math.floor(mins / 60);
+      const m = mins % 60;
+      if (m === 0) return h === 1 ? '1 ora' : `${h} ore`;
+      return `${h}h ${m}min`;
+    })();
+
     return (
       <TouchableOpacity
         style={styles.taskRow}
@@ -129,7 +140,15 @@ const AgendaView: React.FC<AgendaViewProps> = ({
           >
             {item.title}
           </Text>
-          <Text style={styles.taskTime}>{timeStr}</Text>
+          <View style={styles.taskTimeRow}>
+            <Text style={styles.taskTime}>{timeStr}</Text>
+            {durationStr && (
+              <View style={styles.durationBadge}>
+                <Ionicons name="hourglass-outline" size={12} color="#666" />
+                <Text style={styles.durationText}>{durationStr}</Text>
+              </View>
+            )}
+          </View>
         </View>
 
         {item.category_name && (
@@ -291,6 +310,27 @@ const styles = StyleSheet.create({
     color: '#000000',
     fontWeight: '400',
     fontFamily: 'System',
+  },
+  taskTimeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+    gap: 8,
+  },
+  durationBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  durationText: {
+    fontSize: 12,
+    color: '#666666',
+    fontFamily: 'System',
+    fontWeight: '400',
   },
 });
 

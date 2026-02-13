@@ -76,6 +76,18 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onPress }) => {
     return 'Ricorrente';
   };
 
+  // Format duration for display
+  const formatDuration = (minutes?: number | null): string | null => {
+    if (!minutes) return null;
+    if (minutes < 60) return `${minutes} min`;
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    if (remainingMinutes === 0) {
+      return hours === 1 ? '1 ora' : `${hours} ore`;
+    }
+    return `${hours}h ${remainingMinutes}min`;
+  };
+
   // Determina il colore in base alla priorità (gradiente di scurezza)
   const priorityColors: Record<string, string> = {
     'Alta': '#000000',     // Nero per alta priorità
@@ -149,21 +161,15 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onPress }) => {
             </Text>
           </View>
         </View>
-        
-        <View style={styles.taskTimeInfo}>
-          {task.start_time || task.end_time || task.next_occurrence ? (
-            <Ionicons name="time-outline" size={14} color="#666" />
-          ) : (
-            <Ionicons name="calendar-clear-outline" size={14} color="#999" />
-          )}
-          <Text style={[
-            styles.taskTimeText,
-            { color: task.start_time || task.end_time || task.next_occurrence ? '#666' : '#999' }
-          ]}>
-            {task.is_recurring && task.next_occurrence ? 'Prossima: ' : ''}
-            {formatTaskTime(task.start_time, task.end_time, task.next_occurrence)}
-          </Text>
-        </View>
+
+        {/* Duration display */}
+        {formatDuration(task.duration_minutes) && (
+          <View style={styles.durationInfo}>
+            <Text style={styles.durationInfoText}>
+              {formatDuration(task.duration_minutes)}
+            </Text>
+          </View>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -246,17 +252,6 @@ const styles = StyleSheet.create({
     fontWeight: "400",
     fontFamily: "System",
   },
-  taskTimeInfo: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  taskTimeText: {
-    fontSize: 12,
-    color: "#999999",
-    marginLeft: 6,
-    fontFamily: "System",
-    fontWeight: "300",
-  },
   recurrenceDescription: {
     fontSize: 12,
     color: "#007AFF",
@@ -271,6 +266,18 @@ const styles = StyleSheet.create({
     fontFamily: "System",
     fontWeight: "300",
     fontStyle: "italic",
+  },
+  durationInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 4,
+  },
+  durationInfoText: {
+    fontSize: 12,
+    color: "#666666",
+    marginLeft: 6,
+    fontFamily: "System",
+    fontWeight: "400",
   },
 });
 

@@ -1,9 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, TouchableOpacity, Modal, TextInput, ScrollView, Alert } from "react-native";
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { MaterialIcons } from "@expo/vector-icons";
+import { MaterialIcons, Ionicons } from "@expo/vector-icons";
 import { styles } from "./TaskStyles";
 import { PrioritySelector, StatusSelector, DatePickerButton, TimePickerButton } from "./FormComponents";
+
+const DURATION_PRESETS = [
+  { label: "15 min", value: 15 },
+  { label: "30 min", value: 30 },
+  { label: "1 ora", value: 60 },
+  { label: "2 ore", value: 120 },
+  { label: "4 ore", value: 240 },
+];
 
 // Componente per il modal di modifica
 const TaskEditModal = ({ 
@@ -19,12 +27,14 @@ const TaskEditModal = ({
     end_time: "",
     priority: "",
     status: "",
+    duration_minutes: null as number | null,
   });
   
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [pickerMode, setPickerMode] = useState('date');
   const [dateType, setDateType] = useState('end'); // 'start' o 'end'
+  const [customDuration, setCustomDuration] = useState<string>("");
 
   // Quando il modale diventa visibile, inizializza i campi
   useEffect(() => {
@@ -36,7 +46,9 @@ const TaskEditModal = ({
         end_time: task.end_time,
         priority: task.priority,
         status: task.status || "In sospeso",
+        duration_minutes: task.duration_minutes ?? null,
       });
+      setCustomDuration(task.duration_minutes ? String(task.duration_minutes) : "");
     }
   }, [visible, task]);
 
@@ -192,6 +204,66 @@ const TaskEditModal = ({
               value={editedTask.status} 
               onChange={(status) => setEditedTask({...editedTask, status})} 
             />
+
+            <Text style={styles.inputLabel}>Durata stimata (opzionale)</Text>
+            <View style={styles.durationContainer}>
+              {DURATION_PRESETS.map((preset) => (
+                <TouchableOpacity
+                  key={preset.value}
+                  style={[
+                    styles.durationChip,
+                    editedTask.duration_minutes === preset.value && styles.durationChipActive,
+                  ]}
+                  onPress={() => {
+                    if (editedTask.duration_minutes === preset.value) {
+                      setEditedTask({...editedTask, duration_minutes: null});
+                      setCustomDuration("");
+                    } else {
+                      setEditedTask({...editedTask, duration_minutes: preset.value});
+                      setCustomDuration("");
+                    }
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.durationChipText,
+                      editedTask.duration_minutes === preset.value && styles.durationChipTextActive,
+                    ]}
+                  >
+                    {preset.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <View style={styles.customDurationRow}>
+              <TextInput
+                style={styles.customDurationInput}
+                placeholder="Personalizzata (minuti)"
+                keyboardType="numeric"
+                value={customDuration}
+                onChangeText={(text) => {
+                  const numericText = text.replace(/[^0-9]/g, "");
+                  setCustomDuration(numericText);
+                  const val = parseInt(numericText, 10);
+                  if (val >= 1 && val <= 10080) {
+                    setEditedTask({...editedTask, duration_minutes: val});
+                  } else if (numericText === "") {
+                    setEditedTask({...editedTask, duration_minutes: null});
+                  }
+                }}
+              />
+              {editedTask.duration_minutes && (
+                <TouchableOpacity
+                  style={styles.clearDurationButton}
+                  onPress={() => {
+                    setEditedTask({...editedTask, duration_minutes: null});
+                    setCustomDuration("");
+                  }}
+                >
+                  <Ionicons name="close-circle" size={20} color="#999" />
+                </TouchableOpacity>
+              )}
+            </View>
           </ScrollView>
           
           <View style={styles.editModalFooter}>
