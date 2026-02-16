@@ -194,7 +194,7 @@ export const TutorialOnboarding: React.FC<{
           <Ionicons
             name={getSectionIcon(page.sectionKey)}
             size={48}
-            color="#007AFF"
+            color="#000"
           />
         </View>
         <Text style={styles.sectionHeaderTitle}>{page.sectionTitle}</Text>
@@ -218,7 +218,7 @@ export const TutorialOnboarding: React.FC<{
             <Ionicons
               name={getSectionIcon(step.section)}
               size={14}
-              color="#007AFF"
+              color="#000"
             />
             <Text style={styles.sectionBadgeText}>{page.sectionTitle}</Text>
           </View>
@@ -470,7 +470,7 @@ const styles = StyleSheet.create({
     width: 96,
     height: 96,
     borderRadius: 48,
-    backgroundColor: '#F0F7FF',
+    backgroundColor: '#F5F5F5',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 24,
@@ -500,7 +500,7 @@ const styles = StyleSheet.create({
   sectionBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F0F7FF',
+    backgroundColor: '#F5F5F5',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
@@ -510,7 +510,7 @@ const styles = StyleSheet.create({
   sectionBadgeText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#007AFF',
+    color: '#000',
   },
   imageContainer: {
     width: SCREEN_WIDTH - 64,
@@ -564,7 +564,7 @@ const styles = StyleSheet.create({
     width: 88,
     height: 88,
     borderRadius: 44,
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#000',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 24,
@@ -648,10 +648,10 @@ const styles = StyleSheet.create({
   progressDotActive: {
     width: 24,
     borderRadius: 4,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#000',
   },
   progressDotPast: {
-    backgroundColor: '#B0D4FF',
+    backgroundColor: '#666',
   },
   progressDotSection: {
     width: 12,
@@ -677,7 +677,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F5F5',
   },
   navButtonNext: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#000',
   },
   navButtonBackText: {
     fontSize: 16,
