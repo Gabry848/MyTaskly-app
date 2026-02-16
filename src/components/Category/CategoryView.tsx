@@ -149,21 +149,25 @@ const CategoryView = forwardRef<CategoryViewRef, CategoryViewProps>(
       <ScrollView style={styles.container}>
         {/* Mostra le categorie solo se non stiamo ricaricando */}
         {!isReloading && categories && categories.length > 0
-          ? categories.map((category, index) => (
-              <Category
-                key={`${category.id || category.name}-${index}`}
-                title={category.name}
-                description={category.description}
-                imageUrl={category.imageUrl}
-                categoryId={category.category_id || category.id}
-                isShared={category.is_shared}
-                isOwned={category.is_owned}
-                ownerName={category.owner_name}
-                permissionLevel={category.permission_level}
-                onDelete={onCategoryDeleted}
-                onEdit={onCategoryEdited}
-              />
-            ))
+          ? categories.map((category, index) => {
+              const categoryElement = (
+                <Category
+                  key={`${category.id || category.name}-${index}`}
+                  title={category.name}
+                  description={category.description}
+                  imageUrl={category.imageUrl}
+                  categoryId={category.category_id || category.id}
+                  isShared={category.is_shared}
+                  isOwned={category.is_owned}
+                  ownerName={category.owner_name}
+                  permissionLevel={category.permission_level}
+                  onDelete={onCategoryDeleted}
+                  onEdit={onCategoryEdited}
+                />
+              );
+              
+              return categoryElement;
+            })
           : !loading &&
             !isReloading && (
               <View style={styles.noCategoriesContainer}>

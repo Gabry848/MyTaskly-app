@@ -50,7 +50,12 @@
       "voiceSettings": "Impostazioni vocali",
       "googleCalendar": "Google Calendar",
       "about": "Info",
+      "tutorial": "Rivedi Tutorial",
       "testNotifications": "Test Notifiche (10s)"
+    },
+    "tutorial": {
+      "restartTitle": "Tutorial",
+      "restartMessage": "Il tutorial è stato riavviato! Torna alla schermata principale per iniziare."
     }
   },
   "home": {
@@ -73,34 +78,45 @@
   "tutorial": {
     "welcome": {
       "title": "Benvenuto in MyTaskly!",
-      "description": "Il tuo assistente AI personale per gestire task, note e calendario. Scopri come usare tutte le funzionalità in pochi passaggi.",
+      "description": "Il tuo assistente AI personale per gestire task, note e calendario. Scopri come usare tutte le funzionalita' in pochi passaggi.",
       "startButton": "Inizia il Tour",
       "skipButton": "Salta il tour"
     },
+    "sections": {
+      "home": "Home",
+      "categories": "Categorie",
+      "calendar": "Calendario"
+    },
     "steps": {
-      "chat": {
-        "title": "Chat con l'AI",
-        "description": "Scrivi un messaggio o tocca il microfono per chattare vocalmente. L'assistente AI ti aiuterà a gestire le tue attività."
+      "home": {
+        "textChat": {
+          "title": "Chat Testuale",
+          "description": "Scrivi un messaggio nel campo di testo in basso per chattare con l'assistente AI. Puoi chiedere di creare task, organizzare attivita' o ricevere suggerimenti."
+        },
+        "voiceChat": {
+          "title": "Chat Vocale",
+          "description": "Tocca l'icona del microfono accanto al campo di testo per aprire la chat vocale. Parla direttamente con l'assistente AI per creare task e gestire le tue attivita' a mani libere."
+        },
+        "chatHistory": {
+          "title": "Cronologia Chat",
+          "description": "Tocca l'icona della chat nella barra in alto per accedere alla cronologia delle conversazioni precedenti. Puoi rivedere o continuare le chat passate."
+        }
       },
       "categories": {
-        "title": "Le tue Categorie",
-        "description": "Organizza le tue attività in categorie. Tieni premuto su una categoria per modificarla o eliminarla."
-      },
-      "tasks": {
-        "title": "Gestisci i Task",
-        "description": "Tocca un task per completarlo. Tieni premuto per modificare, eliminare o impostare promemoria."
-      },
-      "notes": {
-        "title": "Disegna e Annota",
-        "description": "Usa la lavagna per disegnare, prendere appunti o creare schizzi. Tocca il pulsante + per aggiungere una nuova nota."
+        "editCategory": {
+          "title": "Modificare una Categoria",
+          "description": "Tieni premuto su una card della categoria per aprire il menu di modifica. Puoi rinominarla, cambiare il colore o eliminarla."
+        },
+        "editTask": {
+          "title": "Modificare un Task",
+          "description": "Tocca un task per aprire i suoi dettagli. Da li' puoi modificare titolo, descrizione, scadenza, priorita' e altro. Scorri a sinistra per le azioni rapide."
+        }
       },
       "calendar": {
-        "title": "Calendario delle Attività",
-        "description": "Visualizza tutti i tuoi task organizzati per data. Tocca un giorno per vedere le attività programmate."
-      },
-      "statistics": {
-        "title": "Le tue Statistiche",
-        "description": "Monitora il tuo progresso con grafici e analitiche. Visualizza il numero di task completati, la distribuzione per categoria e il tuo andamento nel tempo."
+        "switch": {
+          "title": "Cambia Vista Calendario",
+          "description": "Tocca il pulsante di cambio vista in alto a destra per passare dalla vista calendario base a quella avanzata con piu' opzioni."
+        }
       }
     },
     "completion": {

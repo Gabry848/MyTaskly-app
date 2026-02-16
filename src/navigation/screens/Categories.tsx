@@ -69,8 +69,8 @@ export default function Categories() {
             style={styles.searchButton}
           />
           <TouchableOpacity style={styles.reloadButton} onPress={handleReload}>
-            <MaterialIcons name="refresh" size={24} color="#000000" />
-          </TouchableOpacity>
+              <MaterialIcons name="refresh" size={24} color="#000000" />
+            </TouchableOpacity>
         </View>
         <CategoryList ref={categoryListRef} />
         <View style={styles.addButtonContainer}>

@@ -50,7 +50,12 @@
       "voiceSettings": "Voice settings",
       "googleCalendar": "Google Calendar",
       "about": "About",
+      "tutorial": "Review Tutorial",
       "testNotifications": "Test Notifications (10s)"
+    },
+    "tutorial": {
+      "restartTitle": "Tutorial",
+      "restartMessage": "The tutorial has been restarted! Go back to the main screen to begin."
     }
   },
   "home": {
@@ -77,30 +82,41 @@
       "startButton": "Start Tour",
       "skipButton": "Skip tour"
     },
+    "sections": {
+      "home": "Home",
+      "categories": "Categories",
+      "calendar": "Calendar"
+    },
     "steps": {
-      "chat": {
-        "title": "Chat with AI",
-        "description": "Write a message or tap the microphone to chat vocally. The AI assistant will help you manage your activities."
+      "home": {
+        "textChat": {
+          "title": "Text Chat",
+          "description": "Type a message in the text field at the bottom of the screen to chat with the AI assistant. You can ask to create tasks, organize activities or get suggestions."
+        },
+        "voiceChat": {
+          "title": "Voice Chat",
+          "description": "Tap the microphone icon next to the text field to open the voice chat. Speak directly with the AI assistant to create tasks and manage your activities hands-free."
+        },
+        "chatHistory": {
+          "title": "Chat History",
+          "description": "Tap the chat bubble icon in the top bar to access the history of your previous conversations. You can review or continue past chats."
+        }
       },
       "categories": {
-        "title": "Your Categories",
-        "description": "Organize your activities in categories. Long press on a category to edit or delete it."
-      },
-      "tasks": {
-        "title": "Manage Tasks",
-        "description": "Tap a task to complete it. Long press to edit, delete or set reminders."
-      },
-      "notes": {
-        "title": "Draw and Annotate",
-        "description": "Use the whiteboard to draw, take notes or create sketches. Tap the + button to add a new note."
+        "editCategory": {
+          "title": "Edit a Category",
+          "description": "Long press on a category card to open the edit menu. You can rename the category, change its color or delete it."
+        },
+        "editTask": {
+          "title": "Edit a Task",
+          "description": "Tap on a task to open its details. From there you can edit the title, description, due date, priority and more. Swipe left for quick actions."
+        }
       },
       "calendar": {
-        "title": "Activity Calendar",
-        "description": "View all your tasks organized by date. Tap a day to see scheduled activities."
-      },
-      "statistics": {
-        "title": "Your Statistics",
-        "description": "Monitor your progress with charts and analytics. View the number of completed tasks, category distribution and your trend over time."
+        "switch": {
+          "title": "Switch Calendar View",
+          "description": "Tap the view toggle button in the top right corner to switch between the basic calendar view and the advanced calendar view with more options."
+        }
       }
     },
     "completion": {

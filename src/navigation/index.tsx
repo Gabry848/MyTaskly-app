@@ -39,8 +39,8 @@ import { syncAllData } from "../services/taskService";
 import { handleGoogleLoginSuccess, handleGoogleLoginError } from "../services/googleSignInService";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { STORAGE_KEYS } from "../constants/authConstants";
-import { TutorialProvider } from "../contexts/TutorialContext";
-import { TutorialManager } from "../components/Tutorial";
+import { TutorialProvider, useTutorialContext } from "../contexts/TutorialContext";
+import { TutorialOnboarding } from "../components/Tutorial/exports";
 import { LanguageProvider } from "../contexts/LanguageContext";
 import "../services/i18n"; // Initialize i18n
 import { useTranslation } from 'react-i18next';
@@ -85,7 +85,6 @@ const Tab = createBottomTabNavigator<TabParamList>();
 
 // Tab Navigator per le schermate principali
 function HomeTabs() {
-  const navigation = useNavigation<NavigationProp<TabParamList>>();
   const { t } = useTranslation();
 
   return (
@@ -150,9 +149,6 @@ function HomeTabs() {
           options={{ title: t('navigation.tabs.statistics') }}
         /> */}
       </Tab.Navigator>
-
-      {/* Tutorial Manager */}
-      <TutorialManager navigation={navigation} autoStart={true} />
     </>
   );
 }
@@ -469,8 +465,22 @@ export default function Navigation() {
           <NavigationContainer>
             <AppStack />
           </NavigationContainer>
+          <TutorialOnboardingWrapper />
         </TutorialProvider>
       </LanguageProvider>
     </GestureHandlerRootView>
+  );
+}
+
+// Wrapper that connects TutorialOnboarding to the TutorialContext
+function TutorialOnboardingWrapper() {
+  const { isTutorialVisible, closeTutorial, skipTutorial } = useTutorialContext();
+
+  return (
+    <TutorialOnboarding
+      visible={isTutorialVisible}
+      onComplete={closeTutorial}
+      onSkip={skipTutorial}
+    />
   );
 }
