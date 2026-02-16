@@ -56,14 +56,14 @@ const NotesContent: React.FC = () => {
       <NotesCanvas />
       
       <Animated.View style={[styles.fabContainer, animatedStyle]}>
-        <TouchableOpacity 
-          style={[styles.fab, isLoading && styles.fabDisabled]} 
-          onPress={handleAddNote}
-          disabled={isLoading}
-        >
-          <Plus size={24} color="white" />
-        </TouchableOpacity>
-      </Animated.View>
+          <TouchableOpacity 
+            style={[styles.fab, isLoading && styles.fabDisabled]} 
+            onPress={handleAddNote}
+            disabled={isLoading}
+          >
+            <Plus size={24} color="white" />
+          </TouchableOpacity>
+        </Animated.View>
     </View>
   );
 };

@@ -1,4 +1,21 @@
 import i18n from '../services/i18n';
+import { ImageSourcePropType } from 'react-native';
+
+// Tutorial step with image support
+export interface TutorialStep {
+  key: string;
+  section: 'home' | 'categories' | 'calendar';
+  title: string;
+  description: string;
+  image: ImageSourcePropType;
+}
+
+// Section header data
+export interface TutorialSection {
+  key: string;
+  title: string;
+  steps: TutorialStep[];
+}
 
 // Tutorial content using i18n translations
 export const getTutorialContent = () => ({
@@ -8,30 +25,36 @@ export const getTutorialContent = () => ({
     startButton: i18n.t('tutorial.welcome.startButton'),
     skipButton: i18n.t('tutorial.welcome.skipButton'),
   },
-  step2: {
-    title: i18n.t('tutorial.steps.chat.title'),
-    description: i18n.t('tutorial.steps.chat.description'),
-    icon: "chatbubble-ellipses",
+  sections: {
+    home: i18n.t('tutorial.sections.home'),
+    categories: i18n.t('tutorial.sections.categories'),
+    calendar: i18n.t('tutorial.sections.calendar'),
   },
-  step3: {
-    title: i18n.t('tutorial.steps.categories.title'),
-    description: i18n.t('tutorial.steps.categories.description'),
-    icon: "grid",
-  },
-  step4: {
-    title: i18n.t('tutorial.steps.tasks.title'),
-    description: i18n.t('tutorial.steps.tasks.description'),
-    icon: "checkbox",
-  },
-  step5: {
-    title: i18n.t('tutorial.steps.notes.title'),
-    description: i18n.t('tutorial.steps.notes.description'),
-    icon: "brush",
-  },
-  step6: {
-    title: i18n.t('tutorial.steps.calendar.title'),
-    description: i18n.t('tutorial.steps.calendar.description'),
-    icon: "calendar",
+  steps: {
+    homeTextChat: {
+      title: i18n.t('tutorial.steps.home.textChat.title'),
+      description: i18n.t('tutorial.steps.home.textChat.description'),
+    },
+    homeVoiceChat: {
+      title: i18n.t('tutorial.steps.home.voiceChat.title'),
+      description: i18n.t('tutorial.steps.home.voiceChat.description'),
+    },
+    homeChatHistory: {
+      title: i18n.t('tutorial.steps.home.chatHistory.title'),
+      description: i18n.t('tutorial.steps.home.chatHistory.description'),
+    },
+    categoriesEditCategory: {
+      title: i18n.t('tutorial.steps.categories.editCategory.title'),
+      description: i18n.t('tutorial.steps.categories.editCategory.description'),
+    },
+    categoriesEditTask: {
+      title: i18n.t('tutorial.steps.categories.editTask.title'),
+      description: i18n.t('tutorial.steps.categories.editTask.description'),
+    },
+    calendarSwitch: {
+      title: i18n.t('tutorial.steps.calendar.switch.title'),
+      description: i18n.t('tutorial.steps.calendar.switch.description'),
+    },
   },
   completion: {
     title: i18n.t('tutorial.completion.title'),
@@ -47,105 +70,99 @@ export const getTutorialContent = () => ({
 });
 
 // For backward compatibility, export as constant that updates with language
-export const TUTORIAL_CONTENT = getTutorialContent();
+export let TUTORIAL_CONTENT = getTutorialContent();
 
 // Listen for language changes and update content
 i18n.on('languageChanged', () => {
-  Object.assign(TUTORIAL_CONTENT, getTutorialContent());
+  TUTORIAL_CONTENT = getTutorialContent();
 });
 
-// Tutorial steps configuration
-export interface TutorialStep {
-  id: number;
-  type: 'welcome' | 'spotlight' | 'completion';
-  targetScreen?: 'Home' | 'Categories' | 'TaskList' | 'Notes' | 'Calendar' | 'Statistics';
-  targetElement?: string; // ref name for spotlight
-  content: {
-    title: string;
-    description: string;
-    icon?: string;
-  };
-}
+// Tutorial images - real screenshots
+const TUTORIAL_IMAGES = {
+  homeTextChat: require('../../assets/tutorial/Text_chat.png'),
+  homeVoiceChat: require('../../assets/tutorial/Voice_chat.png'),
+  homeChatHistory: require('../../assets/tutorial/Chat_history.png'),
+  categoriesEditCategory: require('../../assets/tutorial/Edit_category.png'),
+  categoriesEditTask: require('../../assets/tutorial/Edit_task.png'),
+  calendarSwitch: require('../../assets/tutorial/Switch_calendar.png'),
+};
 
+// Get tutorial steps grouped by section
 export const getTutorialSteps = (): TutorialStep[] => {
   const content = getTutorialContent();
 
   return [
+    // Home Section
     {
-      id: 1,
-      type: 'welcome',
-      content: {
-        title: content.welcome.title,
-        description: content.welcome.description,
-      },
+      key: 'home-text-chat',
+      section: 'home',
+      title: content.steps.homeTextChat.title,
+      description: content.steps.homeTextChat.description,
+      image: TUTORIAL_IMAGES.homeTextChat,
     },
     {
-      id: 2,
-      type: 'spotlight',
-      targetScreen: 'Home',
-      targetElement: 'chatInput',
-      content: {
-        title: content.step2.title,
-        description: content.step2.description,
-        icon: content.step2.icon,
-      },
+      key: 'home-voice-chat',
+      section: 'home',
+      title: content.steps.homeVoiceChat.title,
+      description: content.steps.homeVoiceChat.description,
+      image: TUTORIAL_IMAGES.homeVoiceChat,
     },
     {
-      id: 3,
-      type: 'spotlight',
-      targetScreen: 'Categories',
-      targetElement: 'categoryList',
-      content: {
-        title: content.step3.title,
-        description: content.step3.description,
-        icon: content.step3.icon,
-      },
+      key: 'home-chat-history',
+      section: 'home',
+      title: content.steps.homeChatHistory.title,
+      description: content.steps.homeChatHistory.description,
+      image: TUTORIAL_IMAGES.homeChatHistory,
+    },
+    // Categories Section
+    {
+      key: 'categories-edit-category',
+      section: 'categories',
+      title: content.steps.categoriesEditCategory.title,
+      description: content.steps.categoriesEditCategory.description,
+      image: TUTORIAL_IMAGES.categoriesEditCategory,
     },
     {
-      id: 4,
-      type: 'spotlight',
-      targetScreen: 'Categories',
-      targetElement: 'taskItem',
-      content: {
-        title: content.step4.title,
-        description: content.step4.description,
-        icon: content.step4.icon,
-      },
+      key: 'categories-edit-task',
+      section: 'categories',
+      title: content.steps.categoriesEditTask.title,
+      description: content.steps.categoriesEditTask.description,
+      image: TUTORIAL_IMAGES.categoriesEditTask,
     },
+    // Calendar Section
     {
-      id: 5,
-      type: 'spotlight',
-      targetScreen: 'Notes',
-      targetElement: 'whiteboard',
-      content: {
-        title: content.step5.title,
-        description: content.step5.description,
-        icon: content.step5.icon,
-      },
-    },
-    {
-      id: 6,
-      type: 'spotlight',
-      targetScreen: 'Calendar',
-      targetElement: 'calendar',
-      content: {
-        title: content.step6.title,
-        description: content.step6.description,
-        icon: content.step6.icon,
-      },
-    },
-    {
-      id: 7,
-      type: 'completion',
-      content: {
-        title: content.completion.title,
-        description: content.completion.description,
-      },
+      key: 'calendar-switch',
+      section: 'calendar',
+      title: content.steps.calendarSwitch.title,
+      description: content.steps.calendarSwitch.description,
+      image: TUTORIAL_IMAGES.calendarSwitch,
     },
   ];
 };
 
-export const TUTORIAL_STEPS = getTutorialSteps();
+// Get steps organized by sections (for section headers in the tutorial)
+export const getTutorialSections = (): TutorialSection[] => {
+  const content = getTutorialContent();
+  const steps = getTutorialSteps();
+
+  return [
+    {
+      key: 'home',
+      title: content.sections.home,
+      steps: steps.filter(s => s.section === 'home'),
+    },
+    {
+      key: 'categories',
+      title: content.sections.categories,
+      steps: steps.filter(s => s.section === 'categories'),
+    },
+    {
+      key: 'calendar',
+      title: content.sections.calendar,
+      steps: steps.filter(s => s.section === 'calendar'),
+    },
+  ];
+};
 
 // AsyncStorage key for tutorial completion status
 export const TUTORIAL_STORAGE_KEY = '@mytaskly:tutorial_completed';

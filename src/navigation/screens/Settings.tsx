@@ -1,15 +1,19 @@
 import { Text } from '@react-navigation/elements';
 import React from 'react';
-import { StyleSheet, View, TouchableOpacity, SafeAreaView, StatusBar, ScrollView } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, SafeAreaView, StatusBar, ScrollView, Alert } from 'react-native';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../types';
 import { Ionicons } from '@expo/vector-icons';
 import axiosInstance from '../../services/axiosInstance';
 import { useTranslation } from 'react-i18next';
+import { useTutorialContext } from '../../contexts/TutorialContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { TUTORIAL_STORAGE_KEY } from '../../constants/tutorialContent';
 
 export default function Settings() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const { t } = useTranslation();
+  const { startTutorial } = useTutorialContext();
 
   const handleNavigateToAccountSettings = () => {
     navigation.navigate('AccountSettings');
@@ -41,6 +45,23 @@ export default function Settings() {
 
   const handleNavigateToCalendarWidgetDemo = () => {
     navigation.navigate('CalendarWidgetDemo');
+  };
+
+  const handleRestartTutorial = async () => {
+    try {
+      // Remove tutorial completion flag to allow restart
+      await AsyncStorage.removeItem(TUTORIAL_STORAGE_KEY);
+      
+      // Start the tutorial
+      startTutorial();
+    } catch (error) {
+      console.error('[Settings] Error restarting tutorial:', error);
+      Alert.alert(
+        t('settings.tutorial.restartError'),
+        t('settings.tutorial.restartErrorMessage'),
+        [{ text: t('common.buttons.ok') }]
+      );
+    }
   };
 
   const testNotification = async () => {
@@ -153,6 +174,17 @@ export default function Settings() {
           <View style={styles.menuItemContent}>
             <Ionicons name="information-circle-outline" size={24} color="#000000" />
             <Text style={styles.menuItemText}>{t('settings.menu.about')}</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#666666" />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={handleRestartTutorial}
+        >
+          <View style={styles.menuItemContent}>
+            <Ionicons name="book-outline" size={24} color="#000000" />
+            <Text style={styles.menuItemText}>{t('settings.menu.tutorial')}</Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color="#666666" />
         </TouchableOpacity>

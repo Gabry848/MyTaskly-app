@@ -64,16 +64,16 @@ export default function Calendar() {
       <View style={styles.header}>
         <Text style={styles.mainTitle}>{t('calendar.title')}</Text>
         <TouchableOpacity
-          onPress={toggleViewMode}
-          style={styles.toggleButton}
-          activeOpacity={0.7}
-        >
-          <Ionicons
-            name={viewMode === 'minimal' ? 'grid-outline' : 'calendar-clear-outline'}
-            size={24}
-            color="#000000"
-          />
-        </TouchableOpacity>
+            onPress={toggleViewMode}
+            style={styles.toggleButton}
+            activeOpacity={0.7}
+          >
+            <Ionicons
+              name={viewMode === 'minimal' ? 'grid-outline' : 'calendar-clear-outline'}
+              size={24}
+              color="#000000"
+            />
+          </TouchableOpacity>
       </View>
 
       <View style={styles.content}>

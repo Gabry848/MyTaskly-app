@@ -28,12 +28,13 @@ import { TaskCacheService } from '../../services/TaskCacheService';
 import SyncManager, { SyncStatus } from '../../services/SyncManager';
 import Badge from "../../components/UI/Badge";
 import VoiceChatModal from "../../components/BotChat/VoiceChatModal";
-import { useTutorialContext } from "../../contexts/TutorialContext";
 import { useTranslation } from 'react-i18next';
 import { ChatHistory } from "../../components/BotChat/ChatHistory";
+import { useTutorialContext } from "../../contexts/TutorialContext";
 
 const HomeScreen = () => {
   const { t } = useTranslation();
+  const { startTutorial } = useTutorialContext();
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);  const [isLoading, setIsLoading] = useState(false);
   const [chatStarted, setChatStarted] = useState(false);  const [userName, setUserName] = useState("Utente");
@@ -48,25 +49,9 @@ const HomeScreen = () => {
   const [showChatHistory, setShowChatHistory] = useState(false);
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
 
-  // Tutorial context
-  const tutorialContext = useTutorialContext();
-
   // Costanti
   const USER = 'user';
   const BOT = 'bot';
-
-  const handleStartTutorial = () => {
-    console.log('[HOME] Tutorial context:', tutorialContext);
-    console.log('[HOME] startTutorial function:', tutorialContext?.startTutorial);
-
-    if (tutorialContext && tutorialContext.startTutorial) {
-      console.log('[HOME] 🎯 Starting tutorial...');
-      tutorialContext.startTutorial();
-    } else {
-      console.error('[HOME] ❌ Tutorial context not available!');
-      Alert.alert('Errore', 'Tutorial context non disponibile');
-    }
-  };
 
   // Servizi
   const cacheService = useRef(TaskCacheService.getInstance()).current;
@@ -629,6 +614,17 @@ const HomeScreen = () => {
     }
   };
 
+  const handleStartTutorial = async () => {
+    try {
+      // Clear tutorial completion status to allow restart
+      await AsyncStorage.removeItem('@mytaskly:tutorial_completed');
+      // Start the tutorial
+      startTutorial();
+    } catch (error) {
+      console.error('[HOME] Error starting tutorial:', error);
+    }
+  };
+
   // Calcolo dinamico del padding top basato sull'altezza dello schermo
   const getGreetingPaddingTop = () => {
     if (screenHeight < 700) return Math.max(screenHeight * 0.15, 80); // Schermi piccoli
@@ -696,27 +692,31 @@ const HomeScreen = () => {
           )}
         </View>
         <View style={styles.headerActions}>
-          {/* TEMPORARY: Start Tutorial Button */}
+          {/* Tutorial Help Button */}
           <TouchableOpacity
             style={[styles.resetButton, { marginRight: 8 }]}
             onPress={handleStartTutorial}
             activeOpacity={0.7}
           >
-            <Ionicons name="help-circle-outline" size={24} color="#007AFF" />
+            <Ionicons
+              name="help-circle-outline"
+              size={24}
+              color="#666666"
+            />
           </TouchableOpacity>
 
           {/* Chat History Toggle Button */}
-          <TouchableOpacity
-            style={[styles.resetButton, { marginRight: 8 }]}
-            onPress={handleToggleChatHistory}
-            activeOpacity={0.7}
-          >
-            <Ionicons
-              name={showChatHistory ? "chatbubbles" : "chatbubbles-outline"}
-              size={24}
-              color={showChatHistory ? "#007AFF" : "#666666"}
-            />
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.resetButton, { marginRight: 8 }]}
+              onPress={handleToggleChatHistory}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name={showChatHistory ? "chatbubbles" : "chatbubbles-outline"}
+                size={24}
+                color={showChatHistory ? "#007AFF" : "#666666"}
+              />
+            </TouchableOpacity>
 
           {chatStarted && !showChatHistory && (
             <TouchableOpacity
@@ -784,54 +784,54 @@ const HomeScreen = () => {
               <View style={styles.inputSectionUnderGreeting}>
                 <View style={styles.animatedInputWrapper}>
                   <View style={styles.inputContainer}>
-                    <Animated.View
-                      style={{
-                        opacity: micButtonAnim,
-                        width: micButtonAnim.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: [0, 38],
-                        }),
-                        overflow: 'hidden',
-                      }}
-                    >
+                      <Animated.View
+                          style={{
+                            opacity: micButtonAnim,
+                            width: micButtonAnim.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: [0, 38],
+                            }),
+                            overflow: 'hidden',
+                          }}
+                        >
+                          <TouchableOpacity
+                            style={styles.attachButton}
+                            onPress={handleVoicePress}
+                            activeOpacity={0.7}
+                            disabled={isLoading || isInputFocused}
+                          >
+                            <Ionicons name="mic-outline" size={22} color={isLoading ? "#ccc" : "#000"} />
+                          </TouchableOpacity>
+                        </Animated.View>
+                      <TextInput
+                        style={[styles.textInput, { maxHeight: 120 }]}
+                        placeholder={t('home.chat.placeholder')}
+                        placeholderTextColor="#999"
+                        value={message}
+                        onChangeText={setMessage}
+                        multiline={true}
+                        onSubmitEditing={handleSubmit}
+                        returnKeyType="send"
+                        blurOnSubmit={true}
+                        editable={!isLoading}
+                        onFocus={() => {
+                          console.log('[HOME] TextInput focused (under greeting)');
+                          setIsInputFocused(true);
+                        }}
+                        onBlur={() => {
+                          console.log('[HOME] TextInput blurred (under greeting)');
+                          setIsInputFocused(false);
+                        }}
+                      />
                       <TouchableOpacity
-                        style={styles.attachButton}
-                        onPress={handleVoicePress}
+                        style={styles.sendButton}
+                        onPress={handleSubmit}
                         activeOpacity={0.7}
-                        disabled={isLoading || isInputFocused}
+                        disabled={isLoading || !message.trim()}
                       >
-                        <Ionicons name="mic-outline" size={22} color={isLoading ? "#ccc" : "#000"} />
+                        <Ionicons name="send" size={20} color={isLoading || !message.trim() ? "#ccc" : "#000"} />
                       </TouchableOpacity>
-                    </Animated.View>
-                    <TextInput
-                      style={[styles.textInput, { maxHeight: 120 }]}
-                      placeholder={t('home.chat.placeholder')}
-                      placeholderTextColor="#999"
-                      value={message}
-                      onChangeText={setMessage}
-                      multiline={true}
-                      onSubmitEditing={handleSubmit}
-                      returnKeyType="send"
-                      blurOnSubmit={true}
-                      editable={!isLoading}
-                      onFocus={() => {
-                        console.log('[HOME] TextInput focused (under greeting)');
-                        setIsInputFocused(true);
-                      }}
-                      onBlur={() => {
-                        console.log('[HOME] TextInput blurred (under greeting)');
-                        setIsInputFocused(false);
-                      }}
-                    />
-                    <TouchableOpacity
-                      style={styles.sendButton}
-                      onPress={handleSubmit}
-                      activeOpacity={0.7}
-                      disabled={isLoading || !message.trim()}
-                    >
-                      <Ionicons name="send" size={20} color={isLoading || !message.trim() ? "#ccc" : "#000"} />
-                    </TouchableOpacity>
-                  </View>
+                    </View>
                 </View>
 
                 {/* Comando suggerito */}
