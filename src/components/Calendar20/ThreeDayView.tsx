@@ -103,11 +103,8 @@ const ThreeDayView: React.FC<ThreeDayViewProps> = ({
     return days.map(day =>
       tasks.filter(task => {
         if (!task.isAllDay) return false;
-        return (
-          day.isSame(task.startDayjs, 'day') ||
-          day.isSame(task.endDayjs, 'day') ||
-          (day.isAfter(task.startDayjs, 'day') && day.isBefore(task.endDayjs, 'day'))
-        );
+        // Show task only on its due date (end_time)
+        return day.isSame(task.endDayjs, 'day');
       })
     );
   }, [days, tasks]);
@@ -118,11 +115,8 @@ const ThreeDayView: React.FC<ThreeDayViewProps> = ({
     return days.map(day => {
       const dayTasks = tasks.filter(task => {
         if (task.isAllDay) return false;
-        return (
-          day.isSame(task.startDayjs, 'day') ||
-          day.isSame(task.endDayjs, 'day') ||
-          (day.isAfter(task.startDayjs, 'day') && day.isBefore(task.endDayjs, 'day'))
-        );
+        // Show task only on its due date (end_time)
+        return day.isSame(task.endDayjs, 'day');
       });
       return computeOverlapColumns(dayTasks);
     });

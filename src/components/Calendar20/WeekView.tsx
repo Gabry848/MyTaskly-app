@@ -138,11 +138,8 @@ const WeekView: React.FC<WeekViewProps> = ({
     return weekDays.map(day => {
       return tasks.filter(task => {
         if (!task.isAllDay) return false;
-        return (
-          day.isSame(task.startDayjs, 'day') ||
-          day.isSame(task.endDayjs, 'day') ||
-          (day.isAfter(task.startDayjs, 'day') && day.isBefore(task.endDayjs, 'day'))
-        );
+        // Show task only on its due date (end_time)
+        return day.isSame(task.endDayjs, 'day');
       });
     });
   }, [weekDays, tasks]);
@@ -154,11 +151,8 @@ const WeekView: React.FC<WeekViewProps> = ({
     return weekDays.map(day => {
       const dayTasks = tasks.filter(task => {
         if (task.isAllDay) return false;
-        return (
-          day.isSame(task.startDayjs, 'day') ||
-          day.isSame(task.endDayjs, 'day') ||
-          (day.isAfter(task.startDayjs, 'day') && day.isBefore(task.endDayjs, 'day'))
-        );
+        // Show task only on its due date (end_time)
+        return day.isSame(task.endDayjs, 'day');
       });
       return computeOverlapColumns(dayTasks);
     });

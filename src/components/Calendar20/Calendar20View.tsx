@@ -69,7 +69,8 @@ const Calendar20View: React.FC<Calendar20ViewProps> = ({ onClose }) => {
       const durationMinutes = (task.duration_minutes && task.duration_minutes > 0)
         ? task.duration_minutes
         : computedDuration;
-      const isMultiDay = !startDayjs.isSame(endDayjs, 'day');
+      // Tasks are shown only on their due date (end_time), so multi-day spanning is disabled
+      const isMultiDay = false;
       const isAllDay = durationMinutes >= 1440 || (!task.start_time && !!task.end_time);
 
       return {

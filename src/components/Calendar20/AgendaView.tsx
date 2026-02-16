@@ -49,11 +49,8 @@ const AgendaView: React.FC<AgendaViewProps> = ({
       const day = currentDate.add(i, 'day');
       const dayStr = day.format('YYYY-MM-DD');
       const dayTasks = tasks.filter(task => {
-        return (
-          day.isSame(task.startDayjs, 'day') ||
-          day.isSame(task.endDayjs, 'day') ||
-          (day.isAfter(task.startDayjs, 'day') && day.isBefore(task.endDayjs, 'day'))
-        );
+        // Show task only on its due date (end_time)
+        return day.isSame(task.endDayjs, 'day');
       });
 
       // Sort by time

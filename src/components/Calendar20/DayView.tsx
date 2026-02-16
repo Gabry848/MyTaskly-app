@@ -129,11 +129,8 @@ const DayView: React.FC<DayViewProps> = ({
 
   const dayTasks = useMemo(() => {
     return tasks.filter(task => {
-      return (
-        currentDate.isSame(task.startDayjs, 'day') ||
-        currentDate.isSame(task.endDayjs, 'day') ||
-        (currentDate.isAfter(task.startDayjs, 'day') && currentDate.isBefore(task.endDayjs, 'day'))
-      );
+      // Show task only on its due date (end_time)
+      return currentDate.isSame(task.endDayjs, 'day');
     });
   }, [tasks, currentDate]);
 

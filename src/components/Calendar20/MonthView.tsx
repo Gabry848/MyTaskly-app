@@ -75,15 +75,9 @@ const MonthView: React.FC<MonthViewProps> = ({
       for (let i = 0; i < 7; i++) {
         const dateStr = current.format('YYYY-MM-DD');
         const dayTasks = tasks.filter(task => {
-          if (!task.endDayjs && !task.startDayjs) return false;
-          const taskStart = task.startDayjs;
-          const taskEnd = task.endDayjs;
-          // Task falls on this day if the day is between start and end (inclusive)
-          return (
-            current.isSame(taskEnd, 'day') ||
-            current.isSame(taskStart, 'day') ||
-            (current.isAfter(taskStart, 'day') && current.isBefore(taskEnd, 'day'))
-          );
+          if (!task.endDayjs) return false;
+          // Show task only on its due date (end_time)
+          return current.isSame(task.endDayjs, 'day');
         });
 
         week.push({
