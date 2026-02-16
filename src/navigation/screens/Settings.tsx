@@ -57,9 +57,9 @@ export default function Settings() {
     } catch (error) {
       console.error('[Settings] Error restarting tutorial:', error);
       Alert.alert(
-        'Errore',
-        'Impossibile riavviare il tutorial. Riprova più tardi.',
-        [{ text: 'OK' }]
+        t('settings.tutorial.restartError'),
+        t('settings.tutorial.restartErrorMessage'),
+        [{ text: t('common.buttons.ok') }]
       );
     }
   };
@@ -184,7 +184,7 @@ export default function Settings() {
         >
           <View style={styles.menuItemContent}>
             <Ionicons name="book-outline" size={24} color="#000000" />
-            <Text style={styles.menuItemText}>{t('settings.menu.tutorial') || 'Rivedi Tutorial'}</Text>
+            <Text style={styles.menuItemText}>{t('settings.menu.tutorial')}</Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color="#666666" />
         </TouchableOpacity>

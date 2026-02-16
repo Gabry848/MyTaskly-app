@@ -55,7 +55,9 @@
     },
     "tutorial": {
       "restartTitle": "Tutorial",
-      "restartMessage": "Il tutorial è stato riavviato! Torna alla schermata principale per iniziare."
+      "restartMessage": "Il tutorial è stato riavviato! Torna alla schermata principale per iniziare.",
+      "restartError": "Errore",
+      "restartErrorMessage": "Impossibile riavviare il tutorial. Riprova più tardi."
     }
   },
   "home": {

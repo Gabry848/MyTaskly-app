@@ -55,7 +55,9 @@
     },
     "tutorial": {
       "restartTitle": "Tutorial",
-      "restartMessage": "The tutorial has been restarted! Go back to the main screen to begin."
+      "restartMessage": "The tutorial has been restarted! Go back to the main screen to begin.",
+      "restartError": "Error",
+      "restartErrorMessage": "Unable to restart the tutorial. Please try again later."
     }
   },
   "home": {
