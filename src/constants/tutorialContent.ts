@@ -77,14 +77,14 @@ i18n.on('languageChanged', () => {
   TUTORIAL_CONTENT = getTutorialContent();
 });
 
-// Tutorial images - user will replace these with actual screenshots
+// Tutorial images - real screenshots
 const TUTORIAL_IMAGES = {
-  homeTextChat: require('../../assets/images/tutorial/home_text_chat.png'),
-  homeVoiceChat: require('../../assets/images/tutorial/home_voice_chat.png'),
-  homeChatHistory: require('../../assets/images/tutorial/home_chat_history.png'),
-  categoriesEditCategory: require('../../assets/images/tutorial/categories_edit_category.png'),
-  categoriesEditTask: require('../../assets/images/tutorial/categories_edit_task.png'),
-  calendarSwitch: require('../../assets/images/tutorial/calendar_switch.png'),
+  homeTextChat: require('../../assets/tutorial/Text_chat.png'),
+  homeVoiceChat: require('../../assets/tutorial/Voice_chat.png'),
+  homeChatHistory: require('../../assets/tutorial/Chat_history.png'),
+  categoriesEditCategory: require('../../assets/tutorial/Edit_category.png'),
+  categoriesEditTask: require('../../assets/tutorial/Edit_task.png'),
+  calendarSwitch: require('../../assets/tutorial/Switch_calendar.png'),
 };
 
 // Get tutorial steps grouped by section
