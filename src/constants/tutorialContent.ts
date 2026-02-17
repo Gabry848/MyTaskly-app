@@ -17,6 +17,22 @@ export interface TutorialSection {
   steps: TutorialStep[];
 }
 
+// Static step definition (without translated text)
+export interface TutorialStepDefinition {
+  key: string;
+  section: 'home' | 'categories' | 'calendar';
+  titleKey: string;
+  descriptionKey: string;
+  image: ImageSourcePropType;
+}
+
+// Static section definition (without translated text)
+export interface TutorialSectionDefinition {
+  key: string;
+  titleKey: string;
+  stepKeys: string[];
+}
+
 // Tutorial content using i18n translations
 export const getTutorialContent = () => ({
   welcome: {
@@ -166,3 +182,68 @@ export const getTutorialSections = (): TutorialSection[] => {
 
 // AsyncStorage key for tutorial completion status
 export const TUTORIAL_STORAGE_KEY = '@mytaskly:tutorial_completed';
+
+// Static step definitions with i18n keys (no translated text)
+export const TUTORIAL_STEP_DEFINITIONS: TutorialStepDefinition[] = [
+  {
+    key: 'home-text-chat',
+    section: 'home',
+    titleKey: 'tutorial.steps.home.textChat.title',
+    descriptionKey: 'tutorial.steps.home.textChat.description',
+    image: TUTORIAL_IMAGES.homeTextChat,
+  },
+  {
+    key: 'home-voice-chat',
+    section: 'home',
+    titleKey: 'tutorial.steps.home.voiceChat.title',
+    descriptionKey: 'tutorial.steps.home.voiceChat.description',
+    image: TUTORIAL_IMAGES.homeVoiceChat,
+  },
+  {
+    key: 'home-chat-history',
+    section: 'home',
+    titleKey: 'tutorial.steps.home.chatHistory.title',
+    descriptionKey: 'tutorial.steps.home.chatHistory.description',
+    image: TUTORIAL_IMAGES.homeChatHistory,
+  },
+  {
+    key: 'categories-edit-category',
+    section: 'categories',
+    titleKey: 'tutorial.steps.categories.editCategory.title',
+    descriptionKey: 'tutorial.steps.categories.editCategory.description',
+    image: TUTORIAL_IMAGES.categoriesEditCategory,
+  },
+  {
+    key: 'categories-edit-task',
+    section: 'categories',
+    titleKey: 'tutorial.steps.categories.editTask.title',
+    descriptionKey: 'tutorial.steps.categories.editTask.description',
+    image: TUTORIAL_IMAGES.categoriesEditTask,
+  },
+  {
+    key: 'calendar-switch',
+    section: 'calendar',
+    titleKey: 'tutorial.steps.calendar.switch.title',
+    descriptionKey: 'tutorial.steps.calendar.switch.description',
+    image: TUTORIAL_IMAGES.calendarSwitch,
+  },
+];
+
+// Static section definitions with i18n keys
+export const TUTORIAL_SECTION_DEFINITIONS: TutorialSectionDefinition[] = [
+  {
+    key: 'home',
+    titleKey: 'tutorial.sections.home',
+    stepKeys: ['home-text-chat', 'home-voice-chat', 'home-chat-history'],
+  },
+  {
+    key: 'categories',
+    titleKey: 'tutorial.sections.categories',
+    stepKeys: ['categories-edit-category', 'categories-edit-task'],
+  },
+  {
+    key: 'calendar',
+    titleKey: 'tutorial.sections.calendar',
+    stepKeys: ['calendar-switch'],
+  },
+];

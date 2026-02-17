@@ -17,9 +17,10 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTranslation } from 'react-i18next';
 import {
-  getTutorialSections,
   TUTORIAL_STORAGE_KEY,
-  TutorialStep,
+  TUTORIAL_STEP_DEFINITIONS,
+  TUTORIAL_SECTION_DEFINITIONS,
+  TutorialStepDefinition,
 } from '../../constants/tutorialContent';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -30,36 +31,36 @@ type PageType = 'welcome' | 'step' | 'section-header' | 'completion';
 interface PageData {
   type: PageType;
   key: string;
-  step?: TutorialStep;
-  sectionTitle?: string;
+  stepDef?: TutorialStepDefinition;
   sectionKey?: string;
 }
 
-function buildPages(): PageData[] {
-  const sections = getTutorialSections();
+function buildStaticPages(): PageData[] {
   const pages: PageData[] = [];
 
   // Welcome page
   pages.push({ type: 'welcome', key: 'welcome' });
 
   // Steps grouped by section with section headers
-  for (const section of sections) {
+  for (const section of TUTORIAL_SECTION_DEFINITIONS) {
     // Section header page
     pages.push({
       type: 'section-header',
       key: `section-${section.key}`,
-      sectionTitle: section.title,
       sectionKey: section.key,
     });
 
     // Step pages
-    for (const step of section.steps) {
-      pages.push({
-        type: 'step',
-        key: step.key,
-        step,
-        sectionTitle: section.title,
-      });
+    for (const stepKey of section.stepKeys) {
+      const stepDef = TUTORIAL_STEP_DEFINITIONS.find(s => s.key === stepKey);
+      if (stepDef) {
+        pages.push({
+          type: 'step',
+          key: stepDef.key,
+          stepDef,
+          sectionKey: section.key,
+        });
+      }
     }
   }
 
@@ -68,6 +69,9 @@ function buildPages(): PageData[] {
 
   return pages;
 }
+
+// Static page structure (keys, images, section grouping) — built once, no text
+const STATIC_PAGES = buildStaticPages();
 
 // Section icon mapping
 function getSectionIcon(sectionKey?: string): keyof typeof Ionicons.glyphMap {
@@ -89,7 +93,7 @@ export const TutorialOnboarding: React.FC<{
   const scrollX = useRef(new Animated.Value(0)).current;
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  const pages = React.useMemo(() => buildPages(), []);
+  const pages = STATIC_PAGES;
   const totalPages = pages.length;
 
   const handleScroll = Animated.event(
@@ -187,28 +191,34 @@ export const TutorialOnboarding: React.FC<{
     </View>
   );
 
-  const renderSectionHeader = (page: PageData) => (
-    <View style={styles.pageContainer}>
-      <View style={styles.sectionHeaderCard}>
-        <View style={styles.sectionIconContainer}>
-          <Ionicons
-            name={getSectionIcon(page.sectionKey)}
-            size={48}
-            color="#000"
-          />
+  const renderSectionHeader = (page: PageData) => {
+    const sectionDef = TUTORIAL_SECTION_DEFINITIONS.find(s => s.key === page.sectionKey);
+    return (
+      <View style={styles.pageContainer}>
+        <View style={styles.sectionHeaderCard}>
+          <View style={styles.sectionIconContainer}>
+            <Ionicons
+              name={getSectionIcon(page.sectionKey)}
+              size={48}
+              color="#000"
+            />
+          </View>
+          <Text style={styles.sectionHeaderTitle}>
+            {sectionDef ? t(sectionDef.titleKey) : ''}
+          </Text>
+          <Text style={styles.sectionHeaderSubtitle}>
+            {t('tutorial.navigation.next')}
+          </Text>
+          <Ionicons name="arrow-forward" size={24} color="#999" style={{ marginTop: 8 }} />
         </View>
-        <Text style={styles.sectionHeaderTitle}>{page.sectionTitle}</Text>
-        <Text style={styles.sectionHeaderSubtitle}>
-          {t('tutorial.navigation.next')}
-        </Text>
-        <Ionicons name="arrow-forward" size={24} color="#999" style={{ marginTop: 8 }} />
       </View>
-    </View>
-  );
+    );
+  };
 
   const renderStepPage = (page: PageData) => {
-    if (!page.step) return null;
-    const { step } = page;
+    if (!page.stepDef) return null;
+    const { stepDef } = page;
+    const sectionDef = TUTORIAL_SECTION_DEFINITIONS.find(s => s.key === page.sectionKey);
 
     return (
       <View style={styles.pageContainer}>
@@ -216,25 +226,27 @@ export const TutorialOnboarding: React.FC<{
           {/* Section badge */}
           <View style={styles.sectionBadge}>
             <Ionicons
-              name={getSectionIcon(step.section)}
+              name={getSectionIcon(stepDef.section)}
               size={14}
               color="#000"
             />
-            <Text style={styles.sectionBadgeText}>{page.sectionTitle}</Text>
+            <Text style={styles.sectionBadgeText}>
+              {sectionDef ? t(sectionDef.titleKey) : ''}
+            </Text>
           </View>
 
           {/* Screenshot image */}
           <View style={styles.imageContainer}>
             <Image
-              source={step.image}
+              source={stepDef.image}
               style={styles.stepImage}
               resizeMode="contain"
             />
           </View>
 
           {/* Step title and description */}
-          <Text style={styles.stepTitle}>{step.title}</Text>
-          <Text style={styles.stepDescription}>{step.description}</Text>
+          <Text style={styles.stepTitle}>{t(stepDef.titleKey)}</Text>
+          <Text style={styles.stepDescription}>{t(stepDef.descriptionKey)}</Text>
         </View>
       </View>
     );
