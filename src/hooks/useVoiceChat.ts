@@ -73,6 +73,7 @@ export function useVoiceChat() {
   const isManuallyMutedRef = useRef<boolean>(false); // Distingue tra mute manuale e automatico
   const isStartingRecordingRef = useRef<boolean>(false); // Previene avvii concorrenti di registrazione
   const isReceivingAudioRef = useRef<boolean>(false); // true quando stiamo ricevendo chunk audio dal server
+  const isMountedRef = useRef<boolean>(true); // Guard per evitare setState dopo unmount
 
   /**
    * Verifica e richiede i permessi audio
@@ -101,16 +102,19 @@ export function useVoiceChat() {
    */
   const websocketCallbacks: VoiceChatCallbacks = {
     onConnectionOpen: () => {
+      if (!isMountedRef.current) return;
       setState('authenticating');
       setError(null);
     },
 
     onAuthenticationSuccess: (message: string) => {
+      if (!isMountedRef.current) return;
       console.log('Autenticazione completata:', message);
       setState('setting_up');
     },
 
     onReady: () => {
+      if (!isMountedRef.current) return;
       console.log('Sessione vocale pronta');
       setState('ready');
 
@@ -126,12 +130,14 @@ export function useVoiceChat() {
     },
 
     onAuthenticationFailed: (errorMsg: string) => {
+      if (!isMountedRef.current) return;
       console.error('Autenticazione fallita:', errorMsg);
       setError(`Autenticazione fallita: ${errorMsg}`);
       setState('error');
     },
 
     onConnectionClose: () => {
+      if (!isMountedRef.current) return;
       console.log('WebSocket disconnesso - cleanup in corso');
       setState('disconnected');
       shouldAutoStartRecordingRef.current = false;
@@ -151,6 +157,7 @@ export function useVoiceChat() {
     },
 
     onStatus: async (phase: VoiceServerPhase, message: string) => {
+      if (!isMountedRef.current) return;
       console.log(`[useVoiceChat] onStatus: phase=${phase}, message=${message}`);
       setServerStatus({ phase, message });
 
@@ -329,6 +336,7 @@ export function useVoiceChat() {
     },
 
     onAudioChunk: (audioData: string, chunkIndex: number) => {
+      if (!isMountedRef.current) return;
       if (audioPlayerRef.current) {
         // Segna che stiamo ricevendo audio SINCRONAMENTE prima dell'async addChunk
         isReceivingAudioRef.current = true;
@@ -345,14 +353,17 @@ export function useVoiceChat() {
     },
 
     onTranscript: (role: 'user' | 'assistant', content: string) => {
+      if (!isMountedRef.current) return;
       setTranscripts(prev => [...prev, { role, content }]);
     },
 
     onToolCall: (toolName: string, args: string) => {
+      if (!isMountedRef.current) return;
       setActiveTools(prev => [...prev, { name: toolName, args, status: 'running' }]);
     },
 
     onToolOutput: (toolName: string, output: string) => {
+      if (!isMountedRef.current) return;
       setActiveTools(prev => prev.map(t =>
         t.name === toolName && t.status === 'running'
           ? { ...t, status: 'complete' as const, output }
@@ -361,11 +372,13 @@ export function useVoiceChat() {
     },
 
     onDone: () => {
+      if (!isMountedRef.current) return;
       console.log('Sessione vocale terminata dal server');
       setState('disconnected');
     },
 
     onError: (errorMessage: string) => {
+      if (!isMountedRef.current) return;
       console.error('Errore WebSocket:', errorMessage);
       setError(errorMessage);
       setState('error');
@@ -718,7 +731,9 @@ export function useVoiceChat() {
 
   // Cleanup automatico quando il componente viene smontato
   useEffect(() => {
+    isMountedRef.current = true;
     return () => {
+      isMountedRef.current = false;
       cleanup();
     };
   }, [cleanup]);

@@ -37,7 +37,7 @@ export interface OfflineChange {
 class TaskCacheService {
   private static instance: TaskCacheService;
   private currentCacheVersion = 1;
-  private isSaving = false; // Flag per prevenire loop ricorsivi
+  private saveQueue: Promise<void> = Promise.resolve(); // Queue to serialize concurrent saves
   
   // In-memory cache per evitare letture ripetute da AsyncStorage
   private memoryCache: { tasks: Task[]; categories: Category[]; timestamp: number } | null = null;
@@ -171,16 +171,19 @@ class TaskCacheService {
     }
   }
 
-  // Salva i task nella cache
+  // Salva i task nella cache (serialized via promise queue to prevent data loss)
   async saveTasks(tasks: Task[], categories: Category[] = []): Promise<void> {
-    // Previeni loop ricorsivi
-    if (this.isSaving) {
-      console.log('[CACHE] ⚠️ saveTasks già in esecuzione, skip per prevenire loop');
-      return;
-    }
+    // Chain onto the save queue so concurrent calls execute sequentially
+    // instead of being silently dropped
+    this.saveQueue = this.saveQueue.then(() => this._saveTasksImpl(tasks, categories)).catch(error => {
+      console.error('[CACHE] Errore nel salvataggio in cache (queued):', error);
+    });
+    return this.saveQueue;
+  }
 
+  // Internal implementation of saveTasks (runs serialized via queue)
+  private async _saveTasksImpl(tasks: Task[], categories: Category[]): Promise<void> {
     try {
-      this.isSaving = true;
       console.log(`[CACHE] Salvando ${tasks.length} task in cache...`);
       
       // Carica i task attuali dalla cache per confronto usando il metodo raw (evita loop)
@@ -193,9 +196,9 @@ class TaskCacheService {
       );
       
       if (removedTasks.length > 0) {
-        console.log(`[CACHE] 🗑️ RIMOZIONE TASK FANTASMA: ${removedTasks.length} task rimossi dal server`);
+        console.log(`[CACHE] RIMOZIONE TASK FANTASMA: ${removedTasks.length} task rimossi dal server`);
         removedTasks.forEach(removedTask => {
-          console.log(`[CACHE] ❌ Task rimosso: "${removedTask.title}" (ID: ${removedTask.task_id || removedTask.id})`);
+          console.log(`[CACHE] Task rimosso: "${removedTask.title}" (ID: ${removedTask.task_id || removedTask.id})`);
           // Emetti evento per notificare la rimozione del task fantasma
           import('../utils/eventEmitter').then(({ emitTaskDeleted }) => {
             emitTaskDeleted(removedTask.task_id || removedTask.id);
@@ -208,7 +211,7 @@ class TaskCacheService {
         task.category_name === undefined || task.category_name === "undefined"
       );
       if (problematicTasks.length > 0) {
-        console.warn(`[CACHE] ⚠️ ${problematicTasks.length} task hanno category_name undefined`);
+        console.warn(`[CACHE] ${problematicTasks.length} task hanno category_name undefined`);
       }
       
       const cache: TasksCache = {
@@ -224,14 +227,12 @@ class TaskCacheService {
       // Invalida memory cache
       this.invalidateMemoryCache();
       
-      console.log(`[CACHE] ✅ Salvati ${tasks.length} task e ${categories.length} categorie in cache`);
+      console.log(`[CACHE] Salvati ${tasks.length} task e ${categories.length} categorie in cache`);
       if (removedTasks.length > 0) {
-        console.log(`[CACHE] 🧹 Cache pulita: ${removedTasks.length} task fantasma rimossi`);
+        console.log(`[CACHE] Cache pulita: ${removedTasks.length} task fantasma rimossi`);
       }
     } catch (error) {
       console.error('[CACHE] Errore nel salvataggio in cache:', error);
-    } finally {
-      this.isSaving = false;
     }
   }
 

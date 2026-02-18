@@ -56,7 +56,7 @@ export interface Task {
 }
 
 // Funzione per ottenere tutti gli impegni filtrandoli per categoria (con cache)
-export async function getTasks(categoryIdentifier?: string | number, useCache: boolean = true) {
+export async function getTasks(categoryIdentifier?: string | number, useCache: boolean = true, skipCorruptionCheck: boolean = false) {
   try {
     // Controllo autenticazione prima di fare chiamate API
     const { checkAndRefreshAuth } = await import('./authService');
@@ -91,12 +91,14 @@ export async function getTasks(categoryIdentifier?: string | number, useCache: b
     if (useCache) {
       const { cacheService } = getServices();
 
-      // Controlla e pulisce cache corrotta prima di usarla
-      const cacheWasCleaned = await cacheService.checkAndFixCorruptedCache();
-      if (cacheWasCleaned) {
-        console.log('[TASK_SERVICE] Cache corrotta pulita, ricaricamento dall\'API...');
-        // Forza il caricamento dall'API dopo aver pulito la cache
-        return getTasks(categoryIdentifier, false);
+      // Controlla e pulisce cache corrotta prima di usarla (skip se chiamata ricorsiva)
+      if (!skipCorruptionCheck) {
+        const cacheWasCleaned = await cacheService.checkAndFixCorruptedCache();
+        if (cacheWasCleaned) {
+          console.log('[TASK_SERVICE] Cache corrotta pulita, ricaricamento dall\'API...');
+          // Forza il caricamento dall'API dopo aver pulito la cache, saltando il corruption check
+          return getTasks(categoryIdentifier, false, true);
+        }
       }
 
       const cachedTasks = await getServices().cacheService.getCachedTasks();

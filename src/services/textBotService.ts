@@ -32,7 +32,10 @@ export async function sendMessageToBot(
     // Verifica che l'utente sia autenticato
     const token = await getValidToken();
     if (!token) {
-      return "Mi dispiace, sembra che tu non sia autenticato. Effettua il login per continuare.";
+      return {
+        text: "Mi dispiace, sembra che tu non sia autenticato. Effettua il login per continuare.",
+        toolWidgets: [],
+      };
     }
 
     // Costruisci il payload per la richiesta

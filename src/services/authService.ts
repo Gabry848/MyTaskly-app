@@ -75,9 +75,7 @@ async function updateAuthData(data: any) {
         data.utente_id.toString()
       );
     }
-    if (data.password) {
-      await AsyncStorage.setItem(STORAGE_KEYS.USER_PASSWORD, data.password);
-    }
+    // SECURITY: Non salvare mai la password in chiaro in AsyncStorage
 
     // Aggiorna anche i dati utente aggregati
     const userData = (await getUserData()) || {};
@@ -175,7 +173,7 @@ async function login(username: any, password: any) {
       bearerDuration: bearer_duration,
       refreshDuration: refresh_duration,
       username: username,
-      password: password, // TODO: aggiungere l'email e l'id dell'utente
+      // SECURITY: password rimossa - non salvare mai in chiaro in AsyncStorage
     });
 
     return {
@@ -711,8 +709,7 @@ async function changePassword(oldPassword: string, newPassword: string) {
       }
     );
 
-    // Aggiorna la password salvata in AsyncStorage
-    await AsyncStorage.setItem(STORAGE_KEYS.USER_PASSWORD, newPassword);
+    // SECURITY: Non salvare la password in chiaro in AsyncStorage
 
     return {
       success: true,

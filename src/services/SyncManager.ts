@@ -352,6 +352,8 @@ class SyncManager {
 
   // Salva una modifica offline
   async saveOfflineChange(type: OfflineChange['type'], entityType: OfflineChange['entityType'], data: any): Promise<void> {
+    this.ensureInitialized();
+    
     const change: OfflineChange = {
       id: `${type}_${entityType}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       type,
@@ -360,7 +362,7 @@ class SyncManager {
       timestamp: Date.now()
     };
 
-    await this.cacheService.saveOfflineChange(change);
+    await this.cacheService!.saveOfflineChange(change);
     console.log(`[SYNC] Modifica offline salvata: ${type} ${entityType}`);
     
     this.notifyListeners();
@@ -368,7 +370,9 @@ class SyncManager {
 
   // Ottieni lo stato di sincronizzazione
   async getSyncStatus(): Promise<SyncStatus> {
-    const cacheStats = await this.cacheService.getCacheStats();
+    this.ensureInitialized();
+    
+    const cacheStats = await this.cacheService!.getCacheStats();
     
     return {
       isOnline: this.isOnline,
@@ -416,7 +420,7 @@ class SyncManager {
       this.syncInterval = null;
     }
     
-    this.networkService.cleanup();
+    this.networkService?.cleanup();
     this.syncListeners = [];
     this.syncQueue = [];
   }
@@ -426,7 +430,8 @@ class SyncManager {
     console.log('[SYNC] Avvio sincronizzazione forzata completa');
     
     // Pulisci cache
-    await this.cacheService.clearCache();
+    this.ensureInitialized();
+    await this.cacheService!.clearCache();
     
     // Avvia sync
     await this.startSync(true);

@@ -45,8 +45,14 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({
     setIsTutorialVisible(true);
   }, []);
 
-  const closeTutorial = useCallback(() => {
-    setIsTutorialVisible(false);
+  const closeTutorial = useCallback(async () => {
+    try {
+      await AsyncStorage.setItem(TUTORIAL_STORAGE_KEY, "true");
+      setIsTutorialVisible(false);
+    } catch (error) {
+      console.error("[TUTORIAL] Error saving tutorial completion status:", error);
+      setIsTutorialVisible(false);
+    }
   }, []);
 
   const skipTutorial = useCallback(async () => {

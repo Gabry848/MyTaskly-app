@@ -25,7 +25,7 @@ import { getChatWithMessages, ChatMessage } from "../../services/chatHistoryServ
 import { reconstructMessagesFromHistory } from "../../components/BotChat/utils/chatHistoryUtils";
 import { STORAGE_KEYS } from "../../constants/authConstants";
 import { TaskCacheService } from '../../services/TaskCacheService';
-import SyncManager, { SyncStatus } from '../../services/SyncManager';
+import SyncManager from '../../services/SyncManager';
 import Badge from "../../components/UI/Badge";
 import VoiceChatModal from "../../components/BotChat/VoiceChatModal";
 import { useTranslation } from 'react-i18next';
@@ -42,7 +42,6 @@ const HomeScreen = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [isVoiceChatVisible, setIsVoiceChatVisible] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
-  const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null);
   const [suggestedCommandUsed, setSuggestedCommandUsed] = useState(false);
   const [screenHeight, setScreenHeight] = useState(Dimensions.get('window').height);
   const [isInputFocused, setIsInputFocused] = useState(false);
@@ -65,22 +64,6 @@ const HomeScreen = () => {
   const micButtonAnim = useRef(new Animated.Value(1)).current;
   const chatHistorySlideIn = useRef(new Animated.Value(0)).current;
   const chatHistoryOpacity = useRef(new Animated.Value(0)).current;
-  // Setup sync status listener
-  useEffect(() => {
-    const handleSyncStatus = (status: SyncStatus) => {
-      setSyncStatus(status);
-    };
-    
-    syncManager.addSyncListener(handleSyncStatus);
-    
-    // Ottieni stato iniziale
-    syncManager.getSyncStatus().then(setSyncStatus);
-    
-    return () => {
-      syncManager.removeSyncListener(handleSyncStatus);
-    };
-  }, [syncManager]);
-  
   // Effetto per recuperare il nome dell'utente e inizializzare cache
   useEffect(() => {
     const initialize = async () => {
@@ -257,15 +240,14 @@ const HomeScreen = () => {
       console.error("Errore nel salvare lo stato del comando suggerito:", error);
     }
 
-    // Simula un breve delay per far vedere il testo nell'input
-    setTimeout(() => {
-      handleSubmit();
-    }, 200);
+    // Pass the command directly to handleSubmit to avoid stale state closure
+    handleSubmit(command);
   };
 
-  const handleSubmit = async () => {
-    console.log('[HOME] handleSubmit triggered. Raw message:', message);
-    const trimmedMessage = message.trim();
+  const handleSubmit = async (overrideMessage?: string) => {
+    const rawMessage = overrideMessage ?? message;
+    console.log('[HOME] handleSubmit triggered. Raw message:', rawMessage);
+    const trimmedMessage = rawMessage.trim();
     if (!trimmedMessage || isLoading) return;
 
     // Se non c'è un chat_id corrente, crea una nuova sessione
@@ -665,31 +647,6 @@ const HomeScreen = () => {
         <View style={styles.header}>
         <View style={styles.titleSection}>
           <Text style={styles.mainTitle}>Mytaskly</Text>
-          {syncStatus && (
-            <View style={styles.syncIndicatorHome}>
-              {syncStatus.isSyncing ? (
-                <View style={styles.syncingContainer}>
-                  <ActivityIndicator size="small" color="#666666" />
-                  <Text style={styles.syncText}>{t('home.sync.syncing')}</Text>
-                </View>
-              ) : !syncStatus.isOnline ? (
-                <View style={styles.offlineContainer}>
-                  <Ionicons name="cloud-offline-outline" size={16} color="#ff6b6b" />
-                  <Text style={styles.offlineText}>{t('home.sync.offline')}</Text>
-                </View>
-              ) : syncStatus.pendingChanges > 0 ? (
-                <View style={styles.pendingContainer}>
-                  <Ionicons name="sync-outline" size={16} color="#ffa726" />
-                  <Text style={styles.pendingText}>{t('home.sync.pending', { count: syncStatus.pendingChanges })}</Text>
-                </View>
-              ) : (
-                <View style={styles.onlineContainer}>
-                  <Ionicons name="checkmark-circle-outline" size={16} color="#4caf50" />
-                  <Text style={styles.onlineText}>{t('home.sync.synced')}</Text>
-                </View>
-              )}
-            </View>
-          )}
         </View>
         <View style={styles.headerActions}>
           {/* Tutorial Help Button */}
@@ -810,24 +767,24 @@ const HomeScreen = () => {
                         value={message}
                         onChangeText={setMessage}
                         multiline={true}
-                        onSubmitEditing={handleSubmit}
-                        returnKeyType="send"
-                        blurOnSubmit={true}
-                        editable={!isLoading}
-                        onFocus={() => {
-                          console.log('[HOME] TextInput focused (under greeting)');
-                          setIsInputFocused(true);
-                        }}
-                        onBlur={() => {
-                          console.log('[HOME] TextInput blurred (under greeting)');
-                          setIsInputFocused(false);
-                        }}
-                      />
-                      <TouchableOpacity
-                        style={styles.sendButton}
-                        onPress={handleSubmit}
-                        activeOpacity={0.7}
-                        disabled={isLoading || !message.trim()}
+                      onSubmitEditing={() => handleSubmit()}
+                      returnKeyType="send"
+                      blurOnSubmit={true}
+                      editable={!isLoading}
+                      onFocus={() => {
+                        console.log('[HOME] TextInput focused (under greeting)');
+                        setIsInputFocused(true);
+                      }}
+                      onBlur={() => {
+                        console.log('[HOME] TextInput blurred (under greeting)');
+                        setIsInputFocused(false);
+                      }}
+                    />
+                    <TouchableOpacity
+                      style={styles.sendButton}
+                      onPress={() => handleSubmit()}
+                      activeOpacity={0.7}
+                      disabled={isLoading || !message.trim()}
                       >
                         <Ionicons name="send" size={20} color={isLoading || !message.trim() ? "#ccc" : "#000"} />
                       </TouchableOpacity>
@@ -937,7 +894,7 @@ const HomeScreen = () => {
                 value={message}
                 onChangeText={setMessage}
                 multiline={true}
-                onSubmitEditing={handleSubmit}
+                onSubmitEditing={() => handleSubmit()}
                 returnKeyType="send"
                 blurOnSubmit={true}
                 editable={!isLoading}
@@ -952,7 +909,7 @@ const HomeScreen = () => {
               />
               <TouchableOpacity
                 style={styles.sendButton}
-                onPress={handleSubmit}
+                onPress={() => handleSubmit()}
                 activeOpacity={0.7}
                 disabled={isLoading || !message.trim()}
               >
@@ -1014,71 +971,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 15,
-  },
-  syncIndicatorHome: {
-    marginTop: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  syncingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f0f0f0',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 15,
-  },
-  syncText: {
-    fontSize: 13,
-    color: '#666666',
-    marginLeft: 6,
-    fontFamily: 'System',
-    fontWeight: '300',
-  },
-  offlineContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#ffebee',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 15,
-  },
-  offlineText: {
-    fontSize: 13,
-    color: '#ff6b6b',
-    marginLeft: 6,
-    fontFamily: 'System',
-    fontWeight: '300',
-  },
-  pendingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff3e0',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 15,
-  },
-  pendingText: {
-    fontSize: 13,
-    color: '#ffa726',
-    marginLeft: 6,
-    fontFamily: 'System',
-    fontWeight: '300',
-  },
-  onlineContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#e8f5e8',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 15,
-  },
-  onlineText: {
-    fontSize: 13,
-    color: '#4caf50',
-    marginLeft: 6,
-    fontFamily: 'System',
-    fontWeight: '300',
   },
   resetButton: {
     padding: 8,
