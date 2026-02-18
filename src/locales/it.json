@@ -30,7 +30,8 @@
       "googleCalendar": "Google Calendar",
       "notificationDebug": "Debug Notifiche",
       "bugReport": "Segnala Bug",
-      "notFound": "Pagina non trovata"
+      "notFound": "Pagina non trovata",
+      "notificationSettings": "Impostazioni Notifiche"
     }
   },
   "settings": {
@@ -51,13 +52,60 @@
       "googleCalendar": "Google Calendar",
       "about": "Info",
       "tutorial": "Rivedi Tutorial",
-      "testNotifications": "Test Notifiche (10s)"
+      "testNotifications": "Test Notifiche (10s)",
+      "notificationSettings": "Notifiche"
     },
     "tutorial": {
       "restartTitle": "Tutorial",
       "restartMessage": "Il tutorial è stato riavviato! Torna alla schermata principale per iniziare.",
       "restartError": "Errore",
       "restartErrorMessage": "Impossibile riavviare il tutorial. Riprova più tardi."
+    }
+  },
+  "notificationSettings": {
+    "loading": "Caricamento impostazioni...",
+    "sections": {
+      "push": "Notifiche Push",
+      "pushDesc": "Ricevi notifiche direttamente su questo dispositivo.",
+      "telegram": "Telegram",
+      "telegramDesc": "Ricevi promemoria automatici tramite il bot Telegram di MyTaskly.",
+      "timezone": "Fuso Orario",
+      "timezoneDesc": "I promemoria vengono inviati in base a questo fuso orario. Mantienilo sincronizzato con il tuo dispositivo.",
+      "info": "Informazioni"
+    },
+    "push": {
+      "enable": "Abilita notifiche push",
+      "noToken": "Dispositivo non registrato",
+      "notRegistered": "Questo dispositivo non ha registrato un token push. Abilita i permessi di notifica dell'app per attivarlo."
+    },
+    "telegram": {
+      "enable": "Abilita promemoria Telegram",
+      "chatId": "Connesso — Chat ID: {{id}}",
+      "notConnected": "Bot Telegram non connesso. Avvia una conversazione con il bot MyTaskly per abilitarlo."
+    },
+    "reminder": {
+      "title": "Anticipo promemoria",
+      "desc": "Quanti minuti prima della scadenza del task deve essere inviato il promemoria."
+    },
+    "timezone": {
+      "server": "Server",
+      "device": "Questo dispositivo",
+      "outOfSync": "Il fuso orario del server non corrisponde a quello del tuo dispositivo. Tocca Sincronizza per aggiornarlo.",
+      "sync": "Sincronizza fuso orario",
+      "syncing": "Sincronizzazione..."
+    },
+    "sync": {
+      "successTitle": "Fuso orario aggiornato",
+      "successMessage": "Il fuso orario è stato impostato su {{timezone}}."
+    },
+    "info": {
+      "autoSave": "Le modifiche vengono salvate automaticamente.",
+      "telegramCommands": "Disabilitare i promemoria Telegram non influisce sui comandi del bot (/oggi, /stats, ecc.)."
+    },
+    "error": {
+      "title": "Errore",
+      "loadFailed": "Impossibile caricare le impostazioni delle notifiche. Riprova.",
+      "saveFailed": "Impossibile salvare le modifiche. Riprova."
     }
   },
   "home": {

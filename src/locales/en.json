@@ -30,7 +30,8 @@
       "googleCalendar": "Google Calendar",
       "notificationDebug": "Notification Debug",
       "bugReport": "Bug Report",
-      "notFound": "Page not found"
+      "notFound": "Page not found",
+      "notificationSettings": "Notification Settings"
     }
   },
   "settings": {
@@ -51,13 +52,60 @@
       "googleCalendar": "Google Calendar",
       "about": "About",
       "tutorial": "Review Tutorial",
-      "testNotifications": "Test Notifications (10s)"
+      "testNotifications": "Test Notifications (10s)",
+      "notificationSettings": "Notifications"
     },
     "tutorial": {
       "restartTitle": "Tutorial",
       "restartMessage": "The tutorial has been restarted! Go back to the main screen to begin.",
       "restartError": "Error",
       "restartErrorMessage": "Unable to restart the tutorial. Please try again later."
+    }
+  },
+  "notificationSettings": {
+    "loading": "Loading settings...",
+    "sections": {
+      "push": "Push Notifications",
+      "pushDesc": "Receive notifications directly on this device.",
+      "telegram": "Telegram",
+      "telegramDesc": "Receive automated reminders via the MyTaskly Telegram bot.",
+      "timezone": "Timezone",
+      "timezoneDesc": "Reminders are sent according to this timezone. Keep it in sync with your device.",
+      "info": "Information"
+    },
+    "push": {
+      "enable": "Enable push notifications",
+      "noToken": "Device not registered",
+      "notRegistered": "This device has not registered a push token. Open the app notification permissions to enable it."
+    },
+    "telegram": {
+      "enable": "Enable Telegram reminders",
+      "chatId": "Connected — Chat ID: {{id}}",
+      "notConnected": "Telegram bot not connected. Start a conversation with the MyTaskly bot to enable it."
+    },
+    "reminder": {
+      "title": "Reminder advance notice",
+      "desc": "How many minutes before the task deadline should the reminder be sent."
+    },
+    "timezone": {
+      "server": "Server",
+      "device": "This device",
+      "outOfSync": "The server timezone does not match your device. Tap Sync to update it.",
+      "sync": "Sync timezone",
+      "syncing": "Syncing..."
+    },
+    "sync": {
+      "successTitle": "Timezone updated",
+      "successMessage": "The timezone has been set to {{timezone}}."
+    },
+    "info": {
+      "autoSave": "Changes are saved automatically.",
+      "telegramCommands": "Disabling Telegram reminders does not affect bot commands (/today, /stats, etc.)."
+    },
+    "error": {
+      "title": "Error",
+      "loadFailed": "Unable to load notification settings. Please try again.",
+      "saveFailed": "Unable to save changes. Please try again."
     }
   },
   "home": {

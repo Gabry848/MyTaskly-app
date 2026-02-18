@@ -27,6 +27,7 @@ import AboutScreen from "./screens/About";
 import LanguageScreen from "./screens/Language";
 import VoiceSettingsScreen from "./screens/VoiceSettings";
 import GoogleCalendarScreen from "./screens/GoogleCalendar";
+import NotificationSettingsScreen from "./screens/NotificationSettings";
 import CalendarScreen from "./screens/Calendar";
 import NotificationDebugScreen from "./screens/NotificationDebug";
 import BugReportScreen from "./screens/BugReport";
@@ -69,6 +70,7 @@ export type RootStackParamList = {
   Statistics: undefined;
   Updates: undefined;
   NotFound: undefined;
+  NotificationSettings: undefined;
 };
 
 // Definizione del tipo per le route dei Tab
@@ -444,6 +446,11 @@ function AppStack() {
           name="NotificationDebug"
           component={NotificationDebugScreen}
           options={{ title: t('navigation.screens.notificationDebug') }}
+        />
+        <Stack.Screen
+          name="NotificationSettings"
+          component={NotificationSettingsScreen}
+          options={{ title: t('navigation.screens.notificationSettings') }}
         />
         <Stack.Screen
           name="BugReport"

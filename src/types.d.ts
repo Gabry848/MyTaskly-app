@@ -37,6 +37,7 @@ export type RootStackParamList = {
   VoiceSettings: undefined;
   GoogleCalendar: undefined;
   NotificationDebug: undefined;
+  NotificationSettings: undefined;
   Statistics: undefined;
   Updates: undefined;
   NotFound: undefined;

@@ -43,6 +43,10 @@ export default function Settings() {
     navigation.navigate('GoogleCalendar');
   };
 
+  const handleNavigateToNotificationSettings = () => {
+    navigation.navigate('NotificationSettings');
+  };
+
   const handleNavigateToCalendarWidgetDemo = () => {
     navigation.navigate('CalendarWidgetDemo');
   };
@@ -163,6 +167,17 @@ export default function Settings() {
           <View style={styles.menuItemContent}>
             <Ionicons name="calendar-outline" size={24} color="#000000" />
             <Text style={styles.menuItemText}>{t('settings.menu.googleCalendar')}</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#666666" />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={handleNavigateToNotificationSettings}
+        >
+          <View style={styles.menuItemContent}>
+            <Ionicons name="notifications-outline" size={24} color="#000000" />
+            <Text style={styles.menuItemText}>{t('settings.menu.notificationSettings')}</Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color="#666666" />
         </TouchableOpacity>
