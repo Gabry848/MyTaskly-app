@@ -1,6 +1,17 @@
-import { Text } from '@react-navigation/elements';
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, TouchableOpacity, SafeAreaView, StatusBar, ScrollView, ActivityIndicator, Alert, Modal, TextInput } from 'react-native';
+import {
+  Text,
+  StyleSheet,
+  View,
+  TouchableOpacity,
+  SafeAreaView,
+  StatusBar,
+  ScrollView,
+  ActivityIndicator,
+  Alert,
+  Modal,
+  TextInput,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getValidToken, changeEmail, changeUsername } from '../../services/authService';
 import axios from '../../services/axiosInstance';
@@ -24,16 +35,13 @@ export default function AccountSettings() {
   const [error, setError] = useState<string | null>(null);
   const [testNotificationLoading, setTestNotificationLoading] = useState(false);
 
-  // Stati per i modal
   const [emailModalVisible, setEmailModalVisible] = useState(false);
   const [usernameModalVisible, setUsernameModalVisible] = useState(false);
 
-  // Stati per i form
   const [newEmail, setNewEmail] = useState('');
   const [emailPassword, setEmailPassword] = useState('');
   const [newUsername, setNewUsername] = useState('');
 
-  // Stati di loading per le operazioni
   const [changeEmailLoading, setChangeEmailLoading] = useState(false);
   const [changeUsernameLoading, setChangeUsernameLoading] = useState(false);
 
@@ -54,14 +62,13 @@ export default function AccountSettings() {
 
       const response = await axios.get('/auth/current_user_info', {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       });
-      console.log('User Info Response:', response.data);
       setUserInfo(response.data);
-    } catch (error: any) {
-      console.error('Errore nel recupero delle informazioni utente:', error);
+    } catch (err: any) {
+      console.error('Errore nel recupero delle informazioni utente:', err);
       setError(t('accountSettings.errors.loadingError'));
     } finally {
       setLoading(false);
@@ -74,15 +81,11 @@ export default function AccountSettings() {
       return date.toLocaleDateString('it-IT', {
         day: '2-digit',
         month: '2-digit',
-        year: 'numeric'
+        year: 'numeric',
       });
     } catch {
       return dateString;
     }
-  };
-
-  const handleRefresh = () => {
-    fetchUserInfo();
   };
 
   const handleTestNotification = async () => {
@@ -107,7 +110,6 @@ export default function AccountSettings() {
       return;
     }
 
-    // Validazione email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(newEmail)) {
       Alert.alert(t('common.messages.warning'), t('accountSettings.changeEmail.invalidEmail'));
@@ -122,12 +124,11 @@ export default function AccountSettings() {
         setEmailModalVisible(false);
         setNewEmail('');
         setEmailPassword('');
-        // Ricarica le informazioni utente
         fetchUserInfo();
       } else {
         Alert.alert(t('common.messages.error'), result.message);
       }
-    } catch (error) {
+    } catch {
       Alert.alert(t('common.messages.error'), t('accountSettings.changeEmail.error'));
     } finally {
       setChangeEmailLoading(false);
@@ -152,12 +153,11 @@ export default function AccountSettings() {
         Alert.alert(t('common.messages.success'), result.message);
         setUsernameModalVisible(false);
         setNewUsername('');
-        // Ricarica le informazioni utente
         fetchUserInfo();
       } else {
         Alert.alert(t('common.messages.error'), result.message);
       }
-    } catch (error) {
+    } catch {
       Alert.alert(t('common.messages.error'), t('accountSettings.changeUsername.error'));
     } finally {
       setChangeUsernameLoading(false);
@@ -168,7 +168,6 @@ export default function AccountSettings() {
     return (
       <SafeAreaView style={styles.container}>
         <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
-
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#000000" />
           <Text style={styles.loadingText}>{t('common.messages.loading')}</Text>
@@ -181,108 +180,116 @@ export default function AccountSettings() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
 
-      {/* Content */}
-      <ScrollView style={styles.content}>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {error ? (
           <View style={styles.errorContainer}>
             <Ionicons name="alert-circle-outline" size={48} color="#000000" />
             <Text style={styles.errorText}>{error}</Text>
-            <TouchableOpacity style={styles.retryButton} onPress={handleRefresh}>
+            <TouchableOpacity style={styles.retryButton} onPress={fetchUserInfo}>
               <Text style={styles.retryButtonText}>{t('common.buttons.retry')}</Text>
             </TouchableOpacity>
           </View>
         ) : userInfo ? (
           <>
-            {/* User Info Section */}
+            {/* ───────────────── INFORMAZIONI ACCOUNT ───────────────── */}
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>{t('accountSettings.sections.accountInfo')}</Text>
+              <Text style={styles.sectionDescription}>{t('accountSettings.sections.accountInfoDesc')}</Text>
             </View>
 
             <View style={styles.infoItem}>
-              <View style={styles.infoItemContent}>
-                <Ionicons name="person-outline" size={24} color="#000000" />
-                <View style={styles.infoTextContainer}>
-                  <Text style={styles.infoLabel}>{t('accountSettings.labels.username')}</Text>
-                  <Text style={styles.infoValue}>{userInfo.username}</Text>
+              <View style={styles.rowLeft}>
+                <Ionicons name="person-outline" size={22} color="#000000" />
+                <View style={styles.rowTextWrap}>
+                  <Text style={styles.rowHint}>{t('accountSettings.labels.username')}</Text>
+                  <Text style={styles.rowLabel}>{userInfo.username}</Text>
                 </View>
               </View>
             </View>
 
             <View style={styles.infoItem}>
-              <View style={styles.infoItemContent}>
-                <Ionicons name="mail-outline" size={24} color="#000000" />
-                <View style={styles.infoTextContainer}>
-                  <Text style={styles.infoLabel}>{t('accountSettings.labels.email')}</Text>
-                  <Text style={styles.infoValue}>{userInfo.email}</Text>
+              <View style={styles.rowLeft}>
+                <Ionicons name="mail-outline" size={22} color="#000000" />
+                <View style={styles.rowTextWrap}>
+                  <Text style={styles.rowHint}>{t('accountSettings.labels.email')}</Text>
+                  <Text style={styles.rowLabel}>{userInfo.email}</Text>
                 </View>
               </View>
             </View>
 
             <View style={styles.infoItem}>
-              <View style={styles.infoItemContent}>
-                <Ionicons name="calendar-outline" size={24} color="#000000" />
-                <View style={styles.infoTextContainer}>
-                  <Text style={styles.infoLabel}>{t('accountSettings.labels.registrationDate')}</Text>
-                  <Text style={styles.infoValue}>{formatDate(userInfo.registration_date)}</Text>
+              <View style={styles.rowLeft}>
+                <Ionicons name="calendar-outline" size={22} color="#000000" />
+                <View style={styles.rowTextWrap}>
+                  <Text style={styles.rowHint}>{t('accountSettings.labels.registrationDate')}</Text>
+                  <Text style={styles.rowLabel}>{formatDate(userInfo.registration_date)}</Text>
                 </View>
               </View>
             </View>
 
-            {/* Account Management Section */}
+            {/* ───────────────── GESTIONE ACCOUNT ───────────────── */}
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>{t('accountSettings.sections.accountManagement')}</Text>
+              <Text style={styles.sectionDescription}>{t('accountSettings.sections.accountManagementDesc')}</Text>
             </View>
 
             <TouchableOpacity
               style={styles.menuItem}
               onPress={() => setUsernameModalVisible(true)}
+              activeOpacity={0.7}
             >
-              <View style={styles.menuItemContent}>
-                <Ionicons name="person-outline" size={24} color="#000000" />
+              <View style={styles.rowLeft}>
+                <Ionicons name="person-outline" size={22} color="#000000" />
                 <Text style={styles.menuItemText}>{t('accountSettings.menu.changeUsername')}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#666666" />
+              <Ionicons name="chevron-forward" size={20} color="#000000" />
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.menuItem}
               onPress={() => setEmailModalVisible(true)}
+              activeOpacity={0.7}
             >
-              <View style={styles.menuItemContent}>
-                <Ionicons name="mail-outline" size={24} color="#000000" />
+              <View style={styles.rowLeft}>
+                <Ionicons name="mail-outline" size={22} color="#000000" />
                 <Text style={styles.menuItemText}>{t('accountSettings.menu.changeEmail')}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#666666" />
+              <Ionicons name="chevron-forward" size={20} color="#000000" />
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.menuItem}
               onPress={() => navigation.navigate('ChangePassword')}
+              activeOpacity={0.7}
             >
-              <View style={styles.menuItemContent}>
-                <Ionicons name="key-outline" size={24} color="#000000" />
+              <View style={styles.rowLeft}>
+                <Ionicons name="key-outline" size={22} color="#000000" />
                 <Text style={styles.menuItemText}>{t('accountSettings.menu.changePassword')}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#666666" />
+              <Ionicons name="chevron-forward" size={20} color="#000000" />
             </TouchableOpacity>
 
-            {/* Test Notifications Section */}
+            {/* ───────────────── TEST NOTIFICHE ───────────────── */}
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>{t('accountSettings.sections.testNotifications')}</Text>
+              <Text style={styles.sectionDescription}>{t('accountSettings.sections.testNotificationsDesc')}</Text>
             </View>
 
             <TouchableOpacity
               style={styles.menuItem}
               onPress={handleTestNotification}
               disabled={testNotificationLoading}
+              activeOpacity={0.7}
             >
-              <View style={styles.menuItemContent}>
-                <Ionicons name="notifications-outline" size={24} color="#000000" />
-                <View style={styles.menuItemTextContainer}>
+              <View style={styles.rowLeft}>
+                <Ionicons name="notifications-outline" size={22} color="#000000" />
+                <View style={styles.rowTextWrap}>
                   <Text style={styles.menuItemText}>
-                    {testNotificationLoading ? t('accountSettings.testNotification.sending') : t('accountSettings.testNotification.send')}
+                    {testNotificationLoading
+                      ? t('accountSettings.testNotification.sending')
+                      : t('accountSettings.testNotification.send')}
                   </Text>
-                  <Text style={styles.menuItemDescription}>
+                  <Text style={styles.rowHint}>
                     {t('accountSettings.testNotification.description')}
                   </Text>
                 </View>
@@ -290,17 +297,19 @@ export default function AccountSettings() {
               {testNotificationLoading ? (
                 <ActivityIndicator size="small" color="#000000" />
               ) : (
-                <Ionicons name="send-outline" size={20} color="#666666" />
+                <Ionicons name="send-outline" size={20} color="#000000" />
               )}
             </TouchableOpacity>
           </>
         ) : null}
+
+        <View style={{ height: 32 }} />
       </ScrollView>
 
-      {/* Email Change Modal */}
+      {/* ───────────────── MODAL CAMBIA EMAIL ───────────────── */}
       <Modal
         animationType="slide"
-        transparent={true}
+        transparent
         visible={emailModalVisible}
         onRequestClose={() => setEmailModalVisible(false)}
       >
@@ -309,7 +318,7 @@ export default function AccountSettings() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{t('accountSettings.changeEmail.title')}</Text>
               <TouchableOpacity onPress={() => setEmailModalVisible(false)}>
-                <Ionicons name="close" size={28} color="#2c3e50" />
+                <Ionicons name="close" size={28} color="#000000" />
               </TouchableOpacity>
             </View>
 
@@ -355,10 +364,10 @@ export default function AccountSettings() {
         </View>
       </Modal>
 
-      {/* Username Change Modal */}
+      {/* ───────────────── MODAL CAMBIA USERNAME ───────────────── */}
       <Modal
         animationType="slide"
-        transparent={true}
+        transparent
         visible={usernameModalVisible}
         onRequestClose={() => setUsernameModalVisible(false)}
       >
@@ -367,7 +376,7 @@ export default function AccountSettings() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{t('accountSettings.changeUsername.title')}</Text>
               <TouchableOpacity onPress={() => setUsernameModalVisible(false)}>
-                <Ionicons name="close" size={28} color="#2c3e50" />
+                <Ionicons name="close" size={28} color="#000000" />
               </TouchableOpacity>
             </View>
 
@@ -410,19 +419,17 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingTop: 20,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 20,
     backgroundColor: '#ffffff',
   },
   loadingText: {
+    marginTop: 10,
     fontSize: 16,
     color: '#495057',
-    marginTop: 16,
     fontFamily: 'System',
   },
   errorContainer: {
@@ -430,6 +437,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 40,
+    paddingTop: 80,
   },
   errorText: {
     fontSize: 16,
@@ -451,44 +459,60 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     fontFamily: 'System',
   },
+  // Section header — identico a NotificationSettings
   sectionHeader: {
     paddingHorizontal: 20,
     paddingTop: 30,
-    paddingBottom: 15,
+    paddingBottom: 8,
+    backgroundColor: '#ffffff',
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: '600',
     color: '#000000',
+    marginBottom: 4,
     fontFamily: 'System',
   },
+  sectionDescription: {
+    fontSize: 14,
+    color: '#6c757d',
+    lineHeight: 20,
+    fontFamily: 'System',
+  },
+  // Row base — identica a NotificationSettings
+  rowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 12,
+  },
+  rowTextWrap: {
+    marginLeft: 15,
+    flex: 1,
+  },
+  rowLabel: {
+    fontSize: 17,
+    color: '#000000',
+    fontWeight: '400',
+    fontFamily: 'System',
+  },
+  rowHint: {
+    fontSize: 13,
+    color: '#6c757d',
+    marginTop: 1,
+    fontFamily: 'System',
+  },
+  // Info item (sola lettura)
   infoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 16,
     backgroundColor: '#ffffff',
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
   },
-  infoItemContent: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  infoTextContainer: {
-    flex: 1,
-    marginLeft: 15,
-  },
-  infoLabel: {
-    fontSize: 14,
-    color: '#6c757d',
-    fontFamily: 'System',
-    marginBottom: 4,
-  },
-  infoValue: {
-    fontSize: 17,
-    color: '#000000',
-    fontFamily: 'System',
-    fontWeight: '400',
-  },
+  // Menu item (azione con chevron)
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -499,28 +523,14 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
   },
-  menuItemContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
   menuItemText: {
     fontSize: 17,
     color: '#000000',
-    fontFamily: 'System',
     fontWeight: '400',
-    marginLeft: 15,
-  },
-  menuItemTextContainer: {
-    flex: 1,
-    marginLeft: 15,
-  },
-  menuItemDescription: {
-    fontSize: 14,
-    color: '#6c757d',
     fontFamily: 'System',
-    marginTop: 2,
+    marginLeft: 15,
   },
+  // Modal
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -533,10 +543,7 @@ const styles = StyleSheet.create({
     width: '85%',
     maxWidth: 400,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 4.65,
     elevation: 8,
@@ -548,12 +555,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#e9ecef',
+    borderBottomColor: '#f0f0f0',
   },
   modalTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#2c3e50',
+    color: '#000000',
     fontFamily: 'System',
   },
   modalBody: {
@@ -577,13 +584,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
-    color: '#2c3e50',
+    color: '#000000',
     fontFamily: 'System',
   },
   modalButton: {
     backgroundColor: '#000000',
     paddingVertical: 14,
-    borderRadius: 8,
+    borderRadius: 12,
     alignItems: 'center',
     marginTop: 10,
   },

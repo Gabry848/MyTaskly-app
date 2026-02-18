@@ -1,6 +1,15 @@
-import { Text } from '@react-navigation/elements';
 import React, { useState } from 'react';
-import { StyleSheet, View, TouchableOpacity, SafeAreaView, StatusBar, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import {
+  Text,
+  StyleSheet,
+  View,
+  TouchableOpacity,
+  SafeAreaView,
+  StatusBar,
+  ScrollView,
+  Alert,
+  ActivityIndicator,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useTranslation } from 'react-i18next';
@@ -26,110 +35,82 @@ export default function Language() {
   const [isChanging, setIsChanging] = useState(false);
 
   const handleLanguageSelect = async (languageCode: string) => {
-    if (languageCode === currentLanguage || isChanging) {
-      return;
-    }
+    if (languageCode === currentLanguage || isChanging) return;
 
     try {
       setIsChanging(true);
       await changeLanguage(languageCode);
-
-      // Show success message
-      Alert.alert(
-        t('common.messages.success'),
-        t('language.messages.changed')
-      );
+      Alert.alert(t('common.messages.success'), t('language.messages.changed'));
     } catch (error) {
       console.error('Error changing language:', error);
-      Alert.alert(
-        t('common.messages.error'),
-        t('errors.unknown')
-      );
+      Alert.alert(t('common.messages.error'), t('errors.unknown'));
     } finally {
       setIsChanging(false);
     }
   };
 
-  const availableLanguages = LANGUAGES.filter(lang => lang.available);
-  const comingSoonLanguages = LANGUAGES.filter(lang => !lang.available);
+  const availableLanguages = LANGUAGES.filter((l) => l.available);
+  const comingSoonLanguages = LANGUAGES.filter((l) => !l.available);
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
 
-      {/* Content */}
-      <ScrollView style={styles.content}>
-        {/* Current Language Section */}
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+
+        {/* ───────────────── LINGUA ATTUALE ───────────────── */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>{t('language.currentLanguage')}</Text>
+          <Text style={styles.sectionDescription}>{t('language.currentLanguageDesc')}</Text>
         </View>
 
         {availableLanguages.map((language) => {
           const isSelected = currentLanguage === language.code;
-
           return (
             <TouchableOpacity
               key={language.code}
-              style={[
-                styles.languageItem,
-                isSelected && styles.selectedLanguageItem
-              ]}
+              style={[styles.row, isSelected && styles.rowSelected]}
               onPress={() => handleLanguageSelect(language.code)}
               disabled={isChanging}
+              activeOpacity={0.7}
             >
-              <View style={styles.languageContent}>
+              <View style={styles.rowLeft}>
                 <View style={styles.flagContainer}>
                   <Text style={styles.flagEmoji}>{language.flag}</Text>
                 </View>
-                <View style={styles.languageInfo}>
-                  <Text style={styles.languageName}>{language.nativeName}</Text>
-                  <Text style={styles.languageNative}>{language.name}</Text>
+                <View style={styles.rowTextWrap}>
+                  <Text style={[styles.rowLabel, isSelected && styles.rowLabelSelected]}>
+                    {language.nativeName}
+                  </Text>
+                  <Text style={styles.rowHint}>{language.name}</Text>
                 </View>
               </View>
               {isChanging && isSelected ? (
-                <ActivityIndicator size="small" color="#007AFF" />
+                <ActivityIndicator size="small" color="#000000" />
               ) : isSelected ? (
-                <Ionicons name="checkmark-circle" size={24} color="#28a745" />
+                <Ionicons name="checkmark-circle" size={24} color="#000000" />
               ) : null}
             </TouchableOpacity>
           );
         })}
 
-        {/* Available Languages Section */}
-        {availableLanguages.length > 1 && (
-          <>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>{t('language.availableLanguages')}</Text>
-            </View>
-
-            <View style={styles.section}>
-              <Text style={styles.sectionSubtitle}>
-                {t('language.availableLanguages')} {availableLanguages.length}
-              </Text>
-            </View>
-          </>
-        )}
-
-        {/* Coming Soon Languages */}
+        {/* ───────────────── PROSSIMAMENTE ───────────────── */}
         {comingSoonLanguages.length > 0 && (
           <>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>{t('language.comingSoon')}</Text>
+              <Text style={styles.sectionDescription}>{t('language.comingSoonDesc')}</Text>
             </View>
 
             {comingSoonLanguages.map((language) => (
-              <View key={language.code} style={styles.futureLanguageItem}>
-                <View style={styles.languageContent}>
+              <View key={language.code} style={styles.rowDisabled}>
+                <View style={styles.rowLeft}>
                   <View style={styles.flagContainer}>
                     <Text style={styles.flagEmoji}>{language.flag}</Text>
                   </View>
-                  <View style={styles.languageInfo}>
-                    <Text style={[styles.languageName, styles.disabledText]}>
-                      {language.nativeName}
-                    </Text>
-                    <Text style={[styles.languageNative, styles.disabledText]}>
-                      {language.name}
-                    </Text>
+                  <View style={styles.rowTextWrap}>
+                    <Text style={[styles.rowLabel, styles.disabledText]}>{language.nativeName}</Text>
+                    <Text style={[styles.rowHint, styles.disabledText]}>{language.name}</Text>
                   </View>
                 </View>
                 <View style={styles.comingSoonBadge}>
@@ -139,6 +120,23 @@ export default function Language() {
             ))}
           </>
         )}
+
+        {/* ───────────────── INFO ───────────────── */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>{t('notificationSettings.sections.info')}</Text>
+        </View>
+
+        <View style={styles.infoItem}>
+          <Ionicons name="globe-outline" size={20} color="#000000" />
+          <Text style={styles.infoItemText}>{t('language.info.autoApply')}</Text>
+        </View>
+
+        <View style={styles.infoItem}>
+          <Ionicons name="refresh-outline" size={20} color="#000000" />
+          <Text style={styles.infoItemText}>{t('language.info.restart')}</Text>
+        </View>
+
+        <View style={{ height: 32 }} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -151,33 +149,29 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingTop: 20,
   },
+  // Section header — identico a NotificationSettings
   sectionHeader: {
     paddingHorizontal: 20,
     paddingTop: 30,
-    paddingBottom: 15,
+    paddingBottom: 8,
+    backgroundColor: '#ffffff',
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: '600',
     color: '#000000',
+    marginBottom: 4,
     fontFamily: 'System',
   },
-  section: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  sectionSubtitle: {
-    fontSize: 16,
+  sectionDescription: {
+    fontSize: 14,
     color: '#6c757d',
+    lineHeight: 20,
     fontFamily: 'System',
-    fontWeight: '400',
   },
-  languageItem: {
+  // Row lingua disponibile
+  row: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -187,14 +181,34 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
   },
-  selectedLanguageItem: {
+  rowSelected: {
     backgroundColor: '#f8f9fa',
   },
-  languageContent: {
+  rowLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
+    marginRight: 12,
   },
+  rowTextWrap: {
+    flex: 1,
+  },
+  rowLabel: {
+    fontSize: 17,
+    color: '#000000',
+    fontWeight: '400',
+    fontFamily: 'System',
+    marginBottom: 2,
+  },
+  rowLabelSelected: {
+    fontWeight: '600',
+  },
+  rowHint: {
+    fontSize: 13,
+    color: '#6c757d',
+    fontFamily: 'System',
+  },
+  // Flag
   flagContainer: {
     width: 40,
     height: 40,
@@ -205,24 +219,10 @@ const styles = StyleSheet.create({
     marginRight: 15,
   },
   flagEmoji: {
-    fontSize: 24,
+    fontSize: 22,
   },
-  languageInfo: {
-    flex: 1,
-  },
-  languageName: {
-    fontSize: 17,
-    fontWeight: '400',
-    color: '#000000',
-    fontFamily: 'System',
-    marginBottom: 2,
-  },
-  languageNative: {
-    fontSize: 14,
-    color: '#6c757d',
-    fontFamily: 'System',
-  },
-  futureLanguageItem: {
+  // Row disabilitata (coming soon)
+  rowDisabled: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -231,14 +231,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
-    opacity: 0.6,
+    opacity: 0.55,
   },
   disabledText: {
     color: '#adb5bd',
   },
   comingSoonBadge: {
     backgroundColor: '#ffc107',
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
   },
@@ -247,5 +247,23 @@ const styles = StyleSheet.create({
     color: '#000000',
     fontWeight: '600',
     fontFamily: 'System',
+  },
+  // Info list — identico a NotificationSettings
+  infoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: '#ffffff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  infoItemText: {
+    fontSize: 15,
+    color: '#495057',
+    marginLeft: 15,
+    flex: 1,
+    fontFamily: 'System',
+    lineHeight: 20,
   },
 });

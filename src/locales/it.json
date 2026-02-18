@@ -247,8 +247,11 @@
     "loading": "Caricamento...",
     "sections": {
       "accountInfo": "Informazioni Account",
+      "accountInfoDesc": "I tuoi dati personali registrati",
       "accountManagement": "Gestione Account",
-      "testNotifications": "Test Notifiche"
+      "accountManagementDesc": "Modifica le tue credenziali di accesso",
+      "testNotifications": "Test Notifiche",
+      "testNotificationsDesc": "Verifica che le notifiche siano configurate correttamente"
     },
     "labels": {
       "username": "Username",
@@ -364,13 +367,19 @@
   "language": {
     "title": "Lingua",
     "currentLanguage": "Lingua attuale",
+    "currentLanguageDesc": "Seleziona la lingua dell'interfaccia",
     "availableLanguages": "Lingue disponibili",
     "comingSoon": "Prossimamente",
+    "comingSoonDesc": "Queste lingue saranno disponibili in futuro",
     "languages": {
       "it": "Italiano",
       "en": "English",
       "es": "Español",
       "fr": "Français"
+    },
+    "info": {
+      "autoApply": "La lingua viene applicata immediatamente a tutta l'app",
+      "restart": "Alcune sezioni potrebbero richiedere un riavvio"
     },
     "messages": {
       "changed": "Lingua modificata con successo"
@@ -378,6 +387,17 @@
   },
   "voiceSettings": {
     "title": "Impostazioni Vocali",
+    "sections": {
+      "voiceModel": "Modello Vocale",
+      "voiceModelDesc": "Scegli il livello di intelligenza del bot vocale",
+      "voiceGender": "Genere della Voce",
+      "voiceGenderDesc": "Seleziona se preferisci una voce femminile o maschile",
+      "voiceQuality": "Qualità Audio",
+      "voiceQualityDesc": "Maggiore qualità richiede più tempo per generare la risposta",
+      "info": "Informazioni",
+      "infoDesc": "Note sulle impostazioni vocali"
+    },
+    "loading": "Caricamento impostazioni...",
     "fields": {
       "voiceModel": "Modello voce",
       "voiceGender": "Genere voce",
@@ -386,6 +406,16 @@
     "options": {
       "male": "Maschile",
       "female": "Femminile"
+    },
+    "info": {
+      "autoSave": "Le impostazioni vengono salvate automaticamente",
+      "sync": "Sincronizzate su tutti i tuoi dispositivi",
+      "nextConversation": "Applicate alla prossima conversazione vocale"
+    },
+    "errors": {
+      "loadFailed": "Impossibile caricare le impostazioni vocali",
+      "saveFailed": "Impossibile salvare le impostazioni",
+      "connectionError": "Errore di connessione durante il salvataggio"
     },
     "messages": {
       "saved": "Impostazioni vocali salvate con successo"

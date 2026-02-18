@@ -8,21 +8,23 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  ActivityIndicator
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import {
   getVoiceSettings,
   updateVoiceSettings,
   VoiceSettings,
-  VOICE_SETTINGS_OPTIONS
+  VOICE_SETTINGS_OPTIONS,
 } from '../../services/voiceSettingsService';
 
 export default function VoiceSettingsScreen() {
+  const { t } = useTranslation();
   const [settings, setSettings] = useState<VoiceSettings>({
     voice_model: 'base',
     voice_gender: 'female',
-    voice_quality: 'medium'
+    voice_quality: 'medium',
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -38,7 +40,7 @@ export default function VoiceSettingsScreen() {
       setSettings(currentSettings);
     } catch (error) {
       console.error('Errore nel caricamento delle impostazioni vocali:', error);
-      Alert.alert('Errore', 'Impossibile caricare le impostazioni vocali');
+      Alert.alert(t('common.messages.error'), t('voiceSettings.errors.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -48,14 +50,8 @@ export default function VoiceSettingsScreen() {
     settingKey: keyof VoiceSettings,
     value: string
   ) => {
-    const newSettings = {
-      ...settings,
-      [settingKey]: value
-    };
-
+    const newSettings = { ...settings, [settingKey]: value };
     setSettings(newSettings);
-
-    // Salva automaticamente le modifiche
     await saveSettings(newSettings);
   };
 
@@ -63,18 +59,13 @@ export default function VoiceSettingsScreen() {
     try {
       setSaving(true);
       const success = await updateVoiceSettings(settingsToSave);
-
-      if (success) {
-        // Successo silenzioso per un'esperienza fluida
-        console.log('Impostazioni vocali salvate con successo');
-      } else {
-        Alert.alert('Errore', 'Impossibile salvare le impostazioni');
-        // Ripristina le impostazioni precedenti in caso di errore
+      if (!success) {
+        Alert.alert(t('common.messages.error'), t('voiceSettings.errors.saveFailed'));
         await loadVoiceSettings();
       }
     } catch (error) {
       console.error('Errore nel salvataggio:', error);
-      Alert.alert('Errore', 'Errore di connessione durante il salvataggio');
+      Alert.alert(t('common.messages.error'), t('voiceSettings.errors.connectionError'));
       await loadVoiceSettings();
     } finally {
       setSaving(false);
@@ -82,38 +73,41 @@ export default function VoiceSettingsScreen() {
   };
 
   const renderSettingSection = (
-    title: string,
-    description: string,
+    titleKey: string,
+    descKey: string,
     settingKey: keyof VoiceSettings,
     options: { label: string; value: string }[]
   ) => (
     <>
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>{title}</Text>
-        <Text style={styles.sectionDescription}>{description}</Text>
+        <Text style={styles.sectionTitle}>{t(titleKey)}</Text>
+        <Text style={styles.sectionDescription}>{t(descKey)}</Text>
       </View>
 
-      {options.map((option, index) => (
-        <TouchableOpacity
-          key={option.value}
-          style={[
-            styles.optionItem,
-            settings[settingKey] === option.value && styles.selectedOption
-          ]}
-          onPress={() => handleSettingChange(settingKey, option.value)}
-          disabled={loading || saving}
-        >
-          <Text style={[
-            styles.optionText,
-            settings[settingKey] === option.value && styles.selectedOptionText
-          ]}>
-            {option.label}
-          </Text>
-          {settings[settingKey] === option.value && (
-            <Ionicons name="checkmark" size={20} color="#000000" />
-          )}
-        </TouchableOpacity>
-      ))}
+      {options.map((option) => {
+        const isSelected = settings[settingKey] === option.value;
+        return (
+          <TouchableOpacity
+            key={option.value}
+            style={[styles.row, isSelected && styles.rowSelected]}
+            onPress={() => handleSettingChange(settingKey, option.value)}
+            disabled={loading || saving}
+            activeOpacity={0.7}
+          >
+            <View style={styles.rowLeft}>
+              <View style={[styles.optionDot, isSelected && styles.optionDotSelected]}>
+                {isSelected && <View style={styles.optionDotInner} />}
+              </View>
+              <Text style={[styles.rowLabel, isSelected && styles.rowLabelSelected]}>
+                {option.label}
+              </Text>
+            </View>
+            {isSelected && (
+              <Ionicons name="checkmark" size={20} color="#000000" />
+            )}
+          </TouchableOpacity>
+        );
+      })}
     </>
   );
 
@@ -123,7 +117,7 @@ export default function VoiceSettingsScreen() {
         <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#000000" />
-          <Text style={styles.loadingText}>Caricamento impostazioni...</Text>
+          <Text style={styles.loadingText}>{t('voiceSettings.loading')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -133,65 +127,53 @@ export default function VoiceSettingsScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
 
-      <ScrollView style={styles.content}>
-        {/* Introduzione */}
-        <View style={styles.introSection}>
-          <Text style={styles.introTitle}>Personalizza la Chat Vocale</Text>
-          <Text style={styles.introText}>
-            Configura come il bot vocale risponde alle tue domande.
-            Le impostazioni vengono applicate automaticamente a tutte le conversazioni vocali.
-          </Text>
-        </View>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
 
-        {/* Modello Vocale */}
+        {/* ───────────────── MODELLO VOCALE ───────────────── */}
         {renderSettingSection(
-          'Modello Vocale',
-          'Scegli il livello di intelligenza del bot vocale',
+          'voiceSettings.sections.voiceModel',
+          'voiceSettings.sections.voiceModelDesc',
           'voice_model',
           VOICE_SETTINGS_OPTIONS.voice_model
         )}
 
-        {/* Genere Voce */}
+        {/* ───────────────── GENERE VOCE ───────────────── */}
         {renderSettingSection(
-          'Genere della Voce',
-          'Seleziona se preferisci una voce femminile o maschile',
+          'voiceSettings.sections.voiceGender',
+          'voiceSettings.sections.voiceGenderDesc',
           'voice_gender',
           VOICE_SETTINGS_OPTIONS.voice_gender
         )}
 
-        {/* Qualità Audio */}
+        {/* ───────────────── QUALITÀ AUDIO ───────────────── */}
         {renderSettingSection(
-          'Qualità Audio',
-          'Maggiore qualità richiede più tempo per generare la risposta',
+          'voiceSettings.sections.voiceQuality',
+          'voiceSettings.sections.voiceQualityDesc',
           'voice_quality',
           VOICE_SETTINGS_OPTIONS.voice_quality
         )}
 
-        {/* Info Aggiuntive */}
+        {/* ───────────────── INFO ───────────────── */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Informazioni</Text>
+          <Text style={styles.sectionTitle}>{t('voiceSettings.sections.info')}</Text>
         </View>
 
         <View style={styles.infoItem}>
           <Ionicons name="information-circle-outline" size={20} color="#000000" />
-          <Text style={styles.infoText}>
-            Le impostazioni vengono salvate automaticamente
-          </Text>
+          <Text style={styles.infoItemText}>{t('voiceSettings.info.autoSave')}</Text>
         </View>
 
         <View style={styles.infoItem}>
           <Ionicons name="cloud-outline" size={20} color="#000000" />
-          <Text style={styles.infoText}>
-            Sincronizzate su tutti i tuoi dispositivi
-          </Text>
+          <Text style={styles.infoItemText}>{t('voiceSettings.info.sync')}</Text>
         </View>
 
         <View style={styles.infoItem}>
           <Ionicons name="time-outline" size={20} color="#000000" />
-          <Text style={styles.infoText}>
-            Applicate alla prossima conversazione vocale
-          </Text>
+          <Text style={styles.infoItemText}>{t('voiceSettings.info.nextConversation')}</Text>
         </View>
+
+        <View style={{ height: 32 }} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -216,28 +198,8 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingTop: 20,
   },
-  introSection: {
-    paddingHorizontal: 20,
-    paddingVertical: 24,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  introTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#000000',
-    marginBottom: 12,
-    fontFamily: 'System',
-  },
-  introText: {
-    fontSize: 16,
-    color: '#6c757d',
-    lineHeight: 22,
-    fontFamily: 'System',
-  },
+  // Section header — identico a NotificationSettings
   sectionHeader: {
     paddingHorizontal: 20,
     paddingTop: 30,
@@ -248,7 +210,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '600',
     color: '#000000',
-    marginBottom: 5,
+    marginBottom: 4,
     fontFamily: 'System',
   },
   sectionDescription: {
@@ -257,7 +219,8 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     fontFamily: 'System',
   },
-  optionItem: {
+  // Option row — stile toggle row di NotificationSettings
+  row: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -267,18 +230,46 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
   },
-  selectedOption: {
+  rowSelected: {
     backgroundColor: '#f8f9fa',
   },
-  optionText: {
+  rowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 12,
+  },
+  rowLabel: {
     fontSize: 17,
     color: '#000000',
     fontWeight: '400',
     fontFamily: 'System',
   },
-  selectedOptionText: {
+  rowLabelSelected: {
     fontWeight: '600',
   },
+  // Radio dot
+  optionDot: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: '#dee2e6',
+    backgroundColor: '#ffffff',
+    marginRight: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  optionDotSelected: {
+    borderColor: '#000000',
+  },
+  optionDotInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#000000',
+  },
+  // Info list — identico a NotificationSettings
   infoItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -288,11 +279,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
   },
-  infoText: {
-    fontSize: 16,
+  infoItemText: {
+    fontSize: 15,
     color: '#495057',
     marginLeft: 15,
     flex: 1,
     fontFamily: 'System',
+    lineHeight: 20,
   },
 });

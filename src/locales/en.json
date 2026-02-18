@@ -247,8 +247,11 @@
     "loading": "Loading...",
     "sections": {
       "accountInfo": "Account Information",
+      "accountInfoDesc": "Your registered personal data",
       "accountManagement": "Account Management",
-      "testNotifications": "Test Notifications"
+      "accountManagementDesc": "Edit your access credentials",
+      "testNotifications": "Test Notifications",
+      "testNotificationsDesc": "Verify that notifications are configured correctly"
     },
     "labels": {
       "username": "Username",
@@ -364,13 +367,19 @@
   "language": {
     "title": "Language",
     "currentLanguage": "Current language",
+    "currentLanguageDesc": "Select the interface language",
     "availableLanguages": "Available languages",
     "comingSoon": "Coming soon",
+    "comingSoonDesc": "These languages will be available in the future",
     "languages": {
       "it": "Italiano",
       "en": "English",
       "es": "Español",
       "fr": "Français"
+    },
+    "info": {
+      "autoApply": "The language is applied immediately throughout the app",
+      "restart": "Some sections may require a restart"
     },
     "messages": {
       "changed": "Language changed successfully"
@@ -378,6 +387,17 @@
   },
   "voiceSettings": {
     "title": "Voice Settings",
+    "sections": {
+      "voiceModel": "Voice Model",
+      "voiceModelDesc": "Choose the intelligence level of the voice bot",
+      "voiceGender": "Voice Gender",
+      "voiceGenderDesc": "Select whether you prefer a female or male voice",
+      "voiceQuality": "Audio Quality",
+      "voiceQualityDesc": "Higher quality takes more time to generate a response",
+      "info": "Information",
+      "infoDesc": "Notes about voice settings"
+    },
+    "loading": "Loading settings...",
     "fields": {
       "voiceModel": "Voice model",
       "voiceGender": "Voice gender",
@@ -386,6 +406,16 @@
     "options": {
       "male": "Male",
       "female": "Female"
+    },
+    "info": {
+      "autoSave": "Settings are saved automatically",
+      "sync": "Synced across all your devices",
+      "nextConversation": "Applied to the next voice conversation"
+    },
+    "errors": {
+      "loadFailed": "Unable to load voice settings",
+      "saveFailed": "Unable to save settings",
+      "connectionError": "Connection error while saving"
     },
     "messages": {
       "saved": "Voice settings saved successfully"
