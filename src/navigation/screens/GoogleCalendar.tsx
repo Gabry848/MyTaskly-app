@@ -244,6 +244,11 @@ export default function GoogleCalendar() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
 
+      <View style={styles.wipBanner}>
+        <Ionicons name="flask-outline" size={15} color="#FF9800" />
+        <Text style={styles.wipText}>Funzionalità in Beta — potrebbero verificarsi problemi</Text>
+      </View>
+
       {isConnected ? renderConnectedView() : renderNotConnectedView()}
     </SafeAreaView>
   );

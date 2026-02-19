@@ -79,14 +79,8 @@ export const useGoogleCalendar = (): UseGoogleCalendarReturn => {
         // Successo: aggiorna lo stato dal server
         await refreshStatus();
 
-        Alert.alert(
-          'Google Calendar collegato!',
-          'Vuoi sincronizzare i tuoi task esistenti con Google Calendar?',
-          [
-            { text: 'Più tardi', style: 'cancel' },
-            { text: 'Sincronizza', onPress: () => performInitialSync() },
-          ]
-        );
+        // Sincronizza automaticamente dopo il collegamento
+        await performInitialSync();
       } else if (browserResult.type === 'cancel' || browserResult.type === 'dismiss') {
         console.log('ℹ️ Autorizzazione Google Calendar annullata dall\'utente');
       }
@@ -149,16 +143,6 @@ export const useGoogleCalendar = (): UseGoogleCalendarReturn => {
       }
 
       await refreshStatus();
-
-      const created = result.results?.tasksToCalendar?.created_count ?? 0;
-      const updated = result.results?.tasksToCalendar?.updated_count ?? 0;
-      const imported = result.results?.calendarToTasks?.created_count ?? 0;
-
-      Alert.alert(
-        'Sincronizzazione completata!',
-        `Task esportati: ${created} creati, ${updated} aggiornati\nEventi importati: ${imported}`,
-        [{ text: 'OK' }]
-      );
     } catch (err: any) {
       console.error('❌ Errore nella sincronizzazione completa:', err);
       setError(err.message || 'Errore durante la sincronizzazione');
@@ -182,12 +166,6 @@ export const useGoogleCalendar = (): UseGoogleCalendarReturn => {
       }
 
       await refreshStatus();
-
-      Alert.alert(
-        'Task sincronizzati!',
-        result.data?.message || 'Sincronizzazione completata.',
-        [{ text: 'OK' }]
-      );
     } catch (err: any) {
       console.error('❌ Errore nella sincronizzazione task → calendario:', err);
       setError(err.message || 'Errore nella sincronizzazione');
@@ -211,12 +189,6 @@ export const useGoogleCalendar = (): UseGoogleCalendarReturn => {
       }
 
       await refreshStatus();
-
-      Alert.alert(
-        'Eventi importati!',
-        result.data?.message || 'Importazione completata.',
-        [{ text: 'OK' }]
-      );
     } catch (err: any) {
       console.error('❌ Errore nella sincronizzazione calendario → task:', err);
       setError(err.message || 'Errore nell\'importazione');
