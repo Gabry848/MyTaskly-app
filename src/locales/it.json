@@ -76,7 +76,8 @@
     "push": {
       "enable": "Abilita notifiche push",
       "noToken": "Dispositivo non registrato",
-      "notRegistered": "Questo dispositivo non ha registrato un token push. Abilita i permessi di notifica dell'app per attivarlo."
+      "tapToRegister": "Tocca per registrare questo dispositivo",
+      "notRegistered": "Nessun token push registrato — attiva l'interruttore per richiedere il permesso e registrare il dispositivo."
     },
     "telegram": {
       "enable": "Abilita promemoria Telegram",

@@ -45,11 +45,6 @@ export default function GoogleCalendar() {
     await performInitialSync();
   };
 
-  // Controlla stato connessione all'avvio
-  useEffect(() => {
-    refreshStatus();
-  }, []);
-
   // Gestione errori
   useEffect(() => {
     if (error) {
@@ -57,90 +52,191 @@ export default function GoogleCalendar() {
     }
   }, [error]);
 
+  const renderSyncStats = () => {
+    if (!syncStatus || !syncStatus.google_calendar_connected) return null;
+    return (
+      <Text style={styles.statsText}>
+        {`Task sincronizzati: ${syncStatus.synced_tasks ?? 0}/${syncStatus.total_tasks ?? 0}`}
+        {syncStatus.sync_percentage != null ? ` (${syncStatus.sync_percentage.toFixed(1)}%)` : ''}
+      </Text>
+    );
+  };
+
   const renderConnectedView = () => (
-    <ScrollView style={styles.content}>
+    <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      {/* Status section */}
       <View style={styles.statusSection}>
-        <Ionicons name="checkmark-circle" size={64} color="#28a745" />
+        <Ionicons name="checkmark-circle" size={56} color="#000000" />
         <Text style={styles.statusTitle}>Google Calendar Connesso</Text>
         <Text style={styles.statusDescription}>
-          Il tuo account Google Calendar è stato collegato con successo.
-          {syncStatus && (
-            `\n\nTask sincronizzati: ${syncStatus.synced_tasks}/${syncStatus.total_tasks} (${syncStatus.sync_percentage.toFixed(1)}%)`
-          )}
+          Il tuo account Google Calendar è collegato con successo.
+        </Text>
+        {renderSyncStats()}
+      </View>
+
+      {/* Sincronizzazione manuale */}
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>Sincronizzazione</Text>
+        <Text style={styles.sectionDescription}>
+          Gestisci manualmente la sincronizzazione tra i tuoi task e il calendario.
         </Text>
       </View>
 
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Opzioni di Sincronizzazione</Text>
-      </View>
-
-      <TouchableOpacity style={styles.syncButton} onPress={handleSyncTasks}>
-        <Ionicons name="arrow-forward-outline" size={20} color="#000000" />
-        <Text style={styles.syncButtonText}>Sincronizza Task → Calendario</Text>
+      <TouchableOpacity
+        style={[styles.row, isLoading && styles.rowDisabled]}
+        onPress={handleSyncTasks}
+        disabled={isLoading}
+        activeOpacity={0.7}
+      >
+        <View style={styles.rowLeft}>
+          <Ionicons name="arrow-forward-outline" size={22} color="#000000" />
+          <View style={styles.rowTextWrap}>
+            <Text style={styles.rowLabel}>Esporta task su Calendar</Text>
+            <Text style={styles.rowHint}>Crea/aggiorna eventi dai tuoi task</Text>
+          </View>
+        </View>
+        {isLoading ? (
+          <ActivityIndicator size="small" color="#000000" />
+        ) : (
+          <Ionicons name="chevron-forward" size={18} color="#c7c7cc" />
+        )}
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.syncButton} onPress={handleSyncEvents}>
-        <Ionicons name="arrow-back-outline" size={20} color="#000000" />
-        <Text style={styles.syncButtonText}>Importa Eventi → Task</Text>
+      <TouchableOpacity
+        style={[styles.row, isLoading && styles.rowDisabled]}
+        onPress={handleSyncEvents}
+        disabled={isLoading}
+        activeOpacity={0.7}
+      >
+        <View style={styles.rowLeft}>
+          <Ionicons name="arrow-back-outline" size={22} color="#000000" />
+          <View style={styles.rowTextWrap}>
+            <Text style={styles.rowLabel}>Importa eventi come task</Text>
+            <Text style={styles.rowHint}>Crea task dagli eventi del tuo calendario</Text>
+          </View>
+        </View>
+        {isLoading ? (
+          <ActivityIndicator size="small" color="#000000" />
+        ) : (
+          <Ionicons name="chevron-forward" size={18} color="#c7c7cc" />
+        )}
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.syncButton} onPress={handleFullSync}>
-        <Ionicons name="sync-outline" size={20} color="#000000" />
-        <Text style={styles.syncButtonText}>Sincronizzazione Completa</Text>
+      <TouchableOpacity
+        style={[styles.row, isLoading && styles.rowDisabled]}
+        onPress={handleFullSync}
+        disabled={isLoading}
+        activeOpacity={0.7}
+      >
+        <View style={styles.rowLeft}>
+          <Ionicons name="sync-outline" size={22} color="#000000" />
+          <View style={styles.rowTextWrap}>
+            <Text style={styles.rowLabel}>Sincronizzazione completa</Text>
+            <Text style={styles.rowHint}>Esporta task e importa eventi in un unico step</Text>
+          </View>
+        </View>
+        {isLoading ? (
+          <ActivityIndicator size="small" color="#000000" />
+        ) : (
+          <Ionicons name="chevron-forward" size={18} color="#c7c7cc" />
+        )}
       </TouchableOpacity>
 
+      {/* Account */}
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Account</Text>
+        <Text style={styles.sectionDescription}>
+          Gestisci la connessione al tuo account Google.
+        </Text>
       </View>
 
       <TouchableOpacity
-        style={[styles.disconnectButton, isLoading && styles.disconnectButtonDisabled]}
+        style={[styles.row, isLoading && styles.rowDisabled]}
         onPress={handleDisconnect}
         disabled={isLoading}
+        activeOpacity={0.7}
       >
-        {isLoading ? (
-          <View style={styles.buttonContent}>
-            <ActivityIndicator size="small" color="#dc3545" />
+        <View style={styles.rowLeft}>
+          <Ionicons name="log-out-outline" size={22} color="#dc3545" />
+          <View style={styles.rowTextWrap}>
+            <Text style={[styles.rowLabel, styles.destructiveText]}>Disconnetti account</Text>
+            <Text style={styles.rowHint}>I tuoi task esistenti non verranno eliminati</Text>
           </View>
-        ) : (
-          <View style={styles.buttonContent}>
-            <Ionicons name="log-out-outline" size={20} color="#dc3545" />
-            <Text style={styles.disconnectButtonText}>Disconnetti Account</Text>
-          </View>
-        )}
+        </View>
       </TouchableOpacity>
+
+      <View style={{ height: 32 }} />
     </ScrollView>
   );
 
   const renderNotConnectedView = () => (
-    <ScrollView style={styles.content}>
-      <View style={styles.setupSection}>
-        <Ionicons name="calendar-outline" size={64} color="#000000" />
-        <Text style={styles.setupTitle}>Configura Google Calendar</Text>
-        <Text style={styles.setupDescription}>
-          Collega il tuo account Google Calendar per sincronizzare automaticamente
-          i tuoi eventi e creare task dai tuoi impegni.
+    <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      {/* Hero section */}
+      <View style={styles.heroSection}>
+        <Ionicons name="calendar-outline" size={56} color="#000000" />
+        <Text style={styles.heroTitle}>Collega Google Calendar</Text>
+        <Text style={styles.heroDescription}>
+          Sincronizza automaticamente i tuoi task con Google Calendar e importa i tuoi eventi come nuovi task.
         </Text>
       </View>
 
+      {/* Connect button */}
+      <View style={styles.connectButtonContainer}>
+        <TouchableOpacity
+          style={[styles.connectButton, isLoading && styles.connectButtonDisabled]}
+          onPress={handleConnect}
+          disabled={isLoading}
+          activeOpacity={0.8}
+        >
+          {isLoading ? (
+            <ActivityIndicator size="small" color="#ffffff" />
+          ) : (
+            <>
+              <Ionicons name="logo-google" size={20} color="#ffffff" />
+              <Text style={styles.connectButtonText}>Connetti con Google</Text>
+            </>
+          )}
+        </TouchableOpacity>
+        {isLoading && (
+          <Text style={styles.connectingHint}>
+            Apertura browser per l'autorizzazione…
+          </Text>
+        )}
+      </View>
+
+      {/* Funzionalità */}
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Funzionalità</Text>
+        <Text style={styles.sectionDescription}>
+          Scopri cosa puoi fare con Google Calendar integrato.
+        </Text>
       </View>
 
-      <View style={styles.featureItem}>
-        <Ionicons name="sync-outline" size={24} color="#000000" />
-        <Text style={styles.featureText}>Sincronizzazione automatica</Text>
+      <View style={styles.infoItem}>
+        <Ionicons name="sync-outline" size={20} color="#000000" />
+        <Text style={styles.infoItemText}>
+          <Text style={{ fontWeight: '500' }}>Sincronizzazione automatica</Text>
+          {' — '}Task e eventi sempre aggiornati
+        </Text>
       </View>
 
-      <View style={styles.featureItem}>
-        <Ionicons name="create-outline" size={24} color="#000000" />
-        <Text style={styles.featureText}>Creazione task da eventi</Text>
+      <View style={styles.infoItem}>
+        <Ionicons name="create-outline" size={20} color="#000000" />
+        <Text style={styles.infoItemText}>
+          <Text style={{ fontWeight: '500' }}>Crea task da eventi</Text>
+          {' — '}Importa impegni dal tuo calendario
+        </Text>
       </View>
 
-      <View style={styles.featureItem}>
-        <Ionicons name="notifications-outline" size={24} color="#000000" />
-        <Text style={styles.featureText}>Promemoria intelligenti</Text>
+      <View style={styles.infoItem}>
+        <Ionicons name="notifications-outline" size={20} color="#000000" />
+        <Text style={styles.infoItemText}>
+          <Text style={{ fontWeight: '500' }}>Promemoria intelligenti</Text>
+          {' — '}Non perdere nessuna scadenza
+        </Text>
       </View>
+
+      <View style={{ height: 32 }} />
     </ScrollView>
   );
 
@@ -148,13 +244,6 @@ export default function GoogleCalendar() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
 
-      {/* Work in Progress Banner */}
-      <View style={styles.wipBanner}>
-        <Ionicons name="construct-outline" size={20} color="#FF9800" />
-        <Text style={styles.wipText}>Work in Progress</Text>
-      </View>
-
-      {/* Content */}
       {isConnected ? renderConnectedView() : renderNotConnectedView()}
     </SafeAreaView>
   );
@@ -167,30 +256,88 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingTop: 20,
   },
   wipBanner: {
     backgroundColor: '#FFF3E0',
     paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingVertical: 10,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     borderBottomWidth: 1,
     borderBottomColor: '#FFE0B2',
+    gap: 8,
   },
   wipText: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#FF9800',
     fontWeight: '600',
-    marginLeft: 8,
     fontFamily: 'System',
   },
+  // Section header (coerente con NotificationSettings)
+  sectionHeader: {
+    paddingHorizontal: 20,
+    paddingTop: 30,
+    paddingBottom: 8,
+    backgroundColor: '#ffffff',
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#000000',
+    marginBottom: 4,
+    fontFamily: 'System',
+  },
+  sectionDescription: {
+    fontSize: 14,
+    color: '#6c757d',
+    lineHeight: 20,
+    fontFamily: 'System',
+  },
+  // Toggle / action row (coerente con NotificationSettings)
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: '#ffffff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  rowDisabled: {
+    opacity: 0.5,
+  },
+  rowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 12,
+  },
+  rowTextWrap: {
+    marginLeft: 15,
+    flex: 1,
+  },
+  rowLabel: {
+    fontSize: 17,
+    color: '#000000',
+    fontWeight: '400',
+    fontFamily: 'System',
+  },
+  rowHint: {
+    fontSize: 13,
+    color: '#6c757d',
+    marginTop: 2,
+    fontFamily: 'System',
+  },
+  destructiveText: {
+    color: '#dc3545',
+  },
+  // Connected: status section
   statusSection: {
     alignItems: 'center',
-    paddingVertical: 40,
-    paddingHorizontal: 20,
-    backgroundColor: '#ffffff',
+    paddingVertical: 36,
+    paddingHorizontal: 24,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
   },
@@ -199,53 +346,85 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#000000',
     textAlign: 'center',
-    marginTop: 20,
-    marginBottom: 12,
+    marginTop: 16,
+    marginBottom: 8,
     fontFamily: 'System',
+    letterSpacing: -0.3,
   },
   statusDescription: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#6c757d',
     textAlign: 'center',
-    lineHeight: 24,
+    lineHeight: 20,
     fontFamily: 'System',
   },
-  setupSection: {
+  statsText: {
+    fontSize: 14,
+    color: '#000000',
+    marginTop: 12,
+    fontFamily: 'System',
+    fontWeight: '500',
+  },
+  // Not-connected: hero section
+  heroSection: {
     alignItems: 'center',
-    paddingVertical: 40,
-    paddingHorizontal: 20,
-    backgroundColor: '#ffffff',
+    paddingVertical: 36,
+    paddingHorizontal: 24,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
   },
-  setupTitle: {
+  heroTitle: {
     fontSize: 20,
     fontWeight: '600',
     color: '#000000',
     textAlign: 'center',
-    marginTop: 20,
-    marginBottom: 12,
+    marginTop: 16,
+    marginBottom: 8,
     fontFamily: 'System',
+    letterSpacing: -0.3,
   },
-  setupDescription: {
-    fontSize: 16,
+  heroDescription: {
+    fontSize: 14,
     color: '#6c757d',
     textAlign: 'center',
-    lineHeight: 24,
+    lineHeight: 20,
     fontFamily: 'System',
   },
-  sectionHeader: {
+  // Connect button
+  connectButtonContainer: {
     paddingHorizontal: 20,
-    paddingTop: 30,
-    paddingBottom: 15,
+    paddingTop: 24,
+    paddingBottom: 8,
+    alignItems: 'center',
   },
-  sectionTitle: {
-    fontSize: 20,
+  connectButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#000000',
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    width: '100%',
+    gap: 10,
+  },
+  connectButtonDisabled: {
+    backgroundColor: '#495057',
+  },
+  connectButtonText: {
+    fontSize: 16,
+    color: '#ffffff',
     fontWeight: '600',
-    color: '#000000',
     fontFamily: 'System',
   },
-  syncButton: {
+  connectingHint: {
+    fontSize: 13,
+    color: '#6c757d',
+    marginTop: 10,
+    fontFamily: 'System',
+  },
+  // Info list (coerente con NotificationSettings)
+  infoItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
@@ -254,49 +433,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
   },
-  syncButtonText: {
-    fontSize: 17,
-    color: '#000000',
+  infoItemText: {
+    fontSize: 15,
+    color: '#495057',
     marginLeft: 15,
-    fontWeight: '400',
     flex: 1,
     fontFamily: 'System',
-  },
-  featureItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  featureText: {
-    fontSize: 17,
-    color: '#000000',
-    marginLeft: 15,
-    fontWeight: '400',
-    fontFamily: 'System',
-  },
-  disconnectButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  disconnectButtonDisabled: {
-    opacity: 0.6,
-  },
-  buttonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  disconnectButtonText: {
-    color: '#dc3545',
-    fontSize: 17,
-    fontWeight: '400',
-    marginLeft: 15,
-    fontFamily: 'System',
+    lineHeight: 20,
   },
 });

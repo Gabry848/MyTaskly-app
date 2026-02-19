@@ -76,7 +76,8 @@
     "push": {
       "enable": "Enable push notifications",
       "noToken": "Device not registered",
-      "notRegistered": "This device has not registered a push token. Open the app notification permissions to enable it."
+      "tapToRegister": "Tap to register this device",
+      "notRegistered": "No push token yet — toggle on to request permission and register this device."
     },
     "telegram": {
       "enable": "Enable Telegram reminders",

@@ -22,6 +22,10 @@ import {
   NotificationSettings,
   TELEGRAM_REMINDER_OPTIONS,
 } from '../../services/notificationSettingsService';
+import {
+  registerForPushNotificationsAsync,
+  sendTokenToBackend,
+} from '../../services/notificationService';
 
 export default function NotificationSettingsScreen() {
   const { t } = useTranslation();
@@ -30,6 +34,7 @@ export default function NotificationSettingsScreen() {
   const [syncing, setSyncing] = useState(false);
   const [syncDone, setSyncDone] = useState(false);
   const [savingField, setSavingField] = useState<string | null>(null);
+  const [registeringToken, setRegisteringToken] = useState(false);
 
   // Animazione spunta
   const checkOpacity = useRef(new Animated.Value(0)).current;
@@ -90,6 +95,26 @@ export default function NotificationSettingsScreen() {
     value: boolean
   ) => {
     if (!settings) return;
+
+    // Caso speciale: push non ancora registrato e l'utente vuole abilitare
+    if (field === 'push_notifications_enabled' && value && !settings.push_enabled) {
+      setRegisteringToken(true);
+      try {
+        const token = await registerForPushNotificationsAsync();
+        if (token) {
+          await sendTokenToBackend(token, true);
+          // Ricarica le impostazioni: il backend ora ha il token e push_enabled sarà true
+          await loadSettings();
+        }
+        // Se token non ottenuto (permessi negati), non fare nulla: registerForPushNotificationsAsync mostra già l'Alert
+      } catch (error: any) {
+        const detail = error?.response?.data?.detail ?? t('notificationSettings.error.saveFailed');
+        Alert.alert(t('notificationSettings.error.title'), detail);
+      } finally {
+        setRegisteringToken(false);
+      }
+      return;
+    }
 
     setSettings((prev) => prev ? { ...prev, [field]: value } : prev);
     setSavingField(field);
@@ -175,17 +200,21 @@ export default function NotificationSettingsScreen() {
             <View style={styles.rowTextWrap}>
               <Text style={styles.rowLabel}>{t('notificationSettings.push.enable')}</Text>
               {!settings.push_enabled && (
-                <Text style={styles.rowHint}>{t('notificationSettings.push.noToken')}</Text>
+                <Text style={styles.rowHint}>{t('notificationSettings.push.tapToRegister')}</Text>
               )}
             </View>
           </View>
-          <Switch
-            value={settings.push_notifications_enabled && settings.push_enabled}
-            onValueChange={(v) => handleToggle('push_notifications_enabled', v)}
-            disabled={!settings.push_enabled || savingField === 'push_notifications_enabled'}
-            trackColor={{ false: '#dee2e6', true: '#000000' }}
-            thumbColor="#ffffff"
-          />
+          {registeringToken ? (
+            <ActivityIndicator size="small" color="#000000" />
+          ) : (
+            <Switch
+              value={settings.push_notifications_enabled && settings.push_enabled}
+              onValueChange={(v) => handleToggle('push_notifications_enabled', v)}
+              disabled={savingField === 'push_notifications_enabled'}
+              trackColor={{ false: '#dee2e6', true: '#000000' }}
+              thumbColor="#ffffff"
+            />
+          )}
         </View>
 
         {!settings.push_enabled && (

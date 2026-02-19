@@ -1,34 +1,29 @@
-import { useState, useEffect } from "react";
-import { Alert } from "react-native";
-import GoogleCalendarService, {
-  CalendarSyncStatus,
-} from "../services/googleCalendarService";
-import {
-  signInWithGoogle,
-  isGoogleSignedIn,
-  signOutFromGoogle,
-} from "../services/googleSignInService";
+import { useState, useEffect } from 'react';
+import { Alert } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
+import GoogleCalendarService, { CalendarSyncStatus } from '../services/googleCalendarService';
 
 export interface UseGoogleCalendarReturn {
-  // Stati
   isConnected: boolean;
   isLoading: boolean;
   syncStatus: CalendarSyncStatus | null;
   error: string | null;
 
-  // Azioni di connessione
   connectToGoogle: () => Promise<void>;
   disconnect: () => Promise<void>;
 
-  // Azioni di sincronizzazione
   performInitialSync: () => Promise<void>;
   syncTasksToCalendar: () => Promise<void>;
   syncCalendarToTasks: () => Promise<void>;
 
-  // Utilità
   refreshStatus: () => Promise<void>;
   clearError: () => void;
 }
+
+const isInsufficientScopesError = (msg: string) =>
+  msg.includes('insufficientPermissions') ||
+  msg.includes('insufficient authentication scopes') ||
+  msg.includes('Insufficient Permission');
 
 export const useGoogleCalendar = (): UseGoogleCalendarReturn => {
   const [isConnected, setIsConnected] = useState(false);
@@ -38,44 +33,19 @@ export const useGoogleCalendar = (): UseGoogleCalendarReturn => {
 
   const calendarService = GoogleCalendarService.getInstance();
 
-  // Controlla lo stato iniziale di connessione
   useEffect(() => {
-    checkInitialConnectionStatus();
+    refreshStatus();
   }, []);
 
-  const checkInitialConnectionStatus = async () => {
+  const refreshStatus = async () => {
     try {
-      setIsLoading(true);
-      setError(null);
-
-      // Controlla se l'utente è loggato con Google
-      const isGoogleLogged = await isGoogleSignedIn();
-
-      if (isGoogleLogged) {
-        // Se è loggato, verifica lo stato di sincronizzazione con il server
-        const statusResult = await calendarService.getSyncStatus();
-
-        if (statusResult.success && statusResult.data) {
-          setIsConnected(statusResult.data.google_calendar_connected);
-          setSyncStatus(statusResult.data);
-        } else {
-          setIsConnected(false);
-          if (
-            statusResult.error &&
-            !statusResult.error.includes("non ha autorizzato")
-          ) {
-            setError(statusResult.error);
-          }
-        }
-      } else {
-        setIsConnected(false);
+      const result = await calendarService.getSyncStatus();
+      if (result.success && result.data) {
+        setSyncStatus(result.data);
+        setIsConnected(result.data.google_calendar_connected);
       }
-    } catch (error: any) {
-      console.error("❌ Errore nel controllo stato iniziale:", error);
-      setError("Errore nel controllo dello stato di connessione");
-      setIsConnected(false);
-    } finally {
-      setIsLoading(false);
+    } catch (err: any) {
+      console.error('❌ Errore nell\'aggiornamento dello stato:', err);
     }
   };
 
@@ -84,71 +54,45 @@ export const useGoogleCalendar = (): UseGoogleCalendarReturn => {
       setIsLoading(true);
       setError(null);
 
-      // Esegui il login con Google
-      const signInResult = await signInWithGoogle();
-
-      if (!signInResult.success) {
-        throw new Error(
-          signInResult.message || "Errore durante il login con Google"
-        );
+      // Step 1: ottieni l'URL di autorizzazione OAuth dal server
+      const authResult = await calendarService.authorizeCalendar();
+      if (!authResult.success || !authResult.data) {
+        throw new Error(authResult.error || 'Impossibile ottenere l\'URL di autorizzazione');
       }
 
-      // Il server usa OAuth2 web, ma noi usiamo Google Sign-In SDK
-      // Dobbiamo informare il server che abbiamo effettuato l'accesso con Google
-      console.log(
-        "✅ Google Sign-In completato, ora controllo connessione server..."
+      // Step 2: apri il browser per il flusso OAuth
+      const browserResult = await WebBrowser.openAuthSessionAsync(
+        authResult.data.authorization_url,
+        'mytaskly://'
       );
 
-      const statusResult = await calendarService.getSyncStatus();
+      if (browserResult.type === 'success') {
+        const redirectUrl = browserResult.url;
 
-      if (statusResult.success && statusResult.data) {
-        setIsConnected(statusResult.data.google_calendar_connected);
-        setSyncStatus(statusResult.data);
-
-        if (statusResult.data.google_calendar_connected) {
-          // Connessione già riconosciuta dal server
-          Alert.alert(
-            "Connessione riuscita!",
-            "Vuoi sincronizzare i tuoi task esistenti con Google Calendar?",
-            [
-              { text: "Più tardi", style: "cancel" },
-              { text: "Sincronizza", onPress: () => performInitialSync() },
-            ]
-          );
-        } else {
-          // Il server non riconosce la connessione Google
-          // Questo è normale perché usa OAuth2 web, non Google Sign-In SDK
-          console.log(
-            "⚠️ Il server non ha riconosciuto la connessione Google (normale per Google Sign-In SDK)"
-          );
-
-          // Per ora mostriamo un messaggio che la connessione è avvenuta lato client
-          // ma il server necessita di integrazione aggiuntiva
-          Alert.alert(
-            "Connessione Google completata",
-            "La connessione con Google è stata effettuata. Tuttavia, il server necessita di configurazione aggiuntiva per riconoscere i token Google Sign-In.\n\nContattare lo sviluppatore per completare l'integrazione.",
-            [{ text: "OK" }]
-          );
-
-          // Impostiamo comunque come connesso lato client perché Google Sign-In è riuscito
-          setIsConnected(true);
+        // Controlla se il redirect indica un errore
+        if (redirectUrl.includes('calendar/error')) {
+          const reasonMatch = redirectUrl.match(/reason=([^&]+)/);
+          const reason = reasonMatch ? decodeURIComponent(reasonMatch[1]) : 'unknown';
+          throw new Error(`Autorizzazione fallita: ${reason}`);
         }
-      } else {
-        // Errore nella chiamata al server
-        console.log("⚠️ Errore chiamata server, ma Google Sign-In riuscito");
-        Alert.alert(
-          "Connessione Google completata",
-          "La connessione con Google è stata effettuata correttamente. Le funzionalità di sincronizzazione potrebbero necessitare di configurazione server aggiuntiva.",
-          [{ text: "OK" }]
-        );
 
-        // Impostiamo come connesso perché Google Sign-In è riuscito
-        setIsConnected(true);
+        // Successo: aggiorna lo stato dal server
+        await refreshStatus();
+
+        Alert.alert(
+          'Google Calendar collegato!',
+          'Vuoi sincronizzare i tuoi task esistenti con Google Calendar?',
+          [
+            { text: 'Più tardi', style: 'cancel' },
+            { text: 'Sincronizza', onPress: () => performInitialSync() },
+          ]
+        );
+      } else if (browserResult.type === 'cancel' || browserResult.type === 'dismiss') {
+        console.log('ℹ️ Autorizzazione Google Calendar annullata dall\'utente');
       }
-    } catch (error: any) {
-      console.error("❌ Errore nella connessione a Google Calendar:", error);
-      setError(error.message || "Errore durante la connessione");
-      setIsConnected(false);
+    } catch (err: any) {
+      console.error('❌ Errore nella connessione a Google Calendar:', err);
+      setError(err.message || 'Errore durante la connessione');
     } finally {
       setIsLoading(false);
     }
@@ -159,24 +103,35 @@ export const useGoogleCalendar = (): UseGoogleCalendarReturn => {
       setIsLoading(true);
       setError(null);
 
-      // Esegui il logout da Google
-      await signOutFromGoogle();
+      const result = await calendarService.disconnectCalendar();
+      if (!result.success) {
+        throw new Error(result.error || 'Errore durante la disconnessione');
+      }
 
-      // Aggiorna lo stato locale
       setIsConnected(false);
       setSyncStatus(null);
 
       Alert.alert(
-        "Disconnessione completata",
-        "Il tuo account Google Calendar è stato disconnesso con successo.",
-        [{ text: "OK" }]
+        'Disconnessione completata',
+        'Google Calendar è stato scollegato con successo.',
+        [{ text: 'OK' }]
       );
-    } catch (error: any) {
-      console.error("❌ Errore nella disconnessione:", error);
-      setError(error.message || "Errore durante la disconnessione");
+    } catch (err: any) {
+      console.error('❌ Errore nella disconnessione:', err);
+      setError(err.message || 'Errore durante la disconnessione');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleScopeError = () => {
+    setIsConnected(false);
+    setSyncStatus(null);
+    Alert.alert(
+      'Autorizzazione Calendar mancante',
+      'Il tuo account non ha i permessi per accedere a Google Calendar. Premi "Collega" per autorizzare l\'accesso.',
+      [{ text: 'OK' }]
+    );
   };
 
   const performInitialSync = async () => {
@@ -184,30 +139,29 @@ export const useGoogleCalendar = (): UseGoogleCalendarReturn => {
       setIsLoading(true);
       setError(null);
 
-      const syncResult = await calendarService.performInitialSync();
-
-      if (!syncResult.success) {
-        throw new Error(
-          syncResult.error || "Errore durante la sincronizzazione iniziale"
-        );
+      const result = await calendarService.performInitialSync();
+      if (!result.success) {
+        if (result.error && isInsufficientScopesError(result.error)) {
+          handleScopeError();
+          return;
+        }
+        throw new Error(result.error || 'Errore durante la sincronizzazione');
       }
 
-      // Aggiorna lo stato dopo la sincronizzazione
       await refreshStatus();
 
+      const created = result.results?.tasksToCalendar?.created_count ?? 0;
+      const updated = result.results?.tasksToCalendar?.updated_count ?? 0;
+      const imported = result.results?.calendarToTasks?.created_count ?? 0;
+
       Alert.alert(
-        "Sincronizzazione completata!",
-        `Task sincronizzati: ${
-          syncResult.results?.tasksToCalendar?.synced_count || 0
-        }\n` +
-          `Eventi importati: ${
-            syncResult.results?.calendarToTasks?.synced_count || 0
-          }`,
-        [{ text: "OK" }]
+        'Sincronizzazione completata!',
+        `Task esportati: ${created} creati, ${updated} aggiornati\nEventi importati: ${imported}`,
+        [{ text: 'OK' }]
       );
-    } catch (error: any) {
-      console.error("❌ Errore nella sincronizzazione iniziale:", error);
-      setError(error.message || "Errore durante la sincronizzazione iniziale");
+    } catch (err: any) {
+      console.error('❌ Errore nella sincronizzazione completa:', err);
+      setError(err.message || 'Errore durante la sincronizzazione');
     } finally {
       setIsLoading(false);
     }
@@ -218,29 +172,25 @@ export const useGoogleCalendar = (): UseGoogleCalendarReturn => {
       setIsLoading(true);
       setError(null);
 
-      const syncResult = await calendarService.syncTasksToCalendar();
-
-      if (!syncResult.success) {
-        throw new Error(
-          syncResult.error || "Errore durante la sincronizzazione dei task"
-        );
+      const result = await calendarService.syncTasksToCalendar();
+      if (!result.success) {
+        if (result.error && isInsufficientScopesError(result.error)) {
+          handleScopeError();
+          return;
+        }
+        throw new Error(result.error || 'Errore nella sincronizzazione dei task');
       }
 
       await refreshStatus();
 
       Alert.alert(
-        "Task sincronizzati!",
-        `${
-          syncResult.data?.synced_count || 0
-        } task sono stati sincronizzati con Google Calendar.`,
-        [{ text: "OK" }]
+        'Task sincronizzati!',
+        result.data?.message || 'Sincronizzazione completata.',
+        [{ text: 'OK' }]
       );
-    } catch (error: any) {
-      console.error(
-        "❌ Errore nella sincronizzazione task → calendario:",
-        error
-      );
-      setError(error.message || "Errore durante la sincronizzazione dei task");
+    } catch (err: any) {
+      console.error('❌ Errore nella sincronizzazione task → calendario:', err);
+      setError(err.message || 'Errore nella sincronizzazione');
     } finally {
       setIsLoading(false);
     }
@@ -251,66 +201,42 @@ export const useGoogleCalendar = (): UseGoogleCalendarReturn => {
       setIsLoading(true);
       setError(null);
 
-      const syncResult = await calendarService.syncCalendarToTasks();
-
-      if (!syncResult.success) {
-        throw new Error(
-          syncResult.error || "Errore durante l'importazione degli eventi"
-        );
+      const result = await calendarService.syncCalendarToTasks();
+      if (!result.success) {
+        if (result.error && isInsufficientScopesError(result.error)) {
+          handleScopeError();
+          return;
+        }
+        throw new Error(result.error || 'Errore nell\'importazione degli eventi');
       }
 
       await refreshStatus();
 
       Alert.alert(
-        "Eventi importati!",
-        `${
-          syncResult.data?.synced_count || 0
-        } eventi sono stati importati come task.`,
-        [{ text: "OK" }]
+        'Eventi importati!',
+        result.data?.message || 'Importazione completata.',
+        [{ text: 'OK' }]
       );
-    } catch (error: any) {
-      console.error(
-        "❌ Errore nella sincronizzazione calendario → task:",
-        error
-      );
-      setError(error.message || "Errore durante l'importazione degli eventi");
+    } catch (err: any) {
+      console.error('❌ Errore nella sincronizzazione calendario → task:', err);
+      setError(err.message || 'Errore nell\'importazione');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const refreshStatus = async () => {
-    try {
-      const statusResult = await calendarService.getSyncStatus();
-
-      if (statusResult.success && statusResult.data) {
-        setSyncStatus(statusResult.data);
-        setIsConnected(statusResult.data.google_calendar_connected);
-      }
-    } catch (error: any) {
-      console.error("❌ Errore nell'aggiornamento dello stato:", error);
-    }
-  };
-
-  const clearError = () => {
-    setError(null);
-  };
+  const clearError = () => setError(null);
 
   return {
-    // Stati
     isConnected,
     isLoading,
     syncStatus,
     error,
-
-    // Azioni
     connectToGoogle,
     disconnect,
     performInitialSync,
     syncTasksToCalendar,
     syncCalendarToTasks,
-
-    // Utilità
     refreshStatus,
     clearError,
   };

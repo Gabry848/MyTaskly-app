@@ -1,21 +1,21 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import axiosInstance from './axiosInstance';
-import { STORAGE_KEYS } from '../constants/authConstants';
 
 export interface CalendarSyncStatus {
   google_calendar_connected: boolean;
-  total_tasks: number;
-  synced_tasks: number;
-  sync_percentage: number;
+  total_tasks?: number;
+  synced_tasks?: number;
+  unsynced_tasks?: number;
+  sync_percentage?: number;
+  message?: string;
 }
 
 export interface CalendarEvent {
   id: string;
-  title: string;
+  summary: string;
   description?: string;
-  start: string;
-  end: string;
-  location?: string;
+  start: { dateTime?: string; date?: string };
+  end: { dateTime?: string; date?: string };
+  htmlLink?: string;
 }
 
 export interface CalendarEventsResponse {
@@ -26,7 +26,16 @@ export interface CalendarEventsResponse {
 
 export interface SyncResponse {
   message: string;
-  synced_count: number;
+  created_count?: number;
+  updated_count?: number;
+  skipped_count?: number;
+  errors?: any[];
+}
+
+export interface AuthorizeResponse {
+  authorization_url: string;
+  state: string;
+  message: string;
 }
 
 class GoogleCalendarService {
@@ -39,27 +48,45 @@ class GoogleCalendarService {
     return GoogleCalendarService.instance;
   }
 
-  private async getAuthHeaders() {
-    const bearerToken = await AsyncStorage.getItem(STORAGE_KEYS.BEARER_TOKEN);
-    return {
-      'Authorization': `Bearer ${bearerToken}`,
-      'Content-Type': 'application/json'
-    };
+  /**
+   * Richiede l'URL di autorizzazione OAuth per collegare Google Calendar
+   */
+  async authorizeCalendar(): Promise<{ success: boolean; data?: AuthorizeResponse; error?: string }> {
+    try {
+      const response = await axiosInstance.get('/auth/google/calendar/authorize');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      console.error('❌ Errore nel recupero URL autorizzazione:', error);
+      return {
+        success: false,
+        error: error.response?.data?.detail || error.message || 'Errore nell\'autorizzazione'
+      };
+    }
   }
 
+  /**
+   * Scollega Google Calendar dall'account
+   */
+  async disconnectCalendar(): Promise<{ success: boolean; error?: string }> {
+    try {
+      await axiosInstance.delete('/auth/google/calendar/disconnect');
+      return { success: true };
+    } catch (error: any) {
+      console.error('❌ Errore nella disconnessione:', error);
+      return {
+        success: false,
+        error: error.response?.data?.detail || error.message || 'Errore nella disconnessione'
+      };
+    }
+  }
 
   /**
    * Verifica lo stato della connessione a Google Calendar
    */
   async getSyncStatus(): Promise<{ success: boolean; data?: CalendarSyncStatus; error?: string }> {
     try {
-      const headers = await this.getAuthHeaders();
-      const response = await axiosInstance.get('/calendar/sync-status', { headers });
-      console.log('✅ Stato di sincronizzazione recuperato:', response.data);
-      return {
-        success: true,
-        data: response.data
-      };
+      const response = await axiosInstance.get('/calendar/status');
+      return { success: true, data: response.data };
     } catch (error: any) {
       console.error('❌ Errore nel recupero dello stato di sincronizzazione:', error);
       return {
@@ -74,13 +101,8 @@ class GoogleCalendarService {
    */
   async getCalendarEvents(daysAhead: number = 30): Promise<{ success: boolean; data?: CalendarEventsResponse; error?: string }> {
     try {
-      const headers = await this.getAuthHeaders();
-      const response = await axiosInstance.get(`/calendar/events?days_ahead=${daysAhead}`, { headers });
-      
-      return {
-        success: true,
-        data: response.data
-      };
+      const response = await axiosInstance.get(`/calendar/events?days_ahead=${daysAhead}`);
+      return { success: true, data: response.data };
     } catch (error: any) {
       console.error('❌ Errore nel recupero degli eventi del calendario:', error);
       return {
@@ -91,17 +113,12 @@ class GoogleCalendarService {
   }
 
   /**
-   * Sincronizza i task verso Google Calendar
+   * Sincronizza i task verso Google Calendar (batch)
    */
   async syncTasksToCalendar(): Promise<{ success: boolean; data?: SyncResponse; error?: string }> {
     try {
-      const headers = await this.getAuthHeaders();
-      const response = await axiosInstance.post('/calendar/sync-tasks-to-calendar', {}, { headers });
-      
-      return {
-        success: true,
-        data: response.data
-      };
+      const response = await axiosInstance.post('/calendar/sync-tasks-to-calendar', {});
+      return { success: true, data: response.data };
     } catch (error: any) {
       console.error('❌ Errore nella sincronizzazione task → calendario:', error);
       return {
@@ -112,17 +129,12 @@ class GoogleCalendarService {
   }
 
   /**
-   * Sincronizza Google Calendar verso task MyTaskly
+   * Importa eventi da Google Calendar come task MyTaskly
    */
   async syncCalendarToTasks(daysAhead: number = 30): Promise<{ success: boolean; data?: SyncResponse; error?: string }> {
     try {
-      const headers = await this.getAuthHeaders();
-      const response = await axiosInstance.post(`/calendar/sync-calendar-to-tasks?days_ahead=${daysAhead}`, {}, { headers });
-      
-      return {
-        success: true,
-        data: response.data
-      };
+      const response = await axiosInstance.post(`/calendar/sync-calendar-to-tasks?days_ahead=${daysAhead}`, {});
+      return { success: true, data: response.data };
     } catch (error: any) {
       console.error('❌ Errore nella sincronizzazione calendario → task:', error);
       return {
@@ -137,13 +149,8 @@ class GoogleCalendarService {
    */
   async createEventFromTask(taskId: number): Promise<{ success: boolean; data?: any; error?: string }> {
     try {
-      const headers = await this.getAuthHeaders();
-      const response = await axiosInstance.post(`/calendar/create-event-from-task/${taskId}`, {}, { headers });
-      
-      return {
-        success: true,
-        data: response.data
-      };
+      const response = await axiosInstance.post(`/calendar/create-event/${taskId}`, {});
+      return { success: true, data: response.data };
     } catch (error: any) {
       console.error('❌ Errore nella creazione evento da task:', error);
       return {
@@ -158,13 +165,8 @@ class GoogleCalendarService {
    */
   async removeEventFromTask(taskId: number): Promise<{ success: boolean; data?: any; error?: string }> {
     try {
-      const headers = await this.getAuthHeaders();
-      const response = await axiosInstance.delete(`/calendar/remove-event-from-task/${taskId}`, { headers });
-      
-      return {
-        success: true,
-        data: response.data
-      };
+      const response = await axiosInstance.delete(`/calendar/remove-event/${taskId}`);
+      return { success: true, data: response.data };
     } catch (error: any) {
       console.error('❌ Errore nella rimozione evento da task:', error);
       return {
@@ -175,27 +177,25 @@ class GoogleCalendarService {
   }
 
   /**
-   * Esegue una sincronizzazione completa iniziale
-   * Prima sincronizza i task esistenti verso il calendario,
-   * poi importa gli eventi del calendario come task
+   * Esegue una sincronizzazione completa:
+   * 1. Esporta tutti i task su Calendar
+   * 2. Importa gli eventi del Calendar come task
    */
   async performInitialSync(daysAhead: number = 30): Promise<{ success: boolean; results?: any; error?: string }> {
     try {
-      console.log('🔄 Avvio sincronizzazione iniziale...');
+      console.log('🔄 Avvio sincronizzazione completa...');
 
-      // Prima sincronizza i task verso il calendario
       const taskToCalendarResult = await this.syncTasksToCalendar();
       if (!taskToCalendarResult.success) {
         throw new Error(`Errore sincronizzazione task → calendario: ${taskToCalendarResult.error}`);
       }
 
-      // Poi importa gli eventi del calendario come task
       const calendarToTasksResult = await this.syncCalendarToTasks(daysAhead);
       if (!calendarToTasksResult.success) {
         throw new Error(`Errore sincronizzazione calendario → task: ${calendarToTasksResult.error}`);
       }
 
-      console.log('✅ Sincronizzazione iniziale completata');
+      console.log('✅ Sincronizzazione completa terminata');
 
       return {
         success: true,
@@ -205,11 +205,8 @@ class GoogleCalendarService {
         }
       };
     } catch (error: any) {
-      console.error('❌ Errore durante la sincronizzazione iniziale:', error);
-      return {
-        success: false,
-        error: error.message || 'Errore durante la sincronizzazione iniziale'
-      };
+      console.error('❌ Errore durante la sincronizzazione completa:', error);
+      return { success: false, error: error.message || 'Errore durante la sincronizzazione' };
     }
   }
 }
