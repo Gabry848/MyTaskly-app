@@ -7,6 +7,7 @@ import {
   Modal,
   ActivityIndicator,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 export interface DeleteCategoryModalProps {
   visible: boolean;
@@ -14,7 +15,6 @@ export interface DeleteCategoryModalProps {
   isCalendarConnected: boolean;
   isDeleting: boolean;
   onCancel: () => void;
-  /** deleteFromCalendar sarà true se l'utente vuole eliminare anche da Google Calendar, false altrimenti */
   onConfirm: (deleteFromCalendar: boolean) => void;
 }
 
@@ -30,34 +30,31 @@ const DeleteCategoryModal: React.FC<DeleteCategoryModalProps> = ({
     <Modal
       transparent={true}
       visible={visible}
-      animationType="fade"
+      animationType="slide"
       onRequestClose={onCancel}
     >
       <View style={styles.overlay}>
         <View style={styles.container}>
-          {/* Icon area */}
-          <View style={styles.iconContainer}>
-            <Text style={styles.icon}>🗑️</Text>
-          </View>
 
           <Text style={styles.title}>Elimina categoria</Text>
+
           <Text style={styles.message}>
-            Sei sicuro di voler eliminare la categoria{" "}
+            Sei sicuro di voler eliminare{" "}
             <Text style={styles.categoryName}>"{categoryName}"</Text>?
           </Text>
           <Text style={styles.subMessage}>
             Tutti i task al suo interno verranno eliminati.
           </Text>
 
-          {/* Google Calendar section — visible only when connected */}
+          {/* Sezione Google Calendar — visibile solo se connesso */}
           {isCalendarConnected && (
             <View style={styles.calendarSection}>
               <View style={styles.calendarSectionHeader}>
-                <Text style={styles.calendarIcon}>📅</Text>
+                <Ionicons name="calendar-outline" size={16} color="#000000" />
                 <Text style={styles.calendarTitle}>Google Calendar</Text>
               </View>
               <Text style={styles.calendarDescription}>
-                Vuoi eliminare anche i task di questa categoria da Google Calendar?
+                Vuoi eliminare i task di questa categoria anche da Google Calendar?
               </Text>
 
               <View style={styles.calendarButtons}>
@@ -65,7 +62,7 @@ const DeleteCategoryModal: React.FC<DeleteCategoryModalProps> = ({
                   style={[styles.calendarBtn, styles.calendarBtnYes]}
                   onPress={() => onConfirm(true)}
                   disabled={isDeleting}
-                  activeOpacity={0.8}
+                  activeOpacity={0.7}
                 >
                   {isDeleting ? (
                     <ActivityIndicator size="small" color="#ffffff" />
@@ -80,7 +77,7 @@ const DeleteCategoryModal: React.FC<DeleteCategoryModalProps> = ({
                   style={[styles.calendarBtn, styles.calendarBtnNo]}
                   onPress={() => onConfirm(false)}
                   disabled={isDeleting}
-                  activeOpacity={0.8}
+                  activeOpacity={0.7}
                 >
                   <Text style={styles.calendarBtnNoText}>
                     No, solo dall'app
@@ -90,14 +87,14 @@ const DeleteCategoryModal: React.FC<DeleteCategoryModalProps> = ({
             </View>
           )}
 
-          {/* Standard buttons — shown only when NOT connected to Google Calendar */}
+          {/* Bottoni standard — solo se non connesso a Google Calendar */}
           {!isCalendarConnected && (
             <View style={styles.buttonContainer}>
               <TouchableOpacity
                 style={[styles.button, styles.cancelButton]}
                 onPress={onCancel}
                 disabled={isDeleting}
-                activeOpacity={0.8}
+                activeOpacity={0.7}
               >
                 <Text style={[styles.buttonText, styles.cancelButtonText]}>
                   Annulla
@@ -108,7 +105,7 @@ const DeleteCategoryModal: React.FC<DeleteCategoryModalProps> = ({
                 style={[styles.button, styles.deleteButton]}
                 onPress={() => onConfirm(false)}
                 disabled={isDeleting}
-                activeOpacity={0.8}
+                activeOpacity={0.7}
               >
                 {isDeleting ? (
                   <ActivityIndicator size="small" color="#ffffff" />
@@ -121,7 +118,7 @@ const DeleteCategoryModal: React.FC<DeleteCategoryModalProps> = ({
             </View>
           )}
 
-          {/* Cancel link — shown when Google Calendar section is visible */}
+          {/* Link annulla — visibile solo quando la sezione Google Calendar è presente */}
           {isCalendarConnected && (
             <TouchableOpacity
               style={styles.cancelLink}
@@ -159,54 +156,51 @@ const styles = StyleSheet.create({
     elevation: 3,
     alignItems: "center",
   },
-  iconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: "#fff5f5",
-    borderWidth: 1.5,
-    borderColor: "#ffd0d0",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  icon: {
-    fontSize: 24,
-  },
   title: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: "300",
     color: "#000000",
-    marginBottom: 8,
+    marginBottom: 10,
     textAlign: "center",
+    fontFamily: "System",
     letterSpacing: -0.5,
   },
   message: {
-    fontSize: 15,
-    color: "#444444",
+    fontSize: 17,
+    color: "#000000",
     textAlign: "center",
-    lineHeight: 22,
-    marginBottom: 4,
+    lineHeight: 24,
+    marginBottom: 6,
+    fontFamily: "System",
+    fontWeight: "400",
   },
   categoryName: {
-    fontWeight: "600",
+    fontWeight: "500",
     color: "#000000",
   },
   subMessage: {
-    fontSize: 13,
-    color: "#888888",
+    fontSize: 14,
+    color: "#666666",
     textAlign: "center",
-    marginBottom: 20,
+    marginBottom: 24,
+    fontFamily: "System",
+    fontWeight: "400",
   },
-  // Google Calendar section
+  // Sezione Google Calendar
   calendarSection: {
     width: "100%",
-    backgroundColor: "#f8f9ff",
-    borderRadius: 12,
+    backgroundColor: "#ffffff",
+    borderRadius: 30,
     borderWidth: 1.5,
     borderColor: "#e1e5e9",
-    padding: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     marginBottom: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
   },
   calendarSectionHeader: {
     flexDirection: "row",
@@ -214,25 +208,26 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     gap: 6,
   },
-  calendarIcon: {
-    fontSize: 16,
-  },
   calendarTitle: {
     fontSize: 15,
     fontWeight: "500",
     color: "#000000",
+    fontFamily: "System",
+    letterSpacing: -0.3,
   },
   calendarDescription: {
-    fontSize: 13,
-    color: "#555555",
-    lineHeight: 19,
+    fontSize: 14,
+    color: "#666666",
+    lineHeight: 20,
     marginBottom: 14,
+    fontFamily: "System",
+    fontWeight: "400",
   },
   calendarButtons: {
     gap: 10,
   },
   calendarBtn: {
-    borderRadius: 12,
+    borderRadius: 30,
     paddingVertical: 14,
     alignItems: "center",
   },
@@ -246,8 +241,9 @@ const styles = StyleSheet.create({
   },
   calendarBtnYesText: {
     color: "#ffffff",
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: "500",
+    fontFamily: "System",
   },
   calendarBtnNo: {
     backgroundColor: "#f0f0f0",
@@ -256,10 +252,11 @@ const styles = StyleSheet.create({
   },
   calendarBtnNoText: {
     color: "#000000",
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: "400",
+    fontFamily: "System",
   },
-  // Standard buttons (no calendar)
+  // Bottoni standard (senza calendar)
   buttonContainer: {
     flexDirection: "row",
     width: "100%",
@@ -268,7 +265,7 @@ const styles = StyleSheet.create({
   button: {
     flex: 1,
     paddingVertical: 16,
-    borderRadius: 12,
+    borderRadius: 30,
     alignItems: "center",
   },
   cancelButton: {
@@ -293,17 +290,19 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 16,
     fontWeight: "500",
+    fontFamily: "System",
   },
-  // Cancel link (shown below calendar section)
+  // Link annulla (sotto la sezione calendar)
   cancelLink: {
-    marginTop: 14,
+    marginTop: 16,
     paddingVertical: 6,
     paddingHorizontal: 12,
   },
   cancelLinkText: {
     fontSize: 14,
-    color: "#888888",
-    textDecorationLine: "underline",
+    color: "#999999",
+    fontFamily: "System",
+    fontWeight: "400",
   },
 });
 
