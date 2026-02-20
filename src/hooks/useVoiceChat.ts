@@ -118,6 +118,10 @@ export function useVoiceChat() {
       console.log('Sessione vocale pronta');
       setState('ready');
 
+      // Pre-riscalda TrackPlayer ora che il server è pronto e l'audio sta per arrivare.
+      // Garantisce latenza zero al primo chunk anche in caso di init ritardata.
+      audioPlayerRef.current?.preSetup();
+
       // Avvia la registrazione automaticamente se richiesto e non mutato
       if (shouldAutoStartRecordingRef.current && !isMutedRef.current) {
         shouldAutoStartRecordingRef.current = false;
