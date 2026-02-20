@@ -10,6 +10,8 @@ import {
   SafeAreaView,
   AppState,
   Image,
+  Animated,
+  ScrollView,
 } from "react-native";
 import { FontAwesome } from "@expo/vector-icons";
 import * as authService from "../../services/authService";
@@ -19,16 +21,67 @@ import eventEmitter from "../../utils/eventEmitter";
 import { initiateGoogleLogin } from "../../services/googleSignInService";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { STORAGE_KEYS } from "../../constants/authConstants";
-
 import { NotificationSnackbar } from "../../components/UI/NotificationSnackbar";
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from "react-i18next";
 import {
   trackLoginSuccess,
   trackLoginFailed,
   identifyUser,
 } from "../../services/analyticsService";
 
-const { width } = Dimensions.get("window");
+const { width, height } = Dimensions.get("window");
+
+// Singolo blob animato – semplice, solo scala
+const Blob = ({
+  size,
+  top,
+  left,
+  right,
+  bottom,
+  opacity,
+  delay = 0,
+}: {
+  size: number;
+  opacity: number;
+  delay?: number;
+  top?: number;
+  left?: number;
+  right?: number;
+  bottom?: number;
+}) => {
+  const anim = React.useRef(new Animated.Value(1)).current;
+
+  React.useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.delay(delay),
+        Animated.timing(anim, { toValue: 1.1, duration: 4000, useNativeDriver: true }),
+        Animated.timing(anim, { toValue: 1,   duration: 4000, useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, []);
+
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={{
+        position: "absolute",
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        backgroundColor: "#000000",
+        opacity,
+        top,
+        left,
+        right,
+        bottom,
+        transform: [{ scale: anim }],
+      }}
+    />
+  );
+};
 
 const LoginScreen = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
@@ -48,180 +101,137 @@ const LoginScreen = () => {
     isSuccess: true,
     onFinish: () => {},
   });
+
   React.useEffect(() => {
     if (loginSuccess) {
       const timer = setTimeout(() => {
         navigation.navigate("HomeTabs");
-        setLoginSuccess(false); // Reset dello stato
+        setLoginSuccess(false);
       }, 3500);
-
       return () => clearTimeout(timer);
     }
   }, [loginSuccess, navigation]);
 
-  // Funzione per validare l'input e verificare se contiene caratteri speciali
   const containsSpecialChars = (text: string) => {
     const specialCharsRegex = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+/;
     return specialCharsRegex.test(text);
   };
 
-  // Funzione per gestire il cambio di username con validazione
   const handleUsernameChange = (text: string) => {
     const trimmedText = text.trim();
     if (containsSpecialChars(trimmedText)) {
-      showNotification(t('errors.validation'), false);
+      showNotification(t("errors.validation"), false);
       return;
     }
     setUsername(trimmedText);
   };
 
-  // Funzione per gestire il cambio di password con validazione
   const handlePasswordChange = (text: string) => {
     setPassword(text.trim());
   };
 
-  // Funzione helper per mostrare notifiche
-  const showNotification = React.useCallback((message: string, isSuccess: boolean) => {
-    // Prima nascondi qualsiasi notifica esistente
-    setNotification({ isVisible: false, message: "", isSuccess: true, onFinish: () => {} });
-    
-    // Poi mostra la nuova notifica con un piccolo ritardo per garantire il reset
-    setTimeout(() => {
-      setNotification({
-        isVisible: true,
-        message: message,
-        isSuccess: isSuccess,
-        onFinish: () => {
-          setNotification({ isVisible: false, message: "", isSuccess: true, onFinish: () => {} });
-        },
-      });
-    }, 100);
-  }, []);
+  const showNotification = React.useCallback(
+    (message: string, isSuccess: boolean) => {
+      setNotification({ isVisible: false, message: "", isSuccess: true, onFinish: () => {} });
+      setTimeout(() => {
+        setNotification({
+          isVisible: true,
+          message,
+          isSuccess,
+          onFinish: () =>
+            setNotification({ isVisible: false, message: "", isSuccess: true, onFinish: () => {} }),
+        });
+      }, 100);
+    },
+    []
+  );
 
-  // Handle Google Auth response
-  // Rimuoviamo il vecchio useEffect per expo-auth-session
-
-  // Google Sign-In function using server-side flow
   async function handleGoogleSignIn() {
     try {
       setIsGoogleLoading(true);
-
-      console.log('🚀 Initiating Google login server-side flow...');
       const result = await initiateGoogleLogin();
-
       if (result.success) {
-        console.log('✅ Google login initiated successfully');
-        // Reset del comando suggerito per il nuovo utente
-        await AsyncStorage.setItem(STORAGE_KEYS.SUGGESTED_COMMAND_SHOWN, 'false');
-        setLoginSuccess(true); // Imposta il login come riuscito
-        eventEmitter.emit("loginSuccess"); // Emetti evento per aggiornare lo stato di autenticazione
-        trackLoginSuccess('google');
-        showNotification(t('auth.messages.loginSuccess'), true);
+        await AsyncStorage.setItem(STORAGE_KEYS.SUGGESTED_COMMAND_SHOWN, "false");
+        setLoginSuccess(true);
+        eventEmitter.emit("loginSuccess");
+        trackLoginSuccess("google");
+        showNotification(t("auth.messages.loginSuccess"), true);
       } else {
-        console.error('❌ Failed to initiate Google login:', result.message);
-        trackLoginFailed('google', result.message ?? 'initiation_failed');
-        showNotification(
-          result.message || "Errore durante l'avvio del login con Google.",
-          false
-        );
+        trackLoginFailed("google", result.message ?? "initiation_failed");
+        showNotification(result.message || "Errore durante l'avvio del login con Google.", false);
       }
     } catch (error: any) {
-      console.error("Google Sign-In initiation error:", error);
-      trackLoginFailed('google', error?.message ?? 'exception');
+      trackLoginFailed("google", error?.message ?? "exception");
       showNotification("Errore durante l'avvio del login con Google. Riprova più tardi.", false);
     } finally {
       setIsGoogleLoading(false);
     }
   }
 
-  // login function use authServicec to login
   async function handleLogin() {
     try {
-      // Verifica se i campi contengono caratteri speciali prima di inviare la richiesta
       if (containsSpecialChars(username)) {
         showNotification("Lo username non può contenere caratteri speciali", false);
         return;
       }
-
       const login_data = await authService.login(username, password);
       if (login_data.success) {
-        // Reset del comando suggerito per il nuovo utente
-        await AsyncStorage.setItem(STORAGE_KEYS.SUGGESTED_COMMAND_SHOWN, 'false');
-        setLoginSuccess(true); // Imposta il login come riuscito
-        eventEmitter.emit("loginSuccess"); // Emetti evento per aggiornare lo stato di autenticazione
-        trackLoginSuccess('email');
-        showNotification(t('auth.messages.loginSuccess'), true);
+        await AsyncStorage.setItem(STORAGE_KEYS.SUGGESTED_COMMAND_SHOWN, "false");
+        setLoginSuccess(true);
+        eventEmitter.emit("loginSuccess");
+        trackLoginSuccess("email");
+        showNotification(t("auth.messages.loginSuccess"), true);
       } else if (login_data.requiresEmailVerification) {
-        // Email non verificata - naviga alla schermata di verifica
         showNotification(
           login_data.message || "Email non verificata. Verifica la tua email prima di effettuare il login.",
           false
         );
-
-        // Naviga alla schermata di verifica email dopo un breve ritardo
         setTimeout(() => {
           navigation.navigate("EmailVerification", {
             email: login_data.email || "",
             username: login_data.username || username,
-            password: password, // Aggiungi la password richiesta
+            password,
           });
         }, 2000);
       } else {
-        // Gestione dettagliata degli errori basata sulla risposta del server
         handleFailedLogin();
-
-        // Determina il messaggio di errore specifico
         let errorMessage = "Username o password errati.";
-
         if (login_data.error?.response) {
           const status = login_data.error.response.status;
           const detail = login_data.error.response.data?.detail;
-
           if (status === 401) {
-            // Status 401: Invalid credentials or OAuth user attempting password login
-            if (detail === "Invalid username or password") {
-              errorMessage = "Credenziali non valide. Verifica username e password o prova ad accedere con Google se hai usato l'autenticazione OAuth.";
-            } else {
-              errorMessage = "Credenziali non valide.";
-            }
+            errorMessage =
+              detail === "Invalid username or password"
+                ? "Credenziali non valide. Verifica username e password o prova ad accedere con Google se hai usato l'autenticazione OAuth."
+                : "Credenziali non valide.";
           } else if (status === 403) {
-            // Status 403: Email not verified (should be handled by requiresEmailVerification, but as fallback)
-            if (detail === "Email not verified") {
-              errorMessage = "Email non verificata. Controlla la tua casella di posta per il link di verifica.";
-            } else {
-              errorMessage = "Accesso negato. Verifica il tuo account.";
-            }
+            errorMessage =
+              detail === "Email not verified"
+                ? "Email non verificata. Controlla la tua casella di posta per il link di verifica."
+                : "Accesso negato. Verifica il tuo account.";
           } else {
-            // Altri errori
             errorMessage = login_data.message || "Errore durante il login.";
           }
         } else {
           errorMessage = login_data.message || "Username o password errati.";
         }
-
         showNotification(errorMessage, false);
       }
     } catch (error) {
       let errorMessage = "Errore durante il login. Riprova più tardi.";
-      if (
-        error instanceof Error &&
-        (error as any).response
-      ) {
+      if (error instanceof Error && (error as any).response) {
         const status = (error as any).response.status;
         const detail = (error as any).response.data?.detail;
-
         if (status === 401) {
-          if (detail === "Invalid username or password") {
-            errorMessage = "Credenziali non valide. Verifica username e password o prova ad accedere con Google se hai usato l'autenticazione OAuth.";
-          } else {
-            errorMessage = "Credenziali non valide.";
-          }
+          errorMessage =
+            detail === "Invalid username or password"
+              ? "Credenziali non valide. Verifica username e password o prova ad accedere con Google se hai usato l'autenticazione OAuth."
+              : "Credenziali non valide.";
         } else if (status === 403) {
-          if (detail === "Email not verified") {
-            errorMessage = "Email non verificata. Controlla la tua casella di posta per il link di verifica.";
-          } else {
-            errorMessage = "Accesso negato. Verifica il tuo account.";
-          }
+          errorMessage =
+            detail === "Email not verified"
+              ? "Email non verificata. Controlla la tua casella di posta per il link di verifica."
+              : "Accesso negato. Verifica il tuo account.";
         }
       }
       handleFailedLogin();
@@ -232,22 +242,17 @@ const LoginScreen = () => {
   const handleFailedLogin = () => {
     const newAttempts = failedAttempts + 1;
     setFailedAttempts(newAttempts);
-    trackLoginFailed('email');
-    
+    trackLoginFailed("email");
     if (newAttempts >= 3) {
       setShowBlockMessage(true);
-      
       setTimeout(() => {
         setIsBlocked(true);
-        AppState.addEventListener('change', () => {});
+        AppState.addEventListener("change", () => {});
       }, 5000);
     }
   };
 
-  // Funzione per invertire lo stato di visibilità della password
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
-  };
+  const togglePasswordVisibility = () => setShowPassword(!showPassword);
 
   if (isBlocked) {
     return (
@@ -256,106 +261,104 @@ const LoginScreen = () => {
       </View>
     );
   }
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
-      <View style={styles.logoContainer}>
-        <Image
-          source={require("../../../assets/icons/adaptive-icon.png")}
-          style={styles.logoImage}
-        />
-      </View>
-      <View style={[styles.inputContainer, { width: width * 0.9 }]}>
-        <FontAwesome
-          name="user"
-          size={20}
-          color="#666666"
-          style={styles.icon}
-        />
-        <TextInput
-          value={username || ""}
-          onChangeText={handleUsernameChange}
-          placeholder={t('auth.login.username')}
-          placeholderTextColor="#999999"
-          style={[styles.input, { width: width * 0.75 }]}
-        />
-      </View>
-      <View style={[styles.inputContainer, { width: width * 0.9 }]}>
-        <FontAwesome
-          name="lock"
-          size={20}
-          color="#666666"
-          style={styles.icon}
-        />
-        <TextInput
-          placeholder={t('auth.login.password')}
-          placeholderTextColor="#999999"
-          style={[styles.input, { width: width * 0.65 }]}
-          secureTextEntry={!showPassword}
-          value={password || ""}
-          onChangeText={handlePasswordChange}
-        />
-        <TouchableOpacity
-          onPress={togglePasswordVisibility}
-          style={styles.eyeIcon}
-        >
-          <FontAwesome
-            name={showPassword ? "eye" : "eye-slash"}
-            size={20}
-            color="#666666"
+
+      {/* Blob di sfondo – fuori dal layout, posizione assoluta */}
+      <Blob size={340} opacity={0.13} delay={0}    top={-120} left={-130} />
+      <Blob size={260} opacity={0.10} delay={1000} top={-60}  right={-100} />
+      <Blob size={220} opacity={0.12} delay={500}  bottom={60} left={-90} />
+      <Blob size={300} opacity={0.09} delay={1500} bottom={-80} right={-110} />
+
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+          {/* Logo */}
+          <Image
+            source={require("../../../assets/icons/adaptive-icon.png")}
+            style={styles.logo}
           />
-        </TouchableOpacity>
-      </View>
-      <TouchableOpacity
-        style={[styles.loginButton, { width: width * 0.9 }]}
-        onPress={() => {
-          handleLogin();
-        }}
-      >
-        <Text style={styles.loginText}>{t('auth.login.loginNow')}</Text>
-      </TouchableOpacity>
-      
-      <View style={styles.dividerContainer}>
-        <View style={styles.dividerLine} />
-        <Text style={styles.dividerText}>o</Text>
-        <View style={styles.dividerLine} />
-      </View>
-      
-      <TouchableOpacity
-        style={[
-          styles.googleButton, 
-          { width: width * 0.9 },
-          isGoogleLoading && styles.disabledButton
-        ]}
-        onPress={handleGoogleSignIn}
-        disabled={isGoogleLoading}
-      >
-        <View style={styles.googleIconContainer}>
-          {isGoogleLoading ? (
-            <Text style={styles.googleIconText}>...</Text>
-          ) : (
-            <Text style={styles.googleIconText}>G</Text>
-          )}
-        </View>
-        <Text style={styles.googleButtonText}>
-          {isGoogleLoading ? t('auth.login.signingIn') : t('auth.login.continueWithGoogle')}
-        </Text>
-      </TouchableOpacity>
-      <View style={[styles.optionsContainer, { width: width * 0.9 }]}>
-      </View>
-      <Text style={styles.signUpText}>{t('auth.login.notMember')}</Text>
-      <TouchableOpacity
-        style={styles.signUpButton}
-        onPress={() => {
-          navigation.navigate("Register");
-        }}
-      >
-        <Text style={styles.signUpButtonText}>{t('auth.login.createAccount')}</Text>
-      </TouchableOpacity>
-      
+
+          {/* Inputs */}
+          <View style={styles.inputRow}>
+            <FontAwesome name="user" size={17} color="#999" style={styles.icon} />
+            <TextInput
+              value={username}
+              onChangeText={handleUsernameChange}
+              placeholder={t("auth.login.username")}
+              placeholderTextColor="#BBBBBB"
+              style={styles.input}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          </View>
+
+          <View style={styles.inputRow}>
+            <FontAwesome name="lock" size={17} color="#999" style={styles.icon} />
+            <TextInput
+              value={password}
+              onChangeText={handlePasswordChange}
+              placeholder={t("auth.login.password")}
+              placeholderTextColor="#BBBBBB"
+              style={styles.input}
+              secureTextEntry={!showPassword}
+            />
+            <TouchableOpacity onPress={togglePasswordVisibility} style={styles.eyeBtn}>
+              <FontAwesome
+                name={showPassword ? "eye" : "eye-slash"}
+                size={17}
+                color="#BBBBBB"
+              />
+            </TouchableOpacity>
+          </View>
+
+          {/* Login */}
+          <TouchableOpacity style={styles.loginBtn} onPress={handleLogin} activeOpacity={0.85}>
+            <Text style={styles.loginBtnText}>{t("auth.login.loginNow")}</Text>
+          </TouchableOpacity>
+
+          {/* Divider */}
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerLabel}>o</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
+          {/* Google */}
+          <TouchableOpacity
+            style={[styles.googleBtn, isGoogleLoading && styles.disabled]}
+            onPress={handleGoogleSignIn}
+            disabled={isGoogleLoading}
+            activeOpacity={0.85}
+          >
+            <View style={styles.googleBadge}>
+              <Text style={styles.googleBadgeText}>{isGoogleLoading ? "…" : "G"}</Text>
+            </View>
+            <Text style={styles.googleBtnText}>
+              {isGoogleLoading ? t("auth.login.signingIn") : t("auth.login.continueWithGoogle")}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Sign up */}
+          <View style={styles.signUpRow}>
+            <Text style={styles.signUpLabel}>{t("auth.login.notMember")} </Text>
+            <TouchableOpacity onPress={() => navigation.navigate("Register")} activeOpacity={0.7}>
+              <Text style={styles.signUpLink}>{t("auth.login.createAccount")}</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+
       <NotificationSnackbar
         isVisible={showBlockMessage || notification.isVisible}
-        message={showBlockMessage ? "Troppi tentativi falliti. L'app si bloccherà tra 5 secondi." : notification.message}
+        message={
+          showBlockMessage
+            ? "Troppi tentativi falliti. L'app si bloccherà tra 5 secondi."
+            : notification.message
+        }
         isSuccess={showBlockMessage ? false : notification.isSuccess}
         onFinish={showBlockMessage ? () => {} : notification.onFinish}
       />
@@ -366,254 +369,152 @@ const LoginScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#ffffff",
+    overflow: "hidden",
+  },
+  scroll: {
+    flexGrow: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#ffffff",
-    width: "100%",
+    paddingHorizontal: width * 0.07,
+    paddingVertical: 48,
   },
-  logoContainer: {
-    alignItems: "center",
-    marginTop: 20,
-    marginBottom: 32,
-  },
-  logoImage: {
-    width: 140,
-    height: 140,
+
+  // Logo
+  logo: {
+    width: 96,
+    height: 96,
+    borderRadius: 24,
     resizeMode: "contain",
+    marginBottom: 48,
   },
-  inputContainer: {
+
+  // Inputs
+  inputRow: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F8F9FA",
-    borderRadius: 16,
-    paddingHorizontal: 20,
-    marginBottom: 14,
-    borderWidth: 1.5,
-    borderColor: "#E8EBED",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.03,
-    shadowRadius: 4,
-    elevation: 0.5,
+    width: "100%",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E8E8E8",
+    marginBottom: 24,
+    paddingBottom: 10,
   },
   icon: {
-    marginRight: 14,
-    opacity: 0.6,
+    marginRight: 12,
   },
   input: {
     flex: 1,
-    color: "#000000",
-    height: 56,
     fontSize: 16,
+    color: "#111111",
     fontFamily: "System",
-    fontWeight: "500",
+    height: 36,
   },
-  eyeIcon: {
-    padding: 8,
+  eyeBtn: {
+    padding: 4,
   },
-  loginButton: {
+
+  // Login button
+  loginBtn: {
+    width: "100%",
     backgroundColor: "#000000",
-    paddingVertical: 18,
-    borderRadius: 28,
+    paddingVertical: 17,
+    borderRadius: 14,
     alignItems: "center",
     marginTop: 8,
-    marginBottom: 24,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 4,
+    marginBottom: 28,
   },
-  loginText: {
+  loginBtnText: {
     color: "#ffffff",
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: "600",
-    fontFamily: "System",
     letterSpacing: 0.3,
+    fontFamily: "System",
   },
-  optionsContainer: {
+
+  // Divider
+  divider: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 32,
-  },
-  optionText: {
-    color: "#666666",
-    fontSize: 14,
-    fontFamily: "System",
-    fontWeight: "500",
-  },
-  signUpText: {
-    color: "#666666",
-    fontSize: 15,
-    marginBottom: 14,
-    fontFamily: "System",
-    fontWeight: "500",
-  },
-  signUpButton: {
-    borderWidth: 1.5,
-    borderColor: "#E8EBED",
-    paddingVertical: 14,
-    paddingHorizontal: 28,
-    borderRadius: 28,
-    backgroundColor: "#ffffff",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 1.5,
-  },
-  signUpButtonText: {
-    color: "#000000",
-    fontSize: 16,
-    fontWeight: "600",
-    fontFamily: "System",
-    letterSpacing: 0.2,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
-    justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 20,
-  },
-  modalContainer: {
-    backgroundColor: "#ffffff",
-    padding: 30,
-    borderRadius: 20,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 5,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    elevation: 10,
-    width: width * 0.85,
-    maxWidth: 400,
-  },
-  modalIcon: {
+    width: "100%",
     marginBottom: 20,
-  },
-  modalTitle: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: "#000000",
-    textAlign: "center",
-    marginBottom: 15,
-    fontFamily: "System",
-  },
-  modalMessage: {
-    fontSize: 16,
-    color: "#666666",
-    textAlign: "center",
-    lineHeight: 24,
-    marginBottom: 25,
-    fontFamily: "System",
-  },
-  modalButton: {
-    backgroundColor: "#FF6B6B",
-    paddingVertical: 12,
-    paddingHorizontal: 30,
-    borderRadius: 16,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  modalButtonText: {
-    color: "#ffffff",
-    fontSize: 16,
-    fontWeight: "500",
-    fontFamily: "System",
-  },
-  blockedContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#ff0000',
-  },
-  blockedText: {
-    color: '#ffffff',
-    fontSize: 18,
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  dividerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: width * 0.9,
-    marginVertical: 16,
   },
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#E8EBED',
+    backgroundColor: "#EEEEEE",
   },
-  dividerText: {
-    marginHorizontal: 16,
-    color: '#999999',
+  dividerLabel: {
+    marginHorizontal: 14,
+    color: "#CCCCCC",
     fontSize: 13,
-    fontFamily: 'System',
-    fontWeight: '500',
-    letterSpacing: 0.5,
+    fontFamily: "System",
   },
-  googleButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#ffffff',
-    paddingVertical: 16,
-    borderRadius: 28,
-    marginBottom: 28,
-    borderWidth: 1.5,
-    borderColor: '#E8EBED',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 2,
+
+  // Google button
+  googleBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "100%",
+    paddingVertical: 15,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#E8E8E8",
+    marginBottom: 40,
   },
-  googleIconContainer: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#4285F4',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
+  googleBadge: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: "#4285F4",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 10,
   },
-  googleIconText: {
-    color: '#ffffff',
+  googleBadgeText: {
+    color: "#ffffff",
+    fontSize: 13,
+    fontWeight: "bold",
+  },
+  googleBtnText: {
+    color: "#111111",
+    fontSize: 15,
+    fontWeight: "500",
+    fontFamily: "System",
+  },
+  disabled: {
+    opacity: 0.45,
+  },
+
+  // Sign up
+  signUpRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  signUpLabel: {
+    color: "#AAAAAA",
     fontSize: 14,
-    fontWeight: 'bold',
-    fontFamily: 'System',
+    fontFamily: "System",
   },
-  googleButtonText: {
-    color: '#000000',
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'System',
-    letterSpacing: 0.2,
+  signUpLink: {
+    color: "#000000",
+    fontSize: 14,
+    fontWeight: "600",
+    fontFamily: "System",
   },
-  disabledButton: {
-    opacity: 0.5,
+
+  // Blocked
+  blockedContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#ff0000",
+  },
+  blockedText: {
+    color: "#ffffff",
+    fontSize: 18,
+    fontWeight: "bold",
+    textAlign: "center",
   },
 });
 
