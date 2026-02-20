@@ -14,7 +14,12 @@ export const getDaysRemainingText = (endDate) => {
   const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
 
   if (diffDays < 0) return "Scaduto";
-  if (diffDays === 0) return "Oggi";
+  if (diffDays === 0) {
+    const due = new Date(endDate);
+    const hours = due.getHours().toString().padStart(2, "0");
+    const minutes = due.getMinutes().toString().padStart(2, "0");
+    return `${hours}:${minutes}`;
+  }
   if (diffDays === 1) return "Domani";
   return `${diffDays} giorni`;
 };

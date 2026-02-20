@@ -4,10 +4,12 @@ import { getTasks, Task, addTask, deleteCategory, updateCategory } from '../../s
 import CategoryCard from './CategoryCard';
 import CategoryMenu from './CategoryMenu';
 import EditCategoryModal from './EditCategoryModal';
+import DeleteCategoryModal from './DeleteCategoryModal';
 import AddTask from "../Task/AddTask";
 import ShareCategoryDialog from './ShareCategoryDialog';
 import ManageCategoryShares from './ManageCategoryShares';
 import eventEmitter, { emitCategoryDeleted, emitCategoryUpdated, emitTaskAdded , EVENTS } from '../../utils/eventEmitter';
+import GoogleCalendarService from '../../services/googleCalendarService';
 
 
 export interface CategoryProps {
@@ -39,6 +41,8 @@ const Category: React.FC<CategoryProps> = ({
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isCalendarConnected, setIsCalendarConnected] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(title);
@@ -144,51 +148,46 @@ const Category: React.FC<CategoryProps> = ({
       return;
     }
 
+    // Controlla se Google Calendar è connesso
     try {
-      setIsDeleting(true);
-
-      Alert.alert(
-        "Elimina categoria",
-        `Sei sicuro di voler eliminare la categoria "${title}"?`,
-        [
-          {
-            text: "Annulla",
-            style: "cancel",
-            onPress: () => {
-              setIsDeleting(false);
-              closeMenu();
-            }
-          },
-          {
-            text: "Elimina",
-            style: "destructive",
-            onPress: async () => {
-              try {
-                await deleteCategory(categoryId || title, title);
-
-                closeMenu();
-
-                // Emetti un evento per notificare l'eliminazione della categoria
-                emitCategoryDeleted(title);
-
-                if (onDelete) {
-                  onDelete();
-                }
-              } catch (error) {
-                console.error("Errore durante l'eliminazione della categoria:", error);
-                Alert.alert("Errore", "Impossibile eliminare la categoria. Riprova più tardi.");
-              } finally {
-                setIsDeleting(false);
-              }
-            }
-          }
-        ]
+      const calendarService = GoogleCalendarService.getInstance();
+      const statusResult = await calendarService.getSyncStatus();
+      setIsCalendarConnected(
+        statusResult.success && statusResult.data?.google_calendar_connected === true
       );
+    } catch {
+      setIsCalendarConnected(false);
+    }
+
+    closeMenu();
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDelete = async (deleteFromCalendar: boolean) => {
+    setIsDeleting(true);
+    try {
+      await deleteCategory(categoryId || title, title, deleteFromCalendar);
+
+      setShowDeleteModal(false);
+
+      // Emetti un evento per notificare l'eliminazione della categoria
+      emitCategoryDeleted(title);
+
+      if (onDelete) {
+        onDelete();
+      }
     } catch (error) {
       console.error("Errore durante l'eliminazione della categoria:", error);
+      setShowDeleteModal(false);
       Alert.alert("Errore", "Impossibile eliminare la categoria. Riprova più tardi.");
+    } finally {
       setIsDeleting(false);
-      closeMenu();
+    }
+  };
+
+  const handleCancelDelete = () => {
+    if (!isDeleting) {
+      setShowDeleteModal(false);
     }
   };
 
@@ -349,6 +348,15 @@ const Category: React.FC<CategoryProps> = ({
         onTitleChange={setEditName}
         onDescriptionChange={setEditDescription}
         isEditing={isEditing}
+      />
+
+      <DeleteCategoryModal
+        visible={showDeleteModal}
+        categoryName={title}
+        isCalendarConnected={isCalendarConnected}
+        isDeleting={isDeleting}
+        onCancel={handleCancelDelete}
+        onConfirm={handleConfirmDelete}
       />
 
       {categoryId && (

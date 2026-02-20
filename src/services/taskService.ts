@@ -945,13 +945,24 @@ export async function getCategories(useCache: boolean = true) {
 }
 
 // Funzione per eliminare una categoria tramite il suo ID (o nome come fallback)
-export async function deleteCategory(categoryId: string | number, categoryName?: string) {
+export async function deleteCategory(
+  categoryId: string | number,
+  categoryName?: string,
+  deleteFromGoogleCalendar?: boolean
+) {
   try {
-    console.log(`[TASK_SERVICE] Eliminazione categoria ID: ${categoryId}, nome: ${categoryName || 'N/A'}`);
+    console.log(`[TASK_SERVICE] Eliminazione categoria ID: ${categoryId}, nome: ${categoryName || 'N/A'}, google_calendar: ${deleteFromGoogleCalendar ?? false}`);
+
+    const params: Record<string, string> = {};
+    if (deleteFromGoogleCalendar) {
+      params.delete_from_google_calendar = 'true';
+    }
+
     const response = await axios.delete(`/categories/id/${categoryId}`, {
       headers: {
         "Content-Type": "application/json",
       },
+      params,
     });
 
     // Rimuovi la categoria dalla cache dopo l'eliminazione riuscita
