@@ -6,9 +6,16 @@ import {
 } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { BackHandler, Linking } from "react-native";
+import { AppState, BackHandler, Linking } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Ionicons } from "@expo/vector-icons";
+import {
+  initAnalytics,
+  trackScreenView,
+  trackSessionStart,
+  trackSessionEnd,
+  trackError,
+} from "../services/analyticsService";
 import WelcomeCarouselScreen from "./screens/WelcomeCarousel";
 import LoginScreen from "./screens/Login";
 import RegisterScreen from "./screens/Register";
@@ -213,6 +220,8 @@ function NavigationHandler() {
         if (currentRoute) {
           console.log(`[NAVIGATION] 📱 Navigazione verso: ${currentRoute.name}`);
           emitScreenChange(currentRoute.name, currentRoute.params);
+          // ── Analytics: traccia navigazione ──
+          trackScreenView(currentRoute.name);
         }
       }
     });
@@ -465,6 +474,41 @@ function AppStack() {
 
 // Componente principale Navigation
 export default function Navigation() {
+  // ── Analytics: inizializza Vexo una sola volta ──
+  useEffect(() => {
+    initAnalytics();
+  }, []);
+
+  // ── Analytics: traccia sessione via AppState ──
+  useEffect(() => {
+    trackSessionStart();
+
+    const subscription = AppState.addEventListener("change", (nextState) => {
+      if (nextState === "active") {
+        trackSessionStart();
+      } else if (nextState === "background" || nextState === "inactive") {
+        trackSessionEnd();
+      }
+    });
+
+    return () => {
+      trackSessionEnd();
+      subscription.remove();
+    };
+  }, []);
+
+  // ── Analytics: cattura errori JS non gestiti ──
+  useEffect(() => {
+    const originalHandler = ErrorUtils.getGlobalHandler();
+    ErrorUtils.setGlobalHandler((error: Error, isFatal?: boolean) => {
+      trackError(error?.message ?? "Unknown error", "global", isFatal ?? false);
+      originalHandler(error, isFatal);
+    });
+    return () => {
+      ErrorUtils.setGlobalHandler(originalHandler);
+    };
+  }, []);
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <LanguageProvider>

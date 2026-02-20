@@ -1,4 +1,12 @@
 import { getValidToken } from "./authService";
+import {
+  trackVoiceChatStarted,
+  trackVoiceChatEnded,
+  trackVoiceChatError,
+  trackVoiceChatReconnect,
+  markVoiceSpeechStopped,
+  trackVoiceResponseTime,
+} from './analyticsService';
 
 // ============= VOICE CHAT WEBSOCKET (OpenAI Realtime API) =============
 
@@ -152,6 +160,8 @@ export class VoiceBotWebSocket {
   private messageQueue: VoiceClientMessage[] = [];
   private authTimeout: NodeJS.Timeout | null = null;
   private readonly AUTH_TIMEOUT_MS = 15000; // 15s timeout (setup MCP + RealtimeAgent)
+  // ── Analytics ──
+  private firstAudioChunkReceived: boolean = false;
 
   constructor(callbacks: VoiceChatCallbacks) {
     this.callbacks = callbacks;
@@ -184,8 +194,10 @@ export class VoiceBotWebSocket {
         this.ws.onopen = () => {
           clearTimeout(connectionTimeout);
           this.reconnectAttempts = 0;
+          this.firstAudioChunkReceived = false;
           this.startAuthentication(token);
           this.callbacks.onConnectionOpen?.();
+          trackVoiceChatStarted();
           resolve(true);
         };
 
@@ -204,6 +216,7 @@ export class VoiceBotWebSocket {
           console.error('Errore WebSocket vocale:', error);
           this.authState = WebSocketAuthState.FAILED;
           this.clearAuthTimeout();
+          trackVoiceChatError('WebSocket connection error');
           this.callbacks.onError?.('Errore di connessione WebSocket');
           reject(new Error('Errore di connessione WebSocket'));
         };
@@ -332,10 +345,7 @@ export class VoiceBotWebSocket {
 
       case 'speech_started':
       case 'speech_stopped':
-      case 'interrupted':
-      case 'audio_end':
-      case 'agent_start':
-      case 'agent_end':
+        markVoiceSpeechStopped();
         this.callbacks.onStatus?.(phase, message);
         break;
 
@@ -351,6 +361,11 @@ export class VoiceBotWebSocket {
     if (this.authState === WebSocketAuthState.DISCONNECTED) return;
 
     if (response.data) {
+      // ── Analytics: registra latenza al primo chunk audio ──
+      if (!this.firstAudioChunkReceived) {
+        this.firstAudioChunkReceived = true;
+        trackVoiceResponseTime();
+      }
       this.callbacks.onAudioChunk?.(response.data, response.chunk_index);
     }
   }
@@ -371,8 +386,10 @@ export class VoiceBotWebSocket {
     if (this.authState === WebSocketAuthState.AUTHENTICATING) {
       this.authState = WebSocketAuthState.FAILED;
       this.clearAuthTimeout();
+      trackVoiceChatError(`auth_failed: ${response.message}`);
       this.callbacks.onAuthenticationFailed?.(response.message);
     } else {
+      trackVoiceChatError(response.message);
       this.callbacks.onError?.(response.message);
     }
   }
@@ -487,6 +504,7 @@ export class VoiceBotWebSocket {
   private attemptReconnect(): void {
     this.reconnectAttempts++;
     const delay = this.reconnectDelay * this.reconnectAttempts;
+    trackVoiceChatReconnect(this.reconnectAttempts);
 
     setTimeout(() => {
       this.connect();
@@ -497,6 +515,7 @@ export class VoiceBotWebSocket {
     this.clearAuthTimeout();
     this.messageQueue = [];
     this.authState = WebSocketAuthState.DISCONNECTED;
+    trackVoiceChatEnded();
 
     if (this.ws) {
       this.ws.close(1000, 'Disconnessione volontaria');

@@ -2,6 +2,10 @@ import { TaskCacheService, OfflineChange } from './TaskCacheService';
 import StorageManager from './StorageManager';
 import NetworkService, { NetworkState } from './NetworkService';
 import { emitTasksSynced } from '../utils/eventEmitter';
+import {
+  trackOfflineOperation,
+  trackOfflineSyncCompleted,
+} from './analyticsService';
 
 // Lazy import per evitare require cycle con taskService
 async function getTaskServiceFunctions() {
@@ -187,6 +191,9 @@ class SyncManager {
       }
 
       console.log(`[SYNC] Sincronizzate ${successfulChanges.length} modifiche, ${remainingChanges.length} rimanenti`);
+      
+      // ── Analytics: traccia sync offline completato ──
+      trackOfflineSyncCompleted(successfulChanges.length);
     }
   }
 
@@ -364,6 +371,9 @@ class SyncManager {
 
     await this.cacheService!.saveOfflineChange(change);
     console.log(`[SYNC] Modifica offline salvata: ${type} ${entityType}`);
+    
+    // ── Analytics: traccia operazione offline ──
+    trackOfflineOperation(type as 'CREATE' | 'UPDATE' | 'DELETE');
     
     this.notifyListeners();
   }

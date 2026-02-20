@@ -6,6 +6,10 @@ import React, {
 } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { TUTORIAL_STORAGE_KEY } from "../constants/tutorialContent";
+import {
+  trackTutorialCompleted,
+  trackTutorialSkipped,
+} from "../services/analyticsService";
 
 export interface TutorialContextType {
   isTutorialVisible: boolean;
@@ -48,6 +52,7 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({
   const closeTutorial = useCallback(async () => {
     try {
       await AsyncStorage.setItem(TUTORIAL_STORAGE_KEY, "true");
+      trackTutorialCompleted();
       setIsTutorialVisible(false);
     } catch (error) {
       console.error("[TUTORIAL] Error saving tutorial completion status:", error);
@@ -58,6 +63,7 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({
   const skipTutorial = useCallback(async () => {
     try {
       await AsyncStorage.setItem(TUTORIAL_STORAGE_KEY, "skipped");
+      trackTutorialSkipped();
       setIsTutorialVisible(false);
     } catch (error) {
       console.error("[TUTORIAL] Error saving skip status:", error);

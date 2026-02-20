@@ -2,6 +2,11 @@ import { useState, useEffect } from 'react';
 import { Alert } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import GoogleCalendarService, { CalendarSyncStatus } from '../services/googleCalendarService';
+import {
+  trackGoogleCalendarConnected,
+  trackGoogleCalendarDisconnected,
+  trackGoogleCalendarSynced,
+} from '../services/analyticsService';
 
 export interface UseGoogleCalendarReturn {
   isConnected: boolean;
@@ -76,6 +81,9 @@ export const useGoogleCalendar = (): UseGoogleCalendarReturn => {
           throw new Error(`Autorizzazione fallita: ${reason}`);
         }
 
+        // ── Analytics: traccia prima connessione Google Calendar ──
+        trackGoogleCalendarConnected();
+
         // Successo: aggiorna lo stato dal server
         await refreshStatus();
 
@@ -104,6 +112,7 @@ export const useGoogleCalendar = (): UseGoogleCalendarReturn => {
 
       setIsConnected(false);
       setSyncStatus(null);
+      trackGoogleCalendarDisconnected();
 
       Alert.alert(
         'Disconnessione completata',
@@ -142,6 +151,15 @@ export const useGoogleCalendar = (): UseGoogleCalendarReturn => {
         throw new Error(result.error || 'Errore durante la sincronizzazione');
       }
 
+      // ── Analytics ──
+      const ttc = result.results?.tasksToCalendar;
+      const ctt = result.results?.calendarToTasks;
+      trackGoogleCalendarSynced(
+        'full',
+        (ttc?.created_count ?? 0) + (ctt?.created_count ?? 0),
+        (ttc?.updated_count ?? 0) + (ctt?.updated_count ?? 0)
+      );
+
       await refreshStatus();
     } catch (err: any) {
       console.error('❌ Errore nella sincronizzazione completa:', err);
@@ -165,6 +183,13 @@ export const useGoogleCalendar = (): UseGoogleCalendarReturn => {
         throw new Error(result.error || 'Errore nella sincronizzazione dei task');
       }
 
+      // ── Analytics ──
+      trackGoogleCalendarSynced(
+        'tasks_to_calendar',
+        result.data?.created_count ?? 0,
+        result.data?.updated_count ?? 0
+      );
+
       await refreshStatus();
     } catch (err: any) {
       console.error('❌ Errore nella sincronizzazione task → calendario:', err);
@@ -187,6 +212,13 @@ export const useGoogleCalendar = (): UseGoogleCalendarReturn => {
         }
         throw new Error(result.error || 'Errore nell\'importazione degli eventi');
       }
+
+      // ── Analytics ──
+      trackGoogleCalendarSynced(
+        'calendar_to_tasks',
+        result.data?.created_count ?? 0,
+        result.data?.updated_count ?? 0
+      );
 
       await refreshStatus();
     } catch (err: any) {

@@ -1,6 +1,11 @@
 import { getValidToken } from "./authService";
 import { fetch } from 'expo/fetch';
 import { ToolWidget } from '../components/BotChat/types';
+import {
+  trackTextMessageSent,
+  trackTextResponseReceived,
+  trackTextChatError,
+} from './analyticsService';
 
 
 /**
@@ -37,6 +42,10 @@ export async function sendMessageToBot(
         toolWidgets: [],
       };
     }
+
+    // ── Analytics: traccia invio messaggio ──
+    trackTextMessageSent(modelType);
+    const messageStartTime = Date.now();
 
     // Costruisci il payload per la richiesta
     const requestPayload: any = {
@@ -260,6 +269,9 @@ export async function sendMessageToBot(
       );
     }
 
+    // ── Analytics: traccia risposta ricevuta ──
+    trackTextResponseReceived(Date.now() - messageStartTime, modelType);
+
     return {
       text: fullMessage || "Nessuna risposta ricevuta dal bot.",
       toolWidgets: Array.from(toolWidgetsMap.values()),
@@ -269,6 +281,9 @@ export async function sendMessageToBot(
 
   } catch (error: any) {
     console.error("❌ Errore nella comunicazione con il bot:", error);
+
+    // ── Analytics: traccia errore chat testuale ──
+    trackTextChatError(error?.message ?? 'unknown');
 
     let errorMessage = "Mi dispiace, si è verificato un errore. Riprova più tardi.";
 

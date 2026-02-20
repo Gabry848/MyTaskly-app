@@ -22,6 +22,11 @@ import { STORAGE_KEYS } from "../../constants/authConstants";
 
 import { NotificationSnackbar } from "../../components/UI/NotificationSnackbar";
 import { useTranslation } from 'react-i18next';
+import {
+  trackLoginSuccess,
+  trackLoginFailed,
+  identifyUser,
+} from "../../services/analyticsService";
 
 const { width } = Dimensions.get("window");
 
@@ -110,9 +115,11 @@ const LoginScreen = () => {
         await AsyncStorage.setItem(STORAGE_KEYS.SUGGESTED_COMMAND_SHOWN, 'false');
         setLoginSuccess(true); // Imposta il login come riuscito
         eventEmitter.emit("loginSuccess"); // Emetti evento per aggiornare lo stato di autenticazione
+        trackLoginSuccess('google');
         showNotification(t('auth.messages.loginSuccess'), true);
       } else {
         console.error('❌ Failed to initiate Google login:', result.message);
+        trackLoginFailed('google', result.message ?? 'initiation_failed');
         showNotification(
           result.message || "Errore durante l'avvio del login con Google.",
           false
@@ -120,6 +127,7 @@ const LoginScreen = () => {
       }
     } catch (error: any) {
       console.error("Google Sign-In initiation error:", error);
+      trackLoginFailed('google', error?.message ?? 'exception');
       showNotification("Errore durante l'avvio del login con Google. Riprova più tardi.", false);
     } finally {
       setIsGoogleLoading(false);
@@ -141,6 +149,7 @@ const LoginScreen = () => {
         await AsyncStorage.setItem(STORAGE_KEYS.SUGGESTED_COMMAND_SHOWN, 'false');
         setLoginSuccess(true); // Imposta il login come riuscito
         eventEmitter.emit("loginSuccess"); // Emetti evento per aggiornare lo stato di autenticazione
+        trackLoginSuccess('email');
         showNotification(t('auth.messages.loginSuccess'), true);
       } else if (login_data.requiresEmailVerification) {
         // Email non verificata - naviga alla schermata di verifica
@@ -223,6 +232,7 @@ const LoginScreen = () => {
   const handleFailedLogin = () => {
     const newAttempts = failedAttempts + 1;
     setFailedAttempts(newAttempts);
+    trackLoginFailed('email');
     
     if (newAttempts >= 3) {
       setShowBlockMessage(true);
