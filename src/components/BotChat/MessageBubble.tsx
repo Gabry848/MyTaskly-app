@@ -44,10 +44,15 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style, isVoiceCh
   const [isDeletingCategory, setIsDeletingCategory] = useState(false);
   const [, forceWidgetRerender] = useState(0);
 
-  // Animazioni per i punti di streaming
+  // Animazioni per i punti di streaming (visibili durante lo stream con testo)
   const streamingDot1 = useRef(new Animated.Value(0.5)).current;
   const streamingDot2 = useRef(new Animated.Value(0.5)).current;
   const streamingDot3 = useRef(new Animated.Value(0.5)).current;
+
+  // Animazioni bounce per la bubble "thinking" (visibile prima che arrivi il testo)
+  const thinkingDot1Y = useRef(new Animated.Value(0)).current;
+  const thinkingDot2Y = useRef(new Animated.Value(0)).current;
+  const thinkingDot3Y = useRef(new Animated.Value(0)).current;
 
   // Animazione di entrata per ogni nuovo messaggio
   useEffect(() => {
@@ -65,7 +70,47 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style, isVoiceCh
     ]).start();
   }, [fadeAnim, slideAnim]);
 
-  // Animazione per i punti di streaming
+  // Animazione bounce per i dot "thinking" (quando il testo è ancora vuoto)
+  useEffect(() => {
+    const isThinking = isBot && message.isStreaming && (!message.text || message.text.trim() === '');
+    if (isThinking) {
+      const createBounceAnimation = (animValue: Animated.Value, delay: number) => {
+        return Animated.loop(
+          Animated.sequence([
+            Animated.delay(delay),
+            Animated.timing(animValue, {
+              toValue: -6,
+              duration: 280,
+              useNativeDriver: true,
+            }),
+            Animated.timing(animValue, {
+              toValue: 0,
+              duration: 280,
+              useNativeDriver: true,
+            }),
+            Animated.delay(300),
+          ])
+        );
+      };
+
+      const bounceAnims = [
+        createBounceAnimation(thinkingDot1Y, 0),
+        createBounceAnimation(thinkingDot2Y, 160),
+        createBounceAnimation(thinkingDot3Y, 320),
+      ];
+
+      bounceAnims.forEach(anim => anim.start());
+
+      return () => {
+        bounceAnims.forEach(anim => anim.stop());
+        thinkingDot1Y.setValue(0);
+        thinkingDot2Y.setValue(0);
+        thinkingDot3Y.setValue(0);
+      };
+    }
+  }, [isBot, message.isStreaming, message.text, thinkingDot1Y, thinkingDot2Y, thinkingDot3Y]);
+
+  // Animazione per i punti di streaming (visibili mentre il testo arriva)
   useEffect(() => {
     if (message.isStreaming) {
       const createPulseAnimation = (animValue: Animated.Value, delay: number) => {
@@ -413,6 +458,17 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style, isVoiceCh
         </View>
       )}
 
+      {/* BUBBLE THINKING - visibile quando il bot sta elaborando (nessun testo ancora) */}
+      {isBot && message.isStreaming && (!message.text || message.text.trim() === '') && (
+        <View style={[styles.messageBubble, styles.botBubble, styles.thinkingBubble]}>
+          <View style={styles.thinkingDotsContainer}>
+            <Animated.View style={[styles.thinkingDot, { transform: [{ translateY: thinkingDot1Y }] }]} />
+            <Animated.View style={[styles.thinkingDot, { transform: [{ translateY: thinkingDot2Y }] }]} />
+            <Animated.View style={[styles.thinkingDot, { transform: [{ translateY: thinkingDot3Y }] }]} />
+          </View>
+        </View>
+      )}
+
       {/* BUBBLE DEL MESSAGGIO - renderizza solo se c'è testo */}
       {message.text && message.text.trim() !== '' && (
         <View style={[
@@ -584,6 +640,23 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     backgroundColor: '#666666',
     marginHorizontal: 2,
+  },
+  thinkingBubble: {
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+  },
+  thinkingDotsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 20,
+  },
+  thinkingDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#999999',
+    marginHorizontal: 3,
   },
 });
 

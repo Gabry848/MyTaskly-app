@@ -349,8 +349,19 @@ export class VoiceBotWebSocket {
         this.callbacks.onStatus?.(phase, message);
         break;
 
+      case 'agent_start':
+      case 'agent_end':
+      case 'audio_end':
+      case 'interrupted':
+        // Fasi informative del ciclo agente — nessuna azione richiesta lato client
+        this.callbacks.onStatus?.(phase, message);
+        break;
+
       default:
-        console.warn('Fase WebSocket sconosciuta:', phase);
+        // Fase non gestita: logga solo in sviluppo per evitare rumore in produzione
+        if (__DEV__) {
+          console.log('[VoiceBotWebSocket] Fase non gestita:', phase);
+        }
     }
   }
 
