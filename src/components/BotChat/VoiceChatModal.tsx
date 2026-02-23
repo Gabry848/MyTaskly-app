@@ -20,7 +20,6 @@ export interface VoiceChatModalProps {
   visible: boolean;
   onClose: () => void;
   isRecording?: boolean;
-  onVoiceResponse?: (response: string) => void;
 }
 
 const { height, width } = Dimensions.get("window");
@@ -221,7 +220,6 @@ const AnimatedBlob: React.FC<AnimatedBlobProps> = ({ state, isProcessing, isSpea
 const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
   visible,
   onClose,
-  onVoiceResponse,
 }) => {
   const {
     state,
@@ -247,22 +245,6 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
   const liveDotOpacity = useRef(new Animated.Value(1)).current;
   const stateTextOpacity = useRef(new Animated.Value(1)).current;
   const prevStateRef = useRef(state);
-
-  // Ref per onVoiceResponse: evita che un nuovo riferimento di funzione ri-triggeri il useEffect
-  const onVoiceResponseRef = useRef(onVoiceResponse);
-  useEffect(() => {
-    onVoiceResponseRef.current = onVoiceResponse;
-  });
-
-  // Notifica trascrizioni assistant al parent — dipende solo da transcripts, non da onVoiceResponse
-  useEffect(() => {
-    if (onVoiceResponseRef.current && transcripts.length > 0) {
-      const last = transcripts[transcripts.length - 1];
-      if (last.role === 'assistant') {
-        onVoiceResponseRef.current(last.content);
-      }
-    }
-  }, [transcripts]);
 
   // Gestione connessione
   const handleConnect = useCallback(async () => {

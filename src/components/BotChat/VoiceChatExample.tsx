@@ -91,7 +91,6 @@ export const VoiceChatExample: React.FC = () => {
       <VoiceChatModal
         visible={modalVisible}
         onClose={handleCloseVoiceChat}
-        onVoiceResponse={handleVoiceResponse}
       />
     </SafeAreaView>
   );

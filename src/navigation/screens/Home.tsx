@@ -928,7 +928,6 @@ const HomeScreen = () => {
         visible={isVoiceChatVisible}
         onClose={handleVoiceChatClose}
         isRecording={isRecording}
-        onVoiceResponse={handleVoiceResponse}
       />
       </SafeAreaView>
     </GestureHandlerRootView>
