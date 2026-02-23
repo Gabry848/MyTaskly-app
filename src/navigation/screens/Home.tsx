@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -208,7 +208,7 @@ const HomeScreen = () => {
     };
   }, [chatStarted, inputBottomPosition]);
 
-  const startChatAnimation = () => {
+  const startChatAnimation = useCallback(() => {
     setChatStarted(true);
 
     // Animazione di entrata per i messaggi
@@ -217,11 +217,11 @@ const HomeScreen = () => {
       duration: 500,
       useNativeDriver: true,
     }).start();
-  };
+  }, [messagesSlideIn]);
 
-  const generateMessageId = () => {
+  const generateMessageId = useCallback(() => {
     return `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  };
+  }, []);
   const handleVoicePress = () => {
     // Apri la modal della chat vocale
     setIsVoiceChatVisible(true);
@@ -466,7 +466,7 @@ const HomeScreen = () => {
     setIsRecording(false);
   };
 
-  const handleVoiceResponse = (response: string) => {
+  const handleVoiceResponse = useCallback((response: string) => {
     // Aggiungi la risposta vocale alla chat come messaggio del bot
     const botMessage: Message = {
       id: generateMessageId(),
@@ -484,7 +484,7 @@ const HomeScreen = () => {
     }
 
     setMessages((prev) => [...prev, botMessage]);
-  };
+  }, [chatStarted, generateMessageId, startChatAnimation]);
 
   const handleChatHistoryPress = async (chatId: string) => {
     console.log('[HOME] Opening chat history:', chatId);

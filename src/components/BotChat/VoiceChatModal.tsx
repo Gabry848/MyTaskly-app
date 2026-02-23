@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -248,15 +248,37 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
   const stateTextOpacity = useRef(new Animated.Value(1)).current;
   const prevStateRef = useRef(state);
 
-  // Notifica trascrizioni assistant al parent
+  // Ref per onVoiceResponse: evita che un nuovo riferimento di funzione ri-triggeri il useEffect
+  const onVoiceResponseRef = useRef(onVoiceResponse);
   useEffect(() => {
-    if (onVoiceResponse && transcripts.length > 0) {
+    onVoiceResponseRef.current = onVoiceResponse;
+  });
+
+  // Notifica trascrizioni assistant al parent — dipende solo da transcripts, non da onVoiceResponse
+  useEffect(() => {
+    if (onVoiceResponseRef.current && transcripts.length > 0) {
       const last = transcripts[transcripts.length - 1];
       if (last.role === 'assistant') {
-        onVoiceResponse(last.content);
+        onVoiceResponseRef.current(last.content);
       }
     }
-  }, [transcripts, onVoiceResponse]);
+  }, [transcripts]);
+
+  // Gestione connessione
+  const handleConnect = useCallback(async () => {
+    if (!hasPermissions) {
+      const granted = await requestPermissions();
+      if (!granted) {
+        Alert.alert(
+          'Permessi Richiesti',
+          "La chat vocale richiede l'accesso al microfono per funzionare.",
+          [{ text: 'OK', style: 'default' }]
+        );
+        return;
+      }
+    }
+    await connect();
+  }, [hasPermissions, requestPermissions, connect]);
 
   // Animazione di entrata del modal
   useEffect(() => {
@@ -270,12 +292,15 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
     }
   }, [visible, slideIn, fadeIn]);
 
-  // Auto-connessione quando il modal si apre
+  // Auto-connessione quando il modal si apre (solo al cambio visible da false → true)
+  const prevVisibleRef = useRef(false);
   useEffect(() => {
-    if (visible && state === 'idle') {
+    const wasVisible = prevVisibleRef.current;
+    prevVisibleRef.current = visible;
+    if (visible && !wasVisible && state === 'idle') {
       handleConnect();
     }
-  }, [visible]);
+  }, [visible, state, handleConnect]);
 
   // Cleanup quando il modal si chiude
   useEffect(() => {
@@ -310,22 +335,6 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
       return () => dotPulse.stop();
     }
   }, [isConnected, liveDotOpacity]);
-
-  // Gestione connessione
-  const handleConnect = async () => {
-    if (!hasPermissions) {
-      const granted = await requestPermissions();
-      if (!granted) {
-        Alert.alert(
-          'Permessi Richiesti',
-          "La chat vocale richiede l'accesso al microfono per funzionare.",
-          [{ text: 'OK', style: 'default' }]
-        );
-        return;
-      }
-    }
-    await connect();
-  };
 
   const handleClose = async () => {
     Animated.parallel([

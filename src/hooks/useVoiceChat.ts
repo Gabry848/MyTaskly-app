@@ -734,13 +734,17 @@ export function useVoiceChat() {
   }, []);
 
   // Cleanup automatico quando il componente viene smontato
+  const cleanupRef = useRef(cleanup);
+  useEffect(() => {
+    cleanupRef.current = cleanup;
+  });
   useEffect(() => {
     isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
-      cleanup();
+      cleanupRef.current();
     };
-  }, [cleanup]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Stati derivati
   const isConnected = ['ready', 'recording', 'processing', 'speaking'].includes(state);
