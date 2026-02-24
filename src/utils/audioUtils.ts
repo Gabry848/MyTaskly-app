@@ -306,6 +306,7 @@ export class AudioPlayer {
   private pendingChunks: number = 0; // Incrementato SINCRONAMENTE prima dell'async
   private onCompleteCallback: (() => void) | null = null;
   private queueEndedListener: any = null;
+  private trackChangedListener: any = null;
   private allChunksReceived: boolean = false;
   // sessionId: cambia ad ogni clearChunks/stopPlayback per invalidare addChunk in volo.
   // Evita che chunk di una sessione precedente decrementino pendingChunks di quella nuova
@@ -507,6 +508,10 @@ export class AudioPlayer {
       this.queueEndedListener.remove();
       this.queueEndedListener = null;
     }
+    if (this.trackChangedListener) {
+      this.trackChangedListener.remove();
+      this.trackChangedListener = null;
+    }
     this._clearWatchdog();
 
     // Se non sta riproducendo (tutti i chunk sono falliti?), completa subito
@@ -536,6 +541,18 @@ export class AudioPlayer {
       }
     );
 
+    // Resetta il timer dello stall ad ogni cambio track nella queue.
+    // Quando TrackPlayer avanza da un chunk WAV al successivo la posizione si azzera
+    // e il player entra brevemente in Buffering: senza questo listener il watchdog
+    // scambia la transizione per uno stall reale e forza il completamento anticipato.
+    this.trackChangedListener = TrackPlayer.addEventListener(
+      Event.PlaybackActiveTrackChanged,
+      () => {
+        this.lastWatchdogPosition = -1;
+        this.lastWatchdogProgressAt = Date.now();
+      }
+    );
+
     // Watchdog: se PlaybackQueueEnded non scatta, polling ogni WATCHDOG_INTERVAL_MS.
     // Su Android con file WAV multipli in sequenza rapida l'evento può mancare.
     this._startWatchdog();
@@ -562,6 +579,13 @@ export class AudioPlayer {
           return;
         }
 
+        // Buffering = TrackPlayer sta caricando il chunk successivo della queue:
+        // non è uno stall, resetta il timer di stall.
+        if (state.state === State.Buffering) {
+          this.lastWatchdogProgressAt = Date.now();
+          return;
+        }
+
         // Controlla se la posizione di riproduzione sta avanzando.
         // Se rimane identica per WATCHDOG_STALL_MS consecutivi → vero blocco.
         const progress = await TrackPlayer.getProgress();
@@ -569,6 +593,11 @@ export class AudioPlayer {
 
         if (currentPos > this.lastWatchdogPosition + 0.05) {
           // Posizione avanzata: aggiorna il riferimento
+          this.lastWatchdogPosition = currentPos;
+          this.lastWatchdogProgressAt = Date.now();
+        } else if (currentPos < this.lastWatchdogPosition - 0.02) {
+          // Posizione resettata (cambio track nella queue): non è uno stall,
+          // è TrackPlayer che passa al chunk successivo. Reimposta il riferimento.
           this.lastWatchdogPosition = currentPos;
           this.lastWatchdogProgressAt = Date.now();
         } else {
@@ -605,6 +634,10 @@ export class AudioPlayer {
     if (this.queueEndedListener) {
       this.queueEndedListener.remove();
       this.queueEndedListener = null;
+    }
+    if (this.trackChangedListener) {
+      this.trackChangedListener.remove();
+      this.trackChangedListener = null;
     }
     this._clearWatchdog();
 
@@ -662,6 +695,10 @@ export class AudioPlayer {
     if (this.queueEndedListener) {
       this.queueEndedListener.remove();
       this.queueEndedListener = null;
+    }
+    if (this.trackChangedListener) {
+      this.trackChangedListener.remove();
+      this.trackChangedListener = null;
     }
     this._clearWatchdog();
 

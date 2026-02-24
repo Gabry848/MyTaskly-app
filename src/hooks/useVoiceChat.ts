@@ -254,14 +254,12 @@ export function useVoiceChat() {
               setIsMuted(false);
               isMutedRef.current = false;
 
-              // Chiudi il gate: il mic si accende ma non invia audio finché
-              // il server non manda speech_started (VAD rileva voce vera)
               isAudioGatedRef.current = true;
 
-              // Riavvia registrazione dopo un breve delay
               setTimeout(() => {
                 if (audioRecorderRef.current && websocketRef.current?.isReady()) {
                   startRecording();
+                  setTimeout(() => { isAudioGatedRef.current = false; }, 400);
                 }
               }, 100);
             }
@@ -292,14 +290,19 @@ export function useVoiceChat() {
                   setIsMuted(false);
                   isMutedRef.current = false;
 
-                  // Chiudi il gate: il mic si accende ma non invia audio finché
-                  // il server non manda speech_started (VAD rileva voce vera)
+                  // Chiudi il gate brevemente: nei primi 400ms dopo la fine della risposta
+                  // non inviamo audio per evitare il loop "interrupted".
+                  // Dopo 400ms apriamo il gate automaticamente: il server è pronto ad
+                  // ascoltare e speech_started potrebbe non arrivare mai se non inviamo audio.
                   isAudioGatedRef.current = true;
 
                   // Riavvia registrazione dopo un breve delay
                   setTimeout(() => {
                     if (audioRecorderRef.current && websocketRef.current?.isReady()) {
                       startRecording();
+                      // Apri il gate: 400ms di buffer sono sufficienti ad evitare
+                      // il loop interrupted senza creare un deadlock.
+                      setTimeout(() => { isAudioGatedRef.current = false; }, 400);
                     }
                   }, 100);
                 }
@@ -320,13 +323,12 @@ export function useVoiceChat() {
               setIsMuted(false);
               isMutedRef.current = false;
 
-              // Chiudi il gate
               isAudioGatedRef.current = true;
 
-              // Riavvia registrazione dopo un breve delay
               setTimeout(() => {
                 if (audioRecorderRef.current && websocketRef.current?.isReady()) {
                   startRecording();
+                  setTimeout(() => { isAudioGatedRef.current = false; }, 400);
                 }
               }, 100);
             }
@@ -368,15 +370,15 @@ export function useVoiceChat() {
             setIsMuted(false);
             isMutedRef.current = false;
 
-            // Chiudi il gate: il mic si riaccende ma non invia audio finché
-            // il server non manda speech_started. Questo previene il loop
-            // "interrupted → mic invia silenzio → altro interrupted".
+            // Chiudi il gate: il mic si riaccende ma non invia audio per 400ms.
+            // Questo previene il loop "interrupted → mic invia silenzio → altro interrupted".
+            // Dopo 400ms dal riavvio del mic il gate si apre automaticamente.
             isAudioGatedRef.current = true;
 
-            // Riavvia registrazione dopo un breve delay
             setTimeout(() => {
               if (audioRecorderRef.current && websocketRef.current?.isReady()) {
                 startRecording();
+                setTimeout(() => { isAudioGatedRef.current = false; }, 400);
               }
             }, 400);
           }
