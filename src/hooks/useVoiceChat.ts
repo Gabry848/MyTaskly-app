@@ -74,6 +74,12 @@ export function useVoiceChat() {
   const isStartingRecordingRef = useRef<boolean>(false); // Previene avvii concorrenti di registrazione
   const isReceivingAudioRef = useRef<boolean>(false); // true quando stiamo ricevendo chunk audio dal server
   const isMountedRef = useRef<boolean>(true); // Guard per evitare setState dopo unmount
+  // Quando true il mic è acceso ma i frame NON vengono inviati al server.
+  // Viene usato subito dopo la fine di una risposta: il mic resta pronto localmente
+  // ma non invia nulla finché il server non segnala che è pronto ad ascoltare
+  // (speech_started o nuovo agent_start). Evita il loop interrupted causato da
+  // audio/silenzio inviato nella finestra tra audio_end e il prossimo turno.
+  const isAudioGatedRef = useRef<boolean>(false);
 
   /**
    * Verifica e richiede i permessi audio
@@ -167,8 +173,10 @@ export function useVoiceChat() {
 
       switch (phase) {
         case 'speech_started':
-          // Utente ha iniziato a parlare (VAD di OpenAI)
-          console.log('[useVoiceChat] 🎤 SPEECH_STARTED: Utente sta parlando');
+          // Utente ha iniziato a parlare (VAD di OpenAI): apri il gate audio.
+          // Da questo momento i frame vengono inviati al server.
+          console.log('[useVoiceChat] SPEECH_STARTED: Utente sta parlando - apro gate audio');
+          isAudioGatedRef.current = false;
           setState('recording');
           break;
 
@@ -203,6 +211,8 @@ export function useVoiceChat() {
           console.log('[useVoiceChat] Agent iniziato - assicuro auto-mute');
           setState('processing');
           agentEndedRef.current = false; // Agent sta elaborando
+          // Gate: mentre l'agent elabora il mic è fisicamente fermo (stopRecording sotto),
+          // quindi il gate non è rilevante qui. Viene chiuso al riavvio del mic dopo agent_end.
 
           // Auto-mute (safety check): assicuriamoci che il microfono sia fermato
           if (audioRecorderRef.current?.isCurrentlyRecording()) {
@@ -244,6 +254,10 @@ export function useVoiceChat() {
               setIsMuted(false);
               isMutedRef.current = false;
 
+              // Chiudi il gate: il mic si accende ma non invia audio finché
+              // il server non manda speech_started (VAD rileva voce vera)
+              isAudioGatedRef.current = true;
+
               // Riavvia registrazione dopo un breve delay
               setTimeout(() => {
                 if (audioRecorderRef.current && websocketRef.current?.isReady()) {
@@ -278,6 +292,10 @@ export function useVoiceChat() {
                   setIsMuted(false);
                   isMutedRef.current = false;
 
+                  // Chiudi il gate: il mic si accende ma non invia audio finché
+                  // il server non manda speech_started (VAD rileva voce vera)
+                  isAudioGatedRef.current = true;
+
                   // Riavvia registrazione dopo un breve delay
                   setTimeout(() => {
                     if (audioRecorderRef.current && websocketRef.current?.isReady()) {
@@ -302,6 +320,9 @@ export function useVoiceChat() {
               setIsMuted(false);
               isMutedRef.current = false;
 
+              // Chiudi il gate
+              isAudioGatedRef.current = true;
+
               // Riavvia registrazione dopo un breve delay
               setTimeout(() => {
                 if (audioRecorderRef.current && websocketRef.current?.isReady()) {
@@ -317,6 +338,25 @@ export function useVoiceChat() {
           console.log('[useVoiceChat] Risposta interrotta, auto-unmute');
           agentEndedRef.current = true; // Reset
           isReceivingAudioRef.current = false; // Reset
+
+          // IMPORTANTE: ferma PRIMA il microfono (con await) per evitare che il server
+          // riceva audio tra interrupted e il prossimo agent_start.
+          // Il await è critico: senza di esso il mic non è ancora fermo quando il
+          // setTimeout da 400ms scatta, causando un riavvio quasi immediato.
+          if (audioRecorderRef.current?.isCurrentlyRecording()) {
+            try {
+              await audioRecorderRef.current.stopRecording();
+            } catch (err) {
+              console.error('[useVoiceChat] Errore fermando registrazione su interrupted:', err);
+            }
+            if (recordingIntervalRef.current) {
+              clearInterval(recordingIntervalRef.current);
+              recordingIntervalRef.current = null;
+            }
+            setRecordingDuration(0);
+          }
+          isStartingRecordingRef.current = false; // Reset mutex per permettere riavvio
+
           if (audioPlayerRef.current) {
             await audioPlayerRef.current.stopPlayback();
             audioPlayerRef.current.clearChunks();
@@ -328,12 +368,17 @@ export function useVoiceChat() {
             setIsMuted(false);
             isMutedRef.current = false;
 
+            // Chiudi il gate: il mic si riaccende ma non invia audio finché
+            // il server non manda speech_started. Questo previene il loop
+            // "interrupted → mic invia silenzio → altro interrupted".
+            isAudioGatedRef.current = true;
+
             // Riavvia registrazione dopo un breve delay
             setTimeout(() => {
               if (audioRecorderRef.current && websocketRef.current?.isReady()) {
                 startRecording();
               }
-            }, 100);
+            }, 400);
           }
           break;
       }
@@ -433,6 +478,7 @@ export function useVoiceChat() {
     agentEndedRef.current = true; // Reset per nuova sessione
     isManuallyMutedRef.current = false; // Reset mute manuale
     isReceivingAudioRef.current = false; // Reset audio reception
+    isAudioGatedRef.current = false; // Gate aperto all'inizio della sessione
 
     try {
       const connected = await websocketRef.current!.connect();
@@ -480,9 +526,12 @@ export function useVoiceChat() {
     isStartingRecordingRef.current = true;
 
     try {
-      // Callback invocato per ogni chunk audio PCM16 a 24kHz
-      // Converte base64 in ArrayBuffer e lo invia come binary frame
+      // Callback invocato per ogni chunk audio PCM16 a 24kHz.
+      // Se isAudioGatedRef è true, i frame vengono scartati localmente senza inviarli
+      // al server. Il gate si chiude subito dopo la fine di una risposta e si apre
+      // quando il server è pronto ad ascoltare (speech_started o nuovo agent_start).
       const onChunk = (base64Chunk: string) => {
+        if (isAudioGatedRef.current) return; // gate chiuso: scarta silenziosamente
         try {
           const arrayBuffer = base64ToArrayBuffer(base64Chunk);
           websocketRef.current?.sendAudio(arrayBuffer);

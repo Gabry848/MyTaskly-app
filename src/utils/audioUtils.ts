@@ -151,6 +151,12 @@ export function wrapPcm16InWav(pcm16Data: Uint8Array, sampleRate: number = 24000
  * Classe per gestire la registrazione audio con @picovoice/react-native-voice-processor.
  * Fornisce streaming di chunks PCM16 base64 a 24kHz direttamente.
  */
+// Numero di frame da scartare all'avvio del microfono.
+// VoiceProcessor produce un transient (click/rumore) nei primi frame dopo start().
+// A 24kHz con FRAME_LENGTH=1024, ogni frame dura ~43ms → 10 frame ≈ 430ms di warm-up.
+// Questo evita che il VAD di OpenAI interpreti il rumore di avvio come voce.
+const MIC_WARMUP_FRAMES = 10;
+
 export class AudioRecorder {
   private isRecording: boolean = false;
   private recordingStartTime: number = 0;
@@ -158,6 +164,7 @@ export class AudioRecorder {
   private frameListener: ((frame: number[]) => void) | null = null;
   private errorListener: ((error: any) => void) | null = null;
   private voiceProcessor: VoiceProcessor = VoiceProcessor.instance;
+  private warmupFramesRemaining: number = 0; // Frame da scartare dopo start()
 
   /**
    * Avvia la registrazione audio con streaming frames.
@@ -168,6 +175,7 @@ export class AudioRecorder {
   ): Promise<boolean> {
     try {
       this.onChunkCallback = onChunk || null;
+      this.warmupFramesRemaining = MIC_WARMUP_FRAMES; // Reset warm-up ad ogni avvio
 
       // Verifica permessi microfono
       if (!(await this.voiceProcessor.hasRecordAudioPermission())) {
@@ -178,6 +186,16 @@ export class AudioRecorder {
       // Listener per i frames audio: number[] di campioni Int16 @ 24kHz
       this.frameListener = (frame: number[]) => {
         if (!this.isRecording) return;
+
+        // Scarta i primi frame per eliminare il transient di avvio del microfono.
+        // Questi frame contengono spesso click/rumore che triggerano il VAD del server.
+        if (this.warmupFramesRemaining > 0) {
+          this.warmupFramesRemaining--;
+          if (this.warmupFramesRemaining === 0) {
+            console.log('[AudioRecorder] Warm-up completato, invio audio al server');
+          }
+          return;
+        }
 
         try {
           // Converti campioni Int16 in bytes PCM16 little-endian
@@ -289,6 +307,18 @@ export class AudioPlayer {
   private onCompleteCallback: (() => void) | null = null;
   private queueEndedListener: any = null;
   private allChunksReceived: boolean = false;
+  // sessionId: cambia ad ogni clearChunks/stopPlayback per invalidare addChunk in volo.
+  // Evita che chunk di una sessione precedente decrementino pendingChunks di quella nuova
+  // e corrompano lo stato (pendingChunks < 0).
+  private sessionId: number = 0;
+  // Polling fallback: se PlaybackQueueEnded non scatta, lo triggeriamo controllando
+  // se la posizione di riproduzione non avanza (vero blocco) vs audio ancora in corso.
+  private playbackWatchdog: NodeJS.Timeout | null = null;
+  private static readonly WATCHDOG_INTERVAL_MS = 500;
+  // Se la posizione TrackPlayer non cambia per N ms consecutivi → vero blocco
+  private static readonly WATCHDOG_STALL_MS = 2000;
+  private lastWatchdogPosition: number = -1;
+  private lastWatchdogProgressAt: number = 0;
 
   /**
    * Inizializza TrackPlayer se non ancora configurato.
@@ -351,14 +381,22 @@ export class AudioPlayer {
    * Se è il primo chunk, avvia la riproduzione immediatamente.
    */
   async addChunk(base64Data: string, chunkIndex?: number): Promise<boolean> {
+    // Cattura il sessionId corrente SINCRONAMENTE prima di qualsiasi await.
+    // Se nel frattempo stopPlayback/clearChunks viene chiamato (sessionId cambia),
+    // questo chunk viene scartato senza decrementare i contatori della nuova sessione.
+    const mySession = this.sessionId;
+
     // Incrementa il contatore SINCRONAMENTE prima di qualsiasi operazione async.
-    // Questo garantisce che getChunksCount() e hasPendingChunks() riflettano
-    // immediatamente la presenza di chunk in arrivo, evitando race conditions
-    // con agent_end/audio_end che controllano se c'è audio da riprodurre.
     this.pendingChunks++;
 
     try {
       await this.setup();
+
+      // Sessione invalidata durante il setup: scarta silenziosamente
+      if (this.sessionId !== mySession) {
+        // Non decrementare: clearChunks/stopPlayback ha già azzerato pendingChunks
+        return false;
+      }
 
       const binary = decodeBase64(base64Data);
       if (binary.length === 0) {
@@ -375,6 +413,13 @@ export class AudioPlayer {
       await FileSystem.writeAsStringAsync(tempPath, wavBase64, {
         encoding: FileSystem.EncodingType.Base64,
       });
+
+      // Sessione invalidata durante la scrittura su file: scarta
+      if (this.sessionId !== mySession) {
+        FileSystem.deleteAsync(tempPath, { idempotent: true }).catch(() => {});
+        return false;
+      }
+
       this.tempFiles.push(tempPath);
 
       // Aggiungi alla queue di TrackPlayer
@@ -384,6 +429,11 @@ export class AudioPlayer {
         title: 'Risposta vocale',
         artist: 'MyTaskly',
       });
+
+      // Sessione invalidata durante TrackPlayer.add: scarta
+      if (this.sessionId !== mySession) {
+        return false;
+      }
 
       this.chunkCounter++;
       this.pendingChunks--;
@@ -397,8 +447,6 @@ export class AudioPlayer {
 
       // Se tutti i chunk sono stati segnalati (audio_end ricevuto) e non ci sono
       // altri chunk in attesa, ora possiamo configurare il listener di completamento.
-      // Questo gestisce il caso in cui audio_end arriva mentre i chunk sono ancora
-      // in fase di scrittura su file.
       if (this.allChunksReceived && this.pendingChunks === 0 && !this.queueEndedListener) {
         console.log(`TrackPlayer: Ultimo chunk pending processato, configuro listener completamento (${this.chunkCounter} chunk totali)`);
         this.setupQueueEndedListener();
@@ -406,14 +454,12 @@ export class AudioPlayer {
 
       return true;
     } catch (error) {
-      this.pendingChunks--;
-
-      // Anche in caso di errore, se era l'ultimo pending e allChunksReceived,
-      // dobbiamo configurare il completamento
-      if (this.allChunksReceived && this.pendingChunks === 0 && !this.queueEndedListener) {
-        this.setupQueueEndedListener();
+      if (this.sessionId === mySession) {
+        this.pendingChunks--;
+        if (this.allChunksReceived && this.pendingChunks === 0 && !this.queueEndedListener) {
+          this.setupQueueEndedListener();
+        }
       }
-
       console.error('TrackPlayer: Errore aggiunta chunk:', error);
       return false;
     }
@@ -452,13 +498,16 @@ export class AudioPlayer {
   /**
    * Configura il listener per la fine della riproduzione della queue.
    * Controlla prima se la riproduzione è già terminata.
+   * Include un watchdog polling che sblocca il sistema se PlaybackQueueEnded
+   * non scatta entro WATCHDOG_MAX_SILENT_MS dall'ultimo chunk aggiunto.
    */
   private async setupQueueEndedListener(): Promise<void> {
-    // Safety: rimuovi listener precedente se presente
+    // Safety: rimuovi listener e watchdog precedenti se presenti
     if (this.queueEndedListener) {
       this.queueEndedListener.remove();
       this.queueEndedListener = null;
     }
+    this._clearWatchdog();
 
     // Se non sta riproducendo (tutti i chunk sono falliti?), completa subito
     if (!this.isPlaying) {
@@ -482,20 +531,82 @@ export class AudioPlayer {
       Event.PlaybackQueueEnded,
       () => {
         console.log('TrackPlayer: Queue terminata');
+        this._clearWatchdog();
         this.handlePlaybackComplete();
       }
     );
+
+    // Watchdog: se PlaybackQueueEnded non scatta, polling ogni WATCHDOG_INTERVAL_MS.
+    // Su Android con file WAV multipli in sequenza rapida l'evento può mancare.
+    this._startWatchdog();
+  }
+
+  private _startWatchdog(): void {
+    // Inizializza il riferimento di posizione: qualsiasi avanzamento sarà registrato
+    this.lastWatchdogPosition = -1;
+    this.lastWatchdogProgressAt = Date.now();
+
+    this.playbackWatchdog = setInterval(async () => {
+      // Se la callback è già stata invocata (handlePlaybackComplete ha azzerato isPlaying),
+      // il watchdog si auto-annulla.
+      if (!this.isPlaying) {
+        this._clearWatchdog();
+        return;
+      }
+      try {
+        const state = await TrackPlayer.getPlaybackState();
+        if (state.state === State.Ended || state.state === State.Stopped || state.state === State.None) {
+          console.log(`TrackPlayer: Watchdog rilevato fine riproduzione (state=${state.state})`);
+          this._clearWatchdog();
+          this.handlePlaybackComplete();
+          return;
+        }
+
+        // Controlla se la posizione di riproduzione sta avanzando.
+        // Se rimane identica per WATCHDOG_STALL_MS consecutivi → vero blocco.
+        const progress = await TrackPlayer.getProgress();
+        const currentPos = progress.position;
+
+        if (currentPos > this.lastWatchdogPosition + 0.05) {
+          // Posizione avanzata: aggiorna il riferimento
+          this.lastWatchdogPosition = currentPos;
+          this.lastWatchdogProgressAt = Date.now();
+        } else {
+          // Posizione ferma: controlla da quanto tempo
+          const stalledMs = Date.now() - this.lastWatchdogProgressAt;
+          if (stalledMs > AudioPlayer.WATCHDOG_STALL_MS) {
+            console.warn(`TrackPlayer: Watchdog stall (${stalledMs}ms a pos=${currentPos.toFixed(2)}s), forzo completamento`);
+            this._clearWatchdog();
+            this.handlePlaybackComplete();
+          }
+        }
+      } catch {
+        // Ignora errori del watchdog
+      }
+    }, AudioPlayer.WATCHDOG_INTERVAL_MS);
+  }
+
+  private _clearWatchdog(): void {
+    if (this.playbackWatchdog) {
+      clearInterval(this.playbackWatchdog);
+      this.playbackWatchdog = null;
+    }
   }
 
   /**
-   * Gestisce la fine della riproduzione: cleanup e callback
+   * Gestisce la fine della riproduzione: cleanup e callback.
+   * Guard con isPlaying per prevenire doppie invocazioni (watchdog + evento).
    */
   private async handlePlaybackComplete(): Promise<void> {
-    // Rimuovi il listener
+    // Guard: evita doppie invocazioni (watchdog + PlaybackQueueEnded simultanei)
+    if (!this.isPlaying) return;
+
+    // Rimuovi listener e watchdog
     if (this.queueEndedListener) {
       this.queueEndedListener.remove();
       this.queueEndedListener = null;
     }
+    this._clearWatchdog();
 
     this.isPlaying = false;
     console.log('TrackPlayer: Riproduzione completata');
@@ -533,19 +644,26 @@ export class AudioPlayer {
   }
 
   /**
-   * Svuota lo stato interno (senza fermare la riproduzione)
+   * Svuota lo stato interno (senza fermare la riproduzione).
+   * Incrementa sessionId per invalidare tutti gli addChunk in volo.
    */
   clearChunks(): void {
+    this.sessionId++;
     this.allChunksReceived = false;
     this.chunkCounter = 0;
     this.pendingChunks = 0;
   }
 
   async stopPlayback(): Promise<void> {
+    // Incrementa sessionId: tutti gli addChunk in volo per la sessione precedente
+    // vedranno sessionId !== mySession e si scarteranno senza toccare i contatori.
+    this.sessionId++;
+
     if (this.queueEndedListener) {
       this.queueEndedListener.remove();
       this.queueEndedListener = null;
     }
+    this._clearWatchdog();
 
     try {
       await TrackPlayer.reset();
