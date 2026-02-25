@@ -52,16 +52,6 @@ export default function GoogleCalendar() {
     }
   }, [error]);
 
-  const renderSyncStats = () => {
-    if (!syncStatus || !syncStatus.google_calendar_connected) return null;
-    return (
-      <Text style={styles.statsText}>
-        {`Task sincronizzati: ${syncStatus.synced_tasks ?? 0}/${syncStatus.total_tasks ?? 0}`}
-        {syncStatus.sync_percentage != null ? ` (${syncStatus.sync_percentage.toFixed(1)}%)` : ''}
-      </Text>
-    );
-  };
-
   const renderConnectedView = () => (
     <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
       {/* Status section */}
@@ -71,7 +61,6 @@ export default function GoogleCalendar() {
         <Text style={styles.statusDescription}>
           Il tuo account Google Calendar è collegato con successo.
         </Text>
-        {renderSyncStats()}
       </View>
 
       {/* Sincronizzazione manuale */}

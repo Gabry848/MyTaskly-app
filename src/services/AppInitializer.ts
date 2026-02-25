@@ -66,28 +66,23 @@ class AppInitializer {
         const hasCachedData = await cacheService.hasCachedData();
 
         if (!hasCachedData) {
-          console.log('[APP_INIT] Nessun dato in cache, caricamento immediato...');
           // Avvia caricamento sincrono senza aspettare per non bloccare l'inizializzazione
           this.dataLoadPromise = this.loadDataSynchronously();
           this.dataLoadPromise.catch(error =>
             console.error('[APP_INIT] Errore caricamento dati:', error)
           );
         } else {
-          console.log('[APP_INIT] Dati in cache presenti, verifica aggiornamento...');
           // I dati sono già disponibili dalla cache
           this.isDataLoaded = true;
 
           // Verifica se la cache è obsoleta
           const isCacheStale = await cacheService.isCacheStale();
           if (isCacheStale) {
-            console.log('[APP_INIT] Cache obsoleta, aggiornamento sincrono in background');
             // Avvia sync sincrono per aggiornare i dati
             this.dataLoadPromise = this.loadDataSynchronously();
             this.dataLoadPromise.catch(error =>
               console.error('[APP_INIT] Errore aggiornamento dati:', error)
             );
-          } else {
-            console.log('[APP_INIT] Cache ancora valida, dati già disponibili');
           }
         }
 
@@ -116,8 +111,6 @@ class AppInitializer {
 
   private async loadUserData(): Promise<void> {
     try {
-      console.log('[APP_INIT] Caricamento dati utente...');
-
       // Controlla e aggiorna l'autenticazione
       const authStatus = await checkAndRefreshAuth();
 
@@ -140,7 +133,6 @@ class AppInitializer {
             if (serverUserInfo.username) {
               // Aggiorna USER_NAME con il valore dal server (più affidabile)
               await AsyncStorage.setItem(STORAGE_KEYS.USER_NAME, serverUserInfo.username);
-              console.log(`[APP_INIT] ✅ USER_NAME sincronizzato dal server: ${serverUserInfo.username}`);
 
               // Aggiorna anche i dati utente locali con le info dal server
               const existingUserData = await AsyncStorage.getItem(STORAGE_KEYS.USER_DATA);
@@ -152,7 +144,6 @@ class AppInitializer {
                 registration_date: serverUserInfo.registration_date || userDataToUpdate.registration_date
               };
               await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(updatedUserData));
-              console.log('[APP_INIT] ✅ Dati utente aggiornati con info dal server');
             }
           } else {
             // Fallback ai dati locali se non c'è token valido
@@ -163,8 +154,6 @@ class AppInitializer {
           // Fallback ai dati locali in caso di errore server
           await this.loadUserDataFromStorage();
         }
-      } else {
-        console.log('[APP_INIT] ℹ️ Utente non autenticato, skip caricamento dati utente');
       }
 
     } catch (error) {
@@ -182,7 +171,6 @@ class AppInitializer {
       // Assicurati che USER_NAME sia settato
       if (userDataParsed.username) {
         await AsyncStorage.setItem(STORAGE_KEYS.USER_NAME, userDataParsed.username);
-        console.log(`[APP_INIT] ✅ USER_NAME settato da storage locale: ${userDataParsed.username}`);
       } else {
         // Se non abbiamo username nei dati utente, prova a recuperarlo direttamente
         const storedUsername = await AsyncStorage.getItem(STORAGE_KEYS.USER_NAME);

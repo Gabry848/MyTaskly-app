@@ -206,14 +206,12 @@ export class VoiceBotWebSocket {
             const response = JSON.parse(event.data);
             this.handleResponse(response);
           } catch (error) {
-            console.error('Errore parsing risposta WebSocket:', error);
             this.callbacks.onError?.('Errore nel formato della risposta del server');
           }
         };
 
         this.ws.onerror = (error) => {
           clearTimeout(connectionTimeout);
-          console.error('Errore WebSocket vocale:', error);
           this.authState = WebSocketAuthState.FAILED;
           this.clearAuthTimeout();
           trackVoiceChatError('WebSocket connection error');
@@ -234,7 +232,6 @@ export class VoiceBotWebSocket {
         };
       });
     } catch (error) {
-      console.error('Errore connessione WebSocket vocale:', error);
       this.authState = WebSocketAuthState.FAILED;
       this.callbacks.onError?.('Impossibile connettersi al servizio vocale');
       return false;
@@ -275,7 +272,6 @@ export class VoiceBotWebSocket {
    */
   private handleResponse(response: VoiceServerMessage): void {
     if (!this.validateResponse(response)) {
-      console.warn('Messaggio WebSocket non valido ricevuto:', response);
       return;
     }
 
@@ -293,6 +289,7 @@ export class VoiceBotWebSocket {
         break;
 
       case 'tool_call':
+        console.log(`[VoiceBotWebSocket] Tool chiamato: ${(response as VoiceToolCallResponse).tool_name}`);
         this.callbacks.onToolCall?.(
           (response as VoiceToolCallResponse).tool_name,
           (response as VoiceToolCallResponse).tool_args
@@ -300,6 +297,7 @@ export class VoiceBotWebSocket {
         break;
 
       case 'tool_output':
+        console.log(`[VoiceBotWebSocket] Tool completato: ${(response as VoiceToolOutputResponse).tool_name}`);
         this.callbacks.onToolOutput?.(
           (response as VoiceToolOutputResponse).tool_name,
           (response as VoiceToolOutputResponse).output
@@ -323,8 +321,6 @@ export class VoiceBotWebSocket {
     const phase = response.phase;
     const message = response.message || '';
 
-    console.log(`[VoiceBotWebSocket] handleStatusResponse: phase=${phase}, message=${message}`);
-
     switch (phase) {
       case 'authenticated':
         console.log('Autenticazione WebSocket riuscita:', message);
@@ -335,11 +331,20 @@ export class VoiceBotWebSocket {
         break;
 
       case 'ready':
-        console.log('Sessione vocale pronta');
         this.authState = WebSocketAuthState.READY;
         this.clearAuthTimeout();
         this.processQueuedMessages();
         this.callbacks.onReady?.();
+        this.callbacks.onStatus?.(phase, message);
+        break;
+
+      case 'agent_start':
+        console.log('[VoiceBotWebSocket] Inizio risposta chatbot');
+        this.callbacks.onStatus?.(phase, message);
+        break;
+
+      case 'agent_end':
+        console.log('[VoiceBotWebSocket] Fine risposta chatbot');
         this.callbacks.onStatus?.(phase, message);
         break;
 
@@ -349,8 +354,6 @@ export class VoiceBotWebSocket {
         this.callbacks.onStatus?.(phase, message);
         break;
 
-      case 'agent_start':
-      case 'agent_end':
       case 'audio_end':
       case 'interrupted':
         // Fasi informative del ciclo agente — nessuna azione richiesta lato client
@@ -480,7 +483,6 @@ export class VoiceBotWebSocket {
 
     // Verifica lunghezza messaggi
     if (response.message && typeof response.message === 'string' && response.message.length > 5000) {
-      console.warn('Messaggio troppo lungo ricevuto dal server');
       return false;
     }
 

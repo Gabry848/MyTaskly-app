@@ -330,7 +330,6 @@ export async function getAllTasks(useCache: boolean = true) {
           const categoryIdentifier = category.category_id || category.id || category.name;
           console.log(`[getAllTasks] Recuperando task per categoria: "${category.name}" (ID: ${categoryIdentifier})`);
           const categoryTasks = await getTasks(categoryIdentifier, false); // Non usare cache per singole categorie
-          console.log(`[getAllTasks] Task ricevuti per "${category.name}":`, categoryTasks);
 
           if (Array.isArray(categoryTasks)) {
             // Correggi i task che hanno category_name/category_id undefined o mancante
