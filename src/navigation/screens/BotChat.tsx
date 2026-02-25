@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { View, KeyboardAvoidingView, Platform, SafeAreaView, Alert, Keyboard, Dimensions } from 'react-native';
 import { sendMessageToBot, createNewChat, formatMessage, clearChatHistory } from '../../services/textBotService';
 import { getChatWithMessages, ChatMessage } from '../../services/chatHistoryService';
@@ -18,6 +18,9 @@ const BotChat: React.FC = () => {
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   
+  // Ref per prevenire invii multipli mentre uno è in corso
+  const isSendingRef = useRef(false);
+
   // Costanti
   const USER = 'user';
   const BOT = 'bot';
@@ -227,6 +230,10 @@ const BotChat: React.FC = () => {
 
   // Handler per inviare messaggi con streaming + widgets
   const handleSendMessage = useCallback(async (text: string) => {
+    // Previeni invii multipli mentre uno è in corso
+    if (isSendingRef.current) return;
+    isSendingRef.current = true;
+
     // 1. Creiamo il messaggio dell'utente
     const userMessage: Message = {
       id: Math.random().toString(),
@@ -346,6 +353,9 @@ const BotChat: React.FC = () => {
             : msg
         )
       );
+    } finally {
+      // Permetti di inviare un nuovo messaggio solo dopo che il bot ha risposto
+      isSendingRef.current = false;
     }
   }, [modelType, messages, currentChatId]);
 

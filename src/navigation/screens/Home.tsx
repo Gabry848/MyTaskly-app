@@ -250,18 +250,7 @@ const HomeScreen = () => {
     const trimmedMessage = rawMessage.trim();
     if (!trimmedMessage || isLoading) return;
 
-    // Se non c'è un chat_id corrente, crea una nuova sessione
-    let chatIdToUse = currentChatId;
-    if (!chatIdToUse) {
-      try {
-        chatIdToUse = await createNewChat();
-        setCurrentChatId(chatIdToUse);
-        console.log('✅ Nuova chat creata automaticamente con ID:', chatIdToUse);
-      } catch (error) {
-        console.error('❌ Errore durante la creazione automatica della chat:', error);
-        // Continua senza chat_id (modalità offline)
-      }
-    }
+    // --- UI immediata: avviene PRIMA di qualsiasi chiamata di rete ---
 
     const userMessage: Message = {
       id: generateMessageId(),
@@ -275,21 +264,21 @@ const HomeScreen = () => {
       startChatAnimation();
     }
 
-    // Aggiungi il messaggio dell'utente
+    // Aggiungi subito il messaggio dell'utente nella lista
     setMessages((prev) => {
       const next = [...prev, userMessage];
       console.log('[HOME] Added user message. Count:', next.length);
       return next;
     });
 
-    // Resetta l'input immediatamente per una migliore UX
+    // Resetta l'input immediatamente
     setMessage("");
     setIsLoading(true);
 
     // Chiudi la tastiera dopo l'invio
     Keyboard.dismiss();
 
-    // Crea il messaggio del bot in streaming
+    // Crea il messaggio del bot in streaming e aggiungilo subito
     const botMessageId = generateMessageId();
     const initialBotMessage: Message = {
       id: botMessageId,
@@ -301,13 +290,28 @@ const HomeScreen = () => {
       isComplete: false,
     };
 
-    // Aggiungi il messaggio del bot vuoto per iniziare lo streaming
     setMessages((prev) => {
       const next = [...prev, initialBotMessage];
       console.log('[HOME] Added initial bot message (streaming). Count:', next.length, 'botMessageId:', botMessageId);
       return next;
     });
     setIsLoading(false);
+
+    // --- Risolvi il chat_id in background (non blocca la UI) ---
+    // Il server gestisce la creazione della chat automaticamente e restituisce
+    // il chat_id nel primo evento SSE via chatInfo, quindi non è necessario
+    // aspettare createNewChat() prima di inviare il messaggio.
+    const chatIdToUse = currentChatId || undefined;
+    if (!currentChatId) {
+      // Avvia la creazione in background per futuri messaggi, ma non aspettarla
+      createNewChat().then((newId) => {
+        setCurrentChatId(newId);
+        console.log('✅ Nuova chat creata automaticamente con ID:', newId);
+      }).catch((error) => {
+        console.error('❌ Errore durante la creazione automatica della chat:', error);
+        // Il server crea comunque la chat e la restituisce via chatInfo
+      });
+    }
 
     try {
       // Callback per gestire lo streaming

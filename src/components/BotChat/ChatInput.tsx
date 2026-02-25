@@ -34,10 +34,13 @@ const ChatInput: React.FC<ExtendedChatInputProps> = ({
   const deviceType = getDeviceType();
 
   const handleSend = useCallback(() => {
-    if (inputText.trim() === '') return;
-    onSendMessage(inputText);
+    const trimmed = inputText.trim();
+    if (trimmed === '') return;
+    // Svuota subito l'input e resetta l'altezza prima ancora della chiamata,
+    // così il messaggio compare immediatamente senza aspettare la risposta del bot
     setInputText('');
-    setInputHeight(44); // Reset dell'altezza dopo l'invio
+    setInputHeight(44);
+    onSendMessage(trimmed);
     // Necessario per mantenere il focus dopo l'invio
     setTimeout(() => {
       inputRef.current?.focus();
@@ -120,6 +123,7 @@ const ChatInput: React.FC<ExtendedChatInputProps> = ({
             style={[styles.sendButton, { height: inputHeight }]}
             onPress={handleSend}
             disabled={inputText.trim() === '' || isRecording}
+            activeOpacity={0.6}
           >
             <MaterialIcons
               name="send"
