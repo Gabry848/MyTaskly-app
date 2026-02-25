@@ -238,7 +238,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style, isVoiceCh
 
       if (hasMarkdown) {
         return (
-          <View>
+          <View style={styles.markdownContainer}>
             <Markdown style={markdownStyles}>
               {textContent}
             </Markdown>
@@ -586,6 +586,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 2,
+    // Impedisce al contenuto di fuoriuscire dalla bubble
+    overflow: 'hidden',
+    flexShrink: 1,
   },
   userBubble: {
     backgroundColor: '#000000', // Nero elegante per coerenza con Home20
@@ -607,6 +610,12 @@ const styles = StyleSheet.create({
   },
   botText: {
     color: '#1a1a1a', // Colore più intenso per il testo del bot
+  },
+  markdownContainer: {
+    // Forza il Markdown a occupare tutta la larghezza disponibile della bubble
+    // e impedisce al contenuto di uscire dai bordi
+    width: '100%',
+    flexShrink: 1,
   },
   messageTime: {
     fontSize: 11,
@@ -675,6 +684,9 @@ const markdownStyles = {
     fontFamily: 'System',
     fontWeight: '400' as const,
     color: '#1a1a1a',
+    // Necessario per far sì che il testo vada a capo correttamente nella bubble
+    flexShrink: 1,
+    width: '100%' as const,
   },
   heading1: {
     fontSize: 20,
