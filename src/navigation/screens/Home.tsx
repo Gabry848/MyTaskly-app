@@ -28,6 +28,7 @@ import { TaskCacheService } from '../../services/TaskCacheService';
 import SyncManager from '../../services/SyncManager';
 import Badge from "../../components/UI/Badge";
 import VoiceChatModal from "../../components/BotChat/VoiceChatModal";
+import VoiceCalendarModal from "../../components/BotChat/VoiceCalendarModal";
 import { useTranslation } from 'react-i18next';
 import { ChatHistory } from "../../components/BotChat/ChatHistory";
 import { useTutorialContext } from "../../contexts/TutorialContext";
@@ -42,6 +43,7 @@ const HomeScreen = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [isVoiceChatVisible, setIsVoiceChatVisible] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [isVoiceCalendarVisible, setIsVoiceCalendarVisible] = useState(false);
   const [suggestedCommandUsed, setSuggestedCommandUsed] = useState(false);
   const [screenHeight, setScreenHeight] = useState(Dimensions.get('window').height);
   const [isInputFocused, setIsInputFocused] = useState(false);
@@ -931,7 +933,12 @@ const HomeScreen = () => {
       <VoiceChatModal
         visible={isVoiceChatVisible}
         onClose={handleVoiceChatClose}
+        onOpenCalendar={() => setIsVoiceCalendarVisible(true)}
         isRecording={isRecording}
+      />
+      <VoiceCalendarModal
+        visible={isVoiceCalendarVisible}
+        onClose={() => setIsVoiceCalendarVisible(false)}
       />
       </SafeAreaView>
     </GestureHandlerRootView>

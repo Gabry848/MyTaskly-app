@@ -20,6 +20,7 @@ import { useVoiceChat, ActiveTool } from '../../hooks/useVoiceChat';
 export interface VoiceChatModalProps {
   visible: boolean;
   onClose: () => void;
+  onOpenCalendar: () => void;
   isRecording?: boolean;
 }
 
@@ -221,6 +222,7 @@ const AnimatedBlob: React.FC<AnimatedBlobProps> = ({ state, isProcessing, isSpea
 const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
   visible,
   onClose,
+  onOpenCalendar,
 }) => {
   const {
     state,
@@ -464,6 +466,17 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
 
         {/* Bottom Control Bar */}
         <View style={styles.controlBar}>
+          {/* Bottone calendario */}
+          <TouchableOpacity
+            style={styles.calendarButton}
+            onPress={() => onOpenCalendar()}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Apri calendario"
+          >
+            <Ionicons name="calendar-outline" size={22} color="#1C1C1E" />
+          </TouchableOpacity>
+
           <TouchableOpacity
             style={[
               styles.micButton,
@@ -483,6 +496,9 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
               color={isMuted ? "#666666" : "#FFFFFF"}
             />
           </TouchableOpacity>
+
+          {/* Spacer simmetrico */}
+          <View style={styles.calendarButtonSpacer} />
         </View>
       </Animated.View>
     </Modal>
@@ -683,10 +699,24 @@ const styles = StyleSheet.create({
 
   // Control bar
   controlBar: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 48,
     paddingVertical: 28,
     paddingBottom: 52,
+  },
+  calendarButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#F2F2F7",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  calendarButtonSpacer: {
+    width: 48,
+    height: 48,
   },
   micButton: {
     width: 72,

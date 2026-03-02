@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import VoiceChatModal from './VoiceChatModal';
+import VoiceCalendarModal from './VoiceCalendarModal';
 
 /**
  * Componente di esempio per testare il VoiceChatModal
@@ -9,6 +10,7 @@ import VoiceChatModal from './VoiceChatModal';
  */
 export const VoiceChatExample: React.FC = () => {
   const [modalVisible, setModalVisible] = useState(false);
+  const [calendarVisible, setCalendarVisible] = useState(false);
 
   const handleOpenVoiceChat = () => {
     setModalVisible(true);
@@ -91,6 +93,11 @@ export const VoiceChatExample: React.FC = () => {
       <VoiceChatModal
         visible={modalVisible}
         onClose={handleCloseVoiceChat}
+        onOpenCalendar={() => setCalendarVisible(true)}
+      />
+      <VoiceCalendarModal
+        visible={calendarVisible}
+        onClose={() => setCalendarVisible(false)}
       />
     </SafeAreaView>
   );
