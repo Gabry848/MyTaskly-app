@@ -721,9 +721,11 @@ export function useVoiceChat() {
       }
     }
 
-    // Poi chiudi il WebSocket
+    // Poi chiudi il WebSocket e resetta il ref così al prossimo connect()
+    // viene sempre creata una nuova istanza con callback aggiornate
     if (websocketRef.current) {
       websocketRef.current.disconnect();
+      websocketRef.current = null;
     }
 
     setState('idle');
@@ -735,6 +737,11 @@ export function useVoiceChat() {
     setIsMuted(false); // Reset mute state
     isMutedRef.current = false;
     isManuallyMutedRef.current = false; // Reset mute manuale
+    isStartingRecordingRef.current = false; // Reset mutex registrazione
+    isReceivingAudioRef.current = false;    // Reset ricezione audio
+    isAudioGatedRef.current = false;        // Reset gate audio
+    shouldAutoStartRecordingRef.current = false;
+    agentEndedRef.current = true;
   }, []);
 
   /**
