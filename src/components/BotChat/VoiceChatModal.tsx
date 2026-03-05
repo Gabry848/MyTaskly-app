@@ -249,6 +249,25 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
   const stateTextOpacity = useRef(new Animated.Value(1)).current;
   const prevStateRef = useRef(state);
 
+  // Storico errori — persiste anche quando state cambia
+  const [errorLog, setErrorLog] = useState<string[]>([]);
+  const prevErrorRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (error && error !== prevErrorRef.current) {
+      prevErrorRef.current = error;
+      setErrorLog(prev => [...prev, error]);
+      console.log('[VoiceChatModal] Errore ricevuto:', error);
+    }
+  }, [error]);
+
+  // Reset log quando il modal si chiude
+  useEffect(() => {
+    if (!visible) {
+      setErrorLog([]);
+      prevErrorRef.current = null;
+    }
+  }, [visible]);
+
   // Gestione connessione
   const handleConnect = useCallback(async () => {
     if (!hasPermissions) {
@@ -287,9 +306,12 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
     }
   }, [visible, state, handleConnect]);
 
-  // Cleanup quando il modal si chiude
+  // Cleanup quando il modal si chiude (solo dopo la prima apertura, non al mount iniziale)
+  const hasEverOpenedRef = useRef(false);
   useEffect(() => {
-    if (!visible) {
+    if (visible) {
+      hasEverOpenedRef.current = true;
+    } else if (hasEverOpenedRef.current) {
       disconnect();
     }
   }, [visible, disconnect]);
@@ -458,9 +480,15 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
             </Animated.View>
           )}
 
-          {/* Errore */}
-          {state === 'error' && error && (
-            <Text style={styles.errorText}>{error}</Text>
+          {/* Log errori — sempre visibile quando presenti */}
+          {errorLog.length > 0 && (
+            <View style={styles.errorLog}>
+              {errorLog.map((msg, i) => (
+                <Text key={i} style={styles.errorLogText}>
+                  {'\u25CF'} {msg}
+                </Text>
+              ))}
+            </View>
           )}
         </View>
 
@@ -695,6 +723,21 @@ const styles = StyleSheet.create({
     color: "#FF453A",
     textAlign: "center",
     paddingHorizontal: 24,
+  },
+  errorLog: {
+    marginTop: 12,
+    width: "100%",
+    backgroundColor: "rgba(255, 69, 58, 0.07)",
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    gap: 4,
+  },
+  errorLogText: {
+    fontSize: 12,
+    color: "#FF453A",
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
+    lineHeight: 18,
   },
 
   // Control bar

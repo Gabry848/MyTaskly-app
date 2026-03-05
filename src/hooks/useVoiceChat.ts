@@ -106,9 +106,32 @@ export function useVoiceChat() {
   }, []);
 
   /**
-   * Callback per gestire i messaggi WebSocket
+   * Ref stabile per le callback WebSocket.
+   * Viene aggiornato ad ogni render in modo che VoiceBotWebSocket usi sempre
+   * le callback correnti, anche dopo chiusura e riapertura del modal.
+   * Questo risolve il problema "schermata statica ai numeri pari" causato da
+   * closure stale catturate in initialize() al primo render.
    */
-  const websocketCallbacks: VoiceChatCallbacks = {
+  const websocketCallbacksRef = useRef<VoiceChatCallbacks>({});
+
+  // Proxy stabile passato al costruttore VoiceBotWebSocket: delega sempre al ref corrente
+  const stableCallbacks = useRef<VoiceChatCallbacks>({
+    onConnectionOpen:       (...args) => websocketCallbacksRef.current.onConnectionOpen?.(...args),
+    onAuthenticationSuccess:(...args) => websocketCallbacksRef.current.onAuthenticationSuccess?.(...args),
+    onReady:                (...args) => websocketCallbacksRef.current.onReady?.(...args),
+    onAuthenticationFailed: (...args) => websocketCallbacksRef.current.onAuthenticationFailed?.(...args),
+    onConnectionClose:      (...args) => websocketCallbacksRef.current.onConnectionClose?.(...args),
+    onStatus:               (...args) => websocketCallbacksRef.current.onStatus?.(...args),
+    onAudioChunk:           (...args) => websocketCallbacksRef.current.onAudioChunk?.(...args),
+    onTranscript:           (...args) => websocketCallbacksRef.current.onTranscript?.(...args),
+    onToolCall:             (...args) => websocketCallbacksRef.current.onToolCall?.(...args),
+    onToolOutput:           (...args) => websocketCallbacksRef.current.onToolOutput?.(...args),
+    onDone:                 (...args) => websocketCallbacksRef.current.onDone?.(...args),
+    onError:                (...args) => websocketCallbacksRef.current.onError?.(...args),
+  }).current;
+
+  // Aggiorna il ref ad ogni render con le callback che chiudono su stato/ref correnti
+  websocketCallbacksRef.current = {
     onConnectionOpen: () => {
       if (!isMountedRef.current) return;
       setState('authenticating');
@@ -253,19 +276,26 @@ export function useVoiceChat() {
               isMutedRef.current = false;
 
               // Controlla se l'agente ha prodotto audio (risposta legittima) o era vuoto (ciclo spurio).
-              // I cicli spurii si verificano quando il server elabora audio residuo/rumore di avvio
-              // del microfono invece di vero parlato dell'utente (es. dopo chiamate MCP).
+              // Un ciclo agente senza audio indica una fase di pianificazione tool call:
+              // il modello ha deciso cosa fare ma non ha ancora parlato. Riavviare il mic
+              // in questo momento crea una finestra (~374ms) in cui il mic invia audio
+              // mentre il tool è in esecuzione → VAD trigge → risposta del secondo
+              // ciclo interrotta prima ancora di partire.
+              // Fix: al primo ciclo senza audio non riavviare il mic; il secondo ciclo
+              // (con audio) gestirà correttamente il riavvio.
               if (!agentHadAudioRef.current) {
                 consecutiveEmptyAgentsRef.current++;
               } else {
                 consecutiveEmptyAgentsRef.current = 0;
               }
 
-              // Se troppi cicli agente-vuoti consecutivi, non riavviare automaticamente.
-              // L'utente dovrà parlare manualmente (mic è già in stato 'ready').
-              if (consecutiveEmptyAgentsRef.current >= 3) {
+              // Non riavviare il mic se questo ciclo agente non ha prodotto audio.
+              // Copre sia i cicli di pianificazione tool (1 ciclo vuoto) sia eventuali
+              // cicli spurii multipli consecutivi.
+              if (consecutiveEmptyAgentsRef.current >= 1) {
                 consecutiveEmptyAgentsRef.current = 0;
-                // Non riavviare il mic: l'utente deve parlare esplicitamente
+                // Non riavviare il mic: l'agente sta ancora elaborando (tool call in corso).
+                // Il ciclo successivo con audio gestirà il riavvio.
                 break;
               }
 
@@ -456,7 +486,7 @@ export function useVoiceChat() {
 
       audioRecorderRef.current = new AudioRecorder();
       audioPlayerRef.current = new AudioPlayer();
-      websocketRef.current = new VoiceBotWebSocket(websocketCallbacks);
+      websocketRef.current = new VoiceBotWebSocket(stableCallbacks);
 
       // Pre-inizializza TrackPlayer per evitare ritardi al primo chunk audio.
       // Questo elimina la race condition dove audio_end/agent_end arrivano

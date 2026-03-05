@@ -16,6 +16,7 @@ export interface TutorialContextType {
   startTutorial: () => void;
   closeTutorial: () => void;
   skipTutorial: () => void;
+  triggerPostLoginTutorial: () => Promise<void>;
 }
 
 const TutorialContext = createContext<TutorialContextType | undefined>(
@@ -27,22 +28,18 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [isTutorialVisible, setIsTutorialVisible] = useState(false);
 
-  // Check if tutorial should auto-start on first launch
-  React.useEffect(() => {
-    const checkTutorialStatus = async () => {
-      try {
-        const status = await AsyncStorage.getItem(TUTORIAL_STORAGE_KEY);
-        const hasCompleted = status === "true" || status === "skipped";
+  // Mostra il tutorial solo dopo il login, se non è già stato completato
+  const triggerPostLoginTutorial = useCallback(async () => {
+    try {
+      const status = await AsyncStorage.getItem(TUTORIAL_STORAGE_KEY);
+      const hasCompleted = status === "true" || status === "skipped";
 
-        if (!hasCompleted) {
-          setIsTutorialVisible(true);
-        }
-      } catch (error) {
-        console.error("[TUTORIAL] Error checking tutorial status:", error);
+      if (!hasCompleted) {
+        setIsTutorialVisible(true);
       }
-    };
-
-    checkTutorialStatus();
+    } catch (error) {
+      console.error("[TUTORIAL] Error checking tutorial status:", error);
+    }
   }, []);
 
   const startTutorial = useCallback(() => {
@@ -77,6 +74,7 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({
         startTutorial,
         closeTutorial,
         skipTutorial,
+        triggerPostLoginTutorial,
       }}
     >
       {children}
@@ -98,6 +96,8 @@ export const useTutorialContext = () => {
         console.warn("[TUTORIAL] closeTutorial called but context not available"),
       skipTutorial: () =>
         console.warn("[TUTORIAL] skipTutorial called but context not available"),
+      triggerPostLoginTutorial: async () =>
+        console.warn("[TUTORIAL] triggerPostLoginTutorial called but context not available"),
     };
   }
   return context;

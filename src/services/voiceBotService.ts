@@ -149,6 +149,12 @@ const MAX_AUDIO_CHUNK_BYTES = 2_500_000; // Safety limit per validazione
  * - Non serve inviare messaggi di commit o interrupt (gestiti automaticamente)
  * - Il microfono resta sempre attivo, anche durante le risposte dell'assistente
  */
+// ── Debug helper ─────────────────────────────────────────────────────────────
+const _vLog = (msg: string) => {
+  const ts = new Date().toISOString().slice(11, 23); // HH:mm:ss.mmm
+  console.log(`[VoiceBot ${ts}] ${msg}`);
+};
+
 export class VoiceBotWebSocket {
   private ws: WebSocket | null = null;
   private callbacks: VoiceChatCallbacks;
@@ -159,9 +165,16 @@ export class VoiceBotWebSocket {
   private authState: WebSocketAuthState = WebSocketAuthState.DISCONNECTED;
   private messageQueue: VoiceClientMessage[] = [];
   private authTimeout: NodeJS.Timeout | null = null;
+  private reconnectTimer: NodeJS.Timeout | null = null;
   private readonly AUTH_TIMEOUT_MS = 15000; // 15s timeout (setup MCP + RealtimeAgent)
   // ── Analytics ──
   private firstAudioChunkReceived: boolean = false;
+  // ── Debug timing ──
+  private _dbgAgentStartTs: number = 0;
+  private _dbgAgentEndTs: number = 0;
+  private _dbgToolStartTs: Record<string, number> = {};
+  private _dbgAudioChunkCount: number = 0;
+  private _dbgAudioTotalBytes: number = 0; // approx from base64
 
   constructor(callbacks: VoiceChatCallbacks) {
     this.callbacks = callbacks;
@@ -195,6 +208,10 @@ export class VoiceBotWebSocket {
           clearTimeout(connectionTimeout);
           this.reconnectAttempts = 0;
           this.firstAudioChunkReceived = false;
+          this._dbgAudioChunkCount = 0;
+          this._dbgAudioTotalBytes = 0;
+          this._dbgToolStartTs = {};
+          _vLog('WS aperto — avvio autenticazione');
           this.startAuthentication(token);
           this.callbacks.onConnectionOpen?.();
           trackVoiceChatStarted();
@@ -214,6 +231,7 @@ export class VoiceBotWebSocket {
           clearTimeout(connectionTimeout);
           this.authState = WebSocketAuthState.FAILED;
           this.clearAuthTimeout();
+          _vLog(`WS errore — authState=${this.authState}`);
           trackVoiceChatError('WebSocket connection error');
           this.callbacks.onError?.('Errore di connessione WebSocket');
           reject(new Error('Errore di connessione WebSocket'));
@@ -224,6 +242,7 @@ export class VoiceBotWebSocket {
           this.authState = WebSocketAuthState.DISCONNECTED;
           this.clearAuthTimeout();
           this.messageQueue = [];
+          _vLog(`WS chiuso — code=${event.code} reason="${event.reason}" reconnectAttempts=${this.reconnectAttempts}`);
           this.callbacks.onConnectionClose?.();
 
           if (this.reconnectAttempts < this.maxReconnectAttempts && event.code !== 1000) {
@@ -288,21 +307,25 @@ export class VoiceBotWebSocket {
         this.handleTranscriptResponse(response as VoiceTranscriptResponse);
         break;
 
-      case 'tool_call':
-        console.log(`[VoiceBotWebSocket] Tool chiamato: ${(response as VoiceToolCallResponse).tool_name}`);
-        this.callbacks.onToolCall?.(
-          (response as VoiceToolCallResponse).tool_name,
-          (response as VoiceToolCallResponse).tool_args
-        );
+      case 'tool_call': {
+        const tcName = (response as VoiceToolCallResponse).tool_name;
+        this._dbgToolStartTs[tcName] = Date.now();
+        _vLog(`TOOL_CALL tool="${tcName}" args=${JSON.stringify((response as VoiceToolCallResponse).tool_args).slice(0, 120)}`);
+        this.callbacks.onToolCall?.(tcName, (response as VoiceToolCallResponse).tool_args);
         break;
+      }
 
-      case 'tool_output':
-        console.log(`[VoiceBotWebSocket] Tool completato: ${(response as VoiceToolOutputResponse).tool_name}`);
-        this.callbacks.onToolOutput?.(
-          (response as VoiceToolOutputResponse).tool_name,
-          (response as VoiceToolOutputResponse).output
-        );
+      case 'tool_output': {
+        const toName = (response as VoiceToolOutputResponse).tool_name;
+        const toolDuration = this._dbgToolStartTs[toName]
+          ? `${Date.now() - this._dbgToolStartTs[toName]}ms`
+          : 'N/A';
+        const outputPreview = String((response as VoiceToolOutputResponse).output ?? '').slice(0, 120);
+        _vLog(`TOOL_OUTPUT tool="${toName}" durata=${toolDuration} output="${outputPreview}"`);
+        delete this._dbgToolStartTs[toName];
+        this.callbacks.onToolOutput?.(toName, (response as VoiceToolOutputResponse).output);
         break;
+      }
 
       case 'error':
         this.handleErrorResponse(response as VoiceErrorResponse);
@@ -323,7 +346,7 @@ export class VoiceBotWebSocket {
 
     switch (phase) {
       case 'authenticated':
-        console.log('Autenticazione WebSocket riuscita:', message);
+        _vLog(`STATUS authenticated — "${message}"`);
         this.authState = WebSocketAuthState.AUTHENTICATED;
         this.callbacks.onAuthenticationSuccess?.(message);
         this.callbacks.onStatus?.(phase, message);
@@ -331,6 +354,7 @@ export class VoiceBotWebSocket {
         break;
 
       case 'ready':
+        _vLog(`STATUS ready — sessione pronta`);
         this.authState = WebSocketAuthState.READY;
         this.clearAuthTimeout();
         this.processQueuedMessages();
@@ -338,24 +362,60 @@ export class VoiceBotWebSocket {
         this.callbacks.onStatus?.(phase, message);
         break;
 
-      case 'agent_start':
-        console.log('[VoiceBotWebSocket] Inizio risposta chatbot');
-        this.callbacks.onStatus?.(phase, message);
-        break;
-
-      case 'agent_end':
-        console.log('[VoiceBotWebSocket] Fine risposta chatbot');
-        this.callbacks.onStatus?.(phase, message);
-        break;
-
       case 'speech_started':
-      case 'speech_stopped':
+        _vLog('STATUS speech_started — utente sta parlando');
         markVoiceSpeechStopped();
         this.callbacks.onStatus?.(phase, message);
         break;
 
-      case 'audio_end':
+      case 'speech_stopped':
+        _vLog('STATUS speech_stopped — utente ha smesso di parlare');
+        markVoiceSpeechStopped();
+        this.callbacks.onStatus?.(phase, message);
+        break;
+
+      case 'agent_start': {
+        this._dbgAgentStartTs = Date.now();
+        this._dbgAgentEndTs = 0; // reset per misurare correttamente il prossimo ciclo
+        this._dbgAudioChunkCount = 0;
+        this._dbgAudioTotalBytes = 0;
+        this.firstAudioChunkReceived = false; // reset per tracciare il primo chunk del nuovo ciclo
+        _vLog('STATUS agent_start — inizio elaborazione');
+        this.callbacks.onStatus?.(phase, message);
+        break;
+      }
+
+      case 'agent_end': {
+        this._dbgAgentEndTs = Date.now();
+        const agentDuration = this._dbgAgentStartTs
+          ? `${this._dbgAgentEndTs - this._dbgAgentStartTs}ms`
+          : 'N/A';
+        _vLog(
+          `STATUS agent_end — durata=${agentDuration} ` +
+          `audioChunksRicevutiFinora=${this._dbgAudioChunkCount}`
+        );
+        this.callbacks.onStatus?.(phase, message);
+        break;
+      }
+
+      case 'audio_end': {
+        const sinceAgentEnd = this._dbgAgentEndTs
+          ? `${Date.now() - this._dbgAgentEndTs}ms dopo agent_end`
+          : 'N/A';
+        _vLog(
+          `STATUS audio_end — totalChunks=${this._dbgAudioChunkCount} ` +
+          `approxBytes=${this._dbgAudioTotalBytes} (${sinceAgentEnd})`
+        );
+        // Fasi informative del ciclo agente — nessuna azione richiesta lato client
+        this.callbacks.onStatus?.(phase, message);
+        break;
+      }
+
       case 'interrupted':
+        _vLog(
+          `STATUS interrupted — audioChunksFino=${this._dbgAudioChunkCount} ` +
+          `sinceAgentStart=${this._dbgAgentStartTs ? Date.now() - this._dbgAgentStartTs + 'ms' : 'N/A'}`
+        );
         // Fasi informative del ciclo agente — nessuna azione richiesta lato client
         this.callbacks.onStatus?.(phase, message);
         break;
@@ -363,7 +423,7 @@ export class VoiceBotWebSocket {
       default:
         // Fase non gestita: logga solo in sviluppo per evitare rumore in produzione
         if (__DEV__) {
-          console.log('[VoiceBotWebSocket] Fase non gestita:', phase);
+          _vLog(`STATUS non gestito: phase="${phase}"`);
         }
     }
   }
@@ -375,9 +435,20 @@ export class VoiceBotWebSocket {
     if (this.authState === WebSocketAuthState.DISCONNECTED) return;
 
     if (response.data) {
+      const approxBytes = Math.floor(response.data.length * 0.75);
+      this._dbgAudioChunkCount++;
+      this._dbgAudioTotalBytes += approxBytes;
+
       // ── Analytics: registra latenza al primo chunk audio ──
       if (!this.firstAudioChunkReceived) {
         this.firstAudioChunkReceived = true;
+        const sinceAgentEnd = this._dbgAgentEndTs
+          ? `${Date.now() - this._dbgAgentEndTs}ms dopo agent_end`
+          : 'agent_end non ancora ricevuto';
+        _vLog(
+          `AUDIO primo chunk ricevuto — chunk_index=${response.chunk_index} ` +
+          `approxBytes=${approxBytes} (${sinceAgentEnd})`
+        );
         trackVoiceResponseTime();
       }
       this.callbacks.onAudioChunk?.(response.data, response.chunk_index);
@@ -517,15 +588,25 @@ export class VoiceBotWebSocket {
   private attemptReconnect(): void {
     this.reconnectAttempts++;
     const delay = this.reconnectDelay * this.reconnectAttempts;
+    _vLog(`RECONNECT tentativo #${this.reconnectAttempts} tra ${delay}ms`);
     trackVoiceChatReconnect(this.reconnectAttempts);
 
-    setTimeout(() => {
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null;
       this.connect();
     }, delay);
   }
 
+  private clearReconnectTimer(): void {
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+  }
+
   disconnect(): void {
     this.clearAuthTimeout();
+    this.clearReconnectTimer();
     this.messageQueue = [];
     this.authState = WebSocketAuthState.DISCONNECTED;
     trackVoiceChatEnded();

@@ -55,6 +55,7 @@ import { useTranslation } from 'react-i18next';
 
 // Definizione del tipo per le route dello Stack principale
 export type RootStackParamList = {
+  WelcomeCarousel: undefined;
   Login: undefined;
   Register: undefined;
   EmailVerification: { email: string; username: string; password: string };
@@ -238,6 +239,7 @@ function AppStack() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [hasSeenWelcome, setHasSeenWelcome] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(true); // Controlla lo stato di autenticazione all'avvio
+  const { triggerPostLoginTutorial } = useTutorialContext();
 
   // 🔔 Inizializza il sistema di notifiche quando l'utente è autenticato
   const { notification } = useNotifications();
@@ -336,6 +338,7 @@ function AppStack() {
   useEffect(() => {
     const handleLoginSuccess = () => {
       setIsAuthenticated(true);
+      triggerPostLoginTutorial();
     };
 
     const handleLogoutSuccess = () => {
