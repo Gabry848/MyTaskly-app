@@ -60,6 +60,7 @@ export interface VoiceAudioResponse {
 export interface VoiceTranscriptResponse {
   type: 'transcript';
   role: 'user' | 'assistant';
+  item_id?: string;
   content: string;
 }
 
@@ -111,7 +112,7 @@ export enum WebSocketAuthState {
 export interface VoiceChatCallbacks {
   onStatus?: (phase: VoiceServerPhase, message: string) => void | Promise<void>;
   onAudioChunk?: (audioData: string, chunkIndex: number) => void;
-  onTranscript?: (role: 'user' | 'assistant', content: string) => void;
+  onTranscript?: (role: 'user' | 'assistant', content: string, itemId?: string) => void;
   onToolCall?: (toolName: string, args: string) => void;
   onToolOutput?: (toolName: string, output: string) => void;
   onError?: (error: string) => void;
@@ -459,7 +460,7 @@ export class VoiceBotWebSocket {
    * Gestisce risposta di trascrizione
    */
   private handleTranscriptResponse(response: VoiceTranscriptResponse): void {
-    this.callbacks.onTranscript?.(response.role, response.content);
+    this.callbacks.onTranscript?.(response.role, response.content, response.item_id);
   }
 
   /**

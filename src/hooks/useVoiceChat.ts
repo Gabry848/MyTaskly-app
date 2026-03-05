@@ -31,6 +31,7 @@ export interface ServerStatus {
 export interface VoiceTranscript {
   role: 'user' | 'assistant';
   content: string;
+  item_id?: string;
 }
 
 /**
@@ -123,7 +124,7 @@ export function useVoiceChat() {
     onConnectionClose:      (...args) => websocketCallbacksRef.current.onConnectionClose?.(...args),
     onStatus:               (...args) => websocketCallbacksRef.current.onStatus?.(...args),
     onAudioChunk:           (...args) => websocketCallbacksRef.current.onAudioChunk?.(...args),
-    onTranscript:           (...args) => websocketCallbacksRef.current.onTranscript?.(...args),
+    onTranscript:           (role, content, itemId) => websocketCallbacksRef.current.onTranscript?.(role, content, itemId),
     onToolCall:             (...args) => websocketCallbacksRef.current.onToolCall?.(...args),
     onToolOutput:           (...args) => websocketCallbacksRef.current.onToolOutput?.(...args),
     onDone:                 (...args) => websocketCallbacksRef.current.onDone?.(...args),
@@ -443,9 +444,20 @@ export function useVoiceChat() {
       }
     },
 
-    onTranscript: (role: 'user' | 'assistant', content: string) => {
+    onTranscript: (role: 'user' | 'assistant', content: string, itemId?: string) => {
       if (!isMountedRef.current) return;
-      setTranscripts(prev => [...prev, { role, content }]);
+      setTranscripts(prev => {
+        if (itemId) {
+          const idx = prev.findLastIndex(t => t.item_id === itemId);
+          if (idx !== -1) {
+            // Aggiorna il transcript esistente con il testo più completo
+            const updated = [...prev];
+            updated[idx] = { role, content, item_id: itemId };
+            return updated;
+          }
+        }
+        return [...prev, { role, content, item_id: itemId }];
+      });
     },
 
     onToolCall: (toolName: string, args: string) => {
