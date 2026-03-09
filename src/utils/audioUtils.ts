@@ -407,10 +407,10 @@ export class AudioPlayer {
         return false;
       }
 
-      // Aggiungi al buffer in memoria (veloce, nessun I/O)
+      // Aggiungi al buffer in memoria (veloce, nessun I/O).
+      // pendingChunks rimane incrementato: verrà decrementato di batchSize
+      // dentro _flushBatch(), dopo che il file è stato aggiunto a TrackPlayer.
       this.chunkBatch.push(binary);
-      // Il chunk è ora nel batch: non è più "pending async"
-      this.pendingChunks--;
 
       // Flush quando il batch è pieno
       if (this.chunkBatch.length >= AudioPlayer.BATCH_SIZE) {
@@ -419,11 +419,11 @@ export class AudioPlayer {
 
       return true;
     } catch (error) {
+      // Errore prima che il chunk raggiungesse il batch (setup o decode falliti):
+      // decrementa manualmente. Se l'errore viene da _flushBatch, questa non rilancia
+      // e gestisce internamente il decremento per l'intero batch.
       if (this.sessionId === mySession) {
         this.pendingChunks = Math.max(0, this.pendingChunks - 1);
-        if (this.allChunksReceived && this.pendingChunks === 0 && this.chunkBatch.length === 0 && !this.queueEndedListener) {
-          this.setupQueueEndedListener();
-        }
       }
       console.error('TrackPlayer: Errore aggiunta chunk:', error);
       return false;
@@ -432,70 +432,90 @@ export class AudioPlayer {
 
   /**
    * Scrive il batch corrente come singolo file WAV e lo aggiunge alla queue.
-   * Concatenare più chunk PCM16 in un file unico elimina i gap tra chunk successivi.
+   * Decrementa pendingChunks di batchSize dopo TrackPlayer.add(), in modo che
+   * hasPendingOrQueuedChunks() sia attendibile fino all'effettivo inserimento in queue.
+   * Non rilancia eccezioni: gestisce internamente errori e decremento contatori.
    */
   private async _flushBatch(sessionId: number): Promise<void> {
     if (this.chunkBatch.length === 0) return;
     if (this.sessionId !== sessionId) {
+      // Sessione invalidata: scarta il batch e azzera i contatori relativi
+      this.pendingChunks = Math.max(0, this.pendingChunks - this.chunkBatch.length);
       this.chunkBatch = [];
       return;
     }
 
     // Preleva e svuota il batch
     const batch = this.chunkBatch;
+    const batchSize = batch.length;
     this.chunkBatch = [];
 
-    // Concatena tutti i chunk PCM16 del batch
-    const totalLength = batch.reduce((sum, b) => sum + b.length, 0);
-    const combined = new Uint8Array(totalLength);
-    let offset = 0;
-    for (const chunk of batch) {
-      combined.set(chunk, offset);
-      offset += chunk.length;
-    }
+    try {
+      // Concatena tutti i chunk PCM16 del batch
+      const totalLength = batch.reduce((sum, b) => sum + b.length, 0);
+      const combined = new Uint8Array(totalLength);
+      let offset = 0;
+      for (const chunk of batch) {
+        combined.set(chunk, offset);
+        offset += chunk.length;
+      }
 
-    // Wrappa l'intero batch in un singolo file WAV
-    const wavData = wrapPcm16InWav(combined, AUDIO_CONFIG.SAMPLE_RATE);
-    const wavBase64 = encodeBase64(wavData);
+      // Wrappa l'intero batch in un singolo file WAV
+      const wavData = wrapPcm16InWav(combined, AUDIO_CONFIG.SAMPLE_RATE);
+      const wavBase64 = encodeBase64(wavData);
 
-    const tempPath = `${FileSystem.cacheDirectory}voice_chunk_${Date.now()}_${this.chunkCounter}.wav`;
-    await FileSystem.writeAsStringAsync(tempPath, wavBase64, {
-      encoding: FileSystem.EncodingType.Base64,
-    });
+      const tempPath = `${FileSystem.cacheDirectory}voice_chunk_${Date.now()}_${this.chunkCounter}.wav`;
+      await FileSystem.writeAsStringAsync(tempPath, wavBase64, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
 
-    if (this.sessionId !== sessionId) {
-      FileSystem.deleteAsync(tempPath, { idempotent: true }).catch(() => {});
-      return;
-    }
+      if (this.sessionId !== sessionId) {
+        FileSystem.deleteAsync(tempPath, { idempotent: true }).catch(() => {});
+        this.pendingChunks = Math.max(0, this.pendingChunks - batchSize);
+        return;
+      }
 
-    this.tempFiles.push(tempPath);
+      this.tempFiles.push(tempPath);
 
-    await TrackPlayer.add({
-      id: `voice_chunk_${this.chunkCounter}`,
-      url: tempPath,
-      title: 'Risposta vocale',
-      artist: 'MyTaskly',
-    });
+      await TrackPlayer.add({
+        id: `voice_chunk_${this.chunkCounter}`,
+        url: tempPath,
+        title: 'Risposta vocale',
+        artist: 'MyTaskly',
+      });
 
-    if (this.sessionId !== sessionId) {
-      return;
-    }
+      if (this.sessionId !== sessionId) {
+        this.pendingChunks = Math.max(0, this.pendingChunks - batchSize);
+        return;
+      }
 
-    this.chunkCounter++;
-    console.log(`TrackPlayer: Batch di ${batch.length} chunk scritto (file #${this.chunkCounter})`);
+      // Chunk ora in TrackPlayer: decrementa pendingChunks di batchSize
+      this.pendingChunks = Math.max(0, this.pendingChunks - batchSize);
+      this.chunkCounter++;
+      console.log(`TrackPlayer: Batch di ${batchSize} chunk scritto (file #${this.chunkCounter})`);
 
-    // Avvia la riproduzione al primo batch
-    if (!this.isPlaying) {
-      this.isPlaying = true;
-      await TrackPlayer.play();
-      console.log('TrackPlayer: Riproduzione streaming avviata');
-    }
+      // Avvia la riproduzione al primo batch
+      if (!this.isPlaying) {
+        this.isPlaying = true;
+        await TrackPlayer.play();
+        console.log('TrackPlayer: Riproduzione streaming avviata');
+      }
 
-    // Se audio_end è già arrivato e non ci sono più pendingChunks né batch in attesa,
-    // configura il listener di completamento.
-    if (this.allChunksReceived && this.pendingChunks === 0 && this.chunkBatch.length === 0 && !this.queueEndedListener) {
-      console.log(`TrackPlayer: Ultimo batch processato, configuro listener completamento (${this.chunkCounter} file totali)`);
-      this.setupQueueEndedListener();
+      // Se audio_end è già arrivato e non ci sono più chunk in attesa né in batch,
+      // configura il listener di completamento.
+      if (this.allChunksReceived && this.pendingChunks === 0 && this.chunkBatch.length === 0 && !this.queueEndedListener) {
+        console.log(`TrackPlayer: Ultimo batch processato, configuro listener completamento (${this.chunkCounter} file totali)`);
+        this.setupQueueEndedListener();
+      }
+    } catch (error) {
+      // Errore I/O o TrackPlayer: decrementa comunque per non bloccare il sistema
+      if (this.sessionId === sessionId) {
+        this.pendingChunks = Math.max(0, this.pendingChunks - batchSize);
+        if (this.allChunksReceived && this.pendingChunks === 0 && this.chunkBatch.length === 0 && !this.queueEndedListener) {
+          this.setupQueueEndedListener();
+        }
+      }
+      console.error('TrackPlayer: Errore flush batch:', error);
     }
   }
 
