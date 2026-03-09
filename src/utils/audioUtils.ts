@@ -320,6 +320,12 @@ export class AudioPlayer {
   private static readonly WATCHDOG_STALL_MS = 2000;
   private lastWatchdogPosition: number = -1;
   private lastWatchdogProgressAt: number = 0;
+  // Batching: accumula N chunk PCM16 in memoria prima di scrivere un singolo file WAV.
+  // Riduce il numero di transizioni nella queue di TrackPlayer (causa principale dei
+  // silenzi/tagli udibili durante la riproduzione con chunk da ~100ms ciascuno).
+  private chunkBatch: Uint8Array[] = [];
+  // Quanti chunk PCM16 accumulare per file WAV. 5 chunk ≈ 500ms di audio per file.
+  private static readonly BATCH_SIZE = 5;
 
   /**
    * Inizializza TrackPlayer se non ancora configurato.
@@ -377,14 +383,12 @@ export class AudioPlayer {
   }
 
   /**
-   * Aggiunge un chunk PCM16 base64 direttamente alla queue di TrackPlayer.
-   * Il chunk viene wrappato in WAV, scritto su file e aggiunto alla queue.
-   * Se è il primo chunk, avvia la riproduzione immediatamente.
+   * Aggiunge un chunk PCM16 base64 al buffer interno.
+   * I chunk vengono accumulati in batch (BATCH_SIZE) e scritti come un unico file WAV,
+   * riducendo le transizioni nella queue di TrackPlayer e i silenzi tra chunk.
    */
   async addChunk(base64Data: string, chunkIndex?: number): Promise<boolean> {
     // Cattura il sessionId corrente SINCRONAMENTE prima di qualsiasi await.
-    // Se nel frattempo stopPlayback/clearChunks viene chiamato (sessionId cambia),
-    // questo chunk viene scartato senza decrementare i contatori della nuova sessione.
     const mySession = this.sessionId;
 
     // Incrementa il contatore SINCRONAMENTE prima di qualsiasi operazione async.
@@ -393,9 +397,7 @@ export class AudioPlayer {
     try {
       await this.setup();
 
-      // Sessione invalidata durante il setup: scarta silenziosamente
       if (this.sessionId !== mySession) {
-        // Non decrementare: clearChunks/stopPlayback ha già azzerato pendingChunks
         return false;
       }
 
@@ -405,59 +407,21 @@ export class AudioPlayer {
         return false;
       }
 
-      // Wrappa in WAV
-      const wavData = wrapPcm16InWav(binary, AUDIO_CONFIG.SAMPLE_RATE);
-      const wavBase64 = encodeBase64(wavData);
-
-      // Scrivi file temporaneo
-      const tempPath = `${FileSystem.cacheDirectory}voice_chunk_${Date.now()}_${this.chunkCounter}.wav`;
-      await FileSystem.writeAsStringAsync(tempPath, wavBase64, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
-
-      // Sessione invalidata durante la scrittura su file: scarta
-      if (this.sessionId !== mySession) {
-        FileSystem.deleteAsync(tempPath, { idempotent: true }).catch(() => {});
-        return false;
-      }
-
-      this.tempFiles.push(tempPath);
-
-      // Aggiungi alla queue di TrackPlayer
-      await TrackPlayer.add({
-        id: `voice_chunk_${this.chunkCounter}`,
-        url: tempPath,
-        title: 'Risposta vocale',
-        artist: 'MyTaskly',
-      });
-
-      // Sessione invalidata durante TrackPlayer.add: scarta
-      if (this.sessionId !== mySession) {
-        return false;
-      }
-
-      this.chunkCounter++;
+      // Aggiungi al buffer in memoria (veloce, nessun I/O)
+      this.chunkBatch.push(binary);
+      // Il chunk è ora nel batch: non è più "pending async"
       this.pendingChunks--;
 
-      // Avvia la riproduzione al primo chunk
-      if (!this.isPlaying) {
-        this.isPlaying = true;
-        await TrackPlayer.play();
-        console.log('TrackPlayer: Riproduzione streaming avviata');
-      }
-
-      // Se tutti i chunk sono stati segnalati (audio_end ricevuto) e non ci sono
-      // altri chunk in attesa, ora possiamo configurare il listener di completamento.
-      if (this.allChunksReceived && this.pendingChunks === 0 && !this.queueEndedListener) {
-        console.log(`TrackPlayer: Ultimo chunk pending processato, configuro listener completamento (${this.chunkCounter} chunk totali)`);
-        this.setupQueueEndedListener();
+      // Flush quando il batch è pieno
+      if (this.chunkBatch.length >= AudioPlayer.BATCH_SIZE) {
+        await this._flushBatch(mySession);
       }
 
       return true;
     } catch (error) {
       if (this.sessionId === mySession) {
-        this.pendingChunks--;
-        if (this.allChunksReceived && this.pendingChunks === 0 && !this.queueEndedListener) {
+        this.pendingChunks = Math.max(0, this.pendingChunks - 1);
+        if (this.allChunksReceived && this.pendingChunks === 0 && this.chunkBatch.length === 0 && !this.queueEndedListener) {
           this.setupQueueEndedListener();
         }
       }
@@ -467,32 +431,103 @@ export class AudioPlayer {
   }
 
   /**
+   * Scrive il batch corrente come singolo file WAV e lo aggiunge alla queue.
+   * Concatenare più chunk PCM16 in un file unico elimina i gap tra chunk successivi.
+   */
+  private async _flushBatch(sessionId: number): Promise<void> {
+    if (this.chunkBatch.length === 0) return;
+    if (this.sessionId !== sessionId) {
+      this.chunkBatch = [];
+      return;
+    }
+
+    // Preleva e svuota il batch
+    const batch = this.chunkBatch;
+    this.chunkBatch = [];
+
+    // Concatena tutti i chunk PCM16 del batch
+    const totalLength = batch.reduce((sum, b) => sum + b.length, 0);
+    const combined = new Uint8Array(totalLength);
+    let offset = 0;
+    for (const chunk of batch) {
+      combined.set(chunk, offset);
+      offset += chunk.length;
+    }
+
+    // Wrappa l'intero batch in un singolo file WAV
+    const wavData = wrapPcm16InWav(combined, AUDIO_CONFIG.SAMPLE_RATE);
+    const wavBase64 = encodeBase64(wavData);
+
+    const tempPath = `${FileSystem.cacheDirectory}voice_chunk_${Date.now()}_${this.chunkCounter}.wav`;
+    await FileSystem.writeAsStringAsync(tempPath, wavBase64, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+
+    if (this.sessionId !== sessionId) {
+      FileSystem.deleteAsync(tempPath, { idempotent: true }).catch(() => {});
+      return;
+    }
+
+    this.tempFiles.push(tempPath);
+
+    await TrackPlayer.add({
+      id: `voice_chunk_${this.chunkCounter}`,
+      url: tempPath,
+      title: 'Risposta vocale',
+      artist: 'MyTaskly',
+    });
+
+    if (this.sessionId !== sessionId) {
+      return;
+    }
+
+    this.chunkCounter++;
+    console.log(`TrackPlayer: Batch di ${batch.length} chunk scritto (file #${this.chunkCounter})`);
+
+    // Avvia la riproduzione al primo batch
+    if (!this.isPlaying) {
+      this.isPlaying = true;
+      await TrackPlayer.play();
+      console.log('TrackPlayer: Riproduzione streaming avviata');
+    }
+
+    // Se audio_end è già arrivato e non ci sono più pendingChunks né batch in attesa,
+    // configura il listener di completamento.
+    if (this.allChunksReceived && this.pendingChunks === 0 && this.chunkBatch.length === 0 && !this.queueEndedListener) {
+      console.log(`TrackPlayer: Ultimo batch processato, configuro listener completamento (${this.chunkCounter} file totali)`);
+      this.setupQueueEndedListener();
+    }
+  }
+
+  /**
    * Segnala che tutti i chunk sono stati ricevuti (audio_end).
-   * Se ci sono chunk ancora in fase di processamento (pendingChunks > 0),
-   * il listener di completamento verrà configurato da addChunk() quando
-   * l'ultimo chunk pending viene processato.
+   * Esegue il flush del batch parziale rimasto in memoria, poi configura il listener
+   * di completamento quando tutti i chunk sono stati aggiunti alla queue.
    */
   async signalAllChunksReceived(onComplete?: () => void): Promise<void> {
     this.allChunksReceived = true;
     this.onCompleteCallback = onComplete || null;
 
-    // Se ci sono chunk ancora in fase di processamento async (scrittura file WAV),
-    // NON configurare il listener ora. addChunk() lo farà dopo aver processato
-    // l'ultimo chunk pending.
+    // Flush del batch parziale residuo (chunksRimasti % BATCH_SIZE)
+    if (this.chunkBatch.length > 0) {
+      await this._flushBatch(this.sessionId);
+    }
+
+    // Se ci sono ancora chunk in elaborazione async, il listener verrà configurato
+    // da _flushBatch quando l'ultimo pending termina.
     if (this.pendingChunks > 0) {
       console.log(`TrackPlayer: ${this.pendingChunks} chunk ancora in elaborazione, listener differito`);
       return;
     }
 
-    // Nessun chunk pending. Se non sta nemmeno riproducendo (nessun chunk mai ricevuto),
-    // completa subito.
+    // Nessun chunk mai ricevuto: completa subito
     if (!this.isPlaying && this.chunkCounter === 0) {
       console.log('TrackPlayer: Nessun chunk ricevuto, completamento immediato');
       this.handlePlaybackComplete();
       return;
     }
 
-    // Tutti i chunk sono stati aggiunti alla queue, configura il listener
+    // Tutti i chunk sono in queue, configura il listener
     this.setupQueueEndedListener();
   }
 
@@ -685,6 +720,7 @@ export class AudioPlayer {
     this.allChunksReceived = false;
     this.chunkCounter = 0;
     this.pendingChunks = 0;
+    this.chunkBatch = [];
   }
 
   async stopPlayback(): Promise<void> {
@@ -713,6 +749,7 @@ export class AudioPlayer {
     this.allChunksReceived = false;
     this.chunkCounter = 0;
     this.pendingChunks = 0;
+    this.chunkBatch = [];
     await this.cleanupTempFiles();
   }
 

@@ -460,6 +460,9 @@ export class VoiceBotWebSocket {
    * Gestisce risposta di trascrizione
    */
   private handleTranscriptResponse(response: VoiceTranscriptResponse): void {
+    const roleLabel = response.role === 'user' ? 'USER' : 'ASSISTANT';
+    const preview = (response.content ?? '').slice(0, 200);
+    _vLog(`TRANSCRIPT [${roleLabel}] "${preview}"`);
     this.callbacks.onTranscript?.(response.role, response.content, response.item_id);
   }
 
