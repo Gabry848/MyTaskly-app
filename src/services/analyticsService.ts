@@ -77,7 +77,7 @@ export type AnalyticsEvent = (typeof ANALYTICS_EVENTS)[keyof typeof ANALYTICS_EV
 // Inizializzazione
 // ─────────────────────────────────────────────────────────────
 
-let initialized = false;
+let initPromise: Promise<void> | null = null;
 
 /**
  * Inizializza Vexo. Deve essere chiamato UNA SOLA VOLTA all'avvio dell'app,
@@ -88,14 +88,10 @@ export function initAnalytics(): void {
     console.log('[ANALYTICS] Dev mode — tracking disabilitato');
     return;
   }
-  if (initialized) return;
-  try {
-    vexo(VEXO_API_KEY);
-    initialized = true;
-    console.log('[ANALYTICS] Vexo inizializzato');
-  } catch (e) {
-    console.warn('[ANALYTICS] Errore inizializzazione Vexo:', e);
-  }
+  if (initPromise) return;
+  initPromise = Promise.resolve(vexo(VEXO_API_KEY))
+    .then(() => { console.log('[ANALYTICS] Vexo inizializzato'); })
+    .catch((e) => { console.warn('[ANALYTICS] Errore inizializzazione Vexo:', e); });
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -107,7 +103,8 @@ export function initAnalytics(): void {
  * Chiamare dopo ogni login riuscito.
  */
 export async function identifyUser(userId: string): Promise<void> {
-  if (IS_DEV) return;
+  if (IS_DEV || !initPromise) return;
+  await initPromise;
   try {
     await identifyDevice(userId);
   } catch (e) {
@@ -116,7 +113,8 @@ export async function identifyUser(userId: string): Promise<void> {
 }
 
 export async function resetUserIdentity(): Promise<void> {
-  if (IS_DEV) return;
+  if (IS_DEV || !initPromise) return;
+  await initPromise;
   try {
     await identifyDevice(null);
   } catch (e) {
@@ -136,11 +134,14 @@ export function trackEvent(
   properties?: Record<string, string | number | boolean>
 ): void {
   if (IS_DEV) return;
-  try {
-    customEvent(event, properties ?? {});
-  } catch (e) {
-    console.warn(`[ANALYTICS] Errore track(${event}):`, e);
-  }
+  if (!initPromise) return;
+  initPromise.then(() => {
+    try {
+      customEvent(event, properties ?? {});
+    } catch (e) {
+      console.warn(`[ANALYTICS] Errore track(${event}):`, e);
+    }
+  });
 }
 
 // ─────────────────────────────────────────────────────────────
