@@ -111,8 +111,13 @@
   },
   "home": {
     "title": "Mytaskly",
-    "greeting": "Ciao {{username}},\ncosa vuoi fare oggi?",
-    "greetingDefault": "Ciao Utente,\ncosa vuoi fare oggi?",
+    "greeting_0": "Ciao {{username}},\ncosa vuoi fare oggi?",
+    "greeting_1": "Ciao {{username}},\nqual è il tuo prossimo impegno?",
+    "greeting_2": "Ciao {{username}},\ncome posso aiutarti oggi?",
+    "greeting_3": "Ciao {{username}},\nda dove vuoi iniziare?",
+    "greeting_4": "Ciao {{username}},\ncosa c'è in programma?",
+    "greeting_5": "Ciao {{username}},\nsu cosa vuoi lavorare?",
+    "greeting_6": "Ciao {{username}},\nhai qualcosa da organizzare?",
     "chat": {
       "placeholder": "Scrivi un messaggio...",
       "botTyping": "Il bot sta scrivendo...",

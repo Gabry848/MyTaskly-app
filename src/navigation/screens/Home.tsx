@@ -9,6 +9,7 @@ import {
   SafeAreaView,
   Animated,
   Keyboard,
+  KeyboardAvoidingView,
   ActivityIndicator,
   Dimensions,
   Platform,
@@ -49,6 +50,7 @@ const HomeScreen = () => {
   const [isInputFocused, setIsInputFocused] = useState(false);
   const [showChatHistory, setShowChatHistory] = useState(false);
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
+  const greetingVariant = useRef(Math.floor(Math.random() * 7)).current;
 
   // Costanti
   const USER = 'user';
@@ -66,6 +68,8 @@ const HomeScreen = () => {
   const micButtonAnim = useRef(new Animated.Value(1)).current;
   const chatHistorySlideIn = useRef(new Animated.Value(0)).current;
   const chatHistoryOpacity = useRef(new Animated.Value(0)).current;
+  const greetingInputRef = useRef<View>(null);
+  const greetingShiftAnim = useRef(new Animated.Value(0)).current;
   // Effetto per recuperare il nome dell'utente e inizializzare cache
   useEffect(() => {
     const initialize = async () => {
@@ -102,7 +106,7 @@ const HomeScreen = () => {
   // Effetto per l'animazione di scrittura del testo di saluto
   useEffect(() => {
     if (userName && !chatStarted) {
-      const greetingText = t('home.greeting', { username: userName });
+      const greetingText = t(`home.greeting_${greetingVariant}`, { username: userName });
       let currentIndex = 0;
       setDisplayedText("");
       setIsTyping(true);
@@ -176,12 +180,27 @@ const HomeScreen = () => {
       "keyboardDidShow",
       (event) => {
         if (chatStarted) {
-          // Sposta l'input sopra la tastiera con margine maggiore
+          // Chat mode: usa direttamente l'altezza della tastiera come offset
+          const keyboardHeight = event.endCoordinates.height;
           Animated.timing(inputBottomPosition, {
-            toValue: event.endCoordinates.height + 10,
+            toValue: Math.max(keyboardHeight, 0),
             duration: 250,
             useNativeDriver: false,
           }).start();
+        } else if (greetingInputRef.current) {
+          // Greeting mode: sposta in alto SOLO se l'input è coperto dalla tastiera
+          greetingInputRef.current.measureInWindow((_x, y, _width, height) => {
+            const inputBottom = y + height + 20; // 20px di margine
+            const keyboardTop = event.endCoordinates.screenY;
+            if (inputBottom > keyboardTop) {
+              const shift = inputBottom - keyboardTop;
+              Animated.timing(greetingShiftAnim, {
+                toValue: -shift,
+                duration: 250,
+                useNativeDriver: true,
+              }).start();
+            }
+          });
         }
       }
     );
@@ -200,6 +219,13 @@ const HomeScreen = () => {
             duration: 250,
             useNativeDriver: false,
           }).start();
+        } else {
+          // Riporta il greeting in posizione normale
+          Animated.timing(greetingShiftAnim, {
+            toValue: 0,
+            duration: 250,
+            useNativeDriver: true,
+          }).start();
         }
       }
     );
@@ -208,7 +234,7 @@ const HomeScreen = () => {
       keyboardDidShowListener?.remove();
       keyboardDidHideListener?.remove();
     };
-  }, [chatStarted, inputBottomPosition]);
+  }, [chatStarted, inputBottomPosition, greetingShiftAnim]);
 
   const startChatAnimation = useCallback(() => {
     setChatStarted(true);
@@ -613,12 +639,6 @@ const HomeScreen = () => {
     }
   };
 
-  // Calcolo dinamico del padding top basato sull'altezza dello schermo
-  const getGreetingPaddingTop = () => {
-    if (screenHeight < 700) return Math.max(screenHeight * 0.15, 80); // Schermi piccoli
-    if (screenHeight < 800) return Math.max(screenHeight * 0.20, 120); // Schermi medi
-    return Math.max(screenHeight * 0.25, 180); // Schermi grandi
-  };
 
   // Gesto swipe da destra a sinistra per aprire la cronologia
   const swipeGesture = Gesture.Pan()
@@ -651,51 +671,45 @@ const HomeScreen = () => {
 
         {/* Header con titolo principale e indicatori sync */}
         <View style={styles.header}>
-        <View style={styles.titleSection}>
-          <Text style={styles.mainTitle}>Mytaskly</Text>
-        </View>
-        <View style={styles.headerActions}>
-          {/* Tutorial Help Button */}
-          <TouchableOpacity
-            style={[styles.resetButton, { marginRight: 8 }]}
-            onPress={handleStartTutorial}
-            activeOpacity={0.7}
-          >
-            <Ionicons
-              name="help-circle-outline"
-              size={24}
-              color="#666666"
-            />
-          </TouchableOpacity>
-
-          {/* Chat History Toggle Button */}
+          <Text style={styles.mainTitle} numberOfLines={1} ellipsizeMode="clip" allowFontScaling={false}>Mytaskly</Text>
+          <View style={styles.headerActions}>
             <TouchableOpacity
-              style={[styles.resetButton, { marginRight: 8 }]}
+              style={styles.resetButton}
+              onPress={handleStartTutorial}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="help-circle-outline" size={22} color="#666666" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.resetButton}
               onPress={handleToggleChatHistory}
               activeOpacity={0.7}
             >
               <Ionicons
                 name={showChatHistory ? "chatbubbles" : "chatbubbles-outline"}
-                size={24}
+                size={22}
                 color={showChatHistory ? "#007AFF" : "#666666"}
               />
             </TouchableOpacity>
-
-          {chatStarted && !showChatHistory && (
-            <TouchableOpacity
-              style={styles.resetButton}
-              onPress={handleResetChat}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="add-outline" size={24} color="#666666" />
-            </TouchableOpacity>
-          )}
-          <Badge />
+            {chatStarted && !showChatHistory && (
+              <TouchableOpacity
+                style={styles.resetButton}
+                onPress={handleResetChat}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="add-outline" size={22} color="#666666" />
+              </TouchableOpacity>
+            )}
+            <Badge />
+          </View>
         </View>
-      </View>
 
       <GestureDetector gesture={swipeGesture}>
-        <View style={styles.mainContent}>
+        <KeyboardAvoidingView
+          style={styles.mainContent}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          enabled={false}
+        >
           {/* Chat History View */}
           {showChatHistory ? (
           <Animated.View
@@ -728,15 +742,15 @@ const HomeScreen = () => {
         ) : (
           <>
             {/* Contenuto principale */}
-            <View style={chatStarted ? styles.contentChatStarted : [styles.content, { paddingTop: getGreetingPaddingTop() }]}>
+            <View style={chatStarted ? styles.contentChatStarted : styles.content}>
               {/* Saluto personalizzato - nascosto quando la chat inizia */}
               {!chatStarted && (
-            <View style={styles.greetingSection}>
+            <Animated.View style={[styles.greetingSection, { transform: [{ translateY: greetingShiftAnim }] }]}>
               <View style={styles.greetingTextContainer}>
-                <Text style={styles.greetingText}>
+                <Text style={styles.greetingText} allowFontScaling={false}>
                   {displayedText}
                   {isTyping && (
-                    <Animated.Text style={[styles.cursorText, { opacity: cursorOpacity }]}>
+                    <Animated.Text style={[styles.cursorText, { opacity: cursorOpacity }]} allowFontScaling={false}>
                       |
                     </Animated.Text>
                   )}
@@ -746,7 +760,7 @@ const HomeScreen = () => {
               {/* Input area - sotto il saluto quando la chat non è iniziata */}
               <View style={styles.inputSectionUnderGreeting}>
                 <View style={styles.animatedInputWrapper}>
-                  <View style={styles.inputContainer}>
+                  <View ref={greetingInputRef} style={styles.inputContainer}>
                       <Animated.View
                           style={{
                             opacity: micButtonAnim,
@@ -767,12 +781,13 @@ const HomeScreen = () => {
                           </TouchableOpacity>
                         </Animated.View>
                       <TextInput
-                        style={[styles.textInput, { maxHeight: 120 }]}
+                        style={styles.textInput}
                         placeholder={t('home.chat.placeholder')}
                         placeholderTextColor="#999"
                         value={message}
                         onChangeText={setMessage}
                         multiline={true}
+                        allowFontScaling={false}
                       onSubmitEditing={() => handleSubmit()}
                       returnKeyType="send"
                       blurOnSubmit={true}
@@ -819,7 +834,7 @@ const HomeScreen = () => {
                   </View>
                 )}
               </View>
-            </View>
+            </Animated.View>
           )}
           {/* Lista dei messaggi - visibile quando la chat inizia */}
           {chatStarted && (
@@ -894,12 +909,14 @@ const HomeScreen = () => {
                 </TouchableOpacity>
               </Animated.View>
               <TextInput
-                style={[styles.textInput, { maxHeight: 120 }]}
+                style={styles.textInputSingleLine}
                 placeholder={t('home.chat.placeholder')}
                 placeholderTextColor="#999"
                 value={message}
                 onChangeText={setMessage}
-                multiline={true}
+                multiline={false}
+                numberOfLines={1}
+                allowFontScaling={false}
                 onSubmitEditing={() => handleSubmit()}
                 returnKeyType="send"
                 blurOnSubmit={true}
@@ -926,7 +943,7 @@ const HomeScreen = () => {
         )}
           </>
         )}
-        </View>
+        </KeyboardAvoidingView>
       </GestureDetector>
 
       {/* Voice Chat Modal */}
@@ -964,29 +981,22 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingTop: 20,
     paddingHorizontal: 15,
-    paddingBottom: 40,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 30) + 8 : 8,
+    paddingBottom: 8,
     flexDirection: "row",
-    alignItems: "flex-start",
+    alignItems: "center",
     justifyContent: "space-between",
-    position: "relative",
-  },
-  titleSection: {
-    flex: 1,
-    flexDirection: "column",
-    alignItems: "flex-start",
   },
   headerActions: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 15,
+    gap: 2,
   },
   resetButton: {
-    padding: 8,
+    padding: 6,
     borderRadius: 20,
     backgroundColor: "transparent",
-    marginTop: 15,
   },
   backButton: {
     marginTop: 12,
@@ -994,20 +1004,17 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   mainTitle: {
-    paddingTop: 10,
-    fontSize: 30,
-    fontWeight: "200", // Più leggero per un look più elegante
+    fontSize: 28,
+    fontWeight: "200",
     color: "#000000",
-    textAlign: "left",
     fontFamily: "System",
     letterSpacing: -1.5,
-    marginBottom: 10,
   },
   content: {
     flex: 1,
     paddingHorizontal: 40,
-    paddingTop: 100, // Ridotto per essere più responsivo
-    paddingBottom: 80,
+    justifyContent: "center",
+    paddingBottom: 40,
   },
   contentChatStarted: {
     flex: 1,
@@ -1102,10 +1109,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#ffffff",
     borderRadius: 30,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     width: "100%",
     maxWidth: 420,
+    minHeight: 50,
     borderWidth: 1.5,
     borderColor: "#e1e5e9",
     shadowColor: "#000",
@@ -1127,12 +1135,24 @@ const styles = StyleSheet.create({
   },
   textInput: {
     flex: 1,
-    fontSize: 17,
+    fontSize: 15,
     color: "#000000",
     fontFamily: "System",
     fontWeight: "400",
-    maxHeight: 100,
-    paddingVertical: 8,
+    minHeight: 36,
+    maxHeight: 120,
+    paddingVertical: 6,
+    textAlignVertical: "center",
+  },
+  textInputSingleLine: {
+    flex: 1,
+    fontSize: 15,
+    color: "#000000",
+    fontFamily: "System",
+    fontWeight: "400",
+    height: 36,
+    paddingVertical: 6,
+    textAlignVertical: "center",
   },
   sendButton: {
     marginLeft: 12,

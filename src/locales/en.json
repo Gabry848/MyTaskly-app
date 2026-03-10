@@ -111,8 +111,13 @@
   },
   "home": {
     "title": "Mytaskly",
-    "greeting": "Hi {{username}},\nwhat do you want to do today?",
-    "greetingDefault": "Hi User,\nwhat do you want to do today?",
+    "greeting_0": "Hi {{username}},\nwhat do you want to do today?",
+    "greeting_1": "Hi {{username}},\nwhat's your next task?",
+    "greeting_2": "Hi {{username}},\nhow can I help you today?",
+    "greeting_3": "Hi {{username}},\nwhere do you want to start?",
+    "greeting_4": "Hi {{username}},\nwhat's on the agenda?",
+    "greeting_5": "Hi {{username}},\nwhat are you working on?",
+    "greeting_6": "Hi {{username}},\ngot something to organize?",
     "chat": {
       "placeholder": "Write a message...",
       "botTyping": "Bot is typing...",

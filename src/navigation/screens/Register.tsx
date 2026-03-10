@@ -338,7 +338,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#111111",
     fontFamily: "System",
-    height: 36,
+    paddingVertical: 6,
+    minHeight: 36,
   },
   eyeBtn: {
     padding: 4,
