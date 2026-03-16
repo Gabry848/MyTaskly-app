@@ -4,14 +4,14 @@ import {
   StyleSheet,
   View,
   TouchableOpacity,
-  SafeAreaView,
-  StatusBar,
   ScrollView,
   ActivityIndicator,
   Alert,
   Modal,
   TextInput,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { getValidToken, changeEmail, changeUsername } from '../../services/authService';
 import axios from '../../services/axiosInstance';
@@ -167,7 +167,7 @@ export default function AccountSettings() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+        <StatusBar style="dark" />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#000000" />
           <Text style={styles.loadingText}>{t('common.messages.loading')}</Text>
@@ -178,7 +178,7 @@ export default function AccountSettings() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+      <StatusBar style="dark" />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {error ? (

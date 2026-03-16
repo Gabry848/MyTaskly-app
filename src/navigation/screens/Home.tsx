@@ -5,8 +5,6 @@ import {
   StyleSheet,
   TextInput,
   TouchableOpacity,
-  StatusBar,
-  SafeAreaView,
   Animated,
   Keyboard,
   KeyboardAvoidingView,
@@ -15,6 +13,8 @@ import {
   Platform,
   Alert,
 } from "react-native";
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import { GestureDetector, Gesture, GestureHandlerRootView } from "react-native-gesture-handler";
 import { runOnJS } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
@@ -37,6 +37,7 @@ import { useTutorialContext } from "../../contexts/TutorialContext";
 const HomeScreen = () => {
   const { t } = useTranslation();
   const { startTutorial } = useTutorialContext();
+
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);  const [isLoading, setIsLoading] = useState(false);
   const [chatStarted, setChatStarted] = useState(false);  const [userName, setUserName] = useState("Utente");
@@ -667,7 +668,7 @@ const HomeScreen = () => {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+        <StatusBar style="dark" />
 
         {/* Header con titolo principale e indicatori sync */}
         <View style={styles.header}>
@@ -974,7 +975,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 15,
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 30) + 8 : 8,
+    paddingTop: 8,
     paddingBottom: 8,
     flexDirection: "row",
     alignItems: "center",

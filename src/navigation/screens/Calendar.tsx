@@ -3,10 +3,10 @@ import {
   View,
   StyleSheet,
   Text,
-  SafeAreaView,
-  StatusBar,
   TouchableOpacity
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import CalendarView from '../../components/Calendar/CalendarView';
@@ -51,14 +51,14 @@ export default function Calendar() {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+        <StatusBar style="dark" />
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+      <StatusBar style="dark" />
 
       {/* Header con titolo principale e toggle button */}
       <View style={styles.header}>

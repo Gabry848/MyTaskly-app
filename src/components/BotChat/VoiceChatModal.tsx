@@ -7,11 +7,12 @@ import {
   TouchableOpacity,
   Animated,
   Dimensions,
-  StatusBar,
   Alert,
   Platform,
   ScrollView,
 } from "react-native";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import Svg, { Path, Defs, RadialGradient, Stop } from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
 import { useVoiceChat, ActiveTool } from '../../hooks/useVoiceChat';
@@ -224,6 +225,7 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
   onClose,
   onOpenCalendar,
 }) => {
+  const insets = useSafeAreaInsets();
   const {
     state,
     error,
@@ -383,7 +385,7 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
       statusBarTranslucent={true}
       onRequestClose={handleClose}
     >
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <StatusBar style="dark" />
 
       <Animated.View
         style={[
@@ -395,7 +397,7 @@ const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
         ]}
       >
         {/* Header */}
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
           {isConnected ? (
             <View style={styles.liveIndicator}>
               <Animated.View style={[styles.liveDot, { opacity: liveDotOpacity }]} />
@@ -542,7 +544,7 @@ const styles = StyleSheet.create({
 
   // Header
   header: {
-    paddingTop: StatusBar.currentHeight ? StatusBar.currentHeight + 16 : 52,
+    paddingTop: 52,
     paddingHorizontal: 20,
     paddingBottom: 14,
     flexDirection: "row",

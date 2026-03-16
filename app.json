@@ -3,7 +3,7 @@
     "name": "My taskly",
     "slug": "mytaskly",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/icons/ios-light.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": false,

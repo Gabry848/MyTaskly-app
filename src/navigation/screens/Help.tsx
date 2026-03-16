@@ -1,6 +1,8 @@
 import { Text } from '@react-navigation/elements';
 import React from 'react';
-import { StyleSheet, View, SafeAreaView, StatusBar, ScrollView } from 'react-native';
+import { StyleSheet, View, ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
@@ -9,7 +11,7 @@ export default function Help() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+      <StatusBar style="dark" />
 
       {/* Content */}
       <ScrollView style={styles.content}>

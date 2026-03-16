@@ -6,10 +6,10 @@ import {
   TouchableOpacity,
   Animated,
   Dimensions,
-  StatusBar,
   StyleSheet,
   Platform,
 } from "react-native";
+import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from "@expo/vector-icons";
 import CalendarView from "../Calendar/CalendarView";
 
@@ -72,7 +72,7 @@ const VoiceCalendarModal: React.FC<VoiceCalendarModalProps> = ({ visible, onClos
       statusBarTranslucent
       onRequestClose={handleClose}
     >
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <StatusBar style="dark" />
 
       {/* Overlay sfondo scuro */}
       <Animated.View style={[styles.backdrop, { opacity: fadeAnim }]} pointerEvents="none" />

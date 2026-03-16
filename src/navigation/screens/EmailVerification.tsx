@@ -5,11 +5,11 @@ import {
   TouchableOpacity,
   StyleSheet,
   Dimensions,
-  StatusBar,
-  SafeAreaView,
   Animated,
   ActivityIndicator,
 } from "react-native";
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import { FontAwesome, MaterialIcons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
@@ -179,7 +179,7 @@ const EmailVerificationScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+      <StatusBar style="dark" />
       
       <Animated.View 
         style={[

@@ -1,6 +1,8 @@
 import { Text } from '@react-navigation/elements';
 import React, { useState } from 'react';
-import { StyleSheet, View, TouchableOpacity, SafeAreaView, StatusBar, ScrollView, TextInput, Alert, ActivityIndicator, Platform } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, ScrollView, TextInput, Alert, ActivityIndicator, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { RootStackParamList } from '../../types';
@@ -75,7 +77,7 @@ export default function BugReport() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+      <StatusBar style="dark" />
       
       <ScrollView style={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.headerSection}>

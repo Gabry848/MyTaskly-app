@@ -1,6 +1,8 @@
 import { Text } from '@react-navigation/elements';
 import React, { useState } from 'react';
-import { StyleSheet, View, TouchableOpacity, SafeAreaView, StatusBar, ScrollView, TextInput, ActivityIndicator, Alert } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { changePassword } from '../../services/authService';
 import { useNavigation } from '@react-navigation/native';
@@ -58,7 +60,7 @@ export default function ChangePassword() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+      <StatusBar style="dark" />
 
       <ScrollView style={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.formContainer}>

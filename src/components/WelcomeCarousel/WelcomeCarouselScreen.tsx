@@ -4,12 +4,12 @@ import {
   FlatList,
   Dimensions,
   Animated,
-  SafeAreaView,
-  StatusBar,
   TouchableOpacity,
   Text,
   StyleSheet,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import { useNavigation } from '@react-navigation/native';
 import type { NavigationProp } from '@react-navigation/native';
 import type { RootStackParamList } from '../../types.d';
@@ -79,7 +79,7 @@ export const WelcomeCarouselScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <StatusBar style="dark" />
 
       {/* Skip Button */}
       <TouchableOpacity style={styles.skipButton} onPress={handleSkip} activeOpacity={0.7}>

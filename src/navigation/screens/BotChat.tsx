@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { View, KeyboardAvoidingView, Platform, SafeAreaView, Alert, Keyboard, Dimensions } from 'react-native';
+import { View, KeyboardAvoidingView, Platform, Alert, Keyboard, Dimensions } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { sendMessageToBot, createNewChat, formatMessage, clearChatHistory } from '../../services/textBotService';
 import { getChatWithMessages, ChatMessage } from '../../services/chatHistoryService';
 import { reconstructMessagesFromHistory } from '../../components/BotChat/utils/chatHistoryUtils';

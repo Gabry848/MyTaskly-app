@@ -1,16 +1,18 @@
 import React from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, StatusBar } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { ChatHeaderProps } from './types';
 
-const ChatHeader: React.FC<ChatHeaderProps> = ({ 
-  modelType, 
-  onModelChange, 
+const ChatHeader: React.FC<ChatHeaderProps> = ({
+  modelType,
+  onModelChange,
   onNewChat,
-  style 
+  style
 }) => {
+  const insets = useSafeAreaInsets();
   return (
-    <View style={[styles.header, style]}>
+    <View style={[styles.header, { paddingTop: insets.top + 5 }, style]}>
       <View style={styles.actions}>
         <TouchableOpacity
           style={styles.modelSelector}
@@ -40,7 +42,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
     width: "100%",
     padding: 8,
-    paddingTop: StatusBar.currentHeight ? StatusBar.currentHeight + 5 : 15,
+    paddingTop: 15,
     paddingBottom: 8,
     backgroundColor: "#FFFFFF",
     shadowColor: "#000",

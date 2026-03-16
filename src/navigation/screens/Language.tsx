@@ -4,12 +4,12 @@ import {
   StyleSheet,
   View,
   TouchableOpacity,
-  SafeAreaView,
-  StatusBar,
   ScrollView,
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useTranslation } from 'react-i18next';
@@ -54,7 +54,7 @@ export default function Language() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+      <StatusBar style="dark" />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
 

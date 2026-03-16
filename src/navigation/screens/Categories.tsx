@@ -3,10 +3,10 @@ import {
   View,
   StyleSheet,
   Text,
-  SafeAreaView,
-  StatusBar,
   TouchableOpacity,
 } from "react-native";
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import { useFocusEffect } from "@react-navigation/native";
 import CategoryList from "../../components/Category/CategoryList";
 import AddCategoryButton from "../../components/Category/AddCategoryButton";
@@ -55,7 +55,7 @@ export default function Categories() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+      <StatusBar style="dark" />
 
       {/* Header con titolo principale - stesso stile di Home20 */}
       <View style={styles.header}>
