@@ -6,8 +6,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   Dimensions,
-  StatusBar,
-  SafeAreaView,
   AppState,
   Image,
   Animated,
@@ -28,6 +26,8 @@ import {
   trackLoginFailed,
   identifyUser,
 } from "../../services/analyticsService";
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 
 const { width, height } = Dimensions.get("window");
 
@@ -264,7 +264,7 @@ const LoginScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+      <StatusBar style="dark" />
 
       {/* Blob di sfondo – fuori dal layout, posizione assoluta */}
       <Blob size={340} opacity={0.13} delay={0}    top={-120} left={-130} />

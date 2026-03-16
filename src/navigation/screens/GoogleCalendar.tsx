@@ -1,5 +1,7 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, View, TouchableOpacity, SafeAreaView, StatusBar, Text, ActivityIndicator, Alert, ScrollView } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, Text, ActivityIndicator, Alert, ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useGoogleCalendar } from '../../hooks/useGoogleCalendar';
 
@@ -231,7 +233,7 @@ export default function GoogleCalendar() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+      <StatusBar style="dark" />
 
       <View style={styles.wipBanner}>
         <Ionicons name="flask-outline" size={15} color="#FF9800" />

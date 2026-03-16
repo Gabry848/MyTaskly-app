@@ -6,8 +6,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   Dimensions,
-  StatusBar,
-  SafeAreaView,
   Image,
   Animated,
   ScrollView,
@@ -19,6 +17,8 @@ import type { RootStackParamList } from "../../types";
 import * as authService from "../../services/authService";
 import { NotificationSnackbar } from "../../components/UI/NotificationSnackbar";
 import { useTranslation } from "react-i18next";
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 
 const { width } = Dimensions.get("window");
 
@@ -190,7 +190,7 @@ const RegisterScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+      <StatusBar style="dark" />
 
       {/* Blob di sfondo */}
       <Blob size={340} opacity={0.13} delay={0}    top={-120} left={-130} />

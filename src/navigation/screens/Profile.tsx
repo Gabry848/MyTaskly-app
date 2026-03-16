@@ -6,10 +6,10 @@ import {
   StyleSheet,
   Dimensions,
   ScrollView,
-  StatusBar,
   Animated,
-  SafeAreaView,
 } from "react-native";
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
@@ -178,7 +178,7 @@ const ProfileScreen = () => {
   return (
     <>
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+        <StatusBar style="dark" />
 
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
