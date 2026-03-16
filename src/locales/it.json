@@ -679,10 +679,17 @@
   },
   "notifications": {
     "enablePrompt": {
-      "title": "🔔 Abilita le notifiche",
+      "title": "Abilita le notifiche",
       "message": "Vuoi ricevere notifiche per i promemoria dei tuoi task? Ti avviseremo quando un task è in scadenza, così non perderai mai una scadenza importante.",
       "enable": "Abilita",
       "later": "Più tardi"
+    },
+    "batteryPrompt": {
+      "title": "Ottimizzazione batteria",
+      "badge": "Facoltativo",
+      "message": "Per ricevere notifiche anche quando il telefono è in stand-by, ti consigliamo di disabilitare l'ottimizzazione della batteria per MyTaskly.\n\nSenza questa impostazione, alcune notifiche potrebbero non arrivare mentre il dispositivo è in risparmio energetico.\n\nPuoi farlo in qualsiasi momento da Impostazioni → App → MyTaskly → Batteria.",
+      "openSettings": "Apri Impostazioni",
+      "skip": "Salta per ora"
     }
   },
   "profile": {

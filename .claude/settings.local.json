@@ -58,7 +58,8 @@
       "Bash(xargs:*)",
       "WebFetch(domain:www.npmjs.com)",
       "WebFetch(domain:docs.expo.dev)",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"

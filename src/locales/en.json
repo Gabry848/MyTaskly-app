@@ -680,10 +680,17 @@
   },
   "notifications": {
     "enablePrompt": {
-      "title": "🔔 Enable notifications",
+      "title": "Enable notifications",
       "message": "Would you like to receive notifications for your task reminders? We'll notify you when a task is due, so you never miss an important deadline.",
       "enable": "Enable",
       "later": "Later"
+    },
+    "batteryPrompt": {
+      "title": "Battery optimization",
+      "badge": "Optional",
+      "message": "To receive notifications even when your phone is in stand-by, we recommend disabling battery optimization for MyTaskly.\n\nWithout this setting, some notifications may not arrive while your device is in power-saving mode.\n\nYou can do this anytime from Settings → Apps → MyTaskly → Battery.",
+      "openSettings": "Open Settings",
+      "skip": "Skip for now"
     }
   },
   "profile": {

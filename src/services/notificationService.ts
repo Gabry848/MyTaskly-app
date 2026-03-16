@@ -140,17 +140,6 @@ export async function registerForPushNotificationsAsync(): Promise<string | unde
     
     console.log('✅ Permessi notifiche concessi');
 
-    // 🔋 VERIFICA BATTERY OPTIMIZATION (critico per notifiche in stand-by)
-    // Mostra questo prompt solo una volta per non disturbare l'utente
-    const batteryPromptShown = await AsyncStorage.getItem('@MyTaskly:batteryPromptShown');
-    if (Platform.OS === 'android' && !batteryPromptShown) {
-      // Ritarda leggermente per non sovrapporre con altri alert
-      setTimeout(() => {
-        checkBatteryOptimization();
-        AsyncStorage.setItem('@MyTaskly:batteryPromptShown', 'true');
-      }, 1000);
-    }
-
     // 🎯 OTTIENI IL TOKEN EXPO
     const projectId = Constants?.expoConfig?.extra?.eas?.projectId 
                    ?? Constants?.easConfig?.projectId;
@@ -377,6 +366,8 @@ export function useNotifications() {
   const [expoPushToken, setExpoPushToken] = useState<string>('');
   const [notification, setNotification] = useState<Notifications.Notification | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [showNotificationPrompt, setShowNotificationPrompt] = useState<boolean>(false);
+  const [showBatteryPrompt, setShowBatteryPrompt] = useState<boolean>(false);
   const notificationListener = useRef<Notifications.EventSubscription | null>(null);
   const responseListener = useRef<Notifications.EventSubscription | null>(null);
 
@@ -419,35 +410,10 @@ export function useNotifications() {
       const permissionAsked = await AsyncStorage.getItem(STORAGE_KEYS.NOTIFICATION_PERMISSION_ASKED);
       
       if (!permissionAsked) {
-        // Primo login: mostra un avviso informativo prima di richiedere i permessi
+        // Primo login: mostra il custom modal per i permessi notifiche
         console.log('🔔 Primo login, mostra prompt notifiche...');
         setTimeout(() => {
-          Alert.alert(
-            i18n.t('notifications.enablePrompt.title'),
-            i18n.t('notifications.enablePrompt.message'),
-            [
-              {
-                text: i18n.t('notifications.enablePrompt.later'),
-                style: 'cancel',
-                onPress: async () => {
-                  console.log('⏸️ Utente ha rimandato i permessi notifiche');
-                  await AsyncStorage.setItem(STORAGE_KEYS.NOTIFICATION_PERMISSION_ASKED, 'true');
-                },
-              },
-              {
-                text: i18n.t('notifications.enablePrompt.enable'),
-                onPress: async () => {
-                  console.log('✅ Utente ha accettato di abilitare le notifiche');
-                  await AsyncStorage.setItem(STORAGE_KEYS.NOTIFICATION_PERMISSION_ASKED, 'true');
-                  const token = await registerForPushNotificationsAsync();
-                  if (token) {
-                    setExpoPushToken(token);
-                    await sendTokenToBackend(token, true);
-                  }
-                },
-              },
-            ]
-          );
+          setShowNotificationPrompt(true);
         }, 2000); // Ritardo per non sovrapporre con la notifica di login riuscito
       } else {
         // Login successivi: registra normalmente senza prompt
@@ -510,9 +476,59 @@ export function useNotifications() {
     };
   }, [expoPushToken]); // Dipendenza da expoPushToken per avere sempre il token aggiornato nel listener
 
+  // Handler: utente accetta le notifiche
+  const handleNotificationAccept = async () => {
+    setShowNotificationPrompt(false);
+    console.log('✅ Utente ha accettato di abilitare le notifiche');
+    await AsyncStorage.setItem(STORAGE_KEYS.NOTIFICATION_PERMISSION_ASKED, 'true');
+    const token = await registerForPushNotificationsAsync();
+    if (token) {
+      setExpoPushToken(token);
+      await sendTokenToBackend(token, true);
+      // Dopo aver ottenuto le notifiche, mostra battery prompt su Android (solo una volta)
+      if (Platform.OS === 'android') {
+        const batteryPromptShown = await AsyncStorage.getItem('@MyTaskly:batteryPromptShown');
+        if (!batteryPromptShown) {
+          setTimeout(() => setShowBatteryPrompt(true), 600);
+        }
+      }
+    }
+  };
+
+  // Handler: utente rimanda le notifiche
+  const handleNotificationDismiss = async () => {
+    setShowNotificationPrompt(false);
+    console.log('⏸️ Utente ha rimandato i permessi notifiche');
+    await AsyncStorage.setItem(STORAGE_KEYS.NOTIFICATION_PERMISSION_ASKED, 'true');
+  };
+
+  // Handler: utente apre impostazioni batteria
+  const handleBatteryAccept = async () => {
+    setShowBatteryPrompt(false);
+    await AsyncStorage.setItem('@MyTaskly:batteryPromptShown', 'true');
+    try {
+      await Linking.openSettings();
+    } catch (error) {
+      console.error('❌ Errore apertura impostazioni:', error);
+    }
+  };
+
+  // Handler: utente salta l'ottimizzazione batteria
+  const handleBatteryDismiss = async () => {
+    setShowBatteryPrompt(false);
+    await AsyncStorage.setItem('@MyTaskly:batteryPromptShown', 'true');
+    console.log('⏭️ Utente ha saltato battery optimization');
+  };
+
   return {
     expoPushToken,
     notification,
+    showNotificationPrompt,
+    showBatteryPrompt,
+    handleNotificationAccept,
+    handleNotificationDismiss,
+    handleBatteryAccept,
+    handleBatteryDismiss,
     sendTestNotification: () => sendTestNotification(),
     checkBatteryOptimization: () => checkBatteryOptimization(),
   };

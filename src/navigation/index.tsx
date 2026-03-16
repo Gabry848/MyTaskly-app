@@ -53,6 +53,7 @@ import { TutorialOnboarding } from "../components/Tutorial/exports";
 import { LanguageProvider } from "../contexts/LanguageContext";
 import "../services/i18n"; // Initialize i18n
 import { useTranslation } from 'react-i18next';
+import PermissionModal from "../components/UI/PermissionModal";
 
 // Definizione del tipo per le route dello Stack principale
 export type RootStackParamList = {
@@ -244,7 +245,15 @@ function AppStack() {
   const { triggerPostLoginTutorial } = useTutorialContext();
 
   // 🔔 Inizializza il sistema di notifiche quando l'utente è autenticato
-  const { notification } = useNotifications();
+  const {
+    notification,
+    showNotificationPrompt,
+    showBatteryPrompt,
+    handleNotificationAccept,
+    handleNotificationDismiss,
+    handleBatteryAccept,
+    handleBatteryDismiss,
+  } = useNotifications();
 
   useEffect(() => {
     const checkAuthStatus = async () => {
@@ -375,6 +384,27 @@ function AppStack() {
   return (
     <>
       <NavigationHandler />
+      <PermissionModal
+        visible={showNotificationPrompt}
+        icon="notifications-outline"
+        title={t('notifications.enablePrompt.title')}
+        message={t('notifications.enablePrompt.message')}
+        primaryLabel={t('notifications.enablePrompt.enable')}
+        secondaryLabel={t('notifications.enablePrompt.later')}
+        onPrimary={handleNotificationAccept}
+        onSecondary={handleNotificationDismiss}
+      />
+      <PermissionModal
+        visible={showBatteryPrompt}
+        icon="battery-half-outline"
+        title={t('notifications.batteryPrompt.title')}
+        message={t('notifications.batteryPrompt.message')}
+        primaryLabel={t('notifications.batteryPrompt.openSettings')}
+        secondaryLabel={t('notifications.batteryPrompt.skip')}
+        badge={t('notifications.batteryPrompt.badge')}
+        onPrimary={handleBatteryAccept}
+        onSecondary={handleBatteryDismiss}
+      />
       <Stack.Navigator id={undefined} initialRouteName={initialRoute}>
         <Stack.Screen
           name="WelcomeCarousel"
