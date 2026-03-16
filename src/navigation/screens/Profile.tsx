@@ -420,7 +420,9 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   infoSection: {
-    width: width * 0.9,
+    alignSelf: "center",
+    width: "90%",
+    maxWidth: width * 0.95,
     backgroundColor: "#ffffff",
     borderRadius: 16,
     padding: 24,
@@ -456,7 +458,8 @@ const styles = StyleSheet.create({
   infoText: {
     color: "#1a1a1a",
     fontSize: 16,
-    flex: 1,
+    flexShrink: 1,
+    flexWrap: "wrap",
     fontFamily: "System",
     fontWeight: "500",
     lineHeight: 24,
