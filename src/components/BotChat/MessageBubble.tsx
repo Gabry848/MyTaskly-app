@@ -473,7 +473,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style, isVoiceCh
       {message.text && message.text.trim() !== '' && (
         <View style={[
           styles.messageBubble,
-          isBot ? styles.botBubble : styles.userBubble
+          isBot ? styles.botTextBubble : styles.userBubble
         ]}>
           {renderMessageContent()}
           {message.isStreaming && isBot && (
@@ -599,6 +599,17 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 6,
     borderWidth: 1,
     borderColor: '#e1e5e9',
+  },
+  botTextBubble: {
+    backgroundColor: 'transparent',
+    alignSelf: 'stretch',
+    maxWidth: '100%',
+    paddingHorizontal: 0,
+    paddingVertical: 4,
+    borderRadius: 0,
+    shadowOpacity: 0,
+    elevation: 0,
+    overflow: 'visible',
   },
   messageText: {
     fontSize: 16,
