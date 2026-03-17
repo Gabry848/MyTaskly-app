@@ -460,7 +460,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style, isVoiceCh
 
       {/* BUBBLE THINKING - visibile quando il bot sta elaborando (nessun testo ancora) */}
       {isBot && message.isStreaming && (!message.text || message.text.trim() === '') && (
-        <View style={[styles.messageBubble, styles.botBubble, styles.thinkingBubble]}>
+        <View style={styles.thinkingBubble}>
           <View style={styles.thinkingDotsContainer}>
             <Animated.View style={[styles.thinkingDot, { transform: [{ translateY: thinkingDot1Y }] }]} />
             <Animated.View style={[styles.thinkingDot, { transform: [{ translateY: thinkingDot2Y }] }]} />
@@ -483,20 +483,25 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, style, isVoiceCh
               <Animated.View style={[styles.streamingDot, { opacity: streamingDot3 }]} />
             </View>
           )}
-          {message.modelType && isBot && !message.isStreaming && (
+        </View>
+      )}
+
+      {isBot ? (
+        <View style={styles.botMetaRow}>
+          {message.modelType && !message.isStreaming && (
             <Text style={styles.modelType}>
               {message.modelType === 'advanced' ? 'Modello avanzato' : 'Modello base'}
             </Text>
           )}
+          <Text style={[styles.messageTime, styles.botTime, { marginTop: 0 }]}>
+            {formatTime(message.start_time)}
+          </Text>
         </View>
+      ) : (
+        <Text style={[styles.messageTime, styles.userTime]}>
+          {formatTime(message.start_time)}
+        </Text>
       )}
-
-      <Text style={[
-        styles.messageTime,
-        isBot ? styles.botTime : styles.userTime
-      ]}>
-        {formatTime(message.start_time)}
-      </Text>
 
       {/* MODALS */}
       {selectedVisualizationWidget && (
@@ -641,10 +646,15 @@ const styles = StyleSheet.create({
   botTime: {
     color: '#00000050',
   },
+  botMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 4,
+  },
   modelType: {
     fontSize: 10,
     color: '#666666',
-    marginTop: 6,
     fontStyle: 'italic',
     fontFamily: 'System',
   },
