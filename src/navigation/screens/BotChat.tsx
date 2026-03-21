@@ -57,9 +57,9 @@ const BotChat: React.FC = () => {
       case 'android':
       default:
         return {
-          behavior: 'height' as const,
+          behavior: 'padding' as const,
           keyboardVerticalOffset: 0,
-          enabled: keyboardVisible
+          enabled: true
         };
     }
   };

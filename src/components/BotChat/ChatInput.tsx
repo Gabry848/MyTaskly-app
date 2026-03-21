@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { StyleSheet, View, TextInput, TouchableOpacity, Platform, Dimensions, KeyboardAvoidingView } from 'react-native';
+import { StyleSheet, View, TextInput, TouchableOpacity, Platform, Dimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { ChatInputProps } from './types';
 import VoiceRecordButton from './VoiceRecordButton';
@@ -80,11 +80,6 @@ const ChatInput: React.FC<ExtendedChatInputProps> = ({
     const simulatedTranscription = "Messaggio vocale simulato";
     onSendMessage(simulatedTranscription);
   }, [onSendMessage]);return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
-      style={{ width: '100%' }}
-    >
       <View style={[
         styles.inputContainer,
         style,
@@ -109,9 +104,11 @@ const ChatInput: React.FC<ExtendedChatInputProps> = ({
           onContentSizeChange={handleContentSizeChange}
           blurOnSubmit={false}
           textAlignVertical="top"
-          editable={!isRecording}      />
+          editable={!isRecording}
+        />
 
-        <View style={styles.buttonContainer}>        <VoiceRecordButton
+        <View style={styles.buttonContainer}>
+          <VoiceRecordButton
             isRecording={isRecording}
             recordingDuration={recordingDuration}
             onStartRecording={handleStartRecording}
@@ -133,7 +130,6 @@ const ChatInput: React.FC<ExtendedChatInputProps> = ({
           </TouchableOpacity>
         </View>
       </View>
-    </KeyboardAvoidingView>
   );
 };
 
