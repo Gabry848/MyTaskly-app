@@ -6,7 +6,7 @@
 
 ## 2. Fondazioni (token + primitive)
 
-- [ ] 2.1 Implementare `src/theme/tokens.ts` con scale di spacing, typography roles, colori semantici neutrali, radius, elevation
+- [x] 2.1 Implementare `src/theme/tokens.ts` con scale di spacing, typography roles, colori semantici neutrali, radius, elevation
 - [ ] 2.2 Implementare `AppText` con varianti (`display`, `title`, `subtitle`, `body`, `caption`, `label`) basate su token
 - [ ] 2.3 Implementare `ScreenContainer` e `ContentContainer` per sostituire wrapper ripetuti `backgroundColor/padding`
 - [ ] 2.4 Implementare `ScreenHeader` con supporto titolo, azioni destre, varianti allineamento
