@@ -2,7 +2,7 @@
 
 - [x] 1.1 Estrarre in una matrice i pattern duplicati nelle schermate `Categories`, `TaskList`, `Calendar`, `Calendar20`, `Home` (header, card, loader, empty, modal, input shell)
 - [x] 1.2 Definire naming convention e cartelle target (`src/theme`, `src/components/UI/foundation`) per token e primitive
-- [ ] 1.3 Creare checklist visuale di validazione per schermata (tipografia, spazi, elevazione, stati di caricamento/vuoto, azioni)
+- [x] 1.3 Creare checklist visuale di validazione per schermata (tipografia, spazi, elevazione, stati di caricamento/vuoto, azioni)
 
 ## 2. Fondazioni (token + primitive)
 
