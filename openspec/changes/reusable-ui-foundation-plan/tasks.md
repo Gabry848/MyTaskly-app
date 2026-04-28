@@ -7,7 +7,7 @@
 ## 2. Fondazioni (token + primitive)
 
 - [x] 2.1 Implementare `src/theme/tokens.ts` con scale di spacing, typography roles, colori semantici neutrali, radius, elevation
-- [ ] 2.2 Implementare `AppText` con varianti (`display`, `title`, `subtitle`, `body`, `caption`, `label`) basate su token
+- [x] 2.2 Implementare `AppText` con varianti (`display`, `title`, `subtitle`, `body`, `caption`, `label`) basate su token
 - [ ] 2.3 Implementare `ScreenContainer` e `ContentContainer` per sostituire wrapper ripetuti `backgroundColor/padding`
 - [ ] 2.4 Implementare `ScreenHeader` con supporto titolo, azioni destre, varianti allineamento
 - [ ] 2.5 Implementare `CardSurface` con varianti (`default`, `outlined`, `interactive`) e supporto accent border
@@ -40,7 +40,7 @@
 
 ## 6. Lista componenti da creare
 
-- [ ] 6.1 `AppText`
+- [x] 6.1 `AppText`
 - [ ] 6.2 `ScreenContainer`
 - [ ] 6.3 `ContentContainer`
 - [ ] 6.4 `ScreenHeader`
