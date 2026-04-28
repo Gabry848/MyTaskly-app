@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, ScrollView, StyleSheet, Alert, ActivityIndicator, Animated, Dimensions } from 'react-native';
+import { View, ScrollView, StyleSheet, Alert, ActivityIndicator, Dimensions } from 'react-native';
 import dayjs from 'dayjs';
 import { Task as TaskType, getAllTasks, addTask, deleteTask, updateTask, completeTask, disCompleteTask } from '../../services/taskService';
 import { TaskCacheService } from '../../services/TaskCacheService';
@@ -13,6 +13,7 @@ import Task from '../Task/Task';
 import AddTask from '../Task/AddTask';
 import AddTaskButton from '../Task/AddTaskButton';
 import { addTaskToList } from '../TaskList/types';
+import { LoadingState, EmptyState, StatusChip, AppText } from '../UI/foundation';
 
 const CalendarView: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<string>(dayjs().format('YYYY-MM-DD'));
@@ -29,11 +30,6 @@ const CalendarView: React.FC = () => {
   const syncManager = useRef(SyncManager.getInstance()).current;
   const appInitializer = useRef(AppInitializer.getInstance()).current;
   
-  // Animazioni per i punti di caricamento
-  const fadeAnim1 = useRef(new Animated.Value(0.3)).current;
-  const fadeAnim2 = useRef(new Animated.Value(0.3)).current;
-  const fadeAnim3 = useRef(new Animated.Value(0.3)).current;
-
   // Funzione per sanitizzare le stringhe
   const sanitizeString = (value: any): string => {
     if (typeof value === 'string') {
@@ -400,55 +396,6 @@ const CalendarView: React.FC = () => {
     }
   };
 
-  // Componente di caricamento
-  const LoadingComponent = () => {
-    // Avvia l'animazione dei punti quando il componente viene montato
-    useEffect(() => {
-      const animateSequence = () => {
-        const duration = 600;
-        const delay = 200;
-
-        const animate = (animValue: Animated.Value, startDelay: number) => {
-          Animated.loop(
-            Animated.sequence([
-              Animated.timing(animValue, {
-                toValue: 1,
-                duration: duration,
-                delay: startDelay,
-                useNativeDriver: true,
-              }),
-              Animated.timing(animValue, {
-                toValue: 0.3,
-                duration: duration,
-                useNativeDriver: true,
-              }),
-            ])
-          ).start();
-        };
-
-        animate(fadeAnim1, 0);
-        animate(fadeAnim2, delay);
-        animate(fadeAnim3, delay * 2);
-      };
-
-      animateSequence();
-    }, []);
-
-    return (
-      <View style={styles.loadingContainer}>
-        <View style={styles.loadingContent}>
-          <ActivityIndicator size="large" color="#000000" />
-          <Text style={styles.loadingText}>Caricamento impegni...</Text>
-          <View style={styles.loadingDots}>
-            <Animated.View style={[styles.dot, { opacity: fadeAnim1 }]} />
-            <Animated.View style={[styles.dot, { opacity: fadeAnim2 }]} />
-            <Animated.View style={[styles.dot, { opacity: fadeAnim3 }]} />
-          </View>
-        </View>
-      </View>
-    );
-  };
-
   if (isLoading) {
     return (
       <View style={styles.calendarContainer}>
@@ -464,15 +411,15 @@ const CalendarView: React.FC = () => {
         {/* Header con effetto di caricamento e indicatore sync */}
         <View style={styles.selectedDateHeader}>
           <View style={styles.titleContainer}>
-            <Text style={styles.selectedDateTitle}>
+            <AppText variant="subtitle" weight="300">
               Impegni del {dayjs(selectedDate).format('DD MMMM YYYY')}
-            </Text>
+            </AppText>
           </View>
           <AddTaskButton onPress={handleAddTask} screenWidth={screenWidth} />
         </View>
 
         {/* Componente di caricamento */}
-        <LoadingComponent />
+        <LoadingState variant="dots" label="Caricamento impegni..." />
         
         {/* Componente AddTask */}
         <AddTask 
@@ -501,26 +448,29 @@ const CalendarView: React.FC = () => {
       {/* Intestazione con titolo, indicatori sync e pulsante per aggiungere task */}
       <View style={styles.selectedDateHeader}>
         <View style={styles.titleContainer}>
-          <Text style={styles.selectedDateTitle}>
+          <AppText variant="subtitle" weight="300">
             Impegni del {dayjs(selectedDate).format('DD MMMM YYYY')}
-          </Text>
+          </AppText>
           {syncStatus && (
             <View style={styles.syncIndicator}>
               {syncStatus.isSyncing ? (
-                <View style={styles.syncingContainer}>
-                  <ActivityIndicator size="small" color="#666666" />
-                  <Text style={styles.syncText}>Sync...</Text>
-                </View>
+                <StatusChip
+                  label="Sync..."
+                  tone="neutral"
+                  leftIcon={<ActivityIndicator size="small" color="#666666" />}
+                />
               ) : !syncStatus.isOnline ? (
-                <View style={styles.offlineContainer}>
-                  <Ionicons name="cloud-offline-outline" size={16} color="#ff6b6b" />
-                  <Text style={styles.offlineText}>Offline</Text>
-                </View>
+                <StatusChip
+                  label="Offline"
+                  tone="danger"
+                  leftIcon={<Ionicons name="cloud-offline-outline" size={14} color="#ef4444" />}
+                />
               ) : syncStatus.pendingChanges > 0 ? (
-                <View style={styles.pendingContainer}>
-                  <Ionicons name="sync-outline" size={16} color="#ffa726" />
-                  <Text style={styles.pendingText}>{syncStatus.pendingChanges}</Text>
-                </View>
+                <StatusChip
+                  label={String(syncStatus.pendingChanges)}
+                  tone="warning"
+                  leftIcon={<Ionicons name="sync-outline" size={14} color="#f59e0b" />}
+                />
               ) : null}
             </View>
           )}
@@ -541,13 +491,11 @@ const CalendarView: React.FC = () => {
             />
           ))
         ) : (
-          <View style={styles.noTasksContainer}>
-            <Ionicons name="calendar-outline" size={48} color="#cccccc" />
-            <Text style={styles.noTasksText}>
-              Nessun impegno per questa data
-            </Text>
-            <AddTaskButton onPress={handleAddTask} screenWidth={screenWidth} />
-          </View>
+          <EmptyState
+            icon={<Ionicons name="calendar-outline" size={48} color="#cccccc" />}
+            title="Nessun impegno per questa data"
+            style={styles.noTasksContainer}
+          />
         )}
       </ScrollView>
 
@@ -585,78 +533,17 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     alignItems: 'flex-start',
   },
-  selectedDateTitle: {
-    fontSize: 18,
-    fontWeight: "300",
-    color: "#000000",
-    fontFamily: "System",
-    letterSpacing: -0.5,
-  },
   syncIndicator: {
     marginTop: 4,
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  syncingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f0f0f0',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  syncText: {
-    fontSize: 12,
-    color: '#666666',
-    marginLeft: 4,
-    fontFamily: 'System',
-  },
-  offlineContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#ffebee',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  offlineText: {
-    fontSize: 12,
-    color: '#ff6b6b',
-    marginLeft: 4,
-    fontFamily: 'System',
-  },
-  pendingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff3e0',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  pendingText: {
-    fontSize: 12,
-    color: '#ffa726',
-    marginLeft: 4,
-    fontFamily: 'System',
   },
   taskList: {
     flex: 1,
     paddingHorizontal: 5,
   },
   noTasksContainer: {
-    alignItems: "center",
-    justifyContent: "center",
     marginTop: 60,
-    paddingHorizontal: 20,
-  },
-  noTasksText: {
-    fontSize: 16,
-    color: "#999999",
-    marginTop: 15,
-    marginBottom: 25,
-    textAlign: "center",
-    fontFamily: "System",
-    fontWeight: "300",
   },
   addButton: {
     backgroundColor: "#000000",
@@ -688,36 +575,6 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     fontSize: 15,
     fontFamily: "System",
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-  },
-  loadingContent: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  loadingText: {
-    fontSize: 16,
-    color: "#666666",
-    marginTop: 20,
-    fontFamily: "System",
-    fontWeight: "300",
-    letterSpacing: -0.2,
-  },
-  loadingDots: {
-    flexDirection: 'row',
-    marginTop: 15,
-    alignItems: 'center',
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#000000",
-    marginHorizontal: 3,
   },
 });
 
