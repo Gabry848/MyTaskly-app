@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   StyleSheet,
   View,
@@ -22,7 +22,7 @@ import RevenueCatService, {
   type Offerings,
   type PurchasesPackage,
 } from '../../services/revenueCatService';
-import { PLANS, Plan } from '../../constants/planLimits';
+import { PLANS, Plan, BillingPeriod } from '../../constants/planLimits';
 
 export default function SubscriptionPlans() {
   const { t } = useTranslation();
@@ -31,9 +31,8 @@ export default function SubscriptionPlans() {
   const [offerings, setOfferings] = useState<Offerings | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
-
-  // New state for the Revolut-style tab selector
   const [selectedPlanId, setSelectedPlanId] = useState<string>('free');
+  const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('monthly');
 
   const loadData = useCallback(async () => {
     try {
@@ -44,8 +43,7 @@ export default function SubscriptionPlans() {
       ]);
       setPlanData(userPlan);
       setOfferings(rcOfferings);
-      
-      // Default selected plan to current active plan, or free
+
       if (userPlan?.effective_plan) {
         setSelectedPlanId(userPlan.effective_plan);
       }
@@ -61,12 +59,13 @@ export default function SubscriptionPlans() {
   }, [loadData]);
 
   const handlePurchase = useCallback(
-    async (plan: Plan) => {
-      if (plan.id === 'free') return; 
+    async (plan: Plan, period: BillingPeriod) => {
+      if (plan.id === 'free') return;
 
-      if (!plan.productId || !offerings) {
+      const productId = plan.getProductId(period);
+      if (!productId || !offerings) {
         Alert.alert(
-          t('common.error', 'Errore'),
+          t('common.messages.error', 'Errore'),
           t('subscriptionPlans.offlineError', 'Servizio offline o piano non disponibile.')
         );
         return;
@@ -76,7 +75,7 @@ export default function SubscriptionPlans() {
         setActionLoading(true);
 
         const packageToPurchase = offerings.current?.availablePackages.find(
-          (pkg) => pkg.identifier === plan.productId
+          (pkg) => pkg.product.identifier === productId
         );
 
         if (!packageToPurchase) {
@@ -93,7 +92,7 @@ export default function SubscriptionPlans() {
         }
         Alert.alert(
           t('subscriptionPlans.purchaseError', 'Errore durante l\'acquisto'),
-          error?.message || t('common.error', 'Si è verificato un errore sconosciuto.')
+          error?.message || t('common.messages.error', 'Si è verificato un errore sconosciuto.')
         );
       } finally {
         setActionLoading(false);
@@ -109,12 +108,52 @@ export default function SubscriptionPlans() {
     [planData]
   );
 
-  // Helper to format limit for the new UI feature list
   const formatFeatureLimit = (daily: number | string, monthly: number | string) => {
     const d = isUnlimitedPlan(daily) ? '∞' : String(daily);
     const m = isUnlimitedPlan(monthly) ? '∞' : String(monthly);
     return `${d} ${t('common.daily', 'giornalieri')} • ${m} ${t('common.monthly', 'mensili')}`;
   };
+
+  // Find the package for the selected plan + billing period
+  const findPackage = useCallback(
+    (plan: Plan, period: BillingPeriod): PurchasesPackage | undefined => {
+      const productId = plan.getProductId(period);
+      if (!productId || !offerings) return undefined;
+      return offerings.current?.availablePackages.find(
+        (p) => p.product.identifier === productId
+      );
+    },
+    [offerings]
+  );
+
+  // Calculate annual savings percentage
+  const calcAnnualSavings = useCallback(
+    (plan: Plan): number | null => {
+      const monthlyPkg = findPackage(plan, 'monthly');
+      const annualPkg = findPackage(plan, 'annual');
+      if (!monthlyPkg || !annualPkg) return null;
+
+      const monthlyCostPerYear = monthlyPkg.product.price * 12;
+      const annualCost = annualPkg.product.price;
+      if (monthlyCostPerYear === 0) return null;
+
+      return Math.round(((monthlyCostPerYear - annualCost) / monthlyCostPerYear) * 100);
+    },
+    [findPackage]
+  );
+
+  const plansArray = Object.values(PLANS);
+  const selectedPlan = PLANS[selectedPlanId as keyof typeof PLANS] || PLANS.free;
+  const isSelectedPlanCurrent = isCurrentPlan(selectedPlan.id);
+  const isFreeSelected = selectedPlan.id === 'free';
+
+  const pkg = findPackage(selectedPlan, billingPeriod);
+  const savings = billingPeriod === 'annual' ? calcAnnualSavings(selectedPlan) : null;
+
+  const monthlyEquivPrice = useMemo(() => {
+    if (billingPeriod !== 'annual' || !pkg) return null;
+    return pkg.product.price / 12;
+  }, [billingPeriod, pkg]);
 
   if (loading) {
     return (
@@ -127,22 +166,27 @@ export default function SubscriptionPlans() {
     );
   }
 
-  const plansArray = Object.values(PLANS);
-  const selectedPlan = PLANS[selectedPlanId as keyof typeof PLANS] || PLANS.free;
-  const isSelectedPlanCurrent = isCurrentPlan(selectedPlan.id);
-  const isFreeSelected = selectedPlan.id === 'free';
-
-  const pkg: PurchasesPackage | undefined = offerings?.current?.availablePackages.find(
-    (p) => p.identifier === selectedPlan.productId
-  );
-
-  let priceStr = isFreeSelected ? t('common.free', 'Complimentary') : '—';
+  let priceStr = isFreeSelected ? t('common.free', 'Free') : '—';
   let subtitleStr = t('subscriptionPlans.freeDescription', 'Just the basics');
+  let trialInfo: string | null = null;
 
   if (!isFreeSelected) {
     if (pkg) {
       priceStr = pkg.product.priceString;
       subtitleStr = pkg.product.description || t('subscriptionPlans.premiumDesc', 'Unlock all premium features');
+
+      // Check for introductory price (free trial)
+      const intro = pkg.product.introductoryPrice;
+      if (intro) {
+        trialInfo = t('subscriptionPlans.freeTrial', 'Free trial');
+      }
+
+      if (billingPeriod === 'annual' && monthlyEquivPrice !== null) {
+        const currency = pkg.product.priceString.replace(/[\d.,\s]/g, '').trim();
+        const formatted = monthlyEquivPrice.toFixed(2).replace('.', ',');
+        priceStr = `${currency}${formatted}`;
+        subtitleStr = t('subscriptionPlans.perMonth', '/month') + ' — ' + t('subscriptionPlans.annual', 'Annual');
+      }
     } else {
       subtitleStr = t('subscriptionPlans.offlineDescription', 'Dettagli non disponibili al momento.');
     }
@@ -155,9 +199,40 @@ export default function SubscriptionPlans() {
       <StatusBar style="dark" />
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        
-        {/* Title */}
-        <Text style={styles.pageTitle}>{t('subscriptionPlans.selectPlan', 'Select plan')}</Text>
+
+        {/* Title + Billing Toggle */}
+        <View style={styles.titleRow}>
+          <Text style={styles.pageTitle}>{t('subscriptionPlans.selectPlan', 'Select plan')}</Text>
+          {!isFreeSelected && (
+            <View style={styles.billingToggle}>
+              <TouchableOpacity
+                style={[styles.billingOption, billingPeriod === 'monthly' && styles.billingOptionActive]}
+                onPress={() => setBillingPeriod('monthly')}
+              >
+                <Text style={[styles.billingOptionText, billingPeriod === 'monthly' && styles.billingOptionTextActive]}>
+                  {t('subscriptionPlans.monthly', 'Monthly')}
+                </Text>
+              </TouchableOpacity>
+              <View style={styles.annualOptionWrapper}>
+                {savings !== null && savings > 0 && (
+                  <View style={styles.savingsBadge}>
+                    <Text style={styles.savingsBadgeText}>
+                      {savings}% off
+                    </Text>
+                  </View>
+                )}
+                <TouchableOpacity
+                  style={[styles.billingOption, billingPeriod === 'annual' && styles.billingOptionActive]}
+                  onPress={() => setBillingPeriod('annual')}
+                >
+                  <Text style={[styles.billingOptionText, billingPeriod === 'annual' && styles.billingOptionTextActive]}>
+                    {t('subscriptionPlans.annual', 'Annual')}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+        </View>
 
         {/* Warning Banner */}
         {!loading && !offerings && (
@@ -198,7 +273,15 @@ export default function SubscriptionPlans() {
               </View>
             )}
           </View>
-          
+
+          {/* Free Trial Badge */}
+          {trialInfo && !isSelectedPlanCurrent && (
+            <View style={styles.trialBadge}>
+              <Ionicons name="gift-outline" size={16} color="#34C759" />
+              <Text style={styles.trialBadgeText}>{trialInfo}</Text>
+            </View>
+          )}
+
           <Text style={styles.darkCardPrice}>{priceStr}</Text>
           <Text style={styles.darkCardSubtitle}>{subtitleStr}</Text>
         </View>
@@ -207,8 +290,8 @@ export default function SubscriptionPlans() {
         <Text style={styles.sectionTitle}>{t('subscriptionPlans.topFeatures', 'Top features')}</Text>
 
         <View style={styles.featuresCard}>
-          
-          <FeatureItem 
+
+          <FeatureItem
             icon="chatbubbles"
             title={t('subscriptionPlans.featTextTitle', 'Text Chats')}
             description={t('subscriptionPlans.featTextDesc', 'Include {{limits}}', {
@@ -216,7 +299,7 @@ export default function SubscriptionPlans() {
             })}
           />
 
-          <FeatureItem 
+          <FeatureItem
             icon="mic"
             title={t('subscriptionPlans.featVoiceTitle', 'Voice Interactions')}
             description={t('subscriptionPlans.featVoiceDesc', 'Include {{limits}}', {
@@ -224,7 +307,7 @@ export default function SubscriptionPlans() {
             })}
           />
 
-          <FeatureItem 
+          <FeatureItem
             icon="sparkles"
             title={t('subscriptionPlans.featAiTitle', 'AI Intelligence')}
             description={t('subscriptionPlans.featAiDesc', 'Powered by {{model}} model for accurate responses', {
@@ -232,7 +315,7 @@ export default function SubscriptionPlans() {
             })}
           />
 
-          <FeatureItem 
+          <FeatureItem
             icon="folder"
             title={t('subscriptionPlans.featCategoriesTitle', 'Organization')}
             description={t('subscriptionPlans.featCategoriesDesc', 'Organize tasks in up to {{count}} categories', {
@@ -253,7 +336,7 @@ export default function SubscriptionPlans() {
             styles.mainButton,
             (isSelectedPlanCurrent || actionLoading || offlineOrMissing) && styles.mainButtonDisabled
           ]}
-          onPress={() => handlePurchase(selectedPlan)}
+          onPress={() => handlePurchase(selectedPlan, billingPeriod)}
           disabled={isSelectedPlanCurrent || actionLoading || offlineOrMissing || isFreeSelected}
         >
           {actionLoading ? (
@@ -296,7 +379,7 @@ function FeatureItem({ icon, title, description, isLast }: { icon: keyof typeof 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F7F7F9', // Light gray-white background like Revolut
+    backgroundColor: '#F7F7F9',
   },
   loadingContainer: {
     flex: 1,
@@ -309,14 +392,19 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 20,
     paddingTop: 20,
-    paddingBottom: 100, // Space for bottom button
+    paddingBottom: 100,
   },
   pageTitle: {
     fontSize: 34,
     fontWeight: '800',
     color: '#1C1C1E',
-    marginBottom: 24,
     letterSpacing: -0.5,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
   },
   warningBanner: {
     flexDirection: 'row',
@@ -335,7 +423,7 @@ const styles = StyleSheet.create({
   },
   tabsContainer: {
     flexDirection: 'row',
-    marginBottom: 24,
+    marginBottom: 16,
     alignItems: 'center',
   },
   tabButton: {
@@ -360,12 +448,59 @@ const styles = StyleSheet.create({
   tabTextActive: {
     color: '#1C1C1E',
   },
+  billingToggle: {
+    flexDirection: 'row',
+    backgroundColor: '#E5E5EA',
+    borderRadius: 12,
+    padding: 3,
+  },
+  billingOption: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  billingOptionActive: {
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  billingOptionText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#8E8E93',
+  },
+  billingOptionTextActive: {
+    color: '#1C1C1E',
+  },
+  savingsBadge: {
+    backgroundColor: '#34C759',
+    borderRadius: 6,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    position: 'absolute',
+    top: -8,
+    right: -4,
+    zIndex: 1,
+  },
+  savingsBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  annualOptionWrapper: {
+    position: 'relative',
+  },
   darkCard: {
     backgroundColor: '#1C1C1E',
     borderRadius: 24,
     padding: 24,
     marginBottom: 32,
-    // Optional subtle dark shadow
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.2,
@@ -397,6 +532,22 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#1C1C1E',
     marginLeft: 4,
+  },
+  trialBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(52, 199, 89, 0.15)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    marginBottom: 16,
+    alignSelf: 'flex-start',
+  },
+  trialBadgeText: {
+    color: '#34C759',
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: 6,
   },
   darkCardPrice: {
     fontSize: 20,
@@ -464,11 +615,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: Platform.OS === 'ios' ? 34 : 24,
-    backgroundColor: '#F7F7F9', // Match main bg
+    backgroundColor: '#F7F7F9',
   },
   mainButton: {
     backgroundColor: '#1C1C1E',
-    borderRadius: 100, // Pill shape
+    borderRadius: 100,
     height: 56,
     justifyContent: 'center',
     alignItems: 'center',

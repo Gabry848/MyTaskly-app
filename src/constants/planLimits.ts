@@ -1,3 +1,10 @@
+export type BillingPeriod = 'monthly' | 'annual';
+
+export interface PlanProductIds {
+  monthly: string;
+  annual: string;
+}
+
 export interface PlanLimits {
   chatTextDaily: number;
   chatTextMonthly: number;
@@ -11,13 +18,21 @@ export interface Plan {
   id: 'free' | 'pro' | 'premium';
   name: string;
   limits: PlanLimits;
-  productId?: string;
+  productIds?: PlanProductIds;
+  /** Get the product ID for a specific billing period */
+  getProductId: (period: BillingPeriod) => string | undefined;
 }
 
-export const PLAN_PRODUCT_IDS: Record<'free' | 'pro' | 'premium', string | undefined> = {
+export const PLAN_PRODUCT_IDS: Record<'free' | 'pro' | 'premium', PlanProductIds | undefined> = {
   free: undefined,
-  pro: 'mytaskly_pro_monthly',
-  premium: 'mytaskly_premium_monthly',
+  pro: {
+    monthly: 'mytaskly_pro_monthly',
+    annual: 'mytaskly_pro_annual',
+  },
+  premium: {
+    monthly: 'mytaskly_premium_monthly',
+    annual: 'mytaskly_premium_annual',
+  },
 };
 
 export const PLANS: Record<'free' | 'pro' | 'premium', Plan> = {
@@ -32,11 +47,12 @@ export const PLANS: Record<'free' | 'pro' | 'premium', Plan> = {
       aiModel: 'base',
       maxCategories: 5,
     },
+    getProductId: () => undefined,
   },
   pro: {
     id: 'pro',
     name: 'Pro',
-    productId: PLAN_PRODUCT_IDS.pro,
+    productIds: PLAN_PRODUCT_IDS.pro,
     limits: {
       chatTextDaily: 50,
       chatTextMonthly: 250,
@@ -45,11 +61,12 @@ export const PLANS: Record<'free' | 'pro' | 'premium', Plan> = {
       aiModel: 'advanced',
       maxCategories: Infinity,
     },
+    getProductId: (period: BillingPeriod) => PLAN_PRODUCT_IDS.pro?.[period],
   },
   premium: {
     id: 'premium',
     name: 'Premium',
-    productId: PLAN_PRODUCT_IDS.premium,
+    productIds: PLAN_PRODUCT_IDS.premium,
     limits: {
       chatTextDaily: Infinity,
       chatTextMonthly: 400,
@@ -58,5 +75,6 @@ export const PLANS: Record<'free' | 'pro' | 'premium', Plan> = {
       aiModel: 'advanced',
       maxCategories: Infinity,
     },
+    getProductId: (period: BillingPeriod) => PLAN_PRODUCT_IDS.premium?.[period],
   },
 };
