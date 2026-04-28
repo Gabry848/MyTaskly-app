@@ -1,11 +1,12 @@
 import React from "react";
-import { StyleSheet, Pressable, Animated, Dimensions, View, Platform } from "react-native";
+import { StyleSheet, Animated, Dimensions, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../types';
 import CategoryHeader from './CategoryHeader';
 import AddTaskButton from '../Task/AddTaskButton';
 import SharingInfo from './SharingInfo';
+import { CardSurface } from "../UI/foundation";
 
 type CategoryScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -87,20 +88,20 @@ const CategoryCard: React.FC<CategoryCardProps> = ({
 
   return (
     <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-      <Pressable
+      <CardSurface
         accessible={true}
         accessibilityLabel={getAccessibilityLabel()}
         accessibilityRole="button"
         accessibilityHint="Tocca due volte per visualizzare le attività"
-        style={({ pressed }) => [
+        style={[
           styles.view,
           {
             marginHorizontal: screenWidth < 350 ? 8 : 16,
             padding: screenWidth < 350 ? 12 : 16,
             flexDirection: screenWidth < 320 ? 'column' : 'row',
           },
-          pressed && styles.pressed,
         ]}
+        variant="interactive"
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         onLongPress={onLongPress}
@@ -136,7 +137,7 @@ const CategoryCard: React.FC<CategoryCardProps> = ({
         {!(isShared && !isOwned && permissionLevel === 'READ_ONLY') && (
           <AddTaskButton onPress={onAddTask} screenWidth={screenWidth} categoryTitle={title} />
         )}
-      </Pressable>
+      </CardSurface>
     </Animated.View>
   );
 };
@@ -146,28 +147,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    padding: 16,
-    marginHorizontal: 16,
     marginVertical: 8,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: "#E1E5E9",
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.08,
-        shadowRadius: 12,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
-  },
-  pressed: {
-    backgroundColor: "#F9F9F9",
-    borderColor: "#BDBDBD",
   },
   contentContainer: {
     flex: 1,

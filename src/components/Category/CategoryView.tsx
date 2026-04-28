@@ -23,6 +23,7 @@ import { RootStackParamList } from "../../types";
 
 import { getCategories } from "../../services/taskService";
 import Category from "./Category";
+import { SectionHeader } from "../UI/foundation";
 
 export interface CategoryType {
   id: string | number;
@@ -307,15 +308,12 @@ const CategoryView = forwardRef<CategoryViewRef, CategoryViewProps>(
         {/* Empty state */}
         {showEmpty && (
           <View style={styles.noCategoriesContainer}>
+            <SectionHeader
+              title="Nessuna categoria"
+              subtitle="Aggiungi la tua prima categoria per iniziare"
+              style={styles.emptyHeader}
+            />
             <Text style={styles.noCategoriesMessage}>
-              Aggiungi la tua prima categoria per iniziare!{"\n"}
-            </Text>
-            <Text
-              style={[
-                styles.noCategoriesMessage,
-                { padding: 5, fontSize: 16, color: "black" },
-              ]}
-            >
               oppure{"\n"}
             </Text>
             <TouchableOpacity
@@ -342,6 +340,9 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 50,
     paddingHorizontal: 20,
+  },
+  emptyHeader: {
+    marginBottom: 10,
   },
   noCategoriesMessage: {
     fontSize: 18,
