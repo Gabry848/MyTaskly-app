@@ -14,12 +14,12 @@
 
 ## 3. Pattern composabili condivisi
 
-- [ ] 3.1 Implementare `SectionHeader` (titolo + action slot + opzionale subtitle)
-- [ ] 3.2 Implementare `StatusChip`/`MetaChip` per stati task, categoria, sync
-- [ ] 3.3 Implementare `LoadingState` con varianti `spinner` e `dots` riusabili
-- [ ] 3.4 Implementare `EmptyState` con icona, titolo, descrizione e CTA opzionale
-- [ ] 3.5 Implementare `ModalShell` con header/body/footer slot e gestione safe-area
-- [ ] 3.6 Implementare `InputShell` (row con leading/trailing action e text input) per pattern usato in `Home`
+- [x] 3.1 Implementare `SectionHeader` (titolo + action slot + opzionale subtitle)
+- [x] 3.2 Implementare `StatusChip`/`MetaChip` per stati task, categoria, sync
+- [x] 3.3 Implementare `LoadingState` con varianti `spinner` e `dots` riusabili
+- [x] 3.4 Implementare `EmptyState` con icona, titolo, descrizione e CTA opzionale
+- [x] 3.5 Implementare `ModalShell` con header/body/footer slot e gestione safe-area
+- [x] 3.6 Implementare `InputShell` (row con leading/trailing action e text input) per pattern usato in `Home`
 
 ## 4. Migrazione schermate prioritarie
 
@@ -45,10 +45,10 @@
 - [x] 6.3 `ContentContainer`
 - [x] 6.4 `ScreenHeader`
 - [x] 6.5 `CardSurface`
-- [ ] 6.6 `SectionHeader`
-- [ ] 6.7 `StatusChip` / `MetaChip`
-- [ ] 6.8 `LoadingState` (`spinner`, `dots`)
-- [ ] 6.9 `EmptyState`
-- [ ] 6.10 `ModalShell`
-- [ ] 6.11 `InputShell`
-- [ ] 6.12 `IconActionButton`
+- [x] 6.6 `SectionHeader`
+- [x] 6.7 `StatusChip` / `MetaChip`
+- [x] 6.8 `LoadingState` (`spinner`, `dots`)
+- [x] 6.9 `EmptyState`
+- [x] 6.10 `ModalShell`
+- [x] 6.11 `InputShell`
+- [x] 6.12 `IconActionButton`
