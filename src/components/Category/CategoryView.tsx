@@ -1,22 +1,23 @@
 import React, {
   useState,
   useEffect,
+  useRef,
   forwardRef,
   useImperativeHandle,
+  useCallback,
 } from "react";
 import {
   View,
   Text,
-  ScrollView,
   TouchableOpacity,
   StyleSheet,
   Dimensions,
+  Animated,
+  Platform,
 } from "react-native";
-import Icon from "react-native-vector-icons/MaterialIcons";
 import {
   useNavigation,
   NavigationProp,
-  useFocusEffect,
 } from "@react-navigation/native";
 import { RootStackParamList } from "../../types";
 
@@ -30,10 +31,9 @@ export interface CategoryType {
   imageUrl?: string;
   category_id?: number;
   status_code?: number;
-  // Campi per la condivisione
   is_shared?: boolean;
   owner_id?: number;
-  owner_name?: string; // Nome del proprietario (per categorie condivise)
+  owner_name?: string;
   is_owned?: boolean;
   permission_level?: "READ_ONLY" | "READ_WRITE";
 }
@@ -50,6 +50,118 @@ export interface CategoryViewRef {
   hardReload: () => void;
 }
 
+// ── Animated wrapper for each category card ──
+const CARD_STAGGER = 50;
+const CARD_DURATION = 400;
+
+const AnimatedCard: React.FC<{
+  index: number;
+  isVisible: boolean;
+  children: React.ReactNode;
+}> = ({ index, isVisible, children }) => {
+  const fade = useRef(new Animated.Value(0)).current;
+  const slideY = useRef(new Animated.Value(20)).current;
+
+  useEffect(() => {
+    if (isVisible) {
+      Animated.parallel([
+        Animated.timing(fade, {
+          toValue: 1,
+          duration: CARD_DURATION,
+          delay: index * CARD_STAGGER,
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideY, {
+          toValue: 0,
+          duration: CARD_DURATION,
+          delay: index * CARD_STAGGER,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      // Reset without animation so next entrance animates in
+      fade.setValue(0);
+      slideY.setValue(20);
+    }
+  }, [isVisible, index]);
+
+  return (
+    <Animated.View
+      style={{
+        opacity: fade,
+        transform: [{ translateY: slideY }],
+      }}
+    >
+      {children}
+    </Animated.View>
+  );
+};
+
+// ── Skeleton placeholder cards ──
+const SkeletonCard: React.FC<{ index: number }> = ({ index }) => {
+  const shimmer = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(shimmer, {
+          toValue: 1,
+          duration: 1200,
+          delay: index * 80,
+          useNativeDriver: true,
+        }),
+        Animated.timing(shimmer, {
+          toValue: 0,
+          duration: 1200,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [index, shimmer]);
+
+  const translateX = shimmer.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-300, 300],
+  });
+
+  const screenWidth = Dimensions.get("window").width;
+  const mx = screenWidth < 350 ? 8 : 16;
+
+  return (
+    <View
+      style={[
+        styles.skeletonCard,
+        { marginHorizontal: mx, marginVertical: 8 },
+      ]}
+    >
+      <View style={styles.skeletonRow}>
+        {/* Avatar circle */}
+        <View style={styles.skeletonCircle} />
+        {/* Text lines */}
+        <View style={{ flex: 1, marginLeft: 12 }}>
+          <View
+            style={[styles.skeletonLine, { width: "55%", marginBottom: 8 }]}
+          />
+          <View style={[styles.skeletonLine, { width: "30%", height: 12 }]} />
+        </View>
+      </View>
+      {/* Shimmer overlay */}
+      <Animated.View
+        style={[
+          StyleSheet.absoluteFill,
+          styles.skeletonShimmer,
+          { transform: [{ translateX }] },
+        ]}
+      />
+    </View>
+  );
+};
+
+const SKELETON_COUNT = 4;
+
+// ── Main CategoryView ──
 const CategoryView = forwardRef<CategoryViewRef, CategoryViewProps>(
   (
     { onCategoryAdded, onCategoryDeleted, onCategoryEdited, reloadCategories },
@@ -60,13 +172,13 @@ const CategoryView = forwardRef<CategoryViewRef, CategoryViewProps>(
     const [loading, setLoading] = useState<boolean>(true);
     const [isReloading, setIsReloading] = useState<boolean>(false);
     const previousCategoriesRef = React.useRef<CategoryType[]>([]);
+    const animKeyRef = useRef(0);
 
     const categoriesAreEqual = (
       cat1: CategoryType[],
       cat2: CategoryType[]
     ): boolean => {
       if (cat1.length !== cat2.length) return false;
-
       return cat1.every((c1) =>
         cat2.some(
           (c2) =>
@@ -82,6 +194,7 @@ const CategoryView = forwardRef<CategoryViewRef, CategoryViewProps>(
       forceRefresh: boolean = false,
       silent: boolean = false
     ) => {
+      const startedAt = Date.now();
       if (!silent) {
         setLoading(true);
       }
@@ -98,61 +211,83 @@ const CategoryView = forwardRef<CategoryViewRef, CategoryViewProps>(
       } catch (error) {
         console.error("Errore nel recupero delle categorie:", error);
       } finally {
-        setLoading(false);
+        if (!silent) {
+          const elapsed = Date.now() - startedAt;
+          const remaining = Math.max(0, 500 - elapsed);
+          if (remaining > 0) {
+            setTimeout(() => setLoading(false), remaining);
+          } else {
+            setLoading(false);
+          }
+        }
       }
     };
 
-    const hardReload = async () => {
+    const hardReload = useCallback(async () => {
+      const startedAt = Date.now();
       setIsReloading(true);
-      setCategories([]); // Nasconde tutte le categorie
+      animKeyRef.current += 1;
+      setCategories([]);
       try {
-        const categoriesData = await getCategories(false); // Force refresh
+        const categoriesData = await getCategories(false);
         if (Array.isArray(categoriesData)) {
-          // Confronta le categorie con le precedenti
-          if (
-            !categoriesAreEqual(categoriesData, previousCategoriesRef.current)
-          ) {
+          if (!categoriesAreEqual(categoriesData, previousCategoriesRef.current)) {
             setCategories(categoriesData);
             previousCategoriesRef.current = categoriesData;
-            console.log("Categorie aggiornate - differenze rilevate");
           } else {
-            // Se non ci sono differenze, mostra comunque le categorie
             setCategories(categoriesData);
-            console.log("Categorie ricaricate - nessuna differenza");
           }
         } else {
-          console.error(
-            "getCategories non ha restituito un array:",
-            categoriesData
-          );
+          console.error("getCategories non ha restituito un array:", categoriesData);
         }
       } catch (error) {
         console.error("Errore nel ricaricamento delle categorie:", error);
-        // Ripristina le categorie precedenti in caso di errore
         setCategories(previousCategoriesRef.current);
       } finally {
-        setIsReloading(false);
+        const elapsed = Date.now() - startedAt;
+        const minDisplay = 400;
+        const remaining = Math.max(0, minDisplay - elapsed);
+        if (remaining > 0) {
+          setTimeout(() => setIsReloading(false), remaining);
+        } else {
+          setIsReloading(false);
+        }
       }
-    };
+    }, []);
 
     useEffect(() => {
       fetchCategories();
     }, []);
 
-    // Esponi fetchCategories e hardReload tramite ref
     useImperativeHandle(ref, () => ({
       fetchCategories,
       hardReload,
     }));
 
+    const showCards = !loading && !isReloading && categories.length > 0;
+    const showEmpty = !loading && !isReloading && categories.length === 0;
+
     return (
-      <ScrollView style={styles.container}>
-        {/* Mostra le categorie solo se non stiamo ricaricando */}
-        {!isReloading && categories && categories.length > 0
-          ? categories.map((category, index) => {
-              const categoryElement = (
+      <View style={styles.container}>
+        {/* Skeleton loading */}
+        {(loading || isReloading) && (
+          <View>
+            {Array.from({ length: SKELETON_COUNT }).map((_, i) => (
+              <SkeletonCard key={`skeleton-${i}`} index={i} />
+            ))}
+          </View>
+        )}
+
+        {/* Category cards with staggered entrance */}
+        {showCards && (
+          <View pointerEvents={isReloading ? "none" : "auto"}>
+            {categories.map((category, index) => (
+              <AnimatedCard
+                key={`${category.id || category.name}-${index}-${animKeyRef.current}`}
+                index={index}
+                isVisible={showCards}
+              >
                 <Category
-                  key={`${category.id || category.name}-${index}`}
                   title={category.name}
                   description={category.description}
                   imageUrl={category.imageUrl}
@@ -164,40 +299,36 @@ const CategoryView = forwardRef<CategoryViewRef, CategoryViewProps>(
                   onDelete={onCategoryDeleted}
                   onEdit={onCategoryEdited}
                 />
-              );
-              
-              return categoryElement;
-            })
-          : !loading &&
-            !isReloading && (
-              <View style={styles.noCategoriesContainer}>
-                <Text style={styles.noCategoriesMessage}>
-                  Aggiungi la tua prima categoria per iniziare!{"\n"}
-                </Text>
-                <Text
-                  style={[
-                    styles.noCategoriesMessage,
-                    { padding: 5, fontSize: 16, color: "black" },
-                  ]}
-                >
-                  oppure{"\n"}
-                </Text>
-                <TouchableOpacity
-                  style={[styles.reloadButton, styles.goToLoginButton]}
-                  onPress={() => {
-                    navigation.navigate("Login");
-                  }}
-                >
-                  <Text style={[styles.reloadButtonText]}>Vai al login</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-        {(loading || isReloading) && (
-          <View style={styles.loadingSpinner}>
-            <View style={styles.spinner}></View>
+              </AnimatedCard>
+            ))}
           </View>
         )}
-      </ScrollView>
+
+        {/* Empty state */}
+        {showEmpty && (
+          <View style={styles.noCategoriesContainer}>
+            <Text style={styles.noCategoriesMessage}>
+              Aggiungi la tua prima categoria per iniziare!{"\n"}
+            </Text>
+            <Text
+              style={[
+                styles.noCategoriesMessage,
+                { padding: 5, fontSize: 16, color: "black" },
+              ]}
+            >
+              oppure{"\n"}
+            </Text>
+            <TouchableOpacity
+              style={[styles.reloadButton, styles.goToLoginButton]}
+              onPress={() => {
+                navigation.navigate("Login");
+              }}
+            >
+              <Text style={[styles.reloadButtonText]}>Vai al login</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
     );
   }
 );
@@ -207,23 +338,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 15,
   },
-  headerContainer: {
-    flexDirection: "row",
-    justifyContent: "flex-end", // Allinea il pulsante a destra
-    alignItems: "center",
-    marginTop: 5,
-    marginBottom: 5,
-    paddingHorizontal: 5,
-    minHeight: 44, // Altezza minima per evitare che vada a capo
-    flexWrap: "nowrap", // Impedisce il wrapping
-  },
-  headerTitle: {
-    fontSize: 30,
-    fontWeight: "200", // Stesso peso di Home20
-    color: "#000000",
-    fontFamily: "System",
-    letterSpacing: -1.5,
-  },
   noCategoriesContainer: {
     textAlign: "center",
     marginTop: 50,
@@ -231,30 +345,27 @@ const styles = StyleSheet.create({
   },
   noCategoriesMessage: {
     fontSize: 18,
-    color: "#666666", // Colore più morbido
+    color: "#666666",
     textAlign: "center",
     fontFamily: "System",
     fontWeight: "300",
     lineHeight: 26,
   },
   reloadButton: {
-    backgroundColor: "#f0f0f0", // Stesso colore del send button di Home20
+    backgroundColor: "#f0f0f0",
     paddingVertical: 12,
     paddingHorizontal: 12,
-    borderRadius: 20, // Stesso stile dei bottoni di Home20
+    borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
     shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 2,
-    minWidth: 44, // Larghezza minima per evitare problemi di layout
-    minHeight: 44, // Altezza minima per evitare problemi di layout
-    flexShrink: 0, // Impedisce al pulsante di ridursi
+    minWidth: 44,
+    minHeight: 44,
+    flexShrink: 0,
   },
   goToLoginButton: {
     width: 150,
@@ -266,38 +377,47 @@ const styles = StyleSheet.create({
     fontFamily: "System",
     fontWeight: "400",
   },
-  loadingSpinner: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
+  // Skeleton styles
+  skeletonCard: {
+    flexDirection: "row",
+    padding: 16,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: "#E1E5E9",
+    overflow: "hidden",
+    height: 76,
     justifyContent: "center",
-    height: Dimensions.get("window").height * 0.6,
-    paddingTop: 50,
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.08,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
   },
-  spinner: {
-    borderWidth: 3,
-    borderColor: "rgba(0, 0, 0, 0.1)",
-    borderLeftColor: "#000000", // Cambiato per coerenza con Home20
-    borderRadius: 50,
+  skeletonRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  skeletonCircle: {
     width: 40,
     height: 40,
-  },
-  refreshButton: {
-    backgroundColor: "#f0f0f0",
-    padding: 10,
     borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-    minWidth: 44,
-    minHeight: 44,
+    backgroundColor: "#E8ECF0",
+  },
+  skeletonLine: {
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: "#E8ECF0",
+  },
+  skeletonShimmer: {
+    backgroundColor: "rgba(255,255,255,0.5)",
   },
 });
 

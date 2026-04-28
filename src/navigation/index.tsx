@@ -67,7 +67,7 @@ export type RootStackParamList = {
   VerificationSuccess: { email: string; username: string; password: string };
   HomeTabs: undefined; // Contiene il Tab Navigator
   Home20: undefined; // Nuova schermata Home2.0
-  TaskList: { category_name: number | string };
+  TaskList: { categoryId?: number | string; category_name: number | string; isOwned?: boolean; permissionLevel?: "READ_ONLY" | "READ_WRITE" };
   Profile: undefined;
   Settings: undefined;
   AccountSettings: undefined;
@@ -136,7 +136,7 @@ function HomeTabs() {
 
             return <Ionicons name={iconName} size={size} color={color} />;
           },
-          tabBarActiveTintColor: "#007AFF",
+          tabBarActiveTintColor: "#000000",
           tabBarInactiveTintColor: "gray",
           headerShown: false,
         })}
@@ -195,7 +195,7 @@ function NavigationHandler() {
 
     // Listener per sincronizzazione automatica solo su schermate che ne hanno bisogno
     const SYNC_SCREEN = ['Categories', 'Calendar20', 'Calendar'];
-    const handleScreenChange = async ({ screenName, params }) => {
+    const handleScreenChange = async ({ screenName, params }: { screenName: string; params: any }) => {
       if (!SYNC_SCREEN.includes(screenName)) return;
 
       syncAllData()
@@ -444,17 +444,23 @@ function AppStack() {
         <Stack.Screen
           name="TaskList"
           component={TaskListScreen}
-          options={{ title: t('navigation.screens.taskList') }}
+          options={({ route }) => ({ title: String(route.params?.category_name || '') })}
         />
         <Stack.Screen
           name="Profile"
           component={ProfileScreen}
-          options={{ title: t('navigation.screens.profile') }}
+          options={{ 
+            title: t('navigation.screens.profile'),
+            animation: 'fade'
+          }}
         />
         <Stack.Screen
           name="Settings"
           component={SettingsScreen}
-          options={{ title: t('navigation.screens.settings') }}
+          options={{ 
+            title: t('navigation.screens.settings'),
+            animation: 'fade'
+          }}
         />
         <Stack.Screen
           name="AccountSettings"

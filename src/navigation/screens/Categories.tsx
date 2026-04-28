@@ -1,9 +1,11 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useCallback } from "react";
 import {
   View,
   StyleSheet,
   Text,
   TouchableOpacity,
+  ScrollView,
+  RefreshControl,
 } from "react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -14,6 +16,8 @@ import SearchTasksButton from "../../components/UI/SearchTasksButton";
 import GlobalTaskSearch from "../../components/Task/GlobalTaskSearch";
 import { useTranslation } from "react-i18next";
 import { MaterialIcons } from "@expo/vector-icons";
+import { TaskCacheService } from "../../services/TaskCacheService";
+import SyncManager from "../../services/SyncManager";
 
 export default function Categories() {
   const { t } = useTranslation();
@@ -22,16 +26,28 @@ export default function Categories() {
     hardReload: () => void;
   } | null>(null);
   const [searchModalVisible, setSearchModalVisible] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  // Ricarica le categorie quando la schermata viene visualizzata
   useFocusEffect(
     React.useCallback(() => {
       if (categoryListRef.current) {
-        // Silent refresh on focus
         categoryListRef.current.reloadCategories(true);
       }
     }, [])
   );
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await TaskCacheService.getInstance().clearCache();
+      await SyncManager.getInstance().startSync();
+      if (categoryListRef.current) {
+        categoryListRef.current.hardReload();
+      }
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
 
   const handleCategoryAdded = () => {
     if (categoryListRef.current) {
@@ -62,21 +78,30 @@ export default function Categories() {
         <Text style={styles.mainTitle}>{t("categories.title")}</Text>
       </View>
 
-      <View style={styles.content}>
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#000000"
+            colors={["#000000"]}
+            progressViewOffset={20}
+          />
+        }
+      >
         <View style={styles.searchContainer}>
           <SearchTasksButton
             onPress={handleOpenSearch}
             style={styles.searchButton}
           />
-          <TouchableOpacity style={styles.reloadButton} onPress={handleReload}>
-              <MaterialIcons name="refresh" size={24} color="#000000" />
-            </TouchableOpacity>
         </View>
         <CategoryList ref={categoryListRef} />
         <View style={styles.addButtonContainer}>
           <AddCategoryButton onCategoryAdded={handleCategoryAdded} />
         </View>
-      </View>
+      </ScrollView>
 
       <GlobalTaskSearch
         visible={searchModalVisible}
@@ -99,17 +124,19 @@ const styles = StyleSheet.create({
   },
   mainTitle: {
     fontSize: 30,
-    fontWeight: "200", // Stesso peso di Home20
+    fontWeight: "700", // Stesso peso di Home20
     color: "#000000",
     textAlign: "left",
     fontFamily: "System",
     letterSpacing: -1.5,
     marginBottom: 0,
     paddingBottom: 5,
-
   },
   content: {
     flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
   },
   searchContainer: {
     flexDirection: "row",

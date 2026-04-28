@@ -123,7 +123,7 @@ const CategoryCard: React.FC<CategoryCardProps> = ({
             badgeType={badgeType}
           />
 
-          {(isShared || !isOwned) && (
+          {!isOwned && (
             <SharingInfo
               isOwned={isOwned}
               ownerName={ownerName}

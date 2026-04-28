@@ -1,6 +1,9 @@
-import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { View, ScrollView, ActivityIndicator, Alert, Animated, Easing } from 'react-native';
+import React, { useState, useEffect, useMemo, useRef, useCallback, useLayoutEffect } from 'react';
+import { View, ScrollView, Alert, Animated, Easing, Text, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
+import { TouchableOpacity } from 'react-native';
 import { styles } from './styles';
 import { Task as TaskType, globalTasksRef } from './types';
 import { TaskListHeader } from './TaskListHeader';
@@ -44,15 +47,68 @@ export const TaskListContainer = ({
   const [ordineScadenza, setOrdineScadenza] = useState("Recente");
   const [isLoading, setIsLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
+
+  // Loading animation values
+  const dot1 = useRef(new Animated.Value(0)).current;
+  const dot2 = useRef(new Animated.Value(0)).current;
+  const dot3 = useRef(new Animated.Value(0)).current;
+  const fadeOverlay = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (!isLoading) return;
+
+    Animated.sequence([
+      Animated.timing(fadeOverlay, { toValue: 1, duration: 300, useNativeDriver: true }),
+    ]).start();
+
+    const loop = () => {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(dot1, { toValue: 1, duration: 400, useNativeDriver: true, easing: Easing.ease }),
+          Animated.timing(dot2, { toValue: 1, duration: 400, useNativeDriver: true, easing: Easing.ease }),
+          Animated.timing(dot3, { toValue: 1, duration: 400, useNativeDriver: true, easing: Easing.ease }),
+          Animated.delay(200),
+          Animated.timing(dot1, { toValue: 0, duration: 400, useNativeDriver: true, easing: Easing.ease }),
+          Animated.timing(dot2, { toValue: 0, duration: 400, useNativeDriver: true, easing: Easing.ease }),
+          Animated.timing(dot3, { toValue: 0, duration: 400, useNativeDriver: true, easing: Easing.ease }),
+          Animated.delay(200),
+        ]),
+      ).start();
+    };
+    loop();
+
+    return () => {
+      dot1.stopAnimation();
+      dot2.stopAnimation();
+      dot3.stopAnimation();
+      fadeOverlay.stopAnimation();
+    };
+  }, [isLoading]);
   const [formVisible, setFormVisible] = useState(false);
   
   // Stati per le sezioni collassabili
   const [todoSectionExpanded, setTodoSectionExpanded] = useState(true);
-  const [completedSectionExpanded, setCompletedSectionExpanded] = useState(true);
+  const [completedSectionExpanded, setCompletedSectionExpanded] = useState(false); // Collapsed by default to hide them
   
   // Animated values per le animazioni di altezza
   const todoSectionHeight = useRef(new Animated.Value(1)).current;
-  const completedSectionHeight = useRef(new Animated.Value(1)).current;
+  const completedSectionHeight = useRef(new Animated.Value(0)).current;
+
+  const navigation = useNavigation();
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      title: categoryName,
+      headerRight: () => (
+        <TouchableOpacity
+          style={{ paddingRight: 15 }}
+          onPress={() => setModalVisible(true)}
+        >
+          <Ionicons name="options-outline" size={24} color="#666666" />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation, categoryName]);
 
   // Initialize the global task adder function
   globalTasksRef.addTask = (newTask: TaskType, category: string) => {
@@ -519,13 +575,27 @@ export const TaskListContainer = ({
 
   return (
     <View style={styles.container}>
-      <TaskListHeader 
-        title={categoryName}
-        onFilterPress={() => setModalVisible(true)}
-      />
-
       {isLoading ? (
-        <ActivityIndicator size="large" color="#10e0e0" />
+        <Animated.View style={[StyleSheet.absoluteFill, loadingStyles.overlay, { opacity: fadeOverlay }]}>
+          <View style={loadingStyles.content}>
+            <View style={loadingStyles.dotsRow}>
+              {[dot1, dot2, dot3].map((anim, i) => (
+                <Animated.View
+                  key={i}
+                  style={[
+                    loadingStyles.dot,
+                    {
+                      opacity: anim.interpolate({ inputRange: [0, 1], outputRange: [0.15, 1] }),
+                      transform: [
+                        { scale: anim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.4] }) },
+                      ],
+                    },
+                  ]}
+                />
+              ))}
+            </View>
+          </View>
+        </Animated.View>
       ) : (
         <ScrollView style={styles.scrollContainer}>
           {/* Modal dei filtri */}
@@ -540,47 +610,51 @@ export const TaskListContainer = ({
             setOrdineScadenza={setOrdineScadenza}
           />
 
-          {/* Visualizzazione filtri attivi */}
-          <ActiveFilters 
-            importanceFilter={filtroImportanza}
-            deadlineFilter={filtroScadenza}
-            onClearImportanceFilter={() => setFiltroImportanza("Tutte")}
-            onClearDeadlineFilter={() => setFiltroScadenza("Tutte")}
-          />
+          {/* Sezione task non completati (senza contenitore collapsabile) */}
+          <View style={{ marginTop: 8, marginBottom: 20 }}>
+            <Text style={styles.sectionTitle}>{t('taskList.sections.todo') || 'Da fare'}</Text>
+            
+            {/* Visualizzazione filtri attivi (spostata sotto il titolo "Da fare") */}
+            <ActiveFilters 
+              importanceFilter={filtroImportanza}
+              deadlineFilter={filtroScadenza}
+              onClearImportanceFilter={() => setFiltroImportanza("Tutte")}
+              onClearDeadlineFilter={() => setFiltroScadenza("Tutte")}
+            />
 
-          {/* Sezione task non completati */}
-          <TaskSection
-            title={t('taskList.sections.todo')}
-            isExpanded={todoSectionExpanded}
-            tasks={listaFiltrata}
-            animatedHeight={todoSectionHeight}
-            onToggle={() => toggleSection(todoSectionExpanded, setTodoSectionExpanded, todoSectionHeight)}
-            renderTask={(item, index) => {
-              // Ensure every task has a valid ID
-              const taskId = item.id || item.task_id || `fallback_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 9)}`;
-              return (
-                <Task
-                  key={`task-${taskId}`}
-                  task={{
-                    ...item,
-                    id: taskId,
-                    start_time: item.start_time || new Date().toISOString(),
-                    status: item.status || "In sospeso",
-                    completed: item.completed || false
-                  }}
-                  onTaskComplete={handleTaskComplete}
-                  onTaskDelete={handleTaskDelete}
-                  onTaskEdit={handleTaskEdit}
-                  onTaskUncomplete={handleTaskUncomplete}
-                  isOwned={isOwned}
-                  permissionLevel={permissionLevel}
-                />
-              );
-            }}
-            emptyMessage={t('taskList.sections.emptyTodo')}
-          />
+            {listaFiltrata.length > 0 ? (
+              <>
+                {listaFiltrata.map((item, index) => {
+                const taskId = item.id || item.task_id || `fallback_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 9)}`;
+                return (
+                  <Task
+                    key={`task-${taskId}`}
+                    task={{
+                      ...item,
+                      id: taskId,
+                      start_time: item.start_time || new Date().toISOString(),
+                      status: item.status || "In sospeso",
+                      completed: item.completed || false
+                    }}
+                    onTaskComplete={handleTaskComplete}
+                    onTaskDelete={handleTaskDelete}
+                    onTaskEdit={handleTaskEdit}
+                    onTaskUncomplete={handleTaskUncomplete}
+                    isOwned={isOwned}
+                    permissionLevel={permissionLevel}
+                  />
+                );
+              })}
+              </>
+            ) : (
+              <View style={{ padding: 20, alignItems: 'center', marginTop: 20 }}>
+                <Ionicons name="clipboard-outline" size={48} color="#cccccc" />
+                <Text style={{ marginTop: 10, color: '#888888', fontSize: 16 }}>{t('taskList.sections.emptyTodo') || 'Nessun task da fare'}</Text>
+              </View>
+            )}
+          </View>
 
-          {/* Sezione task completati */}
+          {/* Sezione task completati (collapsabile in basso) */}
           {completedTasks.length > 0 && (
             <TaskSection
               title={t('taskList.sections.completed')}
@@ -629,3 +703,36 @@ export const TaskListContainer = ({
     </View>
   );
 };
+
+const loadingStyles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  content: {
+    alignItems: 'center',
+  },
+  dotsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    marginBottom: 20,
+  },
+  dot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#000000',
+  },
+  label: {
+    fontSize: 15,
+    fontWeight: '300',
+    color: '#999999',
+    fontFamily: 'System',
+    letterSpacing: -0.3,
+  },
+});
