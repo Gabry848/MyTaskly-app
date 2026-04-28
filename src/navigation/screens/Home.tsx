@@ -34,6 +34,8 @@ import VoiceCalendarModal from "../../components/BotChat/VoiceCalendarModal";
 import { useTranslation } from 'react-i18next';
 import { ChatHistory } from "../../components/BotChat/ChatHistory";
 import { useTutorialContext } from "../../contexts/TutorialContext";
+import { AppText } from "../../components/UI/foundation";
+import { colors } from "../../theme/tokens";
 
 const HomeScreen = () => {
   const { t } = useTranslation();
@@ -684,14 +686,14 @@ const HomeScreen = () => {
 
         {/* Header con titolo principale e indicatori sync */}
         <View style={styles.header}>
-          <Text style={styles.mainTitle} numberOfLines={1} ellipsizeMode="clip" allowFontScaling={false}>Mytaskly</Text>
+          <AppText variant="display" numberOfLines={1} ellipsizeMode="clip" allowFontScaling={false} style={styles.mainTitle}>Mytaskly</AppText>
           <View style={styles.headerActions}>
             <TouchableOpacity
               style={styles.resetButton}
               onPress={handleStartTutorial}
               activeOpacity={0.7}
             >
-              <Ionicons name="help-circle-outline" size={22} color="#666666" />
+              <Ionicons name="help-circle-outline" size={22} color={colors.textSecondary} />
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.resetButton}
@@ -701,7 +703,7 @@ const HomeScreen = () => {
               <Ionicons
                 name={showChatHistory ? "chatbubbles" : "chatbubbles-outline"}
                 size={22}
-                color={showChatHistory ? "#007AFF" : "#666666"}
+                color={showChatHistory ? colors.accent : colors.textSecondary}
               />
             </TouchableOpacity>
             {chatStarted && !showChatHistory && (
@@ -710,7 +712,7 @@ const HomeScreen = () => {
                 onPress={handleResetChat}
                 activeOpacity={0.7}
               >
-                <Ionicons name="add-outline" size={22} color="#666666" />
+                <Ionicons name="add-outline" size={22} color={colors.textSecondary} />
               </TouchableOpacity>
             )}
             <Badge />
@@ -970,11 +972,11 @@ const HomeScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.background,
   },
   keyboardAwareScrollView: {
     flex: 1,
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.background,
   },
   scrollViewContent: {
     flexGrow: 1,
@@ -1009,9 +1011,7 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   mainTitle: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#000000",
+    color: colors.textPrimary,
     fontFamily: "System",
     letterSpacing: -1.5,
   },
@@ -1038,7 +1038,7 @@ const styles = StyleSheet.create({
   cursorText: {
     fontSize: 34,
     fontWeight: "300",
-    color: "#000000",
+    color: colors.textPrimary,
     fontFamily: "System",
     letterSpacing: -0.8,
   },
@@ -1054,7 +1054,7 @@ const styles = StyleSheet.create({
   greetingText: {
     fontSize: Platform.select({ ios: 28, android: 26 }),
     fontWeight: "300",
-    color: "#000000",
+    color: colors.textPrimary,
     textAlign: "center",
     lineHeight: Platform.select({ ios: 36, android: 34 }),
     fontFamily: "System",
@@ -1070,7 +1070,7 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
   },
   loadingBubble: {
-    backgroundColor: "#f0f0f0",
+    backgroundColor: colors.borderSoft,
     paddingHorizontal: 15,
     paddingVertical: 12,
     borderRadius: 16,
@@ -1085,7 +1085,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 16,
-    color: "#666666",
+    color: colors.textSecondary,
     marginRight: 8,
     fontFamily: "System",
   },
@@ -1097,7 +1097,7 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: "#999999",
+    backgroundColor: colors.textTertiary,
     marginHorizontal: 2,
   },
   inputSection: {
@@ -1105,14 +1105,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 20,
     paddingTop: 12,
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.background,
     borderTopWidth: 1,
-    borderTopColor: "#e1e5e9",
+    borderTopColor: colors.border,
   },
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.background,
     borderRadius: 30,
     paddingHorizontal: 14,
     paddingVertical: 8,
@@ -1120,7 +1120,7 @@ const styles = StyleSheet.create({
     maxWidth: 420,
     minHeight: 50,
     borderWidth: 1.5,
-    borderColor: "#e1e5e9",
+    borderColor: colors.border,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
@@ -1137,7 +1137,7 @@ const styles = StyleSheet.create({
   textInput: {
     flex: 1,
     fontSize: 15,
-    color: "#000000",
+    color: colors.textPrimary,
     fontFamily: "System",
     fontWeight: "400",
     minHeight: 36,
@@ -1148,7 +1148,7 @@ const styles = StyleSheet.create({
   textInputSingleLine: {
     flex: 1,
     fontSize: 15,
-    color: "#000000",
+    color: colors.textPrimary,
     fontFamily: "System",
     fontWeight: "400",
     height: 36,
@@ -1171,7 +1171,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 25,
     borderWidth: 1,
-    borderColor: "#e1e5e9",
+    borderColor: colors.border,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
@@ -1196,7 +1196,7 @@ const styles = StyleSheet.create({
   },
   chatHistoryContainer: {
     flex: 1,
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.background,
   },
 });
 

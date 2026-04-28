@@ -29,7 +29,7 @@
 - [x] 4.4 Migrare `TaskCard` verso composizione `CardSurface + AppText + MetaChip` mantenendo comportamento corrente
 - [x] 4.5 Migrare `CalendarView` a loader/empty/sync chip condivisi e header standardizzato
 - [x] 4.6 Verificare `Calendar20View` su container/header coerenti e compatibilita con pattern foundation
-- [ ] 4.7 Applicare hardening su `Home` (header actions, loading bubble pattern, input shell) senza alterare flussi chat
+- [x] 4.7 Applicare hardening su `Home` (header actions, loading bubble pattern, input shell) senza alterare flussi chat
 
 ## 5. Validazione, cleanup e adozione
 
