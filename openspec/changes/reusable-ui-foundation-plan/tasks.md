@@ -35,8 +35,8 @@
 
 - [x] 5.1 Eseguire smoke test manuale per `Categories`, `TaskList`, `Calendar`, `Home` dopo ogni slice di migrazione
 - [x] 5.2 Rimuovere stili duplicati e inline obsolete nelle schermate migrate
-- [ ] 5.3 Aggiungere documentazione d’uso dei nuovi componenti in `src/components/UI/foundation/README.md`
-- [ ] 5.4 Definire lista “do/don’t” per evitare nuovi macro-componenti e favorire composizione
+- [x] 5.3 Aggiungere documentazione d’uso dei nuovi componenti in `src/components/UI/foundation/README.md`
+- [x] 5.4 Definire lista “do/don’t” per evitare nuovi macro-componenti e favorire composizione
 
 ## 6. Lista componenti da creare
 
