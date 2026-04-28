@@ -1,8 +1,10 @@
 import React from 'react';
-import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import dayjs from 'dayjs';
 import { Task } from '../../services/taskService';
+import { CardSurface, AppText, StatusChip } from '../UI/foundation';
+import { colors, spacing } from '../../theme/tokens';
 
 export interface TaskCardProps {
   task: Task;
@@ -10,8 +12,6 @@ export interface TaskCardProps {
 }
 
 const TaskCard: React.FC<TaskCardProps> = ({ task, onPress }) => {
-  
-  // Funzione per sanitizzare le stringhe
   const sanitizeString = (value: any): string => {
     if (typeof value === 'string') {
       return value.trim();
@@ -23,7 +23,6 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onPress }) => {
   };
 
   const formatTaskTime = (startTime?: string, endTime?: string, nextOccurrence?: string): string => {
-    // For recurring tasks, show next occurrence instead of end_time
     const dateToShow = nextOccurrence || endTime || startTime;
 
     if (!dateToShow) {
@@ -47,7 +46,6 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onPress }) => {
     return datePrefix + timeRange;
   };
 
-  // Calcola la prossima data di scadenza stimata dal pattern di ricorrenza
   const computeNextOccurrence = (): string | null => {
     const pattern = task.recurrence_pattern;
     if (!pattern) return null;
@@ -62,9 +60,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onPress }) => {
     if (pattern === 'weekly') {
       const days = task.recurrence_days_of_week;
       if (days && days.length > 0) {
-        // Trova il prossimo giorno della settimana corrispondente (1=Lun, 7=Dom)
-        // dayjs: 0=Dom, 1=Lun, ..., 6=Sab → converti
-        const todayDow = now.day() === 0 ? 7 : now.day(); // 1-7 Mon-Sun
+        const todayDow = now.day() === 0 ? 7 : now.day();
         const sortedDays = [...days].sort((a, b) => a - b);
         const nextDay = sortedDays.find(d => d > todayDow) ?? sortedDays[0];
         const daysUntil = nextDay > todayDow
@@ -87,7 +83,6 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onPress }) => {
     return null;
   };
 
-  // Format recurrence description for display
   const getRecurrenceDescription = (): string | null => {
     if (!task.is_recurring || !task.recurrence_pattern) return null;
 
@@ -116,7 +111,6 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onPress }) => {
     return 'Ricorrente';
   };
 
-  // Format duration for display
   const formatDuration = (minutes?: number | null): string | null => {
     if (!minutes) return null;
     if (minutes < 60) return `${minutes} min`;
@@ -128,90 +122,83 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onPress }) => {
     return `${hours}h ${remainingMinutes}min`;
   };
 
-  // Determina il colore in base alla priorità (gradiente di scurezza)
   const priorityColors: Record<string, string> = {
-    'Alta': '#000000',     // Nero per alta priorità
-    'Media': '#333333',    // Grigio scuro per media priorità
-    'Bassa': '#666666',    // Grigio medio per bassa priorità
-    'default': '#999999'   // Grigio chiaro per default
+    'Alta': '#000000',
+    'Media': '#333333',
+    'Bassa': '#666666',
+    'default': '#999999'
   };
-  
-  const cardColor = task.priority ? 
-    priorityColors[task.priority] || priorityColors.default : 
-    priorityColors.default;
-    
+
+  const cardColor = task.priority
+    ? priorityColors[task.priority] || priorityColors.default
+    : priorityColors.default;
+
   return (
-    <TouchableOpacity
-      style={[styles.taskCard, { borderLeftColor: cardColor, borderLeftWidth: 5 }]}
+    <CardSurface
+      variant="interactive"
+      accentColor={cardColor}
+      accentWidth={5}
+      style={styles.card}
       onPress={() => onPress && onPress(task)}
     >
-      <View style={styles.taskCardContent}>
+      <View style={styles.content}>
         <View style={styles.titleRow}>
-          <Text style={styles.taskTitle} numberOfLines={1} ellipsizeMode="tail">
+          <AppText variant="body" weight="500" style={styles.title} numberOfLines={1} ellipsizeMode="tail">
             {sanitizeString(task.title)}
-          </Text>
+          </AppText>
           {(task.is_recurring || task.is_generated_instance) && (
-            <View style={styles.recurringBadge}>
-              <Ionicons name="repeat" size={14} color="#007AFF" />
-            </View>
+            <StatusChip
+              label=""
+              tone="accent"
+              leftIcon={<Ionicons name="repeat" size={14} color={colors.accent} />}
+              style={styles.recurringBadge}
+            />
           )}
         </View>
 
         {(() => {
           const description = sanitizeString(task.description);
           return description && description !== 'null' && description !== '' ? (
-            <Text style={styles.taskDescription} numberOfLines={2} ellipsizeMode="tail">
+            <AppText variant="caption" color={colors.textSecondary} style={styles.description} numberOfLines={2} ellipsizeMode="tail">
               {description}
-            </Text>
+            </AppText>
           ) : null;
         })()}
 
-        {/* Show recurrence pattern for recurring tasks */}
         {task.is_recurring && getRecurrenceDescription() && (
-          <Text style={styles.recurrenceDescription}>
+          <AppText variant="caption" color={colors.accent} style={styles.recurrenceDesc}>
             {getRecurrenceDescription()}
-          </Text>
+          </AppText>
         )}
 
-        {/* Show completion count for recurring tasks */}
         {task.is_recurring && task.recurrence_current_count !== undefined && task.recurrence_current_count > 0 && (
-          <Text style={styles.completionCount}>
+          <AppText variant="caption" color={colors.textSecondary} style={styles.completionCount}>
             Completato {task.recurrence_current_count} {task.recurrence_current_count === 1 ? 'volta' : 'volte'}
-          </Text>
+          </AppText>
         )}
-        
-        <View style={styles.taskMetadata}>
+
+        <View style={styles.metadata}>
           {(() => {
             const categoryName = sanitizeString(task.category_name);
             return categoryName && categoryName !== 'null' && categoryName !== '' ? (
-              <View style={styles.taskCategory}>
-                <Text style={styles.taskCategoryText}>
-                  {categoryName}
-                </Text>
-              </View>
+              <StatusChip label={categoryName} tone="neutral" />
             ) : null;
           })()}
-          
-          <View style={styles.taskStatus}>
-            <Text style={[
-              styles.taskStatusText, 
-              { color: task.status === 'Completato' ? '#000000' : '#666666' }
-            ]}>
-              {sanitizeString(task.status)}
-            </Text>
-          </View>
+
+          <StatusChip
+            label={sanitizeString(task.status)}
+            tone={task.status === 'Completato' ? 'success' : 'neutral'}
+          />
         </View>
 
-        {/* Duration display */}
         {formatDuration(task.duration_minutes) && (
-          <View style={styles.durationInfo}>
-            <Text style={styles.durationInfoText}>
+          <View style={styles.durationRow}>
+            <AppText variant="label" color={colors.textSecondary}>
               {formatDuration(task.duration_minutes)}
-            </Text>
+            </AppText>
           </View>
         )}
 
-        {/* Date / next occurrence */}
         {(() => {
           const isRecurring = task.is_recurring || task.is_generated_instance;
           if (isRecurring) {
@@ -221,8 +208,8 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onPress }) => {
               : 'Ricorrente';
             return (
               <View style={styles.dateRow}>
-                <Ionicons name="time-outline" size={13} color="#007AFF" />
-                <Text style={[styles.dateRowText, styles.dateRowRecurring]}>{label}</Text>
+                <Ionicons name="time-outline" size={13} color={colors.accent} />
+                <AppText variant="label" color={colors.accent}>{label}</AppText>
               </View>
             );
           }
@@ -232,136 +219,64 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onPress }) => {
             : 'Nessuna scadenza';
           return (
             <View style={styles.dateRow}>
-              <Ionicons name="calendar-outline" size={13} color="#999999" />
-              <Text style={[styles.dateRowText, styles.dateRowNone]}>{label}</Text>
+              <Ionicons name="calendar-outline" size={13} color={colors.textTertiary} />
+              <AppText variant="label" color={colors.textTertiary}>{label}</AppText>
             </View>
           );
         })()}
       </View>
-    </TouchableOpacity>
+    </CardSurface>
   );
 };
 
 const styles = StyleSheet.create({
-  taskCard: {
-    backgroundColor: "#ffffff",
-    borderRadius: 16,
-    padding: 16,
+  card: {
     marginVertical: 6,
     marginHorizontal: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: "#f0f0f0",
   },
-  taskCardContent: {
-    flexDirection: "column",
+  content: {
+    flexDirection: 'column',
+    gap: 0,
   },
   titleRow: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 6,
   },
-  taskTitle: {
-    fontSize: 16,
-    fontWeight: "500",
-    color: "#000000",
-    fontFamily: "System",
-    letterSpacing: -0.3,
+  title: {
     flex: 1,
   },
   recurringBadge: {
-    backgroundColor: "#E3F2FD",
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
     marginLeft: 8,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  taskDescription: {
-    fontSize: 14,
-    color: "#666666",
-    marginBottom: 8,
-    lineHeight: 20,
-    fontFamily: "System",
-    fontWeight: "300",
-  },
-  taskMetadata: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  taskCategory: {
-    backgroundColor: "#f8f8f8",
-    borderRadius: 8,
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
-  taskCategoryText: {
-    fontSize: 12,
-    color: "#666666",
-    fontWeight: "400",
-    fontFamily: "System",
+  description: {
+    marginBottom: 8,
   },
-  taskStatus: {
-    backgroundColor: "#f8f8f8",
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+  metadata: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
   },
-  taskStatusText: {
-    fontSize: 12,
-    fontWeight: "400",
-    fontFamily: "System",
-  },
-  recurrenceDescription: {
-    fontSize: 12,
-    color: "#007AFF",
+  recurrenceDesc: {
     marginBottom: 6,
-    fontFamily: "System",
-    fontWeight: "400",
   },
   completionCount: {
-    fontSize: 11,
-    color: "#666666",
     marginBottom: 6,
-    fontFamily: "System",
-    fontWeight: "300",
-    fontStyle: "italic",
+    fontStyle: 'italic',
   },
-  durationInfo: {
-    flexDirection: "row",
-    alignItems: "center",
+  durationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginTop: 4,
   },
-  durationInfoText: {
-    fontSize: 12,
-    color: "#666666",
-    marginLeft: 6,
-    fontFamily: "System",
-    fontWeight: "400",
-  },
   dateRow: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     marginTop: 6,
     gap: 4,
-  },
-  dateRowText: {
-    fontSize: 12,
-    fontFamily: "System",
-    fontWeight: "400",
-  },
-  dateRowRecurring: {
-    color: "#007AFF",
-  },
-  dateRowNone: {
-    color: "#999999",
   },
 });
 
