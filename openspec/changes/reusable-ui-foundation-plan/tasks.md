@@ -10,7 +10,7 @@
 - [x] 2.2 Implementare `AppText` con varianti (`display`, `title`, `subtitle`, `body`, `caption`, `label`) basate su token
 - [x] 2.3 Implementare `ScreenContainer` e `ContentContainer` per sostituire wrapper ripetuti `backgroundColor/padding`
 - [x] 2.4 Implementare `ScreenHeader` con supporto titolo, azioni destre, varianti allineamento
-- [ ] 2.5 Implementare `CardSurface` con varianti (`default`, `outlined`, `interactive`) e supporto accent border
+- [x] 2.5 Implementare `CardSurface` con varianti (`default`, `outlined`, `interactive`) e supporto accent border
 
 ## 3. Pattern composabili condivisi
 
@@ -44,7 +44,7 @@
 - [x] 6.2 `ScreenContainer`
 - [x] 6.3 `ContentContainer`
 - [x] 6.4 `ScreenHeader`
-- [ ] 6.5 `CardSurface`
+- [x] 6.5 `CardSurface`
 - [ ] 6.6 `SectionHeader`
 - [ ] 6.7 `StatusChip` / `MetaChip`
 - [ ] 6.8 `LoadingState` (`spinner`, `dots`)
