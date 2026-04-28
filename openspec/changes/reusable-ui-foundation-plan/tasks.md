@@ -23,7 +23,7 @@
 
 ## 4. Migrazione schermate prioritarie
 
-- [ ] 4.1 Migrare `Categories` a `ScreenContainer + ScreenHeader + ContentContainer` e uniformare spazi e titolo
+- [x] 4.1 Migrare `Categories` a `ScreenContainer + ScreenHeader + ContentContainer` e uniformare spazi e titolo
 - [ ] 4.2 Migrare componenti categoria principali (`CategoryCard`/vista lista) a `CardSurface` e `SectionHeader`
 - [ ] 4.3 Migrare `TaskListContainer` a `LoadingState`, `EmptyState`, `SectionHeader`, chip stato/filtro condivisi
 - [ ] 4.4 Migrare `TaskCard` verso composizione `CardSurface + AppText + MetaChip` mantenendo comportamento corrente

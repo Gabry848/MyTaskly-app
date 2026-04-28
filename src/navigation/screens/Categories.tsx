@@ -2,12 +2,10 @@ import React, { useRef, useState, useCallback } from "react";
 import {
   View,
   StyleSheet,
-  Text,
   TouchableOpacity,
   ScrollView,
   RefreshControl,
 } from "react-native";
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useFocusEffect } from "@react-navigation/native";
 import CategoryList from "../../components/Category/CategoryList";
@@ -15,9 +13,13 @@ import AddCategoryButton from "../../components/Category/AddCategoryButton";
 import SearchTasksButton from "../../components/UI/SearchTasksButton";
 import GlobalTaskSearch from "../../components/Task/GlobalTaskSearch";
 import { useTranslation } from "react-i18next";
-import { MaterialIcons } from "@expo/vector-icons";
 import { TaskCacheService } from "../../services/TaskCacheService";
 import SyncManager from "../../services/SyncManager";
+import {
+  ContentContainer,
+  ScreenContainer,
+  ScreenHeader,
+} from "../../components/UI/foundation";
 
 export default function Categories() {
   const { t } = useTranslation();
@@ -63,20 +65,11 @@ export default function Categories() {
     setSearchModalVisible(false);
   };
 
-  const handleReload = () => {
-    if (categoryListRef.current) {
-      categoryListRef.current.hardReload();
-    }
-  };
-
   return (
-    <SafeAreaView style={styles.container}>
+    <ScreenContainer>
       <StatusBar style="dark" />
 
-      {/* Header con titolo principale - stesso stile di Home20 */}
-      <View style={styles.header}>
-        <Text style={styles.mainTitle}>{t("categories.title")}</Text>
-      </View>
+      <ScreenHeader title={t("categories.title")} />
 
       <ScrollView
         style={styles.content}
@@ -91,13 +84,15 @@ export default function Categories() {
           />
         }
       >
-        <View style={styles.searchContainer}>
-          <SearchTasksButton
-            onPress={handleOpenSearch}
-            style={styles.searchButton}
-          />
-        </View>
-        <CategoryList ref={categoryListRef} />
+        <ContentContainer padded={false}>
+          <View style={styles.searchContainer}>
+            <SearchTasksButton
+              onPress={handleOpenSearch}
+              style={styles.searchButton}
+            />
+          </View>
+          <CategoryList ref={categoryListRef} />
+        </ContentContainer>
         <View style={styles.addButtonContainer}>
           <AddCategoryButton onCategoryAdded={handleCategoryAdded} />
         </View>
@@ -107,31 +102,11 @@ export default function Categories() {
         visible={searchModalVisible}
         onClose={handleCloseSearch}
       />
-    </SafeAreaView>
+    </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#ffffff",
-  },
-  header: {
-    paddingHorizontal: 15,
-    paddingBottom: 0,
-    flexDirection: "row",
-    alignItems: "flex-start",
-  },
-  mainTitle: {
-    fontSize: 30,
-    fontWeight: "700", // Stesso peso di Home20
-    color: "#000000",
-    textAlign: "left",
-    fontFamily: "System",
-    letterSpacing: -1.5,
-    marginBottom: 0,
-    paddingBottom: 5,
-  },
   content: {
     flex: 1,
   },
