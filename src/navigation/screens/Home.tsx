@@ -1010,7 +1010,7 @@ const styles = StyleSheet.create({
   },
   mainTitle: {
     fontSize: 28,
-    fontWeight: "200",
+    fontWeight: "700",
     color: "#000000",
     fontFamily: "System",
     letterSpacing: -1.5,

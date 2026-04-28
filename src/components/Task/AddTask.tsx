@@ -8,6 +8,9 @@ import {
   Modal,
   Alert,
   ScrollView,
+  Animated,
+  PanResponder,
+  Dimensions,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
@@ -36,6 +39,8 @@ export type AddTaskProps = {
   allowCategorySelection?: boolean; // Abilita campo categoria
 };
 
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+
 const AddTask: React.FC<AddTaskProps> = ({
   visible,
   onClose,
@@ -55,6 +60,45 @@ const AddTask: React.FC<AddTaskProps> = ({
   const [priority, setPriority] = useState<number>(1);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+
+  const panY = React.useRef(new Animated.Value(0)).current;
+
+  React.useEffect(() => {
+    if (visible) {
+      panY.setValue(0);
+    }
+  }, [visible, panY]);
+
+  const closeWithAnimation = () => {
+    Animated.timing(panY, {
+      toValue: SCREEN_HEIGHT,
+      duration: 250,
+      useNativeDriver: true,
+    }).start(() => onClose());
+  };
+
+  const panResponder = React.useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, gestureState) => Math.abs(gestureState.dy) > 10,
+      onPanResponderMove: (_, gestureState) => {
+        if (gestureState.dy > 0) {
+          panY.setValue(gestureState.dy);
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dy > 100 || gestureState.vy > 1.5) {
+          closeWithAnimation();
+        } else {
+          Animated.spring(panY, {
+            toValue: 0,
+            useNativeDriver: true,
+            bounciness: 10
+          }).start();
+        }
+      },
+    })
+  ).current;
   const [dueDate, setDueDate] = useState<string>("");
   const [selectedDateTime, setSelectedDateTime] = useState<Date | null>(null);
   const [titleError, setTitleError] = useState<string>("");
