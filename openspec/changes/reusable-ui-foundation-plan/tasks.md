@@ -25,7 +25,7 @@
 
 - [x] 4.1 Migrare `Categories` a `ScreenContainer + ScreenHeader + ContentContainer` e uniformare spazi e titolo
 - [x] 4.2 Migrare componenti categoria principali (`CategoryCard`/vista lista) a `CardSurface` e `SectionHeader`
-- [ ] 4.3 Migrare `TaskListContainer` a `LoadingState`, `EmptyState`, `SectionHeader`, chip stato/filtro condivisi
+- [x] 4.3 Migrare `TaskListContainer` a `LoadingState`, `EmptyState`, `SectionHeader`, chip stato/filtro condivisi
 - [ ] 4.4 Migrare `TaskCard` verso composizione `CardSurface + AppText + MetaChip` mantenendo comportamento corrente
 - [ ] 4.5 Migrare `CalendarView` a loader/empty/sync chip condivisi e header standardizzato
 - [ ] 4.6 Verificare `Calendar20View` su container/header coerenti e compatibilita con pattern foundation

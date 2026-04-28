@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback, useLayoutEffect } from 'react';
-import { View, ScrollView, Alert, Animated, Easing, Text, StyleSheet } from 'react-native';
+import { View, ScrollView, Alert, Animated, Easing } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { TouchableOpacity } from 'react-native';
 import { styles } from './styles';
 import { Task as TaskType, globalTasksRef } from './types';
-import { TaskListHeader } from './TaskListHeader';
 import eventEmitter, { EVENTS } from '../../utils/eventEmitter';
 import { ActiveFilters } from './ActiveFilters';
 import { FilterModal } from './FilterModal';
@@ -15,6 +14,7 @@ import { AddTaskButton } from './AddTaskButton';
 import { filterTasksByDay } from './TaskUtils';
 import AddTask from '../Task/AddTask';
 import { recurringTaskService, RecurringTask, CreateRecurringTaskPayload } from '../../services/recurringTaskService';
+import { LoadingState, EmptyState, SectionHeader } from '../UI/foundation';
 
 export interface TaskListContainerProps {
   categoryName: string;
@@ -47,43 +47,6 @@ export const TaskListContainer = ({
   const [ordineScadenza, setOrdineScadenza] = useState("Recente");
   const [isLoading, setIsLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
-
-  // Loading animation values
-  const dot1 = useRef(new Animated.Value(0)).current;
-  const dot2 = useRef(new Animated.Value(0)).current;
-  const dot3 = useRef(new Animated.Value(0)).current;
-  const fadeOverlay = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    if (!isLoading) return;
-
-    Animated.sequence([
-      Animated.timing(fadeOverlay, { toValue: 1, duration: 300, useNativeDriver: true }),
-    ]).start();
-
-    const loop = () => {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(dot1, { toValue: 1, duration: 400, useNativeDriver: true, easing: Easing.ease }),
-          Animated.timing(dot2, { toValue: 1, duration: 400, useNativeDriver: true, easing: Easing.ease }),
-          Animated.timing(dot3, { toValue: 1, duration: 400, useNativeDriver: true, easing: Easing.ease }),
-          Animated.delay(200),
-          Animated.timing(dot1, { toValue: 0, duration: 400, useNativeDriver: true, easing: Easing.ease }),
-          Animated.timing(dot2, { toValue: 0, duration: 400, useNativeDriver: true, easing: Easing.ease }),
-          Animated.timing(dot3, { toValue: 0, duration: 400, useNativeDriver: true, easing: Easing.ease }),
-          Animated.delay(200),
-        ]),
-      ).start();
-    };
-    loop();
-
-    return () => {
-      dot1.stopAnimation();
-      dot2.stopAnimation();
-      dot3.stopAnimation();
-      fadeOverlay.stopAnimation();
-    };
-  }, [isLoading]);
   const [formVisible, setFormVisible] = useState(false);
   
   // Stati per le sezioni collassabili
@@ -576,26 +539,7 @@ export const TaskListContainer = ({
   return (
     <View style={styles.container}>
       {isLoading ? (
-        <Animated.View style={[StyleSheet.absoluteFill, loadingStyles.overlay, { opacity: fadeOverlay }]}>
-          <View style={loadingStyles.content}>
-            <View style={loadingStyles.dotsRow}>
-              {[dot1, dot2, dot3].map((anim, i) => (
-                <Animated.View
-                  key={i}
-                  style={[
-                    loadingStyles.dot,
-                    {
-                      opacity: anim.interpolate({ inputRange: [0, 1], outputRange: [0.15, 1] }),
-                      transform: [
-                        { scale: anim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.4] }) },
-                      ],
-                    },
-                  ]}
-                />
-              ))}
-            </View>
-          </View>
-        </Animated.View>
+        <LoadingState variant="dots" />
       ) : (
         <ScrollView style={styles.scrollContainer}>
           {/* Modal dei filtri */}
@@ -612,7 +556,7 @@ export const TaskListContainer = ({
 
           {/* Sezione task non completati (senza contenitore collapsabile) */}
           <View style={{ marginTop: 8, marginBottom: 20 }}>
-            <Text style={styles.sectionTitle}>{t('taskList.sections.todo') || 'Da fare'}</Text>
+            <SectionHeader title={t('taskList.sections.todo') || 'Da fare'} style={{ paddingLeft: 8 }} />
             
             {/* Visualizzazione filtri attivi (spostata sotto il titolo "Da fare") */}
             <ActiveFilters 
@@ -647,10 +591,10 @@ export const TaskListContainer = ({
               })}
               </>
             ) : (
-              <View style={{ padding: 20, alignItems: 'center', marginTop: 20 }}>
-                <Ionicons name="clipboard-outline" size={48} color="#cccccc" />
-                <Text style={{ marginTop: 10, color: '#888888', fontSize: 16 }}>{t('taskList.sections.emptyTodo') || 'Nessun task da fare'}</Text>
-              </View>
+              <EmptyState
+                icon={<Ionicons name="clipboard-outline" size={48} color="#cccccc" />}
+                title={t('taskList.sections.emptyTodo') || 'Nessun task da fare'}
+              />
             )}
           </View>
 
@@ -703,36 +647,3 @@ export const TaskListContainer = ({
     </View>
   );
 };
-
-const loadingStyles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 10,
-  },
-  content: {
-    alignItems: 'center',
-  },
-  dotsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    marginBottom: 20,
-  },
-  dot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#000000',
-  },
-  label: {
-    fontSize: 15,
-    fontWeight: '300',
-    color: '#999999',
-    fontFamily: 'System',
-    letterSpacing: -0.3,
-  },
-});
