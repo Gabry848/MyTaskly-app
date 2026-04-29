@@ -75,7 +75,7 @@ export default function SubscriptionPlans() {
         setActionLoading(true);
 
         const packageToPurchase = offerings.current?.availablePackages.find(
-          (pkg) => pkg.product.identifier === productId
+          (pkg: PurchasesPackage) => pkg.product.identifier === productId
         );
 
         if (!packageToPurchase) {
@@ -108,7 +108,7 @@ export default function SubscriptionPlans() {
     [planData]
   );
 
-  const formatFeatureLimit = (daily: number | string, monthly: number | string) => {
+  const formatFeatureLimit = (daily: number, monthly: number) => {
     const d = isUnlimitedPlan(daily) ? '∞' : String(daily);
     const m = isUnlimitedPlan(monthly) ? '∞' : String(monthly);
     return `${d} ${t('common.daily', 'giornalieri')} • ${m} ${t('common.monthly', 'mensili')}`;
@@ -120,7 +120,7 @@ export default function SubscriptionPlans() {
       const productId = plan.getProductId(period);
       if (!productId || !offerings) return undefined;
       return offerings.current?.availablePackages.find(
-        (p) => p.product.identifier === productId
+        (p: PurchasesPackage) => p.product.identifier === productId
       );
     },
     [offerings]
@@ -318,8 +318,8 @@ export default function SubscriptionPlans() {
           <FeatureItem
             icon="folder"
             title={t('subscriptionPlans.featCategoriesTitle', 'Organization')}
-            description={t('subscriptionPlans.featCategoriesDesc', 'Organize tasks in up to {{count}} categories', {
-              count: isUnlimitedPlan(selectedPlan.limits.maxCategories) ? 'unlimited' : String(selectedPlan.limits.maxCategories)
+            description={t('subscriptionPlans.featCategoriesDesc', 'Organize tasks in up to {{num}} categories', {
+              num: isUnlimitedPlan(selectedPlan.limits.maxCategories) ? 'unlimited' : String(selectedPlan.limits.maxCategories)
             })}
             isLast
           />

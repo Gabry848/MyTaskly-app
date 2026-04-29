@@ -1003,7 +1003,7 @@
     "featAiTitle": "Intelligenza AI",
     "featAiDesc": "Basata sul modello {{model}} per risposte accurate",
     "featCategoriesTitle": "Organizzazione",
-    "featCategoriesDesc": "Organizza i task in fino a {{count}} categorie",
+    "featCategoriesDesc": "Organizza i task in fino a {{num}} categorie",
     "freeDescription": "Solo le basi",
     "premiumDesc": "Sblocca tutte le funzionalità premium",
     "offlineDescription": "Dettagli non disponibili al momento.",
