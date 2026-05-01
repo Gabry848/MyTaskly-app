@@ -26,12 +26,12 @@ export interface Plan {
 export const PLAN_PRODUCT_IDS: Record<'free' | 'pro' | 'premium', PlanProductIds | undefined> = {
   free: undefined,
   pro: {
-    monthly: 'mytaskly_pro_monthly',
-    annual: 'mytaskly_pro_annual',
+    monthly: 'mytaskly_pro_monthly:pro-monthly',
+    annual: 'mytaskly_pro_monthly:pro-annual',
   },
   premium: {
-    monthly: 'mytaskly_premium_monthly',
-    annual: 'mytaskly_premium_annual',
+    monthly: 'premium:monthly',
+    annual: 'premium:annual',
   },
 };
 
