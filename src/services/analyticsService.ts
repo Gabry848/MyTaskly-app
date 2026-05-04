@@ -27,7 +27,7 @@ const IS_DEV = typeof __DEV__ !== 'undefined' && __DEV__;
 // Costanti
 // ─────────────────────────────────────────────────────────────
 
-const VEXO_API_KEY = 'd9ba61c5-0c0d-413f-98d8-e277b45d3d32';
+const VEXO_API_KEY = process.env.EXPO_PUBLIC_VEXO_API_KEY ?? '';
 
 // Nomi evento — usare SEMPRE queste costanti per evitare typo
 export const ANALYTICS_EVENTS = {

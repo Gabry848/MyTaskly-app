@@ -3,7 +3,7 @@ import { DEFAULT_BASE_URL } from '../constants/authConstants';
 
 // Crea un'istanza axios separata per evitare cicli di dipendenze
 const axiosInstance = axios.create({
-  baseURL: DEFAULT_BASE_URL,
+  baseURL: process.env.EXPO_PUBLIC_API_BASE_URL || DEFAULT_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },

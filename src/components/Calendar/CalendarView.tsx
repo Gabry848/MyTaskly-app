@@ -451,19 +451,13 @@ const CalendarView: React.FC = () => {
           <AppText variant="subtitle" weight="300">
             Impegni del {dayjs(selectedDate).format('DD MMMM YYYY')}
           </AppText>
-          {syncStatus && (
+          {syncStatus && (syncStatus.isSyncing || syncStatus.pendingChanges > 0) && (
             <View style={styles.syncIndicator}>
               {syncStatus.isSyncing ? (
                 <StatusChip
                   label="Sync..."
                   tone="neutral"
                   leftIcon={<ActivityIndicator size="small" color="#666666" />}
-                />
-              ) : !syncStatus.isOnline ? (
-                <StatusChip
-                  label="Offline"
-                  tone="danger"
-                  leftIcon={<Ionicons name="cloud-offline-outline" size={14} color="#ef4444" />}
                 />
               ) : syncStatus.pendingChanges > 0 ? (
                 <StatusChip
@@ -521,8 +515,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
   },
   selectedDateHeader: {
-    marginTop: 20,
-    marginBottom: 10,
+    marginTop: 4,
+    marginBottom: 4,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',

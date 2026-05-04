@@ -1,5 +1,4 @@
-// Servizio di rete semplice senza dipendenze esterne
-// Fallback per quando NetInfo non è disponibile
+import { DEFAULT_BASE_URL } from '../constants/authConstants';
 
 interface NetworkState {
   isConnected: boolean;
@@ -12,10 +11,11 @@ class NetworkService {
   private static instance: NetworkService;
   private listeners: NetworkChangeCallback[] = [];
   private currentState: NetworkState = {
-    isConnected: true, // Assume connesso di default
+    isConnected: true,
     isInternetReachable: true
   };
   private testInterval: NodeJS.Timeout | null = null;
+  private consecutiveFailures = 0;
 
   static getInstance(): NetworkService {
     if (!NetworkService.instance) {
@@ -28,37 +28,39 @@ class NetworkService {
     this.startNetworkMonitoring();
   }
 
-  // Ottieni stato attuale della rete
-  async getNetworkState(): Promise<NetworkState> {
-    // Prova a testare la connessione con una richiesta rapida
+  private async checkBackendHealth(): Promise<boolean> {
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 sec timeout
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-      const response = await fetch('https://www.google.com/generate_204', {
+      const response = await fetch(`${DEFAULT_BASE_URL}/support/health`, {
         method: 'HEAD',
         cache: 'no-cache',
         signal: controller.signal
       });
 
       clearTimeout(timeoutId);
-      
-      const isConnected = response.status === 204;
-      this.updateNetworkState({
-        isConnected,
-        isInternetReachable: isConnected
-      });
-      
-      return this.currentState;
+      return response.ok;
     } catch {
-      // Fallback: assume offline
-      this.updateNetworkState({
-        isConnected: false,
-        isInternetReachable: false
-      });
-      
-      return this.currentState;
+      return false;
     }
+  }
+
+  async getNetworkState(): Promise<NetworkState> {
+    const isHealthy = await this.checkBackendHealth();
+
+    if (isHealthy) {
+      this.consecutiveFailures = 0;
+      this.updateNetworkState({ isConnected: true, isInternetReachable: true });
+    } else {
+      this.consecutiveFailures++;
+      // Require 2 consecutive failures before declaring offline
+      if (this.consecutiveFailures >= 2) {
+        this.updateNetworkState({ isConnected: false, isInternetReachable: false });
+      }
+    }
+
+    return this.currentState;
   }
 
   // Aggiungi listener per cambiamenti di stato rete
@@ -74,23 +76,8 @@ class NetworkService {
     };
   }
 
-  // Test rapido di connettività (per uso interno)
   async isOnline(): Promise<boolean> {
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 sec timeout
-
-      await fetch('https://www.google.com/generate_204', {
-        method: 'HEAD',
-        cache: 'no-cache',
-        signal: controller.signal
-      });
-
-      clearTimeout(timeoutId);
-      return true;
-    } catch {
-      return false;
-    }
+    return this.checkBackendHealth();
   }
 
   private updateNetworkState(newState: NetworkState): void {
@@ -141,23 +128,23 @@ class NetworkService {
     this.listeners = [];
   }
 
-  // Test di connettività con endpoint personalizzato
-  async testConnectivity(url: string = 'https://www.google.com/generate_204'): Promise<boolean> {
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 sec timeout
-
-      const response = await fetch(url, {
-        method: 'HEAD',
-        cache: 'no-cache',
-        signal: controller.signal
-      });
-
-      clearTimeout(timeoutId);
-      return response.ok;
-    } catch {
-      return false;
+  async testConnectivity(url?: string): Promise<boolean> {
+    if (url) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        const response = await fetch(url, {
+          method: 'HEAD',
+          cache: 'no-cache',
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        return response.ok;
+      } catch {
+        return false;
+      }
     }
+    return this.checkBackendHealth();
   }
 
   // Ottieni stato corrente (sincrono)
