@@ -74,7 +74,8 @@ export default function SubscriptionPlans() {
       try {
         setActionLoading(true);
 
-        const packageToPurchase = offerings.current?.availablePackages.find(
+        const offering = offerings.all[plan.id];
+        const packageToPurchase = offering?.availablePackages.find(
           (pkg: PurchasesPackage) => pkg.product.identifier === productId
         );
 
@@ -119,7 +120,8 @@ export default function SubscriptionPlans() {
     (plan: Plan, period: BillingPeriod): PurchasesPackage | undefined => {
       const productId = plan.getProductId(period);
       if (!productId || !offerings) return undefined;
-      return offerings.current?.availablePackages.find(
+      const offering = offerings.all[plan.id];
+      return offering?.availablePackages.find(
         (p: PurchasesPackage) => p.product.identifier === productId
       );
     },
@@ -150,11 +152,6 @@ export default function SubscriptionPlans() {
   const pkg = findPackage(selectedPlan, billingPeriod);
   const savings = billingPeriod === 'annual' ? calcAnnualSavings(selectedPlan) : null;
 
-  const monthlyEquivPrice = useMemo(() => {
-    if (billingPeriod !== 'annual' || !pkg) return null;
-    return pkg.product.price / 12;
-  }, [billingPeriod, pkg]);
-
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -166,31 +163,13 @@ export default function SubscriptionPlans() {
     );
   }
 
-  let priceStr = isFreeSelected ? t('common.free', 'Free') : '—';
-  let subtitleStr = t('subscriptionPlans.freeDescription', 'Just the basics');
-  let trialInfo: string | null = null;
-
-  if (!isFreeSelected) {
-    if (pkg) {
-      priceStr = pkg.product.priceString;
-      subtitleStr = pkg.product.description || t('subscriptionPlans.premiumDesc', 'Unlock all premium features');
-
-      // Check for introductory price (free trial)
-      const intro = pkg.product.introductoryPrice;
-      if (intro) {
-        trialInfo = t('subscriptionPlans.freeTrial', 'Free trial');
-      }
-
-      if (billingPeriod === 'annual' && monthlyEquivPrice !== null) {
-        const currency = pkg.product.priceString.replace(/[\d.,\s]/g, '').trim();
-        const formatted = monthlyEquivPrice.toFixed(2).replace('.', ',');
-        priceStr = `${currency}${formatted}`;
-        subtitleStr = t('subscriptionPlans.perMonth', '/month') + ' — ' + t('subscriptionPlans.annual', 'Annual');
-      }
-    } else {
-      subtitleStr = t('subscriptionPlans.offlineDescription', 'Dettagli non disponibili al momento.');
-    }
-  }
+  const priceStr = isFreeSelected ? t('common.free', 'Free') : pkg?.product.priceString || '—';
+  const periodLabel = billingPeriod === 'annual'
+    ? t('subscriptionPlans.perYear', '/year')
+    : t('subscriptionPlans.perMonth', '/month');
+  const trialInfo: string | null = (!isFreeSelected && pkg?.product.introductoryPrice)
+    ? t('subscriptionPlans.freeTrial', 'Free trial')
+    : null;
 
   const offlineOrMissing = !isFreeSelected && !pkg;
 
@@ -235,7 +214,7 @@ export default function SubscriptionPlans() {
         </View>
 
         {/* Warning Banner */}
-        {!loading && !offerings && (
+        {!loading && !offerings?.all['pro'] && !offerings?.all['premium'] && (
           <View style={styles.warningBanner}>
             <Ionicons name="warning-outline" size={20} color="#856404" />
             <Text style={styles.warningText}>
@@ -264,26 +243,31 @@ export default function SubscriptionPlans() {
 
         {/* Dark Plan Header Card */}
         <View style={styles.darkCard}>
-          <View style={styles.darkCardHeader}>
-            <Text style={styles.darkCardTitle}>{pkg?.product.title || selectedPlan.name}</Text>
-            {isSelectedPlanCurrent && (
-              <View style={styles.activeBadge}>
-                <Ionicons name="checkmark" size={14} color="#1C1C1E" />
-                <Text style={styles.activeBadgeText}>{t('subscriptionPlans.active', 'Active')}</Text>
-              </View>
-            )}
-          </View>
-
-          {/* Free Trial Badge */}
-          {trialInfo && !isSelectedPlanCurrent && (
-            <View style={styles.trialBadge}>
-              <Ionicons name="gift-outline" size={16} color="#34C759" />
-              <Text style={styles.trialBadgeText}>{trialInfo}</Text>
+          <View style={styles.darkCardTopRow}>
+            <View style={styles.darkCardLeft}>
+              <Text style={styles.darkCardTitle}>{selectedPlan.name}</Text>
+              {trialInfo && !isSelectedPlanCurrent && (
+                <View style={styles.trialBadge}>
+                  <Ionicons name="gift-outline" size={14} color="#34C759" />
+                  <Text style={styles.trialBadgeText}>{trialInfo}</Text>
+                </View>
+              )}
             </View>
-          )}
-
-          <Text style={styles.darkCardPrice}>{priceStr}</Text>
-          <Text style={styles.darkCardSubtitle}>{subtitleStr}</Text>
+            <View style={styles.darkCardRight}>
+              <View style={styles.darkCardPriceRow}>
+                <Text style={styles.darkCardPrice}>{priceStr}</Text>
+                {isSelectedPlanCurrent && (
+                  <View style={styles.activeBadge}>
+                    <Ionicons name="checkmark" size={12} color="#1C1C1E" />
+                    <Text style={styles.activeBadgeText}>{t('subscriptionPlans.active', 'Active')}</Text>
+                  </View>
+                )}
+              </View>
+              {!isFreeSelected && pkg && (
+                <Text style={styles.darkCardPeriod}>{periodLabel}</Text>
+              )}
+            </View>
+          </View>
         </View>
 
         {/* Features Section */}
@@ -507,14 +491,25 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 8,
   },
-  darkCardHeader: {
+  darkCardTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 24,
+  },
+  darkCardLeft: {
+    flex: 1,
+    gap: 10,
+  },
+  darkCardRight: {
+    alignItems: 'flex-end',
+  },
+  darkCardPriceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
   darkCardTitle: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: '800',
     color: '#FFFFFF',
     letterSpacing: -0.5,
@@ -524,11 +519,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingVertical: 5,
     borderRadius: 100,
+    alignSelf: 'flex-start',
   },
   activeBadgeText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
     color: '#1C1C1E',
     marginLeft: 4,
@@ -537,28 +533,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(52, 199, 89, 0.15)',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 12,
-    marginBottom: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 100,
     alignSelf: 'flex-start',
   },
   trialBadgeText: {
     color: '#34C759',
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
-    marginLeft: 6,
+    marginLeft: 4,
   },
   darkCardPrice: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: 28,
+    fontWeight: '800',
     color: '#FFFFFF',
-    marginBottom: 8,
+    letterSpacing: -0.5,
   },
-  darkCardSubtitle: {
-    fontSize: 15,
+  darkCardPeriod: {
+    fontSize: 14,
     color: '#A1A1A6',
-    fontWeight: '400',
+    fontWeight: '500',
+    marginTop: 2,
   },
   sectionTitle: {
     fontSize: 20,
