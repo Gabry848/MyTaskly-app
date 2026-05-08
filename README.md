@@ -33,7 +33,7 @@ You can type, speak, or just ask — the AI understands what you mean and takes 
 
 Whether you're a student juggling deadlines, a professional managing projects, or just someone trying to keep life in order, MyTaskly gives you a single place where tasks, notes, calendar, and AI assistance all work together — seamlessly, in real time, even offline.
 
-**Built by Gabriel, a 16-year-old developer** over 11+ months of learning, coding, and iterating. [Read the story →](https://mytasklyapp.com/about)
+**Built by Gabriel, a 17-year-old developer** over 11+ months of learning, coding, and iterating.
 
 ---
 
@@ -241,7 +241,7 @@ If you find MyTaskly helpful, consider:
 
 ## 👨‍💻 About the Developer
 
-MyTaskly was created by **Gabriel** ([@Gabry848](https://github.com/Gabry848)), a 16-year-old developer passionate about creating tools that help people be more productive. This project represents over **11 months** of learning, coding, debugging, and iterating.
+MyTaskly was created by **Gabriel** ([@Gabry848](https://github.com/Gabry848)), a 17-year-old developer passionate about creating tools that help people be more productive. This project represents over **11 months** of learning, coding, debugging, and iterating.
 
 > "I built MyTaskly because I wanted to create something that would genuinely help people stay organized while showcasing the possibilities of combining AI with traditional productivity tools." - Gabriel
 
@@ -288,7 +288,7 @@ And a lot more!
 
 <div align="center">
 
-**Made with ❤️ by a 16-year-old developer**
+**Made with ❤️ by a 17-year-old developer**
 
 If you like this project, don't forget to give it a ⭐!
 
