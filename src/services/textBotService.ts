@@ -59,7 +59,8 @@ export async function sendMessageToBot(
     }
 
     // Invia la richiesta al server con supporto streaming usando expo fetch
-    const response = await fetch("https://taskly-production.up.railway.app/chat/text", {
+    const apiUrl = `${process.env.EXPO_PUBLIC_API_BASE_URL || 'https://taskly-production.up.railway.app'}/chat/text`;
+    const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -332,7 +333,8 @@ export async function clearChatHistory(): Promise<boolean> {
     }
 
     // Invia la richiesta DELETE al server per eliminare la cronologia
-    const response = await fetch("https://taskly-production.up.railway.app/chat/history/clear", {
+    const apiUrl = `${process.env.EXPO_PUBLIC_API_BASE_URL || 'https://taskly-production.up.railway.app'}/chat/history/clear`;
+    const response = await fetch(apiUrl, {
       method: "DELETE",
       headers: {
         Authorization: `Bearer ${token}`,

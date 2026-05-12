@@ -161,7 +161,7 @@ const _vLog = (msg: string) => {
 export class VoiceBotWebSocket {
   private ws: WebSocket | null = null;
   private callbacks: VoiceChatCallbacks;
-  private baseUrl: string = 'wss://taskly-production.up.railway.app';
+  private baseUrl: string = process.env.EXPO_PUBLIC_API_BASE_URL?.replace('https://', 'wss://').replace('http://', 'ws://') || 'wss://taskly-production.up.railway.app';
   private reconnectAttempts: number = 0;
   private maxReconnectAttempts: number = 3;
   private reconnectDelay: number = 1000;
