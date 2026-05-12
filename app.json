@@ -75,6 +75,7 @@
       "expo-dev-client",
       "expo-router",
       "expo-audio",
+      "./plugins/fix-ios-fmt-cxx",
       "./plugins/force-browser-version"
     ],
     "extra": {
