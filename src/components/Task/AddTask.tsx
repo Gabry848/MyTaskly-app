@@ -11,6 +11,7 @@ import {
   Animated,
   PanResponder,
   Dimensions,
+  Platform,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
@@ -861,9 +862,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.04,
     shadowRadius: 4,
     elevation: 1,
+    height: Platform.OS === 'ios' ? 220 : 56,
+    justifyContent: 'center',
   },
   picker: {
-    height: 50,
+    height: Platform.OS === 'ios' ? 216 : 50,
     color: "#000000",
   },
   disabledText: {

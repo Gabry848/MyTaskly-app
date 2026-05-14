@@ -79,7 +79,10 @@
       "mcp__revenuecat__list-offerings",
       "mcp__revenuecat__get-product",
       "mcp__revenuecat__get-product-store-state",
-      "Bash(git reset *)"
+      "Bash(git reset *)",
+      "Bash(but branch *)",
+      "Bash(but commit *)",
+      "Bash(but stage *)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"
