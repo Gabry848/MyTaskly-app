@@ -23,13 +23,36 @@ import {
   TELEGRAM_REMINDER_OPTIONS,
 } from '../../services/notificationSettingsService';
 import {
+  getWeeklySummarySettings,
+  updateWeeklySummarySettings,
+  WeeklySummarySettings,
+} from '../../services/weeklySummaryService';
+import {
   registerForPushNotificationsAsync,
   sendTokenToBackend,
 } from '../../services/notificationService';
 
+// Costanti per giorni della settimana
+const WEEK_DAYS = [
+  { value: 0, label: 'Dom' },
+  { value: 1, label: 'Lun' },
+  { value: 2, label: 'Mar' },
+  { value: 3, label: 'Mer' },
+  { value: 4, label: 'Gio' },
+  { value: 5, label: 'Ven' },
+  { value: 6, label: 'Sab' },
+];
+
+// Costanti per orari
+const HOURS = Array.from({ length: 24 }, (_, i) => ({
+  value: i,
+  label: `${i.toString().padStart(2, '0')}:00`,
+}));
+
 export default function NotificationSettingsScreen() {
   const { t } = useTranslation();
   const [settings, setSettings] = useState<NotificationSettings | null>(null);
+  const [weeklySummarySettings, setWeeklySummarySettings] = useState<WeeklySummarySettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [syncDone, setSyncDone] = useState(false);
@@ -73,8 +96,12 @@ export default function NotificationSettingsScreen() {
   const loadSettings = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await getNotificationSettings();
+      const [data, weeklyData] = await Promise.all([
+        getNotificationSettings(),
+        getWeeklySummarySettings(),
+      ]);
       setSettings(data);
+      setWeeklySummarySettings(weeklyData);
     } catch (error) {
       console.error('[NotificationSettings] Errore caricamento:', error);
       Alert.alert(
@@ -161,6 +188,64 @@ export default function NotificationSettingsScreen() {
       Alert.alert(t('notificationSettings.error.title'), detail);
     } finally {
       setSyncing(false);
+    }
+  };
+
+  // Funzioni per riepilogo settimanale
+  const handleWeeklySummaryToggle = async (enabled: boolean) => {
+    if (!weeklySummarySettings) return;
+
+    const previous = weeklySummarySettings.enabled;
+    setWeeklySummarySettings((prev) => prev ? { ...prev, enabled } : prev);
+    setSavingField('weekly_enabled');
+
+    try {
+      const updated = await updateWeeklySummarySettings({ enabled });
+      setWeeklySummarySettings(updated);
+    } catch (error: any) {
+      setWeeklySummarySettings((prev) => prev ? { ...prev, enabled: previous } : prev);
+      const detail = error?.response?.data?.detail ?? t('notificationSettings.error.saveFailed');
+      Alert.alert(t('notificationSettings.error.title'), detail);
+    } finally {
+      setSavingField(null);
+    }
+  };
+
+  const handleWeeklySummaryDay = async (day: number) => {
+    if (!weeklySummarySettings || weeklySummarySettings.day === day) return;
+
+    const previous = weeklySummarySettings.day;
+    setWeeklySummarySettings((prev) => prev ? { ...prev, day } : prev);
+    setSavingField('weekly_day');
+
+    try {
+      const updated = await updateWeeklySummarySettings({ day });
+      setWeeklySummarySettings(updated);
+    } catch (error: any) {
+      setWeeklySummarySettings((prev) => prev ? { ...prev, day: previous } : prev);
+      const detail = error?.response?.data?.detail ?? t('notificationSettings.error.saveFailed');
+      Alert.alert(t('notificationSettings.error.title'), detail);
+    } finally {
+      setSavingField(null);
+    }
+  };
+
+  const handleWeeklySummaryHour = async (hour: number) => {
+    if (!weeklySummarySettings || weeklySummarySettings.hour === hour) return;
+
+    const previous = weeklySummarySettings.hour;
+    setWeeklySummarySettings((prev) => prev ? { ...prev, hour } : prev);
+    setSavingField('weekly_hour');
+
+    try {
+      const updated = await updateWeeklySummarySettings({ hour });
+      setWeeklySummarySettings(updated);
+    } catch (error: any) {
+      setWeeklySummarySettings((prev) => prev ? { ...prev, hour: previous } : prev);
+      const detail = error?.response?.data?.detail ?? t('notificationSettings.error.saveFailed');
+      Alert.alert(t('notificationSettings.error.title'), detail);
+    } finally {
+      setSavingField(null);
     }
   };
 
@@ -346,6 +431,98 @@ export default function NotificationSettingsScreen() {
           </Text>
         </TouchableOpacity>
 
+        {/* ───────────────── WEEKLY SUMMARY ───────────────── */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Riepilogo Settimanale</Text>
+          <Text style={styles.sectionDescription}>
+            Ricevi un riepilogo dei tuoi task ogni settimana
+          </Text>
+        </View>
+
+        {/* Toggle abilitazione */}
+        <View style={styles.row}>
+          <View style={styles.rowLeft}>
+            <Ionicons name="calendar-outline" size={22} color="#000000" />
+            <View style={styles.rowTextWrap}>
+              <Text style={styles.rowLabel}>Abilita riepilogo</Text>
+              {weeklySummarySettings?.enabled && weeklySummarySettings.next_scheduled_date && (
+                <Text style={styles.rowHint}>
+                  Prossimo: {new Date(weeklySummarySettings.next_scheduled_date).toLocaleDateString('it-IT', {
+                    weekday: 'long',
+                    day: 'numeric',
+                    month: 'short',
+                  })} alle {weeklySummarySettings.hour}:00
+                </Text>
+              )}
+            </View>
+          </View>
+          <Switch
+            value={weeklySummarySettings?.enabled ?? false}
+            onValueChange={handleWeeklySummaryToggle}
+            disabled={savingField === 'weekly_enabled'}
+            trackColor={{ false: '#dee2e6', true: '#000000' }}
+            thumbColor="#ffffff"
+          />
+        </View>
+
+        {/* Selettore giorno - visibile solo se abilitato */}
+        {weeklySummarySettings?.enabled && (
+          <>
+            <View style={styles.subSectionHeader}>
+              <Text style={styles.subSectionTitle}>Giorno della settimana</Text>
+            </View>
+
+            <View style={styles.pillsRow}>
+              {WEEK_DAYS.map((day) => {
+                const isSelected = weeklySummarySettings.day === day.value;
+                const isSaving = savingField === 'weekly_day';
+                return (
+                  <TouchableOpacity
+                    key={day.value}
+                    style={[styles.pill, isSelected && styles.pillSelected]}
+                    onPress={() => handleWeeklySummaryDay(day.value)}
+                    disabled={isSaving}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.pillText, isSelected && styles.pillTextSelected]}>
+                      {day.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <View style={styles.subSectionHeader}>
+              <Text style={styles.subSectionTitle}>Orario</Text>
+            </View>
+
+            <ScrollView
+              style={styles.hoursScroll}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.hoursScrollContent}
+            >
+              {HOURS.map((hour) => {
+                const isSelected = weeklySummarySettings.hour === hour.value;
+                const isSaving = savingField === 'weekly_hour';
+                return (
+                  <TouchableOpacity
+                    key={hour.value}
+                    style={[styles.hourPill, isSelected && styles.hourPillSelected]}
+                    onPress={() => handleWeeklySummaryHour(hour.value)}
+                    disabled={isSaving}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.hourPillText, isSelected && styles.hourPillTextSelected]}>
+                      {hour.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </>
+        )}
+
         {/* ───────────────── INFO ───────────────── */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>{t('notificationSettings.sections.info')}</Text>
@@ -489,6 +666,53 @@ const styles = StyleSheet.create({
     fontFamily: 'System',
   },
   pillTextSelected: {
+    color: '#ffffff',
+    fontWeight: '600',
+  },
+  // Sottosezioni
+  subSectionHeader: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 8,
+    backgroundColor: '#ffffff',
+  },
+  subSectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000000',
+    fontFamily: 'System',
+  },
+  // Hours scroll
+  hoursScroll: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  hoursScrollContent: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    gap: 8,
+  },
+  hourPill: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: '#dee2e6',
+    backgroundColor: '#ffffff',
+    minWidth: 60,
+    alignItems: 'center',
+  },
+  hourPillSelected: {
+    backgroundColor: '#000000',
+    borderColor: '#000000',
+  },
+  hourPillText: {
+    fontSize: 14,
+    color: '#495057',
+    fontWeight: '500',
+    fontFamily: 'System',
+  },
+  hourPillTextSelected: {
     color: '#ffffff',
     fontWeight: '600',
   },
