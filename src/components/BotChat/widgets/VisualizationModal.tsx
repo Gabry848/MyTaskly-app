@@ -428,6 +428,7 @@ const VisualizationModal: React.FC<VisualizationModalProps> = ({
           isOwned={item.isOwned !== undefined ? item.isOwned : true}
           ownerName={item.ownerName || item.owner_name}
           permissionLevel={item.permissionLevel || item.permission_level || "READ_WRITE"}
+          onPressCategory={onClose}
           onDelete={() => {
             // Refresh modal data if needed
             console.log('[VisualizationModal] Category deleted:', item.name);

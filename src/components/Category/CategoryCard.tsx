@@ -25,6 +25,7 @@ export interface CategoryCardProps {
   permissionLevel?: "READ_ONLY" | "READ_WRITE";
   onAddTask: () => void;
   onLongPress: () => void;
+  onPressCategory?: () => void;
 }
 
 const CategoryCard: React.FC<CategoryCardProps> = ({
@@ -38,7 +39,8 @@ const CategoryCard: React.FC<CategoryCardProps> = ({
   ownerName,
   permissionLevel = "READ_WRITE",
   onAddTask,
-  onLongPress
+  onLongPress,
+  onPressCategory
 }) => {
   const navigation = useNavigation<CategoryScreenNavigationProp>();
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
@@ -106,6 +108,7 @@ const CategoryCard: React.FC<CategoryCardProps> = ({
         onPressOut={handlePressOut}
         onLongPress={onLongPress}
         onPress={() => {
+          onPressCategory?.();
           navigation.navigate("TaskList", {
             categoryId: categoryId || title,
             category_name: title,

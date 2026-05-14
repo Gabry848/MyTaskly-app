@@ -24,6 +24,7 @@ export interface CategoryProps {
   permissionLevel?: "READ_ONLY" | "READ_WRITE";
   onDelete?: () => void;
   onEdit?: () => void;
+  onPressCategory?: () => void;
 }
 
 const Category: React.FC<CategoryProps> = ({
@@ -37,7 +38,8 @@ const Category: React.FC<CategoryProps> = ({
   ownerName,
   permissionLevel = "READ_WRITE",
   onDelete,
-  onEdit
+  onEdit,
+  onPressCategory
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -324,6 +326,7 @@ const Category: React.FC<CategoryProps> = ({
         permissionLevel={permissionLevel}
         onAddTask={handleAddTask}
         onLongPress={handleLongPress}
+        onPressCategory={onPressCategory}
       />
 
       <CategoryMenu
