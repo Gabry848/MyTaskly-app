@@ -16,7 +16,7 @@ const FABMenu: React.FC<FABMenuProps> = ({ onNewTask }) => {
       onPress={onNewTask}
       activeOpacity={0.8}
     >
-      <Ionicons name="add" size={30} color="#ffffff" />
+      <Ionicons name="add" size={28} color="#ffffff" />
     </TouchableOpacity>
   );
 };
@@ -24,11 +24,11 @@ const FABMenu: React.FC<FABMenuProps> = ({ onNewTask }) => {
 const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
-    bottom: 24,
+    bottom: 20,
     right: 20,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     backgroundColor: '#000000',
     alignItems: 'center',
     justifyContent: 'center',

@@ -60,10 +60,10 @@ const styles = StyleSheet.create({
     zIndex: 999,
   },
   fab: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: "#007AFF",
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "#000000",
     justifyContent: "center",
     alignItems: "center",
     shadowColor: "#000",
@@ -71,9 +71,9 @@ const styles = StyleSheet.create({
       width: 0,
       height: 4,
     },
-    shadowOpacity: 0.3,
-    shadowRadius: 4.65,
-    elevation: 8,
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
   },
 });
 
