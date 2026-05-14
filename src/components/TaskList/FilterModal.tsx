@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, Modal, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useRef, useEffect } from 'react';
+import { View, Text, Modal, TouchableOpacity, ScrollView, Animated, PanResponder, Dimensions } from 'react-native';
 import { styles } from './styles';
 import { FilterChip } from './FilterChip';
 
@@ -14,6 +14,8 @@ export interface FilterModalProps {
   setOrdineScadenza: (value: string) => void;
 }
 
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+
 export const FilterModal = ({
   visible,
   onClose,
@@ -24,28 +26,92 @@ export const FilterModal = ({
   ordineScadenza,
   setOrdineScadenza
 }: FilterModalProps) => {
+  
+  const panY = useRef(new Animated.Value(0)).current;
+
+  // Resetta l'animazione quando il modal si apre
+  useEffect(() => {
+    if (visible) {
+      panY.setValue(0);
+    }
+  }, [visible, panY]);
+
+  const closeWithAnimation = () => {
+    Animated.timing(panY, {
+      toValue: SCREEN_HEIGHT,
+      duration: 250,
+      useNativeDriver: true,
+    }).start(() => onClose());
+  };
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        // Inizia il drag solo se ci si muove in verticale di almeno 10 pixel
+        return Math.abs(gestureState.dy) > 10;
+      },
+      onPanResponderMove: (_, gestureState) => {
+        // Permetti solo il drag verso il basso
+        if (gestureState.dy > 0) {
+          panY.setValue(gestureState.dy);
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        // Se l'utente ha trascinato abbastanza giù o con velocità sufficiente, chiudi
+        if (gestureState.dy > 100 || gestureState.vy > 1.5) {
+          closeWithAnimation();
+        } else {
+          // Altrimenti rimbalza alla posizione originale
+          Animated.spring(panY, {
+            toValue: 0,
+            useNativeDriver: true,
+            bounciness: 10
+          }).start();
+        }
+      },
+    })
+  ).current;
+
   return (
     <Modal
       animationType="slide"
       transparent={true}
       visible={visible}
-      onRequestClose={onClose}
+      onRequestClose={closeWithAnimation}
     >
       <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Filtra task</Text>
-            <TouchableOpacity 
-              style={styles.closeButton}
-              onPress={onClose}
-            >
-              <Text style={styles.closeButtonText}>×</Text>
-            </TouchableOpacity>
+        <TouchableOpacity 
+          style={{ flex: 1, width: '100%' }} 
+          activeOpacity={1} 
+          onPress={closeWithAnimation} 
+        />
+        
+        <Animated.View 
+          style={[
+            styles.modalContent,
+            { transform: [{ translateY: panY }] }
+          ]}
+        >
+          {/* L'header e la drag handle sono responsabili di catturare il gesto di swipe */}
+          <View {...panResponder.panHandlers}>
+            <View style={styles.dragHandleContainer}>
+              <View style={styles.dragHandle} />
+            </View>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Filtra task</Text>
+              <TouchableOpacity 
+                style={styles.closeButton}
+                onPress={closeWithAnimation}
+              >
+                <Text style={styles.closeButtonText}>×</Text>
+              </TouchableOpacity>
+            </View>
           </View>
           
-          <ScrollView style={styles.modalBody}>
+          <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
             {/* Filtro per importanza */}
-            <View style={styles.filterSection}>
+            <View style={[styles.filterSection, { paddingTop: 0 }]}>
               <Text style={styles.filterTitle}>Importanza</Text>
               <View style={styles.chipsContainer}>
                 <FilterChip
@@ -77,7 +143,11 @@ export const FilterModal = ({
             {/* Filtro per scadenza */}
             <View style={styles.filterSection}>
               <Text style={styles.filterTitle}>Scadenza</Text>
-              <View style={styles.chipsContainer}>
+              <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.horizontalScrollContainer}
+              >
                 <FilterChip
                   label="Tutte"
                   isSelected={filtroScadenza === "Tutte"}
@@ -98,8 +168,6 @@ export const FilterModal = ({
                   isSelected={filtroScadenza === "Dopodomani"}
                   onPress={() => setFiltroScadenza("Dopodomani")}
                 />
-              </View>
-              <View style={styles.chipsContainer}>
                 <FilterChip
                   label="Fra 3 giorni"
                   isSelected={filtroScadenza === "Fra 3 giorni"}
@@ -116,11 +184,11 @@ export const FilterModal = ({
                   onPress={() => setFiltroScadenza("Senza scadenza")}
                   color="#999999"
                 />
-              </View>
+              </ScrollView>
             </View>
             
             {/* Ordine di visualizzazione */}
-            <View style={styles.filterSection}>
+            <View style={[styles.filterSection, { borderBottomWidth: 0 }]}>
               <Text style={styles.filterTitle}>Ordina per scadenza</Text>
               <View style={styles.orderContainer}>
                 <TouchableOpacity
@@ -162,12 +230,12 @@ export const FilterModal = ({
           <View style={styles.modalFooter}>
             <TouchableOpacity 
               style={styles.applyButton}
-              onPress={onClose}
+              onPress={closeWithAnimation}
             >
               <Text style={styles.applyButtonText}>Applica Filtri</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </Animated.View>
       </View>
     </Modal>
   );

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { View, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import { Task, getAllTasks, getCategories, completeTask, disCompleteTask } from '../../services/taskService';
@@ -21,6 +21,7 @@ import SearchOverlay from './SearchOverlay';
 import FABMenu from './FABMenu';
 import AddTask from '../Task/AddTask';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { LoadingState } from '../UI/foundation';
 
 dayjs.extend(isoWeek);
 
@@ -347,8 +348,8 @@ const Calendar20View: React.FC<Calendar20ViewProps> = ({ onClose }) => {
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#000000" />
+      <View style={styles.container}>
+        <LoadingState variant="spinner" />
       </View>
     );
   }
@@ -425,12 +426,6 @@ const Calendar20View: React.FC<Calendar20ViewProps> = ({ onClose }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
     backgroundColor: '#ffffff',
   },
 });

@@ -39,6 +39,7 @@ import MemorySettingsScreen from "./screens/MemorySettings";
 import AISettingsScreen from "./screens/AISettings";
 import RecurringTasksScreen from "./screens/RecurringTasksScreen";
 import CalendarScreen from "./screens/Calendar";
+import SubscriptionPlansScreen from "./screens/SubscriptionPlans";
 import NotificationDebugScreen from "./screens/NotificationDebug";
 import BugReportScreen from "./screens/BugReport";
 //import StatisticsScreen from "./screens/Statistics";
@@ -66,7 +67,7 @@ export type RootStackParamList = {
   VerificationSuccess: { email: string; username: string; password: string };
   HomeTabs: undefined; // Contiene il Tab Navigator
   Home20: undefined; // Nuova schermata Home2.0
-  TaskList: { category_name: number | string };
+  TaskList: { categoryId?: number | string; category_name: number | string; isOwned?: boolean; permissionLevel?: "READ_ONLY" | "READ_WRITE" };
   Profile: undefined;
   Settings: undefined;
   AccountSettings: undefined;
@@ -86,6 +87,7 @@ export type RootStackParamList = {
   MemorySettings: undefined;
   AISettings: undefined;
   RecurringTasks: undefined;
+  SubscriptionPlans: undefined;
 };
 
 // Definizione del tipo per le route dei Tab
@@ -134,7 +136,7 @@ function HomeTabs() {
 
             return <Ionicons name={iconName} size={size} color={color} />;
           },
-          tabBarActiveTintColor: "#007AFF",
+          tabBarActiveTintColor: "#000000",
           tabBarInactiveTintColor: "gray",
           headerShown: false,
         })}
@@ -191,17 +193,17 @@ function NavigationHandler() {
       return false; // Lascia che React Navigation gestisca il back button
     };
 
-    // Listener per sincronizzazione automatica al cambio schermata
-    const handleScreenChange = async ({ screenName, params }) => {
-      console.log(`[NAVIGATION] 🔄 Cambio schermata rilevato: ${screenName}`);
+    // Listener per sincronizzazione automatica solo su schermate che ne hanno bisogno
+    const SYNC_SCREEN = ['Categories', 'Calendar20', 'Calendar'];
+    const handleScreenChange = async ({ screenName, params }: { screenName: string; params: any }) => {
+      if (!SYNC_SCREEN.includes(screenName)) return;
 
-      // Avvia sincronizzazione asincrona (non bloccante)
       syncAllData()
         .then(({ tasks, categories }) => {
-          console.log(`[NAVIGATION] ✅ Sincronizzazione automatica completata per ${screenName}: ${tasks.length} task, ${categories.length} categorie`);
+          console.log(`[SYNC] Sync completata per ${screenName}: ${tasks.length} task, ${categories.length} categorie`);
         })
         .catch((error) => {
-          console.log(`[NAVIGATION] ⚠️ Sincronizzazione fallita per ${screenName}:`, error.message);
+          console.log(`[SYNC] Fallita per ${screenName}:`, error.message);
         });
     };
 
@@ -226,7 +228,6 @@ function NavigationHandler() {
       if (state) {
         const currentRoute = state.routes[state.index];
         if (currentRoute) {
-          console.log(`[NAVIGATION] 📱 Navigazione verso: ${currentRoute.name}`);
           emitScreenChange(currentRoute.name, currentRoute.params);
           // ── Analytics: traccia navigazione ──
           trackScreenView(currentRoute.name);
@@ -443,17 +444,23 @@ function AppStack() {
         <Stack.Screen
           name="TaskList"
           component={TaskListScreen}
-          options={{ title: t('navigation.screens.taskList') }}
+          options={({ route }) => ({ title: String(route.params?.category_name || '') })}
         />
         <Stack.Screen
           name="Profile"
           component={ProfileScreen}
-          options={{ title: t('navigation.screens.profile') }}
+          options={{ 
+            title: t('navigation.screens.profile'),
+            animation: 'fade'
+          }}
         />
         <Stack.Screen
           name="Settings"
           component={SettingsScreen}
-          options={{ title: t('navigation.screens.settings') }}
+          options={{ 
+            title: t('navigation.screens.settings'),
+            animation: 'fade'
+          }}
         />
         <Stack.Screen
           name="AccountSettings"
@@ -519,6 +526,11 @@ function AppStack() {
           name="RecurringTasks"
           component={RecurringTasksScreen}
           options={{ title: 'Task ricorrenti' }}
+        />
+        <Stack.Screen
+          name="SubscriptionPlans"
+          component={SubscriptionPlansScreen}
+          options={{ title: t('navigation.screens.subscriptionPlans') }}
         />
         <Stack.Screen name="NotFound" component={NotFoundScreen} />
       </Stack.Navigator>

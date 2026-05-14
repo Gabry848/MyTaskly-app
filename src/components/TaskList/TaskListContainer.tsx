@@ -1,9 +1,11 @@
-import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { View, ScrollView, ActivityIndicator, Alert, Animated, Easing } from 'react-native';
+import React, { useState, useEffect, useMemo, useRef, useCallback, useLayoutEffect } from 'react';
+import { View, ScrollView, Alert, Animated, Easing } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
+import { TouchableOpacity } from 'react-native';
 import { styles } from './styles';
 import { Task as TaskType, globalTasksRef } from './types';
-import { TaskListHeader } from './TaskListHeader';
 import eventEmitter, { EVENTS } from '../../utils/eventEmitter';
 import { ActiveFilters } from './ActiveFilters';
 import { FilterModal } from './FilterModal';
@@ -12,6 +14,7 @@ import { AddTaskButton } from './AddTaskButton';
 import { filterTasksByDay } from './TaskUtils';
 import AddTask from '../Task/AddTask';
 import { recurringTaskService, RecurringTask, CreateRecurringTaskPayload } from '../../services/recurringTaskService';
+import { LoadingState, EmptyState, SectionHeader } from '../UI/foundation';
 
 export interface TaskListContainerProps {
   categoryName: string;
@@ -48,11 +51,27 @@ export const TaskListContainer = ({
   
   // Stati per le sezioni collassabili
   const [todoSectionExpanded, setTodoSectionExpanded] = useState(true);
-  const [completedSectionExpanded, setCompletedSectionExpanded] = useState(true);
+  const [completedSectionExpanded, setCompletedSectionExpanded] = useState(false); // Collapsed by default to hide them
   
   // Animated values per le animazioni di altezza
   const todoSectionHeight = useRef(new Animated.Value(1)).current;
-  const completedSectionHeight = useRef(new Animated.Value(1)).current;
+  const completedSectionHeight = useRef(new Animated.Value(0)).current;
+
+  const navigation = useNavigation();
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      title: categoryName,
+      headerRight: () => (
+        <TouchableOpacity
+          style={{ paddingRight: 15 }}
+          onPress={() => setModalVisible(true)}
+        >
+          <Ionicons name="options-outline" size={24} color="#666666" />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation, categoryName]);
 
   // Initialize the global task adder function
   globalTasksRef.addTask = (newTask: TaskType, category: string) => {
@@ -519,13 +538,8 @@ export const TaskListContainer = ({
 
   return (
     <View style={styles.container}>
-      <TaskListHeader 
-        title={categoryName}
-        onFilterPress={() => setModalVisible(true)}
-      />
-
       {isLoading ? (
-        <ActivityIndicator size="large" color="#10e0e0" />
+        <LoadingState variant="dots" />
       ) : (
         <ScrollView style={styles.scrollContainer}>
           {/* Modal dei filtri */}
@@ -540,47 +554,51 @@ export const TaskListContainer = ({
             setOrdineScadenza={setOrdineScadenza}
           />
 
-          {/* Visualizzazione filtri attivi */}
-          <ActiveFilters 
-            importanceFilter={filtroImportanza}
-            deadlineFilter={filtroScadenza}
-            onClearImportanceFilter={() => setFiltroImportanza("Tutte")}
-            onClearDeadlineFilter={() => setFiltroScadenza("Tutte")}
-          />
+          {/* Sezione task non completati (senza contenitore collapsabile) */}
+          <View style={{ marginTop: 8, marginBottom: 20 }}>
+            <SectionHeader title={t('taskList.sections.todo') || 'Da fare'} style={{ paddingLeft: 8 }} />
+            
+            {/* Visualizzazione filtri attivi (spostata sotto il titolo "Da fare") */}
+            <ActiveFilters 
+              importanceFilter={filtroImportanza}
+              deadlineFilter={filtroScadenza}
+              onClearImportanceFilter={() => setFiltroImportanza("Tutte")}
+              onClearDeadlineFilter={() => setFiltroScadenza("Tutte")}
+            />
 
-          {/* Sezione task non completati */}
-          <TaskSection
-            title={t('taskList.sections.todo')}
-            isExpanded={todoSectionExpanded}
-            tasks={listaFiltrata}
-            animatedHeight={todoSectionHeight}
-            onToggle={() => toggleSection(todoSectionExpanded, setTodoSectionExpanded, todoSectionHeight)}
-            renderTask={(item, index) => {
-              // Ensure every task has a valid ID
-              const taskId = item.id || item.task_id || `fallback_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 9)}`;
-              return (
-                <Task
-                  key={`task-${taskId}`}
-                  task={{
-                    ...item,
-                    id: taskId,
-                    start_time: item.start_time || new Date().toISOString(),
-                    status: item.status || "In sospeso",
-                    completed: item.completed || false
-                  }}
-                  onTaskComplete={handleTaskComplete}
-                  onTaskDelete={handleTaskDelete}
-                  onTaskEdit={handleTaskEdit}
-                  onTaskUncomplete={handleTaskUncomplete}
-                  isOwned={isOwned}
-                  permissionLevel={permissionLevel}
-                />
-              );
-            }}
-            emptyMessage={t('taskList.sections.emptyTodo')}
-          />
+            {listaFiltrata.length > 0 ? (
+              <>
+                {listaFiltrata.map((item, index) => {
+                const taskId = item.id || item.task_id || `fallback_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 9)}`;
+                return (
+                  <Task
+                    key={`task-${taskId}`}
+                    task={{
+                      ...item,
+                      id: taskId,
+                      start_time: item.start_time || new Date().toISOString(),
+                      status: item.status || "In sospeso",
+                      completed: item.completed || false
+                    }}
+                    onTaskComplete={handleTaskComplete}
+                    onTaskDelete={handleTaskDelete}
+                    onTaskEdit={handleTaskEdit}
+                    onTaskUncomplete={handleTaskUncomplete}
+                    isOwned={isOwned}
+                    permissionLevel={permissionLevel}
+                  />
+                );
+              })}
+              </>
+            ) : (
+              <EmptyState
+                icon={<Ionicons name="clipboard-outline" size={48} color="#cccccc" />}
+                title={t('taskList.sections.emptyTodo') || 'Nessun task da fare'}
+              />
+            )}
+          </View>
 
-          {/* Sezione task completati */}
+          {/* Sezione task completati (collapsabile in basso) */}
           {completedTasks.length > 0 && (
             <TaskSection
               title={t('taskList.sections.completed')}

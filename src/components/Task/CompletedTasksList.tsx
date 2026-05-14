@@ -1,5 +1,12 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from "react-native";
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  Animated,
+} from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 
 export interface CompletedTaskProps {
@@ -11,19 +18,62 @@ export interface CompletedTaskProps {
 export interface CompletedTasksListProps {
   tasks: CompletedTaskProps[];
   onTaskPress: (taskId: number | string) => void;
+  isLoading?: boolean;
 }
 
-const CompletedTasksList: React.FC<CompletedTasksListProps> = ({ 
-  tasks, 
-  onTaskPress 
+const SKELETON_COUNT = 3;
+
+const SkeletonRow: React.FC<{ index: number }> = ({ index }) => {
+  const shimmer = new Animated.Value(0);
+
+  useEffect(() => {
+    const offset = index * 200;
+    const anim = Animated.loop(
+      Animated.sequence([
+        Animated.delay(offset),
+        Animated.timing(shimmer, {
+          toValue: 1,
+          duration: 1200,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    anim.start();
+    return () => anim.stop();
+  }, [index]);
+
+  const translateX = shimmer.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-300, 300],
+  });
+
+  return (
+    <View style={styles.skeletonRow}>
+      <View style={styles.skeletonCheck} />
+      <View style={styles.skeletonContent}>
+        <View style={styles.skeletonTitle}>
+          <Animated.View
+            style={[styles.skeletonShimmer, { transform: [{ translateX }] }]}
+          />
+        </View>
+        <View style={styles.skeletonDate}>
+          <Animated.View
+            style={[styles.skeletonShimmer, { transform: [{ translateX }] }]}
+          />
+        </View>
+      </View>
+    </View>
+  );
+};
+
+const CompletedTasksList: React.FC<CompletedTasksListProps> = ({
+  tasks,
+  onTaskPress,
+  isLoading = false,
 }) => {
-  // Stato per gestire l'espansione della lista
   const [isExpanded, setIsExpanded] = useState(true);
-  
-  // Stato per il conteggio dei task da mostrare
   const [visibleTasksCount, setVisibleTasksCount] = useState(3);
-  
-  // Formatta la data nel formato italiano
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("it-IT", {
@@ -33,25 +83,24 @@ const CompletedTasksList: React.FC<CompletedTasksListProps> = ({
       minute: "2-digit",
     });
   };
-  
-  // Gestisce il toggle dell'espansione
+
   const toggleExpand = () => {
     setIsExpanded(!isExpanded);
   };
-  
-  // Mostra tutti i task completati
+
   const handleViewAll = () => {
     setVisibleTasksCount(tasks.length);
   };
-  
-  // Filtro i task per essere sicuro che tutti abbiano un ID valido
-  const safeVisibleTasks = isExpanded ? 
-    (visibleTasksCount < tasks.length ? tasks.slice(0, visibleTasksCount) : tasks)
-      .filter(task => task && task.id != null) // Filtro per task validi con ID definiti
+
+  const safeVisibleTasks = isExpanded
+    ? (visibleTasksCount < tasks.length
+        ? tasks.slice(0, visibleTasksCount)
+        : tasks
+      ).filter((task) => task && task.id != null)
     : [];
-  
+
   const renderTaskItem = ({ item }: { item: CompletedTaskProps }) => (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={styles.taskItem}
       onPress={() => onTaskPress(item.id)}
     >
@@ -68,12 +117,34 @@ const CompletedTasksList: React.FC<CompletedTasksListProps> = ({
       </View>
     </TouchableOpacity>
   );
-  
-  // Se non ci sono task completati, non mostriamo la sezione
+
   if (!tasks || tasks.length === 0) {
     return null;
   }
-  
+
+  if (isLoading) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.headerContainer}>
+          <View style={styles.titleContainer}>
+            <View style={styles.skeletonTitleLabel}>
+              <Animated.View style={styles.skeletonShimmerStatic} />
+            </View>
+            <View style={styles.skeletonBadge}>
+              <Animated.View style={styles.skeletonShimmerStatic} />
+            </View>
+          </View>
+          <View style={styles.skeletonToggleButton}>
+            <Animated.View style={styles.skeletonShimmerStatic} />
+          </View>
+        </View>
+        {Array.from({ length: SKELETON_COUNT }).map((_, i) => (
+          <SkeletonRow key={i} index={i} />
+        ))}
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.headerContainer}>
@@ -81,34 +152,37 @@ const CompletedTasksList: React.FC<CompletedTasksListProps> = ({
           <Text style={styles.title}>Completati di recente</Text>
           <Text style={styles.counterText}>{tasks.length}</Text>
         </View>
-        
-        <TouchableOpacity 
+
+        <TouchableOpacity
           style={styles.toggleButton}
           onPress={toggleExpand}
           activeOpacity={0.7}
         >
           <Text style={styles.toggleButtonText}>
             {isExpanded ? "Chiudi" : "Mostra"}
-          </Text>          <MaterialIcons 
-            name={isExpanded ? "keyboard-arrow-up" : "keyboard-arrow-down"} 
-            size={20} 
-            color="#000000" 
-            style={{marginLeft: 4}}
+          </Text>
+          <MaterialIcons
+            name={isExpanded ? "keyboard-arrow-up" : "keyboard-arrow-down"}
+            size={20}
+            color="#000000"
+            style={{ marginLeft: 4 }}
           />
         </TouchableOpacity>
       </View>
-      
+
       {isExpanded && (
         <>
           <FlatList
             data={safeVisibleTasks}
             renderItem={renderTaskItem}
-            keyExtractor={(item) => (item.id !== undefined ? item.id.toString() : `task-${Math.random()}`)}
+            keyExtractor={(item) =>
+              item.id !== undefined ? item.id.toString() : `task-${Math.random()}`
+            }
             scrollEnabled={false}
           />
-          
+
           {tasks.length > visibleTasksCount && (
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.viewAllButton}
               onPress={handleViewAll}
             >
@@ -117,10 +191,10 @@ const CompletedTasksList: React.FC<CompletedTasksListProps> = ({
               </Text>
             </TouchableOpacity>
           )}
-          
+
           {tasks.length > 0 && tasks.length <= visibleTasksCount && (
             <Text style={styles.taskCountText}>
-              {tasks.length} {tasks.length === 1 ? 'task completato' : 'task completati'}
+              {tasks.length} {tasks.length === 1 ? "task completato" : "task completati"}
             </Text>
           )}
         </>
@@ -165,7 +239,8 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "500",
     color: "#ffffff",
-    backgroundColor: "#000000",    borderRadius: 12,
+    backgroundColor: "#000000",
+    borderRadius: 12,
     paddingHorizontal: 8,
     paddingVertical: 4,
     marginLeft: 10,
@@ -214,17 +289,6 @@ const styles = StyleSheet.create({
     color: "#666666",
     fontFamily: "System",
   },
-  emptyContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 20,
-  },
-  emptyText: {
-    marginTop: 10,
-    color: "#666666",
-    fontSize: 15,
-    fontFamily: "System",
-  },
   toggleButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -233,12 +297,81 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: "#e1e5e9",  },
+    borderColor: "#e1e5e9",
+  },
   toggleButtonText: {
     fontSize: 15,
     fontWeight: "400",
     color: "#000000",
     fontFamily: "System",
+  },
+  // Skeleton styles
+  skeletonRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
+  },
+  skeletonCheck: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: "#f0f0f0",
+    marginRight: 12,
+  },
+  skeletonContent: {
+    flex: 1,
+  },
+  skeletonTitle: {
+    height: 16,
+    width: "65%",
+    backgroundColor: "#f0f0f0",
+    borderRadius: 4,
+    marginBottom: 8,
+    overflow: "hidden",
+  },
+  skeletonDate: {
+    height: 12,
+    width: "40%",
+    backgroundColor: "#f0f0f0",
+    borderRadius: 4,
+    overflow: "hidden",
+  },
+  skeletonShimmer: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "#e8e8e8",
+    width: 120,
+    borderRadius: 4,
+  },
+  skeletonShimmerStatic: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "#eaeaea",
+    borderRadius: 4,
+  },
+  skeletonTitleLabel: {
+    height: 20,
+    width: 150,
+    backgroundColor: "#f0f0f0",
+    borderRadius: 4,
+    overflow: "hidden",
+  },
+  skeletonBadge: {
+    width: 24,
+    height: 20,
+    borderRadius: 12,
+    backgroundColor: "#f0f0f0",
+    marginLeft: 10,
+    overflow: "hidden",
+  },
+  skeletonToggleButton: {
+    width: 80,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#f0f0f0",
+    borderWidth: 1,
+    borderColor: "#e8e8e8",
+    overflow: "hidden",
   },
 });
 

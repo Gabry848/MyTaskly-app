@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { styles } from './styles';
 
 export interface ActiveFiltersProps {
@@ -23,17 +23,19 @@ export const ActiveFilters = ({
   
   return (
     <View style={styles.activeFilterContainer}>
-      <Text style={styles.activeFilterText}>Filtri attivi:</Text>
-      <View style={styles.activeFilterChips}>
+      <ScrollView 
+        horizontal 
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.activeFilterChips}
+      >
         {importanceFilter !== 'Tutte' && (
           <TouchableOpacity 
             style={styles.activeChip}
             onPress={onClearImportanceFilter}
           >
             <Text style={styles.activeChipText}>
-              Importanza: {importanceFilter}
+              {importanceFilter}
             </Text>
-            <Text style={styles.clearFilterButton}>×</Text>
           </TouchableOpacity>
         )}
         
@@ -43,12 +45,11 @@ export const ActiveFilters = ({
             onPress={onClearDeadlineFilter}
           >
             <Text style={styles.activeChipText}>
-              Scadenza: {deadlineFilter}
+              {deadlineFilter}
             </Text>
-            <Text style={styles.clearFilterButton}>×</Text>
           </TouchableOpacity>
         )}
-      </View>
+      </ScrollView>
     </View>
   );
 };

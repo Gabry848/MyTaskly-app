@@ -4,8 +4,7 @@ import { STORAGE_KEYS, API_ENDPOINTS } from '../constants/authConstants';
 import { refreshToken } from './authService';
 import axios from './axiosInstance';
 
-// Chiave segreta hardcoded per le API
-const API_SECRET_KEY = 'ubHL%At28^{Lm-vx2_>rG\\m.*FR*rCMC%-4jMhk(FV8CpMD_mHhx,;mXUmC/^GHkT@B@^]k9:B+ga3VWqVRUv,C[}@;>BE//Y@bG';
+const API_SECRET_KEY = process.env.EXPO_PUBLIC_API_SECRET_KEY;
 
 // Flag per evitare loop infiniti durante il refresh
 let isRefreshing = false;

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   StyleSheet,
-  Text,
   TouchableOpacity
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -12,6 +11,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import CalendarView from '../../components/Calendar/CalendarView';
 import Calendar20View from '../../components/Calendar20/Calendar20View';
 import { useTranslation } from 'react-i18next';
+import { AppText } from '../../components/UI/foundation';
+import { colors } from '../../theme/tokens';
 
 const CALENDAR_VIEW_MODE_KEY = '@calendar_view_mode';
 
@@ -62,7 +63,7 @@ export default function Calendar() {
 
       {/* Header con titolo principale e toggle button */}
       <View style={styles.header}>
-        <Text style={styles.mainTitle}>{t('calendar.title')}</Text>
+        <AppText variant="display" weight="200" style={styles.mainTitle}>{t('calendar.title')}</AppText>
         <TouchableOpacity
             onPress={toggleViewMode}
             style={styles.toggleButton}
@@ -71,7 +72,7 @@ export default function Calendar() {
             <Ionicons
               name={viewMode === 'minimal' ? 'grid-outline' : 'calendar-clear-outline'}
               size={24}
-              color="#000000"
+              color={colors.textPrimary}
             />
           </TouchableOpacity>
       </View>
@@ -86,7 +87,7 @@ export default function Calendar() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.background,
   },
   header: {
     paddingTop: 4,
@@ -98,11 +99,7 @@ const styles = StyleSheet.create({
   },
   mainTitle: {
     paddingTop: 2,
-    fontSize: 30,
-    fontWeight: "200", // Stesso peso di Home20
-    color: "#000000",
     textAlign: "left",
-    fontFamily: "System",
     letterSpacing: -1.5,
     marginBottom: 0,
     flex: 1,
