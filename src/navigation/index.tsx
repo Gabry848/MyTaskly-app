@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   NavigationContainer,
   useNavigation,
@@ -56,6 +56,11 @@ import { LanguageProvider } from "../contexts/LanguageContext";
 import "../services/i18n"; // Initialize i18n
 import { useTranslation } from 'react-i18next';
 import PermissionModal from "../components/UI/PermissionModal";
+import { useCustomFonts } from '../services/fontService';
+import * as SplashScreen from 'expo-splash-screen';
+
+// Keep the splash screen visible while we fetch resources
+SplashScreen.preventAutoHideAsync();
 
 // Definizione del tipo per le route dello Stack principale
 export type RootStackParamList = {
@@ -533,6 +538,14 @@ function AppStack() {
 
 // Componente principale Navigation
 export default function Navigation() {
+  const fontsLoaded = useCustomFonts();
+
+  const onLayoutRootView = useCallback(async () => {
+    if (fontsLoaded) {
+      await SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded]);
+
   // ── Analytics: inizializza Vexo e traccia sessione ──
   useEffect(() => {
     initAnalytics().then(() => {
@@ -569,8 +582,12 @@ export default function Navigation() {
     };
   }, []);
 
+  if (!fontsLoaded) {
+    return null;
+  }
+
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayoutRootView}>
       <LanguageProvider>
         <TutorialProvider>
           <NavigationContainer>
