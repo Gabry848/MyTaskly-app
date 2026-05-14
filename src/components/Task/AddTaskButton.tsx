@@ -1,14 +1,15 @@
 import React from "react";
-import { Pressable, StyleSheet, Platform } from "react-native";
-import { MaterialIcons } from '@expo/vector-icons';
+import { Pressable, StyleSheet, Platform, View } from "react-native";
+import { Ionicons } from '@expo/vector-icons';
 
 export interface AddTaskButtonProps {
   onPress: () => void;
   screenWidth: number;
   categoryTitle?: string;
+  isInline?: boolean; // Per renderlo più piccolo quando è inline
 }
 
-const AddTaskButton: React.FC<AddTaskButtonProps> = ({ onPress, screenWidth, categoryTitle }) => {
+const AddTaskButton: React.FC<AddTaskButtonProps> = ({ onPress, screenWidth, categoryTitle, isInline = false }) => {
   return (
     <Pressable
       accessible={true}
@@ -17,53 +18,41 @@ const AddTaskButton: React.FC<AddTaskButtonProps> = ({ onPress, screenWidth, cat
       accessibilityHint={categoryTitle ? `Aggiungi una nuova attività alla categoria ${categoryTitle}` : "Aggiungi una nuova attività"}
       style={({ pressed }) => [
         styles.controlsContainer,
+        isInline ? styles.inlineButton : null,
         {
-          paddingVertical: screenWidth < 350 ? 12 : 12,
-          paddingHorizontal: screenWidth < 350 ? 12 : 12,
-          marginTop: screenWidth < 320 ? 8 : 0,
+          opacity: pressed ? 0.8 : 1,
         },
-        pressed && styles.pressed,
       ]}
       onPress={onPress}
     >
-      {({ pressed }) => (
-        <MaterialIcons
-          name="add-task"
-          size={20}
-          color={pressed ? "#424242" : "#000000"}
-        />
-      )}
+      <Ionicons name="add" size={isInline ? 24 : 28} color="#ffffff" />
     </Pressable>
   );
 };
 
 const styles = StyleSheet.create({
   controlsContainer: {
-    minWidth: 44,
-    minHeight: 44,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "#000000",
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#F5F5F5",
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#E0E0E0",
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 6,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
   },
-  pressed: {
-    backgroundColor: "#EEEEEE",
-    borderColor: "#BDBDBD",
+  inlineButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
   },
 });
 

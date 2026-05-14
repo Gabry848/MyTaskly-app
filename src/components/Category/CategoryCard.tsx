@@ -135,7 +135,7 @@ const CategoryCard: React.FC<CategoryCardProps> = ({
 
         {/* Hide add button for READ_ONLY shared categories */}
         {!(isShared && !isOwned && permissionLevel === 'READ_ONLY') && (
-          <AddTaskButton onPress={onAddTask} screenWidth={screenWidth} categoryTitle={title} />
+          <AddTaskButton onPress={onAddTask} screenWidth={screenWidth} categoryTitle={title} isInline={true} />
         )}
       </CardSurface>
     </Animated.View>
