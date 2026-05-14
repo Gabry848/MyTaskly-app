@@ -31,7 +31,7 @@ export const PLAN_PRODUCT_IDS: Record<'free' | 'pro' | 'premium', PlanProductIds
   },
   premium: {
     monthly: 'premium:monthly',
-    annual: 'premium:annual',
+    annual: 'premium:annual-new',
   },
 };
 

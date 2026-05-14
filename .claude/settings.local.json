@@ -72,7 +72,13 @@
       "mcp__claude_ai_Notion__notion-fetch",
       "mcp__claude_ai_Notion__notion-search",
       "mcp__claude_ai_Notion__notion-update-page",
-      "Bash(openspec list *)"
+      "Bash(openspec list *)",
+      "mcp__revenuecat__list-projects",
+      "mcp__revenuecat__list-apps",
+      "mcp__revenuecat__list-products",
+      "mcp__revenuecat__list-offerings",
+      "mcp__revenuecat__get-product",
+      "mcp__revenuecat__get-product-store-state"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"
