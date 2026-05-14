@@ -12,9 +12,9 @@ export const styles = StyleSheet.create({
     borderColor: "#e1e5e9",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
+    shadowOpacity: 0.08,
     shadowRadius: 8,
-    elevation: 2,
+    elevation: 3,
   },
   completedCard: {
     backgroundColor: "#f8f8f8",
@@ -71,7 +71,7 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginTop: 2,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#d0d0d0",
   },
   checkedBox: {
     backgroundColor: "#000000",

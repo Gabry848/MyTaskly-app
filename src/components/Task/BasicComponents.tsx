@@ -21,7 +21,7 @@ const formatDuration = (minutes?: number | null): string | null => {
 export const Checkbox = ({ checked, onPress, isOptimistic = false }) => (
   <TouchableOpacity
     style={[
-      styles.checkbox, 
+      styles.checkbox,
       checked && styles.checkedBox,
       isOptimistic && styles.optimisticBox
     ]}

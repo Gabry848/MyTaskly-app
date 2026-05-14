@@ -360,7 +360,7 @@ const Task = ({
       <Animated.View
         style={[
           styles.card,
-          { 
+          {
             backgroundColor,
             borderLeftWidth: 4,
             borderLeftColor: isCompleted ? "#cccccc" : priorityBorderColor
