@@ -341,8 +341,8 @@ export async function sendTestNotification(): Promise<boolean> {
   // Altrimenti invia una notifica push tramite backend
   try {
     const response = await axiosInstance.post('/notifications/test-notification', {
-      title: '🧪 Test Mytaskly',
-      body: 'Notifica di test funziona! 🎉',
+      title: 'Task in scadenza',
+      body: 'Hai un task da completare entro le 18:00',
       data: { test: true }
     });
 
@@ -443,8 +443,8 @@ export function useNotifications() {
       // Puoi fare azioni specifiche qui
       if (notification.request.content.data?.notification_type === 'task_due_reminder') {
         Alert.alert(
-          notification.request.content.title || 'Task in Scadenza!', 
-          notification.request.content.body || 'Hai un task in scadenza'
+          notification.request.content.title || 'Task in scadenza',
+          notification.request.content.body || 'Hai un task che richiede attenzione'
         );
       }
     });
