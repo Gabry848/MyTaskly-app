@@ -36,6 +36,6 @@ export default function AppText({
 
 const styles = StyleSheet.create({
   base: {
-    fontFamily: "System",
+    // Font family is now handled by the typography system
   },
 });
