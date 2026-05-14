@@ -40,7 +40,6 @@ import AISettingsScreen from "./screens/AISettings";
 import RecurringTasksScreen from "./screens/RecurringTasksScreen";
 import CalendarScreen from "./screens/Calendar";
 import SubscriptionPlansScreen from "./screens/SubscriptionPlans";
-import NotificationDebugScreen from "./screens/NotificationDebug";
 import BugReportScreen from "./screens/BugReport";
 //import StatisticsScreen from "./screens/Statistics";
 import { NotFound as NotFoundScreen } from "./screens/NotFound";
@@ -77,7 +76,6 @@ export type RootStackParamList = {
   Language: undefined;
   VoiceSettings: undefined;
   GoogleCalendar: undefined;
-  NotificationDebug: undefined;
   BugReport: undefined;
   CalendarWidgetDemo: undefined;
   Statistics: undefined;
@@ -496,11 +494,6 @@ function AppStack() {
           name="GoogleCalendar"
           component={GoogleCalendarScreen}
           options={{ title: t('navigation.screens.googleCalendar') }}
-        />
-        <Stack.Screen
-          name="NotificationDebug"
-          component={NotificationDebugScreen}
-          options={{ title: t('navigation.screens.notificationDebug') }}
         />
         <Stack.Screen
           name="NotificationSettings"

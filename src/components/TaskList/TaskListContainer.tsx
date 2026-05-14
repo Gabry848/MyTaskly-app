@@ -556,7 +556,6 @@ export const TaskListContainer = ({
 
           {/* Sezione task non completati (senza contenitore collapsabile) */}
           <View style={{ marginTop: 8, marginBottom: 20 }}>
-            <SectionHeader title={t('taskList.sections.todo') || 'Da fare'} style={{ paddingLeft: 8 }} />
             
             {/* Visualizzazione filtri attivi (spostata sotto il titolo "Da fare") */}
             <ActiveFilters 

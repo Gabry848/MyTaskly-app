@@ -161,7 +161,7 @@ export default function MemorySettingsScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
         <StatusBar style="dark" />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#000000" />
@@ -172,10 +172,10 @@ export default function MemorySettingsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
       <StatusBar style="dark" />
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 
         {/* ── ENABLE/DISABLE MEMORY ── */}
         <View style={styles.sectionHeader}>
@@ -352,9 +352,12 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
+  scrollContent: {
+    paddingBottom: 40,
+  },
   sectionHeader: {
     paddingHorizontal: 20,
-    paddingTop: 30,
+    paddingTop: 8,
     paddingBottom: 8,
     backgroundColor: '#ffffff',
   },

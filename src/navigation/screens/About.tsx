@@ -10,11 +10,11 @@ export default function About() {
   const { t } = useTranslation();
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
       <StatusBar style="dark" />
 
       {/* Content */}
-      <ScrollView style={styles.content}>
+      <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
         {/* App Logo/Icon Section */}
         <View style={styles.logoSection}>
           <View style={styles.logoContainer}>
@@ -127,7 +127,9 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingTop: 20,
+  },
+  scrollContent: {
+    paddingBottom: 40,
   },
   logoSection: {
     alignItems: 'center',
@@ -155,7 +157,7 @@ const styles = StyleSheet.create({
   },
   sectionHeader: {
     paddingHorizontal: 20,
-    paddingTop: 30,
+    paddingTop: 4,
     paddingBottom: 15,
   },
   sectionTitle: {

@@ -55,7 +55,7 @@ export default function GoogleCalendar() {
   }, [error]);
 
   const renderConnectedView = () => (
-    <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+    <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
       {/* Status section */}
       <View style={styles.statusSection}>
         <Ionicons name="checkmark-circle" size={56} color="#000000" />
@@ -161,7 +161,7 @@ export default function GoogleCalendar() {
   );
 
   const renderNotConnectedView = () => (
-    <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+    <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
       {/* Hero section */}
       <View style={styles.heroSection}>
         <Ionicons name="calendar-outline" size={56} color="#000000" />
@@ -232,7 +232,7 @@ export default function GoogleCalendar() {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
       <StatusBar style="dark" />
 
       <View style={styles.wipBanner}>
@@ -252,6 +252,9 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 40,
   },
   wipBanner: {
     backgroundColor: '#FFF3E0',
@@ -273,7 +276,7 @@ const styles = StyleSheet.create({
   // Section header (coerente con NotificationSettings)
   sectionHeader: {
     paddingHorizontal: 20,
-    paddingTop: 30,
+    paddingTop: 4,
     paddingBottom: 8,
     backgroundColor: '#ffffff',
   },

@@ -15,7 +15,6 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { getValidToken, changeEmail, changeUsername } from '../../services/authService';
 import axios from '../../services/axiosInstance';
-import { sendTestNotification } from '../../services/notificationService';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../types';
 import { useTranslation } from 'react-i18next';
@@ -33,7 +32,6 @@ export default function AccountSettings() {
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [testNotificationLoading, setTestNotificationLoading] = useState(false);
 
   const [emailModalVisible, setEmailModalVisible] = useState(false);
   const [usernameModalVisible, setUsernameModalVisible] = useState(false);
@@ -85,22 +83,6 @@ export default function AccountSettings() {
       });
     } catch {
       return dateString;
-    }
-  };
-
-  const handleTestNotification = async () => {
-    setTestNotificationLoading(true);
-    try {
-      const success = await sendTestNotification();
-      if (success) {
-        Alert.alert(t('common.messages.success'), t('accountSettings.testNotification.success'));
-      } else {
-        Alert.alert(t('common.messages.error'), t('accountSettings.testNotification.failed'));
-      }
-    } catch {
-      Alert.alert(t('common.messages.error'), t('accountSettings.testNotification.error'));
-    } finally {
-      setTestNotificationLoading(false);
     }
   };
 
@@ -177,10 +159,10 @@ export default function AccountSettings() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
       <StatusBar style="dark" />
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {error ? (
           <View style={styles.errorContainer}>
             <Ionicons name="alert-circle-outline" size={48} color="#000000" />
@@ -267,38 +249,6 @@ export default function AccountSettings() {
                 <Text style={styles.menuItemText}>{t('accountSettings.menu.changePassword')}</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color="#000000" />
-            </TouchableOpacity>
-
-            {/* ───────────────── TEST NOTIFICHE ───────────────── */}
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>{t('accountSettings.sections.testNotifications')}</Text>
-              <Text style={styles.sectionDescription}>{t('accountSettings.sections.testNotificationsDesc')}</Text>
-            </View>
-
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={handleTestNotification}
-              disabled={testNotificationLoading}
-              activeOpacity={0.7}
-            >
-              <View style={styles.rowLeft}>
-                <Ionicons name="notifications-outline" size={22} color="#000000" />
-                <View style={styles.rowTextWrap}>
-                  <Text style={styles.menuItemText}>
-                    {testNotificationLoading
-                      ? t('accountSettings.testNotification.sending')
-                      : t('accountSettings.testNotification.send')}
-                  </Text>
-                  <Text style={styles.rowHint}>
-                    {t('accountSettings.testNotification.description')}
-                  </Text>
-                </View>
-              </View>
-              {testNotificationLoading ? (
-                <ActivityIndicator size="small" color="#000000" />
-              ) : (
-                <Ionicons name="send-outline" size={20} color="#000000" />
-              )}
             </TouchableOpacity>
           </>
         ) : null}
@@ -420,6 +370,9 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
+  scrollContent: {
+    paddingBottom: 40,
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -462,7 +415,7 @@ const styles = StyleSheet.create({
   // Section header — identico a NotificationSettings
   sectionHeader: {
     paddingHorizontal: 20,
-    paddingTop: 30,
+    paddingTop: 4,
     paddingBottom: 8,
     backgroundColor: '#ffffff',
   },

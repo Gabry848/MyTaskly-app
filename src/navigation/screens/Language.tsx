@@ -53,10 +53,10 @@ export default function Language() {
   const comingSoonLanguages = LANGUAGES.filter((l) => !l.available);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
       <StatusBar style="dark" />
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 
         {/* ───────────────── LINGUA ATTUALE ───────────────── */}
         <View style={styles.sectionHeader}>
@@ -150,10 +150,13 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
+  scrollContent: {
+    paddingBottom: 40,
+  },
   // Section header — identico a NotificationSettings
   sectionHeader: {
     paddingHorizontal: 20,
-    paddingTop: 30,
+    paddingTop: 4,
     paddingBottom: 8,
     backgroundColor: '#ffffff',
   },
