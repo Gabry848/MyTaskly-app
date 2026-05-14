@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
   addButton: {
     position: "absolute",
     bottom: 0,
-    left: 20,
+    left: 32,
     backgroundColor: "#000000", // Cambiato da #007BFF a #000000 per coerenza con Home20
     width: 56, // Leggermente più grande per un aspetto più moderno
     height: 56,
