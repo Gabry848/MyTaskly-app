@@ -32,22 +32,14 @@ import {
   sendTokenToBackend,
 } from '../../services/notificationService';
 
-// Costanti per giorni della settimana
-const WEEK_DAYS = [
-  { value: 0, label: 'Dom' },
-  { value: 1, label: 'Lun' },
-  { value: 2, label: 'Mar' },
-  { value: 3, label: 'Mer' },
-  { value: 4, label: 'Gio' },
-  { value: 5, label: 'Ven' },
-  { value: 6, label: 'Sab' },
-];
-
 // Costanti per orari
 const HOURS = Array.from({ length: 24 }, (_, i) => ({
   value: i,
   label: `${i.toString().padStart(2, '0')}:00`,
 }));
+
+// Costanti per giorni della settimana (valori 0-6)
+const WEEK_DAYS = [0, 1, 2, 3, 4, 5, 6];
 
 export default function NotificationSettingsScreen() {
   const { t } = useTranslation();
@@ -433,9 +425,9 @@ export default function NotificationSettingsScreen() {
 
         {/* ───────────────── WEEKLY SUMMARY ───────────────── */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Riepilogo Settimanale</Text>
+          <Text style={styles.sectionTitle}>{t('notificationSettings.sections.weeklySummary')}</Text>
           <Text style={styles.sectionDescription}>
-            Ricevi un riepilogo dei tuoi task ogni settimana
+            {t('notificationSettings.sections.weeklySummaryDesc')}
           </Text>
         </View>
 
@@ -444,14 +436,17 @@ export default function NotificationSettingsScreen() {
           <View style={styles.rowLeft}>
             <Ionicons name="calendar-outline" size={22} color="#000000" />
             <View style={styles.rowTextWrap}>
-              <Text style={styles.rowLabel}>Abilita riepilogo</Text>
+              <Text style={styles.rowLabel}>{t('notificationSettings.weeklySummary.enable')}</Text>
               {weeklySummarySettings?.enabled && weeklySummarySettings.next_scheduled_date && (
                 <Text style={styles.rowHint}>
-                  Prossimo: {new Date(weeklySummarySettings.next_scheduled_date).toLocaleDateString('it-IT', {
-                    weekday: 'long',
-                    day: 'numeric',
-                    month: 'short',
-                  })} alle {weeklySummarySettings.hour}:00
+                  {t('notificationSettings.weeklySummary.nextScheduled', {
+                    date: new Date(weeklySummarySettings.next_scheduled_date).toLocaleDateString('it-IT', {
+                      weekday: 'long',
+                      day: 'numeric',
+                      month: 'short',
+                    }),
+                    time: `${weeklySummarySettings.hour}:00`
+                  })}
                 </Text>
               )}
             </View>
@@ -469,7 +464,7 @@ export default function NotificationSettingsScreen() {
         {weeklySummarySettings?.enabled && (
           <>
             <View style={styles.subSectionHeader}>
-              <Text style={styles.subSectionTitle}>Giorno della settimana</Text>
+              <Text style={styles.subSectionTitle}>{t('notificationSettings.weeklySummary.day')}</Text>
             </View>
 
             <View style={styles.pillsRow}>
@@ -485,7 +480,7 @@ export default function NotificationSettingsScreen() {
                     activeOpacity={0.7}
                   >
                     <Text style={[styles.pillText, isSelected && styles.pillTextSelected]}>
-                      {day.label}
+                      {t(`notificationSettings.weeklySummary.days.${day.value}`)}
                     </Text>
                   </TouchableOpacity>
                 );
@@ -493,7 +488,7 @@ export default function NotificationSettingsScreen() {
             </View>
 
             <View style={styles.subSectionHeader}>
-              <Text style={styles.subSectionTitle}>Orario</Text>
+              <Text style={styles.subSectionTitle}>{t('notificationSettings.weeklySummary.hour')}</Text>
             </View>
 
             <ScrollView

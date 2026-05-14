@@ -57,6 +57,8 @@
       "pushDesc": "Receive notifications directly on this device.",
       "telegram": "Telegram",
       "telegramDesc": "Receive automated reminders via the MyTaskly Telegram bot.",
+      "weeklySummary": "Weekly Summary",
+      "weeklySummaryDesc": "Receive a weekly summary of your tasks.",
       "timezone": "Timezone",
       "timezoneDesc": "Reminders are sent according to this timezone. Keep it in sync with your device.",
       "info": "Information"
@@ -75,6 +77,21 @@
     "reminder": {
       "title": "Reminder advance notice",
       "desc": "How many minutes before the task deadline should the reminder be sent."
+    },
+    "weeklySummary": {
+      "enable": "Enable summary",
+      "nextScheduled": "Next: {{date}} at {{time}}",
+      "day": "Day of week",
+      "hour": "Time",
+      "days": {
+        "0": "Sun",
+        "1": "Mon",
+        "2": "Tue",
+        "3": "Wed",
+        "4": "Thu",
+        "5": "Fri",
+        "6": "Sat"
+      }
     },
     "timezone": {
       "server": "Server",

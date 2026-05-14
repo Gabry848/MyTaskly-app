@@ -58,6 +58,8 @@
       "pushDesc": "Ricevi notifiche direttamente su questo dispositivo.",
       "telegram": "Telegram",
       "telegramDesc": "Ricevi promemoria automatici tramite il bot Telegram di MyTaskly.",
+      "weeklySummary": "Riepilogo Settimanale",
+      "weeklySummaryDesc": "Ricevi un riepilogo dei tuoi task ogni settimana.",
       "timezone": "Fuso Orario",
       "timezoneDesc": "I promemoria vengono inviati in base a questo fuso orario. Mantienilo sincronizzato con il tuo dispositivo.",
       "info": "Informazioni"
@@ -76,6 +78,21 @@
     "reminder": {
       "title": "Anticipo promemoria",
       "desc": "Quanti minuti prima della scadenza del task deve essere inviato il promemoria."
+    },
+    "weeklySummary": {
+      "enable": "Abilita riepilogo",
+      "nextScheduled": "Prossimo: {{date}} alle {{time}}",
+      "day": "Giorno della settimana",
+      "hour": "Orario",
+      "days": {
+        "0": "Dom",
+        "1": "Lun",
+        "2": "Mar",
+        "3": "Mer",
+        "4": "Gio",
+        "5": "Ven",
+        "6": "Sab"
+      }
     },
     "timezone": {
       "server": "Server",
