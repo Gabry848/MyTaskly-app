@@ -469,18 +469,18 @@ export default function NotificationSettingsScreen() {
 
             <View style={styles.pillsRow}>
               {WEEK_DAYS.map((day) => {
-                const isSelected = weeklySummarySettings.day === day.value;
+                const isSelected = weeklySummarySettings.day === day;
                 const isSaving = savingField === 'weekly_day';
                 return (
                   <TouchableOpacity
-                    key={day.value}
+                    key={day}
                     style={[styles.pill, isSelected && styles.pillSelected]}
-                    onPress={() => handleWeeklySummaryDay(day.value)}
+                    onPress={() => handleWeeklySummaryDay(day)}
                     disabled={isSaving}
                     activeOpacity={0.7}
                   >
                     <Text style={[styles.pillText, isSelected && styles.pillTextSelected]}>
-                      {t(`notificationSettings.weeklySummary.days.${day.value}`)}
+                      {t(`notificationSettings.weeklySummary.days.${day}`)}
                     </Text>
                   </TouchableOpacity>
                 );
