@@ -125,16 +125,16 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
     <View>
       {/* Intestazione del calendario con navigazione */}
       <View style={styles.calendarHeader}>
-        <TouchableOpacity onPress={onPreviousMonth} style={{ padding: 8 }}>
-          <Ionicons name="chevron-back" size={24} color="#000000" />
+        <TouchableOpacity onPress={onPreviousMonth} style={{ padding: 6 }}>
+          <Ionicons name="chevron-back" size={22} color="#000000" />
         </TouchableOpacity>
-        
+
         <Text style={styles.calendarMonthTitle}>
           {dayjs(selectedDate).format('MMMM YYYY')}
         </Text>
-        
-        <TouchableOpacity onPress={onNextMonth} style={{ padding: 8 }}>
-          <Ionicons name="chevron-forward" size={24} color="#000000" />
+
+        <TouchableOpacity onPress={onNextMonth} style={{ padding: 6 }}>
+          <Ionicons name="chevron-forward" size={22} color="#000000" />
         </TouchableOpacity>
       </View>
       
@@ -171,20 +171,20 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: 6,
     paddingHorizontal: 5,
   },
   calendarMonthTitle: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: "300",
     color: "#000000",
     fontFamily: "System",
-    letterSpacing: -0.8,
+    letterSpacing: -0.6,
   },
   weekdaysRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 6,
+    marginBottom: 4,
     paddingHorizontal: 5,
   },
   weekdayText: {
@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontWeight: "500",
     color: "#666666",
-    fontSize: 14,
+    fontSize: 12,
     fontFamily: "System",
   },
   calendarGrid: {

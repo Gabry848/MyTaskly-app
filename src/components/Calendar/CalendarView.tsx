@@ -415,7 +415,7 @@ const CalendarView: React.FC = () => {
               Impegni del {dayjs(selectedDate).format('DD MMMM YYYY')}
             </AppText>
           </View>
-          <AddTaskButton onPress={handleAddTask} screenWidth={screenWidth} />
+          <AddTaskButton onPress={handleAddTask} screenWidth={screenWidth} isInline={true} />
         </View>
 
         {/* Componente di caricamento */}
@@ -509,7 +509,7 @@ const CalendarView: React.FC = () => {
 const styles = StyleSheet.create({
   calendarContainer: {
     flex: 1,
-    paddingTop: 8,
+    paddingTop: 4,
     paddingHorizontal: 16,
     paddingBottom: 16,
     backgroundColor: "#ffffff",
