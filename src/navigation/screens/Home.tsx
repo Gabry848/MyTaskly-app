@@ -56,6 +56,7 @@ const HomeScreen = () => {
   const [showChatHistory, setShowChatHistory] = useState(false);
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const [modelType, setModelType] = useState<'base' | 'advanced'>('base');
+  const [isMounted, setIsMounted] = useState(false);
   const greetingVariant = useRef(Math.floor(Math.random() * 7)).current;
 
   // Costanti
@@ -76,13 +77,22 @@ const HomeScreen = () => {
   const chatHistoryOpacity = useRef(new Animated.Value(0)).current;
   const greetingInputRef = useRef<View>(null);
   const greetingShiftAnim = useRef(new Animated.Value(0)).current;
+  // Mark component as mounted after initial render
+  useEffect(() => {
+    setIsMounted(true);
+    return () => {
+      setIsMounted(false);
+    };
+  }, []);
+
   // Rilegge il modello AI ogni volta che la schermata torna in focus
   useFocusEffect(
     useCallback(() => {
+      if (!isMounted) return;
       AsyncStorage.getItem('ai_model_tier').then((val) => {
         if (val === 'advanced' || val === 'base') setModelType(val);
       });
-    }, [])
+    }, [isMounted])
   );
 
   // Effetto per recuperare il nome dell'utente e inizializzare cache
@@ -120,32 +130,35 @@ const HomeScreen = () => {
   }, [cacheService, syncManager]);
   // Effetto per l'animazione di scrittura del testo di saluto
   useEffect(() => {
-    if (userName && !chatStarted) {
-      const greetingText = t(`home.greeting_${greetingVariant}`, { username: userName });
-      let currentIndex = 0;
-      setDisplayedText("");
-      setIsTyping(true);
+    // Skip animation on initial mount to avoid "no listeners registered" warning
+    if (!userName || chatStarted || !isMounted) return;
 
-      const typingInterval = setInterval(() => {
-        if (currentIndex <= greetingText.length) {
-          setDisplayedText(greetingText.slice(0, currentIndex));
-          currentIndex++;
-        } else {
-          clearInterval(typingInterval);
-          setIsTyping(false);
-        }
-      }, 50); // Velocità di scrittura: 50ms per carattere
+    const greetingText = t(`home.greeting_${greetingVariant}`, { username: userName });
+    let currentIndex = 0;
+    setDisplayedText("");
+    setIsTyping(true);
 
-      return () => {
+    const typingInterval = setInterval(() => {
+      if (currentIndex <= greetingText.length) {
+        setDisplayedText(greetingText.slice(0, currentIndex));
+        currentIndex++;
+      } else {
         clearInterval(typingInterval);
-      };
-    }
-  }, [userName, chatStarted, t]);
+        setIsTyping(false);
+      }
+    }, 50); // Velocità di scrittura: 50ms per carattere
+
+    return () => {
+      clearInterval(typingInterval);
+    };
+  }, [userName, chatStarted, t, greetingVariant, isMounted]);
 
   // Effetto per l'animazione del cursore lampeggiante
   useEffect(() => {
+    let blinkAnimation: Animated.CompositeAnimation | null = null;
+
     if (isTyping) {
-      const blinkAnimation = Animated.loop(
+      blinkAnimation = Animated.loop(
         Animated.sequence([
           Animated.timing(cursorOpacity, {
             toValue: 0,
@@ -160,14 +173,16 @@ const HomeScreen = () => {
         ])
       );
       blinkAnimation.start();
-
-      return () => {
-        blinkAnimation.stop();
-      };
     } else {
       // Ferma l'animazione e nascondi il cursore quando la scrittura è finita
       cursorOpacity.setValue(0);
     }
+
+    return () => {
+      if (blinkAnimation) {
+        blinkAnimation.stop();
+      }
+    };
   }, [isTyping, cursorOpacity]);
   // Effetto per gestire le dimensioni dello schermo
   useEffect(() => {
@@ -180,28 +195,41 @@ const HomeScreen = () => {
 
   // Effetto per animare il pulsante del microfono
   useEffect(() => {
-    Animated.timing(micButtonAnim, {
+    // Skip animation on initial mount to avoid "no listeners registered" warning
+    if (!userName || !isMounted) return;
+
+    const animation = Animated.timing(micButtonAnim, {
       toValue: isInputFocused ? 0 : 1,
       duration: 200,
       useNativeDriver: false,
-    }).start();
+    });
+
+    animation.start();
 
     console.log('[HOME] Mic button animation state:', { isInputFocused, targetValue: isInputFocused ? 0 : 1 });
-  }, [isInputFocused, micButtonAnim]);
+
+    return () => {
+      animation.stop();
+    };
+  }, [isInputFocused, micButtonAnim, userName, isMounted]);
 
   // Effetto per gestire la visualizzazione della tastiera
   useEffect(() => {
+    let inputBottomAnimation: Animated.CompositeAnimation | null = null;
+    let greetingShiftAnimation: Animated.CompositeAnimation | null = null;
+
     const keyboardDidShowListener = Keyboard.addListener(
       "keyboardDidShow",
       (event) => {
         if (chatStarted) {
           // Chat mode: sottrae il bottom inset (barra navigazione) per evitare doppio offset
           const keyboardHeight = event.endCoordinates.height;
-          Animated.timing(inputBottomPosition, {
+          inputBottomAnimation = Animated.timing(inputBottomPosition, {
             toValue: Math.max(keyboardHeight - insets.bottom, 0),
             duration: 250,
             useNativeDriver: false,
-          }).start();
+          });
+          inputBottomAnimation.start();
         } else if (greetingInputRef.current) {
           // Greeting mode: sposta in alto SOLO se l'input è coperto dalla tastiera
           greetingInputRef.current.measureInWindow((_x, y, _width, height) => {
@@ -209,11 +237,12 @@ const HomeScreen = () => {
             const keyboardTop = event.endCoordinates.screenY;
             if (inputBottom > keyboardTop) {
               const shift = inputBottom - keyboardTop;
-              Animated.timing(greetingShiftAnim, {
+              greetingShiftAnimation = Animated.timing(greetingShiftAnim, {
                 toValue: -shift,
                 duration: 250,
                 useNativeDriver: true,
-              }).start();
+              });
+              greetingShiftAnimation.start();
             }
           });
         }
@@ -229,18 +258,20 @@ const HomeScreen = () => {
 
         if (chatStarted) {
           // Riporta l'input in posizione normale
-          Animated.timing(inputBottomPosition, {
+          inputBottomAnimation = Animated.timing(inputBottomPosition, {
             toValue: 0,
             duration: 250,
             useNativeDriver: false,
-          }).start();
+          });
+          inputBottomAnimation.start();
         } else {
           // Riporta il greeting in posizione normale
-          Animated.timing(greetingShiftAnim, {
+          greetingShiftAnimation = Animated.timing(greetingShiftAnim, {
             toValue: 0,
             duration: 250,
             useNativeDriver: true,
-          }).start();
+          });
+          greetingShiftAnimation.start();
         }
       }
     );
@@ -248,18 +279,23 @@ const HomeScreen = () => {
     return () => {
       keyboardDidShowListener?.remove();
       keyboardDidHideListener?.remove();
+      inputBottomAnimation?.stop();
+      greetingShiftAnimation?.stop();
     };
   }, [chatStarted, inputBottomPosition, greetingShiftAnim, insets.bottom]);
 
   const startChatAnimation = useCallback(() => {
     setChatStarted(true);
 
-    // Animazione di entrata per i messaggi
-    Animated.timing(messagesSlideIn, {
-      toValue: 0,
-      duration: 500,
-      useNativeDriver: true,
-    }).start();
+    // Small delay to ensure state update before animation starts
+    requestAnimationFrame(() => {
+      // Animazione di entrata per i messaggi
+      Animated.timing(messagesSlideIn, {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: true,
+      }).start();
+    });
   }, [messagesSlideIn]);
 
   const generateMessageId = useCallback(() => {
@@ -611,19 +647,22 @@ const HomeScreen = () => {
     if (!showChatHistory) {
       // Apri la cronologia con animazione
       setShowChatHistory(true);
-      Animated.parallel([
-        Animated.timing(chatHistoryOpacity, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.spring(chatHistorySlideIn, {
-          toValue: 1,
-          tension: 50,
-          friction: 8,
-          useNativeDriver: true,
-        }),
-      ]).start();
+      // Small delay to ensure state update before animation starts
+      requestAnimationFrame(() => {
+        Animated.parallel([
+          Animated.timing(chatHistoryOpacity, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+          Animated.spring(chatHistorySlideIn, {
+            toValue: 1,
+            tension: 50,
+            friction: 8,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      });
     } else {
       // Chiudi la cronologia con animazione
       Animated.parallel([
