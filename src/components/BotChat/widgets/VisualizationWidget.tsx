@@ -1,9 +1,11 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Animated, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ToolWidget, TaskListItem } from '../types';
 import TaskCard from '../../Task/TaskCard';
-import { Task as TaskType } from '../../../services/taskService';
+import { Task as TaskType, getTasks, getCategories } from '../../../services/taskService';
+import { getNotes as fetchNotes } from '../../../services/noteService';
+import { Note } from '../../../services/noteService';
 
 interface VisualizationWidgetProps {
   widget: ToolWidget;
@@ -20,8 +22,144 @@ interface VisualizationWidgetProps {
 const VisualizationWidget: React.FC<VisualizationWidgetProps> = ({ widget, onOpen, onTaskPress, onCategoryPress }) => {
   const output = widget.toolOutput;
 
+  // Stati locali per recuperare dati dal backend quando mancano
+  const [loadingData, setLoadingData] = useState(false);
+  const [fetchedTasks, setFetchedTasks] = useState<TaskListItem[] | null>(null);
+  const [fetchedCategories, setFetchedCategories] = useState<any[] | null>(null);
+  const [fetchedNotes, setFetchedNotes] = useState<Note[] | null>(null);
+
+  // Recupera dati dal backend quando riceviamo tipi senza dati
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!output || !output.type) return;
+
+      // Se abbiamo già dati locali, non recuperare
+      if (output.type === 'task_list' && fetchedTasks) return;
+      if (output.type === 'category_list' && fetchedCategories) return;
+      if (output.type === 'note_list' && fetchedNotes) return;
+
+      // Se i dati sono già presenti nell'output, non recuperare
+      if (output.type === 'task_list' && output.tasks && output.tasks.length > 0) return;
+      if (output.type === 'category_list' && output.categories && output.categories.length > 0) return;
+      if (output.type === 'note_list' && output.notes && output.notes.length > 0) return;
+
+      setLoadingData(true);
+      try {
+        if (output.type === 'task_list') {
+          const tasks = await getTasks(undefined, false);
+          // Converti Task format a TaskListItem format
+          const taskListItems: TaskListItem[] = tasks.map(task => ({
+            id: task.task_id,
+            title: task.title,
+            description: task.description || '',
+            endTime: task.end_time,
+            endTimeFormatted: task.end_time ? formatDateForDisplay(task.end_time) : '',
+            startTime: task.start_time,
+            category: task.category_name || 'Generale',
+            categoryColor: getCategoryColor(task.category_name || 'Generale'),
+            priority: task.priority || 'Media',
+            priorityEmoji: getPriorityEmoji(task.priority || 'Media'),
+            priorityColor: getPriorityColor(task.priority || 'Media'),
+            status: task.status || 'In sospeso',
+            completed: task.status === 'Completato',
+          }));
+          setFetchedTasks(taskListItems);
+        } else if (output.type === 'category_list') {
+          const categories = await getCategories(false);
+          const categoryItems = categories.map(cat => ({
+            id: cat.category_id,
+            name: cat.name,
+            description: cat.description || '',
+            color: getCategoryColor(cat.name),
+            taskCount: 0, // TODO: Calculate actual task count
+          }));
+          setFetchedCategories(categoryItems);
+        } else if (output.type === 'note_list') {
+          const notes = await fetchNotes();
+          setFetchedNotes(notes);
+        }
+      } catch (error) {
+        console.error('[VisualizationWidget] Error fetching data:', error);
+      } finally {
+        setLoadingData(false);
+      }
+    };
+
+    fetchData();
+  }, [output]);
+
+  // Helper functions
+  const formatDateForDisplay = (dateString: string): string => {
+    if (!dateString) return '';
+    try {
+      const date = new Date(dateString);
+      const today = new Date();
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      const isToday = date.toDateString() === today.toDateString();
+      const isTomorrow = date.toDateString() === tomorrow.toDateString();
+
+      if (isToday) {
+        return `Oggi, ${date.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}`;
+      } else if (isTomorrow) {
+        return `Domani, ${date.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}`;
+      } else {
+        return date.toLocaleDateString('it-IT', {
+          day: 'numeric',
+          month: 'short',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      }
+    } catch {
+      return dateString;
+    }
+  };
+
+  const getCategoryColor = (categoryName: string): string => {
+    const colorMap: Record<string, string> = {
+      'Lavoro': '#3B82F6',
+      'Personale': '#8B5CF6',
+      'Studio': '#10B981',
+      'Sport': '#F59E0B',
+      'Famiglia': '#EC4899',
+      'Cibo': '#EF4444',
+      'Generale': '#6B7280'
+    };
+    return colorMap[categoryName] || '#6B7280';
+  };
+
+  const getPriorityEmoji = (priority: string): string => {
+    const emojiMap: Record<string, string> = {
+      'Alta': '[!]',
+      'Media': '',
+      'Bassa': ''
+    };
+    return emojiMap[priority] || '';
+  };
+
+  const getPriorityColor = (priority: string): string => {
+    const colorMap: Record<string, string> = {
+      'Alta': '#EF4444',
+      'Media': '#F59E0B',
+      'Bassa': '#10B981'
+    };
+    return colorMap[priority] || '#6B7280';
+  };
+
+  // Usa i dati recuperati se disponibili, altrimenti usa quelli dall'output
+  const tasks = output?.tasks && output.tasks.length > 0 ? output.tasks : fetchedTasks || [];
+  const categories = output?.categories && output.categories.length > 0 ? output.categories : fetchedCategories || [];
+  const notes = output?.notes && output.notes.length > 0 ? output.notes : fetchedNotes || [];
+
   // Se è in stato loading e non ha ancora output, mostra lo skeleton loader
   if (widget.status === 'loading' && !output) {
+    return <LoadingWidget widget={widget} />;
+  }
+
+  // Se stiamo caricando i dati dal backend, mostra il loading widget
+  if (loadingData) {
     return <LoadingWidget widget={widget} />;
   }
 
@@ -63,15 +201,15 @@ const VisualizationWidget: React.FC<VisualizationWidgetProps> = ({ widget, onOpe
 
   if (output.type === 'task_list') {
     title = 'Visualizza task';
-    itemCount = output.tasks?.length || 0;
+    itemCount = tasks.length;
     icon = 'calendar-outline';
   } else if (output.type === 'category_list') {
     title = 'Visualizza categorie';
-    itemCount = output.categories?.length || 0;
+    itemCount = categories.length;
     icon = 'folder-outline';
   } else if (output.type === 'note_list') {
     title = 'Visualizza note';
-    itemCount = output.notes?.length || 0;
+    itemCount = notes.length;
     icon = 'document-text-outline';
   }
 
@@ -205,10 +343,115 @@ const LoadingWidget: React.FC<{ widget: ToolWidget }> = ({ widget }) => {
  */
 const TaskListPreview: React.FC<VisualizationWidgetProps> = ({ widget, onOpen, onTaskPress }) => {
   const output = widget.toolOutput;
-  const tasks = output?.tasks || [];
+
+  // Stati locali per recuperare dati dal backend quando mancano
+  const [loadingData, setLoadingData] = useState(false);
+  const [fetchedTasks, setFetchedTasks] = useState<TaskListItem[] | null>(null);
+
+  // Recupera task dal backend quando non ci sono dati
+  useEffect(() => {
+    const fetchTasks = async () => {
+      if (!output || output.type !== 'task_list') return;
+
+      // Se abbiamo già task recuperati o i task sono già presenti, non fare nulla
+      if (fetchedTasks) return;
+      if (output.tasks && output.tasks.length > 0) return;
+
+      setLoadingData(true);
+      try {
+        const tasks = await getTasks();
+        // Converti Task format a TaskListItem format
+        const taskListItems: TaskListItem[] = tasks.map(task => ({
+          id: task.task_id,
+          title: task.title,
+          description: task.description || '',
+          endTime: task.end_time,
+          endTimeFormatted: task.end_time ? formatDateForDisplay(task.end_time) : '',
+          startTime: task.start_time,
+          category: task.category_name || 'Generale',
+          categoryColor: getCategoryColor(task.category_name || 'Generale'),
+          priority: task.priority || 'Media',
+          priorityEmoji: getPriorityEmoji(task.priority || 'Media'),
+          priorityColor: getPriorityColor(task.priority || 'Media'),
+          status: task.status || 'In sospeso',
+          completed: task.status === 'Completato',
+        }));
+        setFetchedTasks(taskListItems);
+      } catch (error) {
+        console.error('[TaskListPreview] Error fetching tasks:', error);
+      } finally {
+        setLoadingData(false);
+      }
+    };
+
+    fetchTasks();
+  }, [output]);
+
+  // Usa i task recuperati se disponibili, altrimenti quelli dall'output
+  const tasks = (output?.tasks && output.tasks.length > 0 ? output.tasks : fetchedTasks) || [];
 
   // Log ridotto - solo una volta all'inizio
   console.log('[VisualizationWidget] Tasks received:', tasks.length);
+
+  // Helper functions (duplicati per evitare problemi di scope)
+  const formatDateForDisplay = (dateString: string): string => {
+    if (!dateString) return '';
+    try {
+      const date = new Date(dateString);
+      const today = new Date();
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      const isToday = date.toDateString() === today.toDateString();
+      const isTomorrow = date.toDateString() === tomorrow.toDateString();
+
+      if (isToday) {
+        return `Oggi, ${date.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}`;
+      } else if (isTomorrow) {
+        return `Domani, ${date.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}`;
+      } else {
+        return date.toLocaleDateString('it-IT', {
+          day: 'numeric',
+          month: 'short',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      }
+    } catch {
+      return dateString;
+    }
+  };
+
+  const getCategoryColor = (categoryName: string): string => {
+    const colorMap: Record<string, string> = {
+      'Lavoro': '#3B82F6',
+      'Personale': '#8B5CF6',
+      'Studio': '#10B981',
+      'Sport': '#F59E0B',
+      'Famiglia': '#EC4899',
+      'Cibo': '#EF4444',
+      'Generale': '#6B7280'
+    };
+    return colorMap[categoryName] || '#6B7280';
+  };
+
+  const getPriorityEmoji = (priority: string): string => {
+    const emojiMap: Record<string, string> = {
+      'Alta': '[!]',
+      'Media': '',
+      'Bassa': ''
+    };
+    return emojiMap[priority] || '';
+  };
+
+  const getPriorityColor = (priority: string): string => {
+    const colorMap: Record<string, string> = {
+      'Alta': '#EF4444',
+      'Media': '#F59E0B',
+      'Bassa': '#10B981'
+    };
+    return colorMap[priority] || '#6B7280';
+  };
 
   // Mostra max 3 task come preview
   const MAX_PREVIEW_TASKS = 3;

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -10,13 +10,16 @@ import {
   TextInput,
   Image,
   Platform,
+  ActivityIndicator
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { VisualizationModalProps, TaskListItem } from '../types';
+import { VisualizationModalProps, TaskListItem, ToolOutputData } from '../types';
 import Task from '../../Task/Task';
-import { Task as TaskType } from '../../../services/taskService';
+import { Task as TaskType, getTasks, getCategories } from '../../../services/taskService';
 import CalendarGrid from '../../Calendar/CalendarGrid';
 import Category from '../../Category/Category';
+import { getNotes as fetchNotes } from '../../../services/noteService';
+import { Note } from '../../../services/noteService';
 import dayjs from 'dayjs';
 
 /**
@@ -30,23 +33,161 @@ const VisualizationModal: React.FC<VisualizationModalProps> = ({
   onItemPress,
   onCategoryPress,
 }) => {
+  const output = widget.toolOutput ?? ({} as ToolOutputData);
+  const outputType =
+    output.type ||
+    (widget.toolName === 'show_tasks_to_user' || widget.toolName === 'get_my_tasks'
+      ? 'task_list'
+      : widget.toolName === 'show_categories_to_user' || widget.toolName === 'get_my_categories'
+      ? 'category_list'
+      : widget.toolName === 'show_notes_to_user' || widget.toolName === 'get_my_notes'
+      ? 'note_list'
+      : undefined);
+
+  // Tutti gli hook devono essere chiamati nello stesso ordine in ogni render
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'completed'>('all');
   const [showCalendarModal, setShowCalendarModal] = useState(false);
   const [calendarViewDate, setCalendarViewDate] = useState<string>(dayjs().format('YYYY-MM-DD'));
-  const output = widget.toolOutput;
 
-  if (!output) return null;
+  // Stati locali per recuperare dati dal backend
+  const [loadingData, setLoadingData] = useState(false);
+  const [fetchedTasks, setFetchedTasks] = useState<TaskListItem[] | null>(null);
+  const [fetchedCategories, setFetchedCategories] = useState<any[] | null>(null);
+  const [fetchedNotes, setFetchedNotes] = useState<Note[] | null>(null);
+
+  // Recupera dati dal backend quando mancano
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!outputType || !visible) return;
+
+      // Se abbiamo già dati locali, non recuperare
+      if (outputType === 'task_list' && fetchedTasks) return;
+      if (outputType === 'category_list' && fetchedCategories) return;
+      if (outputType === 'note_list' && fetchedNotes) return;
+
+      // Se i dati sono già presenti nell'output, non recuperare
+      if (outputType === 'task_list' && output.tasks && output.tasks.length > 0) return;
+      if (outputType === 'category_list' && output.categories && output.categories.length > 0) return;
+      if (outputType === 'note_list' && output.notes && output.notes.length > 0) return;
+
+      setLoadingData(true);
+      try {
+        if (outputType === 'task_list') {
+          const tasks = await getTasks(undefined, false);
+          const taskListItems: TaskListItem[] = tasks.map(task => ({
+            id: task.task_id,
+            title: task.title,
+            description: task.description || '',
+            endTime: task.end_time,
+            endTimeFormatted: task.end_time ? formatDateForDisplay(task.end_time) : '',
+            startTime: task.start_time,
+            category: task.category_name || 'Generale',
+            categoryColor: getCategoryColor(task.category_name || 'Generale'),
+            priority: task.priority || 'Media',
+            priorityEmoji: getPriorityEmoji(task.priority || 'Media'),
+            priorityColor: getPriorityColor(task.priority || 'Media'),
+            status: task.status || 'In sospeso',
+            completed: task.status === 'Completato',
+          }));
+          setFetchedTasks(taskListItems);
+        } else if (outputType === 'category_list') {
+          const categories = await getCategories(false);
+          const categoryItems = categories.map(cat => ({
+            id: cat.category_id,
+            name: cat.name,
+            description: cat.description || '',
+            color: getCategoryColor(cat.name),
+            taskCount: 0, // TODO: Calculate actual task count
+          }));
+          setFetchedCategories(categoryItems);
+        } else if (outputType === 'note_list') {
+          const notes = await fetchNotes();
+          setFetchedNotes(notes);
+        }
+      } catch (error) {
+        console.error('[VisualizationModal] Error fetching data:', error);
+      } finally {
+        setLoadingData(false);
+      }
+    };
+
+    fetchData();
+  }, [output, outputType, visible, fetchedTasks, fetchedCategories, fetchedNotes]);
+
+  // Helper functions
+  const formatDateForDisplay = (dateString: string): string => {
+    if (!dateString) return '';
+    try {
+      const date = new Date(dateString);
+      const today = new Date();
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      const isToday = date.toDateString() === today.toDateString();
+      const isTomorrow = date.toDateString() === tomorrow.toDateString();
+
+      if (isToday) {
+        return `Oggi, ${date.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}`;
+      } else if (isTomorrow) {
+        return `Domani, ${date.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}`;
+      } else {
+        return date.toLocaleDateString('it-IT', {
+          day: 'numeric',
+          month: 'short',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      }
+    } catch {
+      return dateString;
+    }
+  };
+
+  const getCategoryColor = (categoryName: string): string => {
+    const colorMap: Record<string, string> = {
+      'Lavoro': '#3B82F6',
+      'Personale': '#8B5CF6',
+      'Studio': '#10B981',
+      'Sport': '#F59E0B',
+      'Famiglia': '#EC4899',
+      'Cibo': '#EF4444',
+      'Generale': '#6B7280'
+    };
+    return colorMap[categoryName] || '#6B7280';
+  };
+
+  const getPriorityEmoji = (priority: string): string => {
+    const emojiMap: Record<string, string> = {
+      'Alta': '[!]',
+      'Media': '',
+      'Bassa': ''
+    };
+    return emojiMap[priority] || '';
+  };
+
+  const getPriorityColor = (priority: string): string => {
+    const colorMap: Record<string, string> = {
+      'Alta': '#EF4444',
+      'Media': '#F59E0B',
+      'Bassa': '#10B981'
+    };
+    return colorMap[priority] || '#6B7280';
+  };
 
   // Determina il tipo di contenuto
-  const isTaskList = output.type === 'task_list';
-  const isCategoryList = output.type === 'category_list';
-  const isNoteList = output.type === 'note_list';
+  const isTaskList = outputType === 'task_list';
+  const isCategoryList = outputType === 'category_list';
+  const isNoteList = outputType === 'note_list';
 
-  // Prepara i dati
-  const items = isTaskList ? output.tasks : isCategoryList ? output.categories : output.notes;
+  // Prepara i dati - usa quelli recuperati se quelli dell'output sono vuoti
+  const items = isTaskList
+    ? ((output.tasks && output.tasks.length > 0) ? output.tasks : fetchedTasks) || []
+    : isCategoryList
+    ? ((output.categories && output.categories.length > 0) ? output.categories : fetchedCategories) || []
+    : ((output.notes && output.notes.length > 0) ? output.notes : fetchedNotes) || [];
   const title = isTaskList ? 'Task' : isCategoryList ? 'Categorie' : 'Note';
 
   console.log('[VisualizationModal] Rendering', {
@@ -58,24 +199,27 @@ const VisualizationModal: React.FC<VisualizationModalProps> = ({
   });
 
   // Filtra note per ricerca semantica (titolo + contenuto)
+  const sourceNotes = output.notes && output.notes.length > 0 ? output.notes : fetchedNotes || [];
+  const sourceTasks = output.tasks && output.tasks.length > 0 ? output.tasks : fetchedTasks || [];
+
   const filteredNotes = useMemo(() => {
-    if (!isNoteList || !output.notes) return output.notes;
-    if (!searchQuery.trim()) return output.notes;
+    if (!isNoteList) return sourceNotes;
+    if (!searchQuery.trim()) return sourceNotes;
 
     const query = searchQuery.toLowerCase();
-    return output.notes.filter((note: any) => {
+    return sourceNotes.filter((note: any) => {
       const title = (note.title || '').toLowerCase();
       const content = (note.content || '').toLowerCase();
       const text = (note.text || '').toLowerCase();
       return title.includes(query) || content.includes(query) || text.includes(query);
     });
-  }, [searchQuery, isNoteList, output.notes]);
+  }, [searchQuery, isNoteList, sourceNotes]);
 
   // Filtra task per data, ricerca, priorità e stato
   const filteredItems = useMemo(() => {
-    if (!isTaskList || !output.tasks) return isNoteList ? filteredNotes : items;
+    if (!isTaskList) return isNoteList ? filteredNotes : items;
 
-    let filtered = output.tasks;
+    let filtered = sourceTasks;
 
     // Filtra per data selezionata (controlla sia end_time che start_time)
     if (selectedDate) {
@@ -132,9 +276,37 @@ const VisualizationModal: React.FC<VisualizationModalProps> = ({
     }
 
     return filtered;
-  }, [selectedDate, searchQuery, priorityFilter, statusFilter, isTaskList, output.tasks, items, isNoteList, filteredNotes]);
+  }, [selectedDate, searchQuery, priorityFilter, statusFilter, isTaskList, sourceTasks, items, isNoteList, filteredNotes]);
 
   const displayItems = isNoteList ? filteredNotes : (filteredItems || items);
+
+  if (!visible || !outputType) return null;
+
+  // Mostra loading se stiamo recuperando i dati
+  if (loadingData) {
+    return (
+      <Modal
+        visible={visible}
+        animationType="slide"
+        presentationStyle="fullScreen"
+        onRequestClose={onClose}
+      >
+        <SafeAreaView style={styles.safeArea}>
+          <View style={styles.header}>
+            <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+              <Ionicons name="close" size={28} color="#000000" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>{title}</Text>
+            <View style={styles.closeButton} />
+          </View>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#000000" />
+            <Text style={styles.loadingText}>Caricamento dati...</Text>
+          </View>
+        </SafeAreaView>
+      </Modal>
+    );
+  }
 
   // Debug filtro
   if (isTaskList && selectedDate) {
@@ -145,16 +317,6 @@ const VisualizationModal: React.FC<VisualizationModalProps> = ({
       firstFilteredTask: filteredItems?.[0]
     });
   }
-
-  // Ottieni colore priorità
-  const getPriorityColor = (priority?: string): string => {
-    const priorityColors: Record<string, string> = {
-      'Alta': '#000000',
-      'Media': '#333333',
-      'Bassa': '#666666',
-    };
-    return priority ? (priorityColors[priority] || '#999999') : '#999999';
-  };
 
   // Formatta la data
   const formatDate = (dateString?: string): string => {
@@ -541,6 +703,17 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#F9F9F9',
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 16,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#666666',
+    fontWeight: '500',
   },
   header: {
     flexDirection: 'row',

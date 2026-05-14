@@ -50,7 +50,9 @@ const Category: React.FC<CategoryProps> = ({
   const [actualTaskCount, setActualTaskCount] = useState(taskCount);
   const [isLoading, setIsLoading] = useState(true);
   const [showAddTask, setShowAddTask] = useState(false);
-  
+  const [showShareDialog, setShowShareDialog] = useState(false);
+  const [showManageShares, setShowManageShares] = useState(false);
+
   // Funzione per recuperare il conteggio dei task
   const fetchTaskCount = useCallback(async () => {
     try {
@@ -245,9 +247,6 @@ const Category: React.FC<CategoryProps> = ({
     setEditName(title);
     setEditDescription(description);
   };
-
-  const [showShareDialog, setShowShareDialog] = useState(false);
-  const [showManageShares, setShowManageShares] = useState(false);
 
   const handleShare = () => {
     closeMenu();

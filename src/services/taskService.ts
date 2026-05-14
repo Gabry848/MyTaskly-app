@@ -970,14 +970,14 @@ export async function getCategories(useCache: boolean = true) {
     return categories;
   } catch (error) {
     console.error("Errore nel recupero delle categorie:", error);
-    
+
     // In caso di errore, prova a restituire le categorie cached come fallback
     if (useCache) {
       console.log('[TASK_SERVICE] Errore API categorie, tentativo fallback cache');
       const cachedCategories = await getServices().cacheService.getCachedCategories();
       return cachedCategories;
     }
-    
+
     throw error;
   }
 }
