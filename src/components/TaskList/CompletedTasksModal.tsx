@@ -118,14 +118,20 @@ export const CompletedTasksModal: React.FC<CompletedTasksModalProps> = ({
               contentContainerStyle={styles.scrollContentContainer}
               showsVerticalScrollIndicator={false}
             >
-              {tasks.length > 0 ? (
-                tasks.map((item, index) => renderTask(item, index))
-              ) : (
-                <View style={styles.emptyContainer}>
-                  <MaterialIcons name="check-circle-outline" size={48} color={colors.border} />
-                  <Text style={styles.emptyText}>Nessun task completato</Text>
-                </View>
-              )}
+              <View style={{ minHeight: 1 }}>
+                {console.log('CompletedTasksModal - tasks:', tasks.length, tasks)}
+                {tasks.length > 0 ? (
+                  tasks.map((item, index) => {
+                    console.log('Rendering task:', index, item.title, item.status);
+                    return renderTask(item, index);
+                  })
+                ) : (
+                  <View style={styles.emptyContainer}>
+                    <MaterialIcons name="check-circle-outline" size={48} color={colors.border} />
+                    <Text style={styles.emptyText}>Nessun task completato</Text>
+                  </View>
+                )}
+              </View>
             </ScrollView>
           </TouchableOpacity>
         </Animated.View>
@@ -145,6 +151,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: radius.xxl,
     borderTopRightRadius: radius.xxl,
     maxHeight: '85%',
+    minHeight: 200,
     ...elevation.lg,
   },
   dragHandleContainer: {
