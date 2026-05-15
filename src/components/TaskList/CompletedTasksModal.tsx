@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -7,11 +7,14 @@ import {
   Modal,
   ScrollView,
   Animated,
+  Dimensions,
   Alert,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { colors, radius, elevation, spacing, typography } from '../../theme/tokens';
 import { Task as TaskType } from './types';
+
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 interface CompletedTasksModalProps {
   visible: boolean;
@@ -28,23 +31,25 @@ export const CompletedTasksModal: React.FC<CompletedTasksModalProps> = ({
   renderTask,
   onDeleteAll,
 }) => {
-  const slideAnim = useRef(new Animated.Value(1)).current;
+  const slideAnim = useRef(new Animated.Value(0)).current;
 
   React.useEffect(() => {
     if (visible) {
-      Animated.timing(slideAnim, {
+      Animated.spring(slideAnim, {
         toValue: 0,
-        duration: 300,
         useNativeDriver: true,
+        tension: 65,
+        friction: 11,
       }).start();
     } else {
-      Animated.timing(slideAnim, {
-        toValue: 1,
-        duration: 250,
-        useNativeDriver: true,
-      }).start();
+      slideAnim.setValue(0);
     }
   }, [visible, slideAnim]);
+
+  const translateY = slideAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, SCREEN_HEIGHT],
+  });
 
   const handleDeleteAll = () => {
     Alert.alert(
@@ -80,10 +85,7 @@ export const CompletedTasksModal: React.FC<CompletedTasksModalProps> = ({
           style={[
             styles.modalContent,
             {
-              transform: [{ translateY: slideAnim.interpolate({
-                inputRange: [0, 1],
-                outputRange: [0, '100%'],
-              }) }],
+              transform: [{ translateY }],
             },
           ]}
         >
