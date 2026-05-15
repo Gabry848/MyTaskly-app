@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
   view: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-start",
+    alignItems: "center", // Centrato verticalmente
     marginVertical: 8,
   },
   contentContainer: {

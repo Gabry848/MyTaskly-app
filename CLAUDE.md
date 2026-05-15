@@ -172,6 +172,59 @@ Task operations assume success immediately, with server confirmation afterward:
 - Cache updates immediately, reverts on API failure
 - Improves perceived performance in offline scenarios
 
+## AI Agent Workflows
+
+### GitButler Branch Management for Code Changes
+When an AI agent makes code modifications to this repository:
+
+1. **Create a new GitButler branch** for the changes:
+   ```bash
+   but branch new <feature-name>
+   ```
+
+2. **Use GitButler to manage commits** instead of regular Git:
+   ```bash
+   but commit -m "your commit message"
+   ```
+
+3. **Push changes using GitButler**:
+   ```bash
+   but push
+   ```
+
+4. **Never commit directly to `master`** - always work on a separate branch created with `but branch new`.
+
+5. **When work is complete**, the user can review changes in the GitButler interface before merging to master.
+
+**Why**: GitButler enables parallel branch management and provides better change isolation, making it easier for users to review and manage AI-generated modifications.
+
+### Parallel Multi-Agent Development
+GitButler is optimized for running multiple AI agents in parallel on different features:
+
+- **Each agent independently creates its own branch** with `but branch new <feature-name>`
+- **Each agent makes isolated commits** using `but commit -m "message"` 
+- **All branches work in parallel** without interfering with each other
+- **You review all changes in GitButler UI** before deciding which to merge
+- **Atomic merging**: Accept or reject each feature/branch independently
+
+Example workflow:
+```bash
+# Agent 1 starts
+but branch new feature-chat-ui
+# Agent 1 makes changes and commits
+but commit -m "feat: Improve chat interface"
+
+# Agent 2 starts (parallel to Agent 1)
+but branch new feature-task-filtering  
+# Agent 2 makes changes and commits
+but commit -m "add: advanced filtering"
+
+# Both work simultaneously on different branches
+# You see both in GitButler, merge what you want
+```
+
+This enables true parallel development without merge conflicts or coordination overhead.
+
 ## Expo-Specific Configuration
 
 ### Plugins (from app.json)
