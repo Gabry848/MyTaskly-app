@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { ItemDetailModalProps } from '../types';
 import * as taskService from '../../../services/taskService';
 
@@ -23,6 +24,7 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
   itemType,
   onClose,
 }) => {
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
 
   // Handler per completare un task
@@ -35,10 +37,16 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
         ...item,
         status: item.completed ? 'pending' : 'completed',
       });
-      Alert.alert('Successo', `Task ${item.completed ? 'riaperto' : 'completato'}`);
+      Alert.alert(
+        t('itemDetailModal.success'),
+        item.completed ? t('itemDetailModal.reopenTask') : t('itemDetailModal.completeTask')
+      );
       onClose();
     } catch (error: any) {
-      Alert.alert('Errore', error.message || 'Impossibile aggiornare il task');
+      Alert.alert(
+        t('itemDetailModal.error'),
+        error.message || t('itemDetailModal.updateTaskError')
+      );
     } finally {
       setIsLoading(false);
     }
@@ -46,13 +54,22 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
 
   // Handler per eliminare un item
   const handleDelete = () => {
+    let confirmMessage: string;
+    if (itemType === 'task') {
+      confirmMessage = t('itemDetailModal.deleteTaskConfirm');
+    } else if (itemType === 'category') {
+      confirmMessage = t('itemDetailModal.deleteCategoryConfirm');
+    } else {
+      confirmMessage = t('itemDetailModal.deleteNoteConfirm');
+    }
+
     Alert.alert(
-      'Conferma eliminazione',
-      `Sei sicuro di voler eliminare ${itemType === 'task' ? 'questo task' : itemType === 'category' ? 'questa categoria' : 'questa nota'}?`,
+      t('itemDetailModal.deleteConfirm'),
+      confirmMessage,
       [
-        { text: 'Annulla', style: 'cancel' },
+        { text: t('common.buttons.cancel'), style: 'cancel' },
         {
-          text: 'Elimina',
+          text: t('common.buttons.delete'),
           style: 'destructive',
           onPress: async () => {
             setIsLoading(true);
@@ -61,10 +78,13 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                 await taskService.deleteTask(item.task_id);
               }
               // TODO: Implementa delete per categorie e note se necessario
-              Alert.alert('Successo', 'Elemento eliminato');
+              Alert.alert(t('itemDetailModal.success'), t('itemDetailModal.itemDeleted'));
               onClose();
             } catch (error: any) {
-              Alert.alert('Errore', error.message || 'Impossibile eliminare');
+              Alert.alert(
+                t('itemDetailModal.error'),
+                error.message || t('itemDetailModal.deleteError')
+              );
             } finally {
               setIsLoading(false);
             }

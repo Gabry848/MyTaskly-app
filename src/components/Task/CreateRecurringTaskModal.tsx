@@ -13,6 +13,7 @@ import {
   Platform,
 } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
+import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
 import { getCategories } from '../../services/taskService';
 import {
@@ -63,6 +64,8 @@ const nextFullHour = (): Date => {
 // ── Component ──────────────────────────────────────────────────────────────
 
 const CreateRecurringTaskModal: React.FC<Props> = ({ visible, taskId, onClose, onSaved }) => {
+  const { t } = useTranslation();
+
   // Form state
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -241,10 +244,10 @@ const CreateRecurringTaskModal: React.FC<Props> = ({ visible, taskId, onClose, o
           {/* Header */}
           <View style={styles.sheetHeader}>
             <Text style={styles.sheetTitle}>
-              {isEditMode ? 'Modifica task ricorrente' : 'Nuovo task ricorrente'}
+              {isEditMode ? t('tasks.editTask') + ' ' + t('recurring.title') : 'Nuovo task ricorrente'}
             </Text>
             <TouchableOpacity onPress={onClose}>
-              <Text style={styles.cancelText}>Annulla</Text>
+              <Text style={styles.cancelText}>{t('common.buttons.cancel')}</Text>
             </TouchableOpacity>
           </View>
 

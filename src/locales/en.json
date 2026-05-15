@@ -1225,5 +1225,65 @@
     "totalTasks": "{{total}} total tasks",
     "error": "Error",
     "loadFailed": "Unable to load tasks for search"
+  },
+  "taskCard": {
+    "noDeadline": "No deadline",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "recurring": {
+      "daily": "Every day",
+      "daily_plural": "Every {{count}} days",
+      "weekly": "Every week",
+      "weekly_plural": "Every {{count}} weeks",
+      "weekly_days": "Every {{days}}",
+      "weekly_days_plural": "Every {{count}} weeks: {{days}}",
+      "monthly": "Every {{day}}st day of the month",
+      "monthly_plural": "Every {{count}} months on the {{day}}",
+      "label": "Recurring"
+    },
+    "daysOfWeek": {
+      "monday": "Mon",
+      "tuesday": "Tue",
+      "wednesday": "Wed",
+      "thursday": "Thu",
+      "friday": "Fri",
+      "saturday": "Sat",
+      "sunday": "Sun"
+    },
+    "duration": {
+      "minutes": "{{count}} min",
+      "hour": "1 hour",
+      "hours": "{{count}} hours",
+      "hourMinutes": "{{hours}}h {{minutes}}min"
+    },
+    "completion": {
+      "single": "Completed {{count}} time",
+      "plural": "Completed {{count}} times"
+    },
+    "priority": {
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    }
+  },
+  "taskActionMenu": {
+    "reopen": "Reopen task",
+    "edit": "Edit",
+    "share": "Share",
+    "delete": "Delete",
+    "deleting": "Deleting..."
+  },
+  "itemDetailModal": {
+    "success": "Success",
+    "error": "Error",
+    "completeTask": "Task completed",
+    "reopenTask": "Task reopened",
+    "updateTaskError": "Unable to update task",
+    "deleteConfirm": "Confirm deletion",
+    "deleteTaskConfirm": "Are you sure you want to delete this task?",
+    "deleteCategoryConfirm": "Are you sure you want to delete this category?",
+    "deleteNoteConfirm": "Are you sure you want to delete this note?",
+    "deleteError": "Unable to delete",
+    "itemDeleted": "Item deleted"
   }
 }

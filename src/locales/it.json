@@ -1225,5 +1225,65 @@
     "totalTasks": "{{total}} task totali",
     "error": "Errore",
     "loadFailed": "Impossibile caricare i task per la ricerca"
+  },
+  "taskCard": {
+    "noDeadline": "Nessuna scadenza",
+    "today": "Oggi",
+    "tomorrow": "Domani",
+    "recurring": {
+      "daily": "Ogni giorno",
+      "daily_plural": "Ogni {{count}} giorni",
+      "weekly": "Ogni settimana",
+      "weekly_plural": "Ogni {{count}} settimane",
+      "weekly_days": "Ogni {{days}}",
+      "weekly_days_plural": "Ogni {{count}} settimane: {{days}}",
+      "monthly": "Ogni {{day}}° giorno del mese",
+      "monthly_plural": "Ogni {{count}} mesi il {{day}}°",
+      "label": "Ricorrente"
+    },
+    "daysOfWeek": {
+      "monday": "Lun",
+      "tuesday": "Mar",
+      "wednesday": "Mer",
+      "thursday": "Gio",
+      "friday": "Ven",
+      "saturday": "Sab",
+      "sunday": "Dom"
+    },
+    "duration": {
+      "minutes": "{{count}} min",
+      "hour": "1 ora",
+      "hours": "{{count}} ore",
+      "hourMinutes": "{{hours}}h {{minutes}}min"
+    },
+    "completion": {
+      "single": "Completato {{count}} volta",
+      "plural": "Completato {{count}} volte"
+    },
+    "priority": {
+      "high": "Alta",
+      "medium": "Media",
+      "low": "Bassa"
+    }
+  },
+  "taskActionMenu": {
+    "reopen": "Riapri impegno",
+    "edit": "Modifica",
+    "share": "Condividi",
+    "delete": "Elimina",
+    "deleting": "Eliminazione..."
+  },
+  "itemDetailModal": {
+    "success": "Successo",
+    "error": "Errore",
+    "completeTask": "Task completato",
+    "reopenTask": "Task riaperto",
+    "updateTaskError": "Impossibile aggiornare il task",
+    "deleteConfirm": "Conferma eliminazione",
+    "deleteTaskConfirm": "Sei sicuro di voler eliminare questo task?",
+    "deleteCategoryConfirm": "Sei sicuro di voler eliminare questa categoria?",
+    "deleteNoteConfirm": "Sei sicuro di voler eliminare questa nota?",
+    "deleteError": "Impossibile eliminare",
+    "itemDeleted": "Elemento eliminato"
   }
 }
