@@ -9,6 +9,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { AppState, BackHandler, Linking } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Ionicons } from "@expo/vector-icons";
+import { ActionSheetProvider } from '@expo/react-native-action-sheet';
 import {
   initAnalytics,
   trackScreenView,
@@ -588,14 +589,16 @@ export default function Navigation() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayoutRootView}>
-      <LanguageProvider>
-        <TutorialProvider>
-          <NavigationContainer>
-            <AppStack />
-          </NavigationContainer>
-          <TutorialOnboardingWrapper />
-        </TutorialProvider>
-      </LanguageProvider>
+      <ActionSheetProvider>
+        <LanguageProvider>
+          <TutorialProvider>
+            <NavigationContainer>
+              <AppStack />
+            </NavigationContainer>
+            <TutorialOnboardingWrapper />
+          </TutorialProvider>
+        </LanguageProvider>
+      </ActionSheetProvider>
     </GestureHandlerRootView>
   );
 }

@@ -11,11 +11,10 @@ import {
   Animated,
   PanResponder,
   Dimensions,
-  Platform,
 } from "react-native";
-import { Picker } from "@react-native-picker/picker";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { Ionicons } from "@expo/vector-icons";
+import { useActionSheet } from '@expo/react-native-action-sheet';
 import { addTaskToList } from "../TaskList/types";
 import { getCategories } from "../../services/taskService";
 import dayjs from "dayjs";
@@ -51,12 +50,11 @@ const AddTask: React.FC<AddTaskProps> = ({
   allowCategorySelection = false,
 }) => {
   const { t } = useTranslation();
+  const { showActionSheetWithOptions } = useActionSheet();
   const [categoriesOptions, setCategoriesOptions] = useState<
     { label: string; value: string }[]
   >([]);
-  const [localCategory, setLocalCategory] = useState<string>(
-    categoryName || ""
-  );
+  const [localCategory, setLocalCategory] = useState<string>("");
   const [categoryError, setCategoryError] = useState<string>("");
   const [priority, setPriority] = useState<number>(1);
   const [title, setTitle] = useState("");
@@ -338,30 +336,44 @@ const AddTask: React.FC<AddTaskProps> = ({
             {allowCategorySelection && (
               <>
                 <Text style={styles.inputLabel}>Categoria *</Text>
-                <View
+                <TouchableOpacity
                   style={[
-                    styles.dropdown,
+                    styles.categoryButton,
                     categoryError ? styles.inputError : null,
                   ]}
+                  onPress={() => {
+                    const options = [
+                      ...categoriesOptions.map(cat => cat.label),
+                      'Annulla'
+                    ];
+                    const cancelButtonIndex = options.length - 1;
+
+                    showActionSheetWithOptions(
+                      {
+                        options,
+                        cancelButtonIndex,
+                        title: 'Seleziona categoria',
+                        message: 'Scegli una categoria per il task',
+                      },
+                      (buttonIndex) => {
+                        if (buttonIndex !== cancelButtonIndex) {
+                          setLocalCategory(categoriesOptions[buttonIndex].value);
+                          setCategoryError("");
+                        }
+                      }
+                    );
+                  }}
                 >
-                  <Picker
-                    selectedValue={localCategory}
-                    onValueChange={(itemValue) => {
-                      setLocalCategory(itemValue as string);
-                      if (itemValue) setCategoryError("");
-                    }}
-                    style={styles.picker}
+                  <Text
+                    style={[
+                      styles.categoryButtonText,
+                      !localCategory && styles.categoryPlaceholder
+                    ]}
                   >
-                    <Picker.Item label="Seleziona categoria" value="" />
-                    {categoriesOptions.map((option, index) => (
-                      <Picker.Item
-                        key={index}
-                        label={option.label}
-                        value={option.value}
-                      />
-                    ))}
-                  </Picker>
-                </View>
+                    {localCategory || "Seleziona categoria"}
+                  </Text>
+                  <Ionicons name="chevron-down" size={20} color="#666666" />
+                </TouchableOpacity>
                 {categoryError ? (
                   <Text style={styles.errorText}>{categoryError}</Text>
                 ) : null}
@@ -848,10 +860,14 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontFamily: "System",
   },
-  dropdown: {
+  categoryButton: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     borderWidth: 1.5,
     borderColor: "#e1e5e9",
     borderRadius: 16,
+    padding: 16,
     marginBottom: 20,
     backgroundColor: "#ffffff",
     shadowColor: "#000",
@@ -862,12 +878,15 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.04,
     shadowRadius: 4,
     elevation: 1,
-    height: Platform.OS === 'ios' ? 220 : 56,
-    justifyContent: 'center',
   },
-  picker: {
-    height: Platform.OS === 'ios' ? 216 : 50,
+  categoryButtonText: {
+    fontSize: 17,
     color: "#000000",
+    fontFamily: "System",
+    fontWeight: "400",
+  },
+  categoryPlaceholder: {
+    color: "#999999",
   },
   disabledText: {
     color: "#ccc",
