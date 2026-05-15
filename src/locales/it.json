@@ -522,6 +522,27 @@
       "limitReachedMessage": "Hai raggiunto il numero massimo di categorie per il tuo piano. Fai l'upgrade per aggiungerne altre.",
       "addError": "Non è stato possibile aggiungere la categoria"
     },
+    "editModal": {
+      "title": "Modifica Categoria",
+      "titleLabel": "Titolo",
+      "titlePlaceholder": "Inserisci il titolo della categoria",
+      "descriptionLabel": "Descrizione",
+      "descriptionPlaceholder": "Inserisci una descrizione (opzionale)",
+      "save": "Salva",
+      "saving": "Salvataggio...",
+      "cancel": "Annulla"
+    },
+    "deleteModal": {
+      "title": "Elimina categoria",
+      "confirmMessage": "Sei sicuro di voler eliminare",
+      "warningMessage": "Tutti i task al suo interno verranno eliminati.",
+      "calendar": "Google Calendar",
+      "calendarQuestion": "Vuoi eliminare i task di questa categoria anche da Google Calendar?",
+      "yesDeleteEverywhere": "Sì, elimina ovunque",
+      "noDeleteOnlyApp": "No, solo dall'app",
+      "cancel": "Annulla",
+      "delete": "Elimina"
+    },
     "permissions": {
       "denied": "Permesso negato",
       "ownerOnlyDelete": "Solo il proprietario può eliminare questa categoria.",
@@ -552,6 +573,69 @@
       "error": "Errore",
       "addFailed": "Impossibile aggiungere il task. Riprova più tardi.",
       "status": "In sospeso"
+    },
+    "share": {
+      "title": "Condividi",
+      "userEmail": "Email utente:",
+      "emailPlaceholder": "user@example.com",
+      "permissions": "Permessi:",
+      "readOnly": "Sola lettura (READ_ONLY)",
+      "readWrite": "Lettura e scrittura (READ_WRITE)",
+      "shareButton": "Condividi",
+      "cancel": "Annulla",
+      "errors": {
+        "validation": "Errore di validazione",
+        "alreadyShared": "Categoria già condivisa con questo utente",
+        "userNotFound": "Utente non trovato. Verifica l'email.",
+        "shareWithYourself": "Non puoi condividere con te stesso!",
+        "noPermission": "Non hai i permessi per condividere questa categoria",
+        "categoryNotFound": "Categoria non trovata",
+        "sessionExpired": "Sessione scaduta. Effettua nuovamente il login.",
+        "unknown": "Errore sconosciuto. Riprova più tardi."
+      },
+      "success": "Categoria condivisa con {{user}}"
+    },
+    "manageAccess": {
+      "title": "Utenti con accesso",
+      "loading": "Caricamento...",
+      "noUsers": "Nessun utente trovato",
+      "addPerson": "+ Aggiungi persona",
+      "owner": "Proprietario",
+      "readOnly": "Sola lettura",
+      "readWrite": "Lettura e scrittura",
+      "you": "(Tu)",
+      "actions": "Azioni",
+      "whatToDo": "Cosa vuoi fare con {{name}}?",
+      "changePermission": "Cambia Permesso",
+      "remove": "Rimuovi",
+      "cancel": "Annulla",
+      "confirm": "Conferma",
+      "changePermissionTitle": "Cambia Permesso",
+      "changePermissionMessage": "Vuoi cambiare il permesso di {{name}} a {{permission}}?",
+      "removeAccessTitle": "Rimuovi Accesso",
+      "removeAccessMessage": "Vuoi rimuovere l'accesso di {{name}}?",
+      "errors": {
+        "loadUsers": "Impossibile caricare gli utenti con accesso",
+        "onlyOwnerCanModify": "Solo il proprietario può modificare i permessi",
+        "onlyOwnerCanRemove": "Solo il proprietario può rimuovere utenti",
+        "shareNotFound": "Condivisione non trovata",
+        "updateFailed": "Impossibile aggiornare il permesso",
+        "removeFailed": "Impossibile rimuovere l'utente"
+      },
+      "success": {
+        "permissionUpdated": "Permesso aggiornato a {{permission}}",
+        "accessRemoved": "Accesso rimosso per {{name}}"
+      }
+    },
+    "menu": {
+      "edit": "Modifica",
+      "share": "Condividi",
+      "shareInfo": "Info Condivisione",
+      "manageAccess": "Gestisci Accesso",
+      "delete": "Elimina",
+      "deleting": "Eliminazione...",
+      "leave": "Esci",
+      "readOnly": "Solo lettura"
     }
   },
   "tasks": {

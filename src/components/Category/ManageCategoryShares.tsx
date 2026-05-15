@@ -13,6 +13,7 @@ import {
 import categoryShareService, {
   UserShareInfo,
 } from "../../services/categoryShareService";
+import { useTranslation } from "react-i18next";
 
 export interface ManageCategorySharesProps {
   visible: boolean;
@@ -31,6 +32,7 @@ const ManageCategoryShares: React.FC<ManageCategorySharesProps> = ({
   onClose,
   onAddPerson,
 }) => {
+  const { t } = useTranslation();
   const [users, setUsers] = useState<UserShareInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -48,7 +50,7 @@ const ManageCategoryShares: React.FC<ManageCategorySharesProps> = ({
       setUsers(usersData);
     } catch (error: any) {
       console.error("Error loading users:", error);
-      Alert.alert("Errore", "Impossibile caricare gli utenti con accesso");
+      Alert.alert(t("categories.messages.error"), t("categories.manageAccess.errors.loadUsers"));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -62,19 +64,22 @@ const ManageCategoryShares: React.FC<ManageCategorySharesProps> = ({
 
   const handleChangePermission = (user: UserShareInfo) => {
     if (!isOwner) {
-      Alert.alert("Errore", "Solo il proprietario può modificare i permessi");
+      Alert.alert(t("categories.messages.error"), t("categories.manageAccess.errors.onlyOwnerCanModify"));
       return;
     }
 
     const newPermission = user.permission_level === "READ_ONLY" ? "READ_WRITE" : "READ_ONLY";
 
     Alert.alert(
-      "Cambia Permesso",
-      `Vuoi cambiare il permesso di ${user.name} a ${newPermission}?`,
+      t("categories.manageAccess.changePermissionTitle"),
+      t("categories.manageAccess.changePermissionMessage", {
+        name: user.name,
+        permission: newPermission
+      }),
       [
-        { text: "Annulla", style: "cancel" },
+        { text: t("categories.manageAccess.cancel"), style: "cancel" },
         {
-          text: "Conferma",
+          text: t("categories.manageAccess.confirm"),
           onPress: async () => {
             try {
               // Find the share_id from the shares list
@@ -82,7 +87,7 @@ const ManageCategoryShares: React.FC<ManageCategorySharesProps> = ({
               const share = shares.find((s) => s.shared_with_user_id === user.user_id);
 
               if (!share) {
-                Alert.alert("Errore", "Condivisione non trovata");
+                Alert.alert(t("categories.messages.error"), t("categories.manageAccess.errors.shareNotFound"));
                 return;
               }
 
@@ -92,11 +97,11 @@ const ManageCategoryShares: React.FC<ManageCategorySharesProps> = ({
                 newPermission
               );
 
-              Alert.alert("Successo", `Permesso aggiornato a ${newPermission}`);
+              Alert.alert(t("categories.shared.success"), t("categories.manageAccess.success.permissionUpdated", { permission: newPermission }));
               loadUsers();
             } catch (error: any) {
               console.error("Error updating permission:", error);
-              Alert.alert("Errore", error.message || "Impossibile aggiornare il permesso");
+              Alert.alert(t("categories.messages.error"), error.message || t("categories.manageAccess.errors.updateFailed"));
             }
           },
         },
@@ -106,26 +111,26 @@ const ManageCategoryShares: React.FC<ManageCategorySharesProps> = ({
 
   const handleRemoveUser = (user: UserShareInfo) => {
     if (!isOwner) {
-      Alert.alert("Errore", "Solo il proprietario può rimuovere utenti");
+      Alert.alert(t("categories.messages.error"), t("categories.manageAccess.errors.onlyOwnerCanRemove"));
       return;
     }
 
     Alert.alert(
-      "Rimuovi Accesso",
-      `Vuoi rimuovere l'accesso di ${user.name}?`,
+      t("categories.manageAccess.removeAccessTitle"),
+      t("categories.manageAccess.removeAccessMessage", { name: user.name }),
       [
-        { text: "Annulla", style: "cancel" },
+        { text: t("categories.manageAccess.cancel"), style: "cancel" },
         {
-          text: "Rimuovi",
+          text: t("categories.manageAccess.remove"),
           style: "destructive",
           onPress: async () => {
             try {
               await categoryShareService.removeShare(categoryId, user.user_id);
-              Alert.alert("Successo", `Accesso rimosso per ${user.name}`);
+              Alert.alert(t("categories.shared.success"), t("categories.manageAccess.success.accessRemoved", { name: user.name }));
               loadUsers();
             } catch (error: any) {
               console.error("Error removing user:", error);
-              Alert.alert("Errore", error.message || "Impossibile rimuovere l'utente");
+              Alert.alert(t("categories.messages.error"), error.message || t("categories.manageAccess.errors.removeFailed"));
             }
           },
         },
@@ -144,15 +149,15 @@ const ManageCategoryShares: React.FC<ManageCategorySharesProps> = ({
           </View>
           <View style={styles.userDetails}>
             <Text style={styles.userName}>
-              {item.name} {isCurrentUserOwner && "(Tu)"}
+              {item.name} {isCurrentUserOwner && t("categories.manageAccess.you")}
             </Text>
             <Text style={styles.userEmail}>{item.email}</Text>
             <Text style={styles.userPermission}>
               {isCurrentUserOwner
-                ? "Proprietario"
+                ? t("categories.manageAccess.owner")
                 : item.permission_level === "READ_ONLY"
-                ? "Sola lettura"
-                : "Lettura e scrittura"}
+                ? t("categories.manageAccess.readOnly")
+                : t("categories.manageAccess.readWrite")}
             </Text>
           </View>
         </View>
@@ -161,18 +166,22 @@ const ManageCategoryShares: React.FC<ManageCategorySharesProps> = ({
           <TouchableOpacity
             style={styles.menuButton}
             onPress={() => {
-              Alert.alert("Azioni", `Cosa vuoi fare con ${item.name}?`, [
-                { text: "Annulla", style: "cancel" },
-                {
-                  text: "Cambia Permesso",
-                  onPress: () => handleChangePermission(item),
-                },
-                {
-                  text: "Rimuovi",
-                  style: "destructive",
-                  onPress: () => handleRemoveUser(item),
-                },
-              ]);
+              Alert.alert(
+                t("categories.manageAccess.actions"),
+                t("categories.manageAccess.whatToDo", { name: item.name }),
+                [
+                  { text: t("categories.manageAccess.cancel"), style: "cancel" },
+                  {
+                    text: t("categories.manageAccess.changePermission"),
+                    onPress: () => handleChangePermission(item),
+                  },
+                  {
+                    text: t("categories.manageAccess.remove"),
+                    style: "destructive",
+                    onPress: () => handleRemoveUser(item),
+                  },
+                ]
+              );
             }}
           >
             <Text style={styles.menuButtonText}>⋯</Text>
@@ -192,7 +201,7 @@ const ManageCategoryShares: React.FC<ManageCategorySharesProps> = ({
       <View style={styles.overlay}>
         <View style={styles.container}>
           <View style={styles.header}>
-            <Text style={styles.title}>Utenti con accesso</Text>
+            <Text style={styles.title}>{t("categories.manageAccess.title")}</Text>
             <TouchableOpacity onPress={onClose}>
               <Text style={styles.closeButton}>✕</Text>
             </TouchableOpacity>
@@ -215,14 +224,14 @@ const ManageCategoryShares: React.FC<ManageCategorySharesProps> = ({
                 onRefresh={handleRefresh}
                 ListEmptyComponent={
                   <View style={styles.emptyContainer}>
-                    <Text style={styles.emptyText}>Nessun utente trovato</Text>
+                    <Text style={styles.emptyText}>{t("categories.manageAccess.noUsers")}</Text>
                   </View>
                 }
               />
 
               {isOwner && (
                 <TouchableOpacity style={styles.addButton} onPress={onAddPerson}>
-                  <Text style={styles.addButtonText}>+ Aggiungi persona</Text>
+                  <Text style={styles.addButtonText}>{t("categories.manageAccess.addPerson")}</Text>
                 </TouchableOpacity>
               )}
             </>

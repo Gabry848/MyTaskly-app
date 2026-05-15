@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Modal } from "react-native";
 import { MaterialIcons } from '@expo/vector-icons';
+import { useTranslation } from "react-i18next";
 
 export interface CategoryMenuProps {
   visible: boolean;
@@ -25,6 +26,7 @@ const CategoryMenu: React.FC<CategoryMenuProps> = ({
   isOwned = true,
   permissionLevel = "READ_WRITE"
 }) => {
+  const { t } = useTranslation();
   // Determine if user can edit/delete based on permissions
   const canEdit = isOwned || permissionLevel === "READ_WRITE";
   const canDelete = isOwned;
@@ -50,7 +52,7 @@ const CategoryMenu: React.FC<CategoryMenuProps> = ({
               onPress={onEdit}
             >
               <MaterialIcons name="edit" size={20} color="#666666" />
-              <Text style={styles.menuText}>Modifica</Text>
+              <Text style={styles.menuText}>{t("categories.menu.edit")}</Text>
             </TouchableOpacity>
           )}
 
@@ -61,7 +63,7 @@ const CategoryMenu: React.FC<CategoryMenuProps> = ({
           >
             <MaterialIcons name="share" size={20} color="#666666" />
             <Text style={styles.menuText}>
-              {isOwned ? "Condividi" : "Info Condivisione"}
+              {isOwned ? t("categories.menu.share") : t("categories.menu.shareInfo")}
             </Text>
           </TouchableOpacity>
 
@@ -72,7 +74,7 @@ const CategoryMenu: React.FC<CategoryMenuProps> = ({
               onPress={onManageShares}
             >
               <MaterialIcons name="people" size={20} color="#666666" />
-              <Text style={styles.menuText}>Gestisci Accesso</Text>
+              <Text style={styles.menuText}>{t("categories.menu.manageAccess")}</Text>
             </TouchableOpacity>
           )}
 
@@ -85,7 +87,7 @@ const CategoryMenu: React.FC<CategoryMenuProps> = ({
             >
               <MaterialIcons name="delete" size={20} color="#F44336" />
               <Text style={[styles.menuText, { color: '#F44336' }]}>
-                {isDeleting ? "Eliminazione..." : "Elimina"}
+                {isDeleting ? t("categories.menu.deleting") : t("categories.menu.delete")}
               </Text>
             </TouchableOpacity>
           )}
@@ -97,7 +99,7 @@ const CategoryMenu: React.FC<CategoryMenuProps> = ({
               onPress={onClose}
             >
               <MaterialIcons name="exit-to-app" size={20} color="#666666" />
-              <Text style={styles.menuText}>Esci</Text>
+              <Text style={styles.menuText}>{t("categories.menu.leave")}</Text>
             </TouchableOpacity>
           )}
 
@@ -105,7 +107,7 @@ const CategoryMenu: React.FC<CategoryMenuProps> = ({
           {!isOwned && permissionLevel === "READ_ONLY" && (
             <View style={styles.infoItem}>
               <MaterialIcons name="lock" size={20} color="#999" />
-              <Text style={styles.infoText}>Solo lettura</Text>
+              <Text style={styles.infoText}>{t("categories.menu.readOnly")}</Text>
             </View>
           )}
         </View>

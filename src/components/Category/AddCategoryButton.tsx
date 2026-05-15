@@ -17,6 +17,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { addCategory, CategoryLimitError } from "../../services/taskService";
 import { emitCategoryAdded } from "../../utils/eventEmitter";
+import { useTranslation } from "react-i18next";
 
 // Definiamo un'interfaccia chiara per i dati della categoria
 export interface CategoryData {
@@ -34,6 +35,7 @@ export interface AddCategoryButtonProps {
 const AddCategoryButton: React.FC<AddCategoryButtonProps> = ({
   onCategoryAdded,
 }) => {
+  const { t } = useTranslation();
   const [formVisible, setFormVisible] = useState(false);
   const animationValue = useSharedValue(0);
   const [name, setName] = useState("");
@@ -56,7 +58,7 @@ const AddCategoryButton: React.FC<AddCategoryButtonProps> = ({
 
   const handleSave = async () => {
     if (name.trim() === "") {
-      Alert.alert("Errore", "Il nome della categoria non può essere vuoto");
+      Alert.alert(t("categories.messages.error"), t("categories.messages.emptyTitle"));
       return;
     }
 
@@ -108,8 +110,8 @@ const AddCategoryButton: React.FC<AddCategoryButtonProps> = ({
       } catch (error) {
         if (error instanceof CategoryLimitError) {
           Alert.alert(
-            "Limite categorie raggiunto",
-            "Hai raggiunto il numero massimo di categorie per il tuo piano. Fai l'upgrade per aggiungerne altre."
+            t("categories.addModal.limitReached"),
+            t("categories.addModal.limitReachedMessage")
           );
           return;
         }
@@ -127,7 +129,7 @@ const AddCategoryButton: React.FC<AddCategoryButtonProps> = ({
       handleCancel();
     } catch (error) {
       console.error("Errore nell'aggiunta della categoria:", error);
-      Alert.alert("Errore", "Non è stato possibile aggiungere la categoria");
+      Alert.alert(t("categories.messages.error"), t("categories.addModal.addError"));
     } finally {
       setIsSubmitting(false);
     }
@@ -151,17 +153,17 @@ const AddCategoryButton: React.FC<AddCategoryButtonProps> = ({
         <View style={styles.modalOverlay}>
           <Animated.View style={[styles.formContainer, animatedStyle]}>
             <KeyboardAvoidingView behavior="padding" style={styles.formContent}>
-              <Text style={styles.label}>Nome Categoria</Text>
+              <Text style={styles.label}>{t("categories.addModal.name")}</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Inserisci il nome della categoria"
+                placeholder={t("categories.addModal.namePlaceholder")}
                 value={name}
                 onChangeText={setName}
               />
-              <Text style={styles.label}>Descrizione</Text>
+              <Text style={styles.label}>{t("categories.addModal.description")}</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Inserisci la descrizione"
+                placeholder={t("categories.addModal.descriptionPlaceholder")}
                 multiline
                 value={description}
                 onChangeText={setDescription}
@@ -173,7 +175,7 @@ const AddCategoryButton: React.FC<AddCategoryButtonProps> = ({
                   disabled={isSubmitting}
                 >
                   <Text style={styles.submitButtonText}>
-                    {isSubmitting ? "Salvataggio..." : "Salva"}
+                    {isSubmitting ? t("categories.addModal.saving") : t("categories.addModal.save")}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -181,7 +183,7 @@ const AddCategoryButton: React.FC<AddCategoryButtonProps> = ({
                   onPress={handleCancel}
                   disabled={isSubmitting}
                 >
-                  <Text style={styles.cancelButtonText}>Annulla</Text>
+                  <Text style={styles.cancelButtonText}>{t("categories.addModal.cancel")}</Text>
                 </TouchableOpacity>
               </View>
             </KeyboardAvoidingView>

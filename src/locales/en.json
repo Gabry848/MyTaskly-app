@@ -521,6 +521,27 @@
       "limitReachedMessage": "You have reached the maximum number of categories for your plan. Upgrade to add more.",
       "addError": "Could not add category"
     },
+    "editModal": {
+      "title": "Edit Category",
+      "titleLabel": "Title",
+      "titlePlaceholder": "Enter category title",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "Enter a description (optional)",
+      "save": "Save",
+      "saving": "Saving...",
+      "cancel": "Cancel"
+    },
+    "deleteModal": {
+      "title": "Delete category",
+      "confirmMessage": "Are you sure you want to delete",
+      "warningMessage": "All tasks inside will be deleted.",
+      "calendar": "Google Calendar",
+      "calendarQuestion": "Do you want to delete this category's tasks from Google Calendar as well?",
+      "yesDeleteEverywhere": "Yes, delete everywhere",
+      "noDeleteOnlyApp": "No, only from app",
+      "cancel": "Cancel",
+      "delete": "Delete"
+    },
     "permissions": {
       "denied": "Permission denied",
       "ownerOnlyDelete": "Only the owner can delete this category.",
@@ -551,6 +572,69 @@
       "error": "Error",
       "addFailed": "Could not add task. Please try again later.",
       "status": "Pending"
+    },
+    "share": {
+      "title": "Share",
+      "userEmail": "User email:",
+      "emailPlaceholder": "user@example.com",
+      "permissions": "Permissions:",
+      "readOnly": "Read only (READ_ONLY)",
+      "readWrite": "Read and write (READ_WRITE)",
+      "shareButton": "Share",
+      "cancel": "Cancel",
+      "errors": {
+        "validation": "Validation error",
+        "alreadyShared": "Category already shared with this user",
+        "userNotFound": "User not found. Please verify the email.",
+        "shareWithYourself": "You cannot share with yourself!",
+        "noPermission": "You don't have permission to share this category",
+        "categoryNotFound": "Category not found",
+        "sessionExpired": "Session expired. Please login again.",
+        "unknown": "Unknown error. Please try again later."
+      },
+      "success": "Category shared with {{user}}"
+    },
+    "manageAccess": {
+      "title": "Users with access",
+      "loading": "Loading...",
+      "noUsers": "No users found",
+      "addPerson": "+ Add person",
+      "owner": "Owner",
+      "readOnly": "Read only",
+      "readWrite": "Read and write",
+      "you": "(You)",
+      "actions": "Actions",
+      "whatToDo": "What do you want to do with {{name}}?",
+      "changePermission": "Change Permission",
+      "remove": "Remove",
+      "cancel": "Cancel",
+      "confirm": "Confirm",
+      "changePermissionTitle": "Change Permission",
+      "changePermissionMessage": "Do you want to change {{name}}'s permission to {{permission}}?",
+      "removeAccessTitle": "Remove Access",
+      "removeAccessMessage": "Do you want to remove {{name}}'s access?",
+      "errors": {
+        "loadUsers": "Could not load users with access",
+        "onlyOwnerCanModify": "Only the owner can modify permissions",
+        "onlyOwnerCanRemove": "Only the owner can remove users",
+        "shareNotFound": "Share not found",
+        "updateFailed": "Could not update permission",
+        "removeFailed": "Could not remove user"
+      },
+      "success": {
+        "permissionUpdated": "Permission updated to {{permission}}",
+        "accessRemoved": "Access removed for {{name}}"
+      }
+    },
+    "menu": {
+      "edit": "Edit",
+      "share": "Share",
+      "shareInfo": "Share Info",
+      "manageAccess": "Manage Access",
+      "delete": "Delete",
+      "deleting": "Deleting...",
+      "leave": "Leave",
+      "readOnly": "Read only"
     }
   },
   "tasks": {
