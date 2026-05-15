@@ -10,6 +10,7 @@ import ShareCategoryDialog from './ShareCategoryDialog';
 import ManageCategoryShares from './ManageCategoryShares';
 import eventEmitter, { emitCategoryDeleted, emitCategoryUpdated, emitTaskAdded , EVENTS } from '../../utils/eventEmitter';
 import GoogleCalendarService from '../../services/googleCalendarService';
+import { useTranslation } from "react-i18next";
 
 
 export interface CategoryProps {
@@ -41,6 +42,7 @@ const Category: React.FC<CategoryProps> = ({
   onEdit,
   onPressCategory
 }) => {
+  const { t } = useTranslation();
   const [showMenu, setShowMenu] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -145,8 +147,8 @@ const Category: React.FC<CategoryProps> = ({
     // Only owners can delete
     if (!isOwned) {
       Alert.alert(
-        "Permesso negato",
-        "Solo il proprietario può eliminare questa categoria."
+        t("categories.permissions.denied"),
+        t("categories.permissions.ownerOnlyDelete")
       );
       closeMenu();
       return;
@@ -183,7 +185,7 @@ const Category: React.FC<CategoryProps> = ({
     } catch (error) {
       console.error("Errore durante l'eliminazione della categoria:", error);
       setShowDeleteModal(false);
-      Alert.alert("Errore", "Impossibile eliminare la categoria. Riprova più tardi.");
+      Alert.alert(t("categories.delete.error"), t("categories.delete.failed"));
     } finally {
       setIsDeleting(false);
     }
@@ -199,8 +201,8 @@ const Category: React.FC<CategoryProps> = ({
     // Check permissions - owners and READ_WRITE users can edit
     if (!isOwned && permissionLevel === "READ_ONLY") {
       Alert.alert(
-        "Permesso negato",
-        "Hai solo permessi di lettura per questa categoria. Non puoi modificarla."
+        t("categories.permissions.denied"),
+        t("categories.permissions.readOnly")
       );
       closeMenu();
       return;

@@ -508,6 +508,50 @@
       "deleted": "Categoria eliminata con successo",
       "error": "Errore",
       "emptyTitle": "Il nome della categoria non può essere vuoto"
+    },
+    "addModal": {
+      "title": "Aggiungi Categoria",
+      "name": "Nome Categoria",
+      "description": "Descrizione",
+      "namePlaceholder": "Inserisci il nome della categoria",
+      "descriptionPlaceholder": "Inserisci la descrizione",
+      "save": "Salva",
+      "saving": "Salvataggio...",
+      "cancel": "Annulla",
+      "limitReached": "Limite categorie raggiunto",
+      "limitReachedMessage": "Hai raggiunto il numero massimo di categorie per il tuo piano. Fai l'upgrade per aggiungerne altre.",
+      "addError": "Non è stato possibile aggiungere la categoria"
+    },
+    "permissions": {
+      "denied": "Permesso negato",
+      "ownerOnlyDelete": "Solo il proprietario può eliminare questa categoria.",
+      "readOnly": "Hai solo permessi di lettura per questa categoria. Non puoi modificarla.",
+      "readOnlyAdd": "Hai solo permessi di lettura per questa categoria. Non puoi aggiungere task."
+    },
+    "delete": {
+      "error": "Errore",
+      "failed": "Impossibile eliminare la categoria. Riprova più tardi."
+    },
+    "update": {
+      "error": "Errore",
+      "failed": "Impossibile aggiornare la categoria. Riprova più tardi.",
+      "emptyTitle": "Il titolo della categoria non può essere vuoto"
+    },
+    "shared": {
+      "title": "Categoria condivisa",
+      "info": "Questa categoria è condivisa da un altro utente. Il tuo permesso: {{permission}}",
+      "permissions": {
+        "READ_ONLY": "Sola lettura",
+        "READ_WRITE": "Lettura/Scrittura"
+      },
+      "idError": "Errore",
+      "noId": "ID categoria non disponibile",
+      "success": "Successo"
+    },
+    "task": {
+      "error": "Errore",
+      "addFailed": "Impossibile aggiungere il task. Riprova più tardi.",
+      "status": "In sospeso"
     }
   },
   "tasks": {
@@ -1027,5 +1071,19 @@
     "offlineWarning": "Offline. Prezzi non disponibili.",
     "offlineError": "Servizio offline o piano non disponibile.",
     "getPlan": "Ottieni {{plan}}"
+  },
+  "globalTaskSearch": {
+    "title": "Ricerca Task",
+    "searchAllTasks": "Cerca tra tutti i task",
+    "searchPlaceholder": "Cerca per titolo, descrizione, categoria...",
+    "loadingTasks": "Caricamento task...",
+    "loadingInProgress": "Caricamento in corso...",
+    "noTasksFound": "Nessun task trovato per \"{{query}}\"",
+    "noTasksAvailable": "Nessun task disponibile",
+    "startTyping": "Inizia a digitare per cercare tra i tuoi task",
+    "tasksCount": "{{filtered}} di {{total}} task",
+    "totalTasks": "{{total}} task totali",
+    "error": "Errore",
+    "loadFailed": "Impossibile caricare i task per la ricerca"
   }
 }

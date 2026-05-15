@@ -507,6 +507,50 @@
       "deleted": "Category deleted successfully",
       "error": "Error",
       "emptyTitle": "Category name cannot be empty"
+    },
+    "addModal": {
+      "title": "Add Category",
+      "name": "Category Name",
+      "description": "Description",
+      "namePlaceholder": "Enter category name",
+      "descriptionPlaceholder": "Enter description",
+      "save": "Save",
+      "saving": "Saving...",
+      "cancel": "Cancel",
+      "limitReached": "Category limit reached",
+      "limitReachedMessage": "You have reached the maximum number of categories for your plan. Upgrade to add more.",
+      "addError": "Could not add category"
+    },
+    "permissions": {
+      "denied": "Permission denied",
+      "ownerOnlyDelete": "Only the owner can delete this category.",
+      "readOnly": "You only have read permissions for this category. You cannot modify it.",
+      "readOnlyAdd": "You only have read permissions for this category. You cannot add tasks."
+    },
+    "delete": {
+      "error": "Error",
+      "failed": "Could not delete category. Please try again later."
+    },
+    "update": {
+      "error": "Error",
+      "failed": "Could not update category. Please try again later.",
+      "emptyTitle": "Category title cannot be empty"
+    },
+    "shared": {
+      "title": "Shared category",
+      "info": "This category is shared by another user. Your permission: {{permission}}",
+      "permissions": {
+        "READ_ONLY": "Read only",
+        "READ_WRITE": "Read/Write"
+      },
+      "idError": "Error",
+      "noId": "Category ID not available",
+      "success": "Success"
+    },
+    "task": {
+      "error": "Error",
+      "addFailed": "Could not add task. Please try again later.",
+      "status": "Pending"
     }
   },
   "tasks": {
@@ -1027,5 +1071,19 @@
     "offlineWarning": "Offline. Prices unavailable.",
     "offlineError": "Service offline or plan unavailable.",
     "getPlan": "Get {{plan}}"
+  },
+  "globalTaskSearch": {
+    "title": "Task Search",
+    "searchAllTasks": "Search All Tasks",
+    "searchPlaceholder": "Search by title, description, category...",
+    "loadingTasks": "Loading tasks...",
+    "loadingInProgress": "Loading in progress...",
+    "noTasksFound": "No tasks found for \"{{query}}\"",
+    "noTasksAvailable": "No tasks available",
+    "startTyping": "Start typing to search your tasks",
+    "tasksCount": "{{filtered}} of {{total}} tasks",
+    "totalTasks": "{{total}} total tasks",
+    "error": "Error",
+    "loadFailed": "Unable to load tasks for search"
   }
 }
