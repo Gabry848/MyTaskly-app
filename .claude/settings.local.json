@@ -82,7 +82,12 @@
       "Bash(git reset *)",
       "Bash(but branch *)",
       "Bash(but commit *)",
-      "Bash(but stage *)"
+      "Bash(but stage *)",
+      "Bash(but diff *)",
+      "Bash(but log *)",
+      "Bash(but *)",
+      "Bash(git restore *)",
+      "Bash(npx skills *)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"
