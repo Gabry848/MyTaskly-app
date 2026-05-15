@@ -57,7 +57,7 @@ export const TaskListContainer = ({
       title: categoryName,
       headerRight: () => (
         <TouchableOpacity
-          style={{ paddingRight: 15 }}
+          style={{ paddingHorizontal: 15, paddingVertical: 8, justifyContent: 'center', alignItems: 'center' }}
           onPress={() => setModalVisible(true)}
         >
           <Ionicons name="options-outline" size={24} color="#666666" />
