@@ -816,8 +816,20 @@ async function changeUsername(newUsername: string) {
       }
     );
 
-    // Aggiorna l'username salvato in AsyncStorage
-    await AsyncStorage.setItem(STORAGE_KEYS.USER_NAME, newUsername);
+    // Aggiorna i token e l'username salvati in AsyncStorage
+    if (response.data.bearer_token && response.data.refresh_token) {
+      await updateAuthData({
+        bearerToken: response.data.bearer_token,
+        refreshToken: response.data.refresh_token,
+        username: newUsername,
+        bearerDuration: response.data.bearerDuration,
+        refreshDuration: response.data.refreshDuration,
+        loginTime: dayjs().format()
+      });
+    } else {
+      // Fallback: aggiorna solo l'username
+      await AsyncStorage.setItem(STORAGE_KEYS.USER_NAME, newUsername);
+    }
 
     return {
       success: true,
