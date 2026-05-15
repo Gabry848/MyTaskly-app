@@ -280,7 +280,9 @@ Check our [GitHub Issues](https://github.com/Gabry848/MyTaskly-app/issues) for:
 - [ ] Widget support (iOS/Android)
 - [ ] advanced AI features
 - [ ] Task analytics and insights
-- [ ] recurrent tasks
+- [x] recurrent tasks
+- [ ] proactive functions
+- [ ] iOS support
 
 And a lot more!
 
