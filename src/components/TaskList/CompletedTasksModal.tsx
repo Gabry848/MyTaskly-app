@@ -118,20 +118,22 @@ export const CompletedTasksModal: React.FC<CompletedTasksModalProps> = ({
               contentContainerStyle={styles.scrollContentContainer}
               showsVerticalScrollIndicator={false}
             >
-              <View style={{ minHeight: 1 }}>
-                {console.log('CompletedTasksModal - tasks:', tasks.length, tasks)}
-                {tasks.length > 0 ? (
-                  tasks.map((item, index) => {
-                    console.log('Rendering task:', index, item.title, item.status);
-                    return renderTask(item, index);
-                  })
-                ) : (
-                  <View style={styles.emptyContainer}>
-                    <MaterialIcons name="check-circle-outline" size={48} color={colors.border} />
-                    <Text style={styles.emptyText}>Nessun task completato</Text>
-                  </View>
-                )}
-              </View>
+              {console.log('CompletedTasksModal - tasks:', tasks.length, tasks)}
+              {tasks.length > 0 ? (
+                tasks.map((item, index) => {
+                  console.log('Rendering task:', index, item.title, item.status);
+                  return (
+                    <View key={`completed-wrapper-${index}`} style={{ marginBottom: 4 }}>
+                      {renderTask(item, index)}
+                    </View>
+                  );
+                })
+              ) : (
+                <View style={styles.emptyContainer}>
+                  <MaterialIcons name="check-circle-outline" size={48} color={colors.border} />
+                  <Text style={styles.emptyText}>Nessun task completato</Text>
+                </View>
+              )}
             </ScrollView>
           </TouchableOpacity>
         </Animated.View>
@@ -209,9 +211,9 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flex: 1,
+    width: '100%',
   },
   scrollContentContainer: {
-    paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xxl * 2,
   },
   emptyContainer: {
