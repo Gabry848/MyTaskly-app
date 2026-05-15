@@ -573,6 +573,7 @@
       "addFailed": "Could not add task. Please try again later.",
       "status": "Pending"
     },
+    "taskCount": "{{count}} things to do",
     "share": {
       "title": "Share",
       "userEmail": "User email:",

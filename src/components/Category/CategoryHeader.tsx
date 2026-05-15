@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet, Image } from "react-native";
 import { MaterialIcons } from '@expo/vector-icons';
+import { useTranslation } from "react-i18next";
 import CategoryBadge from './CategoryBadge';
 
 export interface CategoryHeaderProps {
@@ -20,6 +21,8 @@ const CategoryHeader: React.FC<CategoryHeaderProps> = ({
   screenWidth,
   badgeType
 }) => {
+  const { t } = useTranslation();
+
   return (
     <View style={styles.headerContainer}>
       <View
@@ -62,7 +65,9 @@ const CategoryHeader: React.FC<CategoryHeaderProps> = ({
             fontSize: screenWidth < 350 ? 12 : 14,
             marginLeft: screenWidth < 350 ? 4 : 6,
           }]}>
-            {isLoading ? "Caricamento..." : `${taskCount} cose da fare`}
+            {isLoading
+              ? t("common.messages.loading")
+              : t("categories.taskCount", { count: taskCount })}
           </Text>
         </View>
       </View>

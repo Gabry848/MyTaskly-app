@@ -574,6 +574,7 @@
       "addFailed": "Impossibile aggiungere il task. Riprova più tardi.",
       "status": "In sospeso"
     },
+    "taskCount": "{{count}} cose da fare",
     "share": {
       "title": "Condividi",
       "userEmail": "Email utente:",
