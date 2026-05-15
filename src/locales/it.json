@@ -1230,6 +1230,7 @@
     "noDeadline": "Nessuna scadenza",
     "today": "Oggi",
     "tomorrow": "Domani",
+    "overdue": "Scaduto",
     "recurring": {
       "daily": "Ogni giorno",
       "daily_plural": "Ogni {{count}} giorni",
@@ -1285,5 +1286,14 @@
     "deleteNoteConfirm": "Sei sicuro di voler eliminare questa nota?",
     "deleteError": "Impossibile eliminare",
     "itemDeleted": "Elemento eliminato"
+  },
+  "taskSharing": {
+    "notImplemented": "Funzionalità di condivisione non ancora implementata",
+    "notEnabled": "La condivisione dei task non è abilitata"
+  },
+  "taskDelete": {
+    "confirm": "Sei sicuro di voler eliminare il task",
+    "error": "Impossibile eliminare il task. Riprova.",
+    "deleteAllCompletedError": "Impossibile eliminare tutti i task completati. Riprova."
   }
 }

@@ -86,6 +86,15 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onPress }) => {
     return null;
   };
 
+  const isTaskOverdue = (): boolean => {
+    if (!task.end_time || task.status === 'Completato' || task.status === 'completed') {
+      return false;
+    }
+    const now = dayjs();
+    const endTime = dayjs(task.end_time);
+    return endTime.isBefore(now);
+  };
+
   const getRecurrenceDescription = (): string | null => {
     if (!task.is_recurring || !task.recurrence_pattern) return null;
 
@@ -205,6 +214,13 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onPress }) => {
               <StatusChip label={categoryName} tone="neutral" />
             ) : null;
           })()}
+
+          {isTaskOverdue() && (
+            <StatusChip
+              label={t('taskCard.overdue')}
+              tone="danger"
+            />
+          )}
 
           <StatusChip
             label={sanitizeString(task.status)}
