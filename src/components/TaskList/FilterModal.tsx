@@ -2,6 +2,7 @@ import React, { useRef, useEffect } from 'react';
 import { View, Text, Modal, TouchableOpacity, ScrollView, Animated, PanResponder, Dimensions } from 'react-native';
 import { styles } from './styles';
 import { FilterChip } from './FilterChip';
+import { useTranslation } from 'react-i18next';
 
 export interface FilterModalProps {
   visible: boolean;
@@ -26,6 +27,8 @@ export const FilterModal = ({
   ordineScadenza,
   setOrdineScadenza
 }: FilterModalProps) => {
+
+  const { t } = useTranslation();
   
   const panY = useRef(new Animated.Value(0)).current;
 
@@ -99,8 +102,8 @@ export const FilterModal = ({
               <View style={styles.dragHandle} />
             </View>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Filtra task</Text>
-              <TouchableOpacity 
+              <Text style={styles.modalTitle}>{t('taskList.filters.title')}</Text>
+              <TouchableOpacity
                 style={styles.closeButton}
                 onPress={closeWithAnimation}
               >
@@ -112,27 +115,27 @@ export const FilterModal = ({
           <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
             {/* Filtro per importanza */}
             <View style={[styles.filterSection, { paddingTop: 0 }]}>
-              <Text style={styles.filterTitle}>Importanza</Text>
+              <Text style={styles.filterTitle}>{t('taskList.filters.importance')}</Text>
               <View style={styles.chipsContainer}>
                 <FilterChip
-                  label="Tutte"
+                  label={t('taskList.filters.all')}
                   isSelected={filtroImportanza === "Tutte"}
                   onPress={() => setFiltroImportanza("Tutte")}
                 />
                 <FilterChip
-                  label="Alta"
+                  label={t('taskList.filters.high')}
                   isSelected={filtroImportanza === "Alta"}
                   onPress={() => setFiltroImportanza("Alta")}
                   color="#000000"
                 />
                 <FilterChip
-                  label="Media"
+                  label={t('taskList.filters.medium')}
                   isSelected={filtroImportanza === "Media"}
                   onPress={() => setFiltroImportanza("Media")}
                   color="#333333"
                 />
                 <FilterChip
-                  label="Bassa"
+                  label={t('taskList.filters.low')}
                   isSelected={filtroImportanza === "Bassa"}
                   onPress={() => setFiltroImportanza("Bassa")}
                   color="#666666"
@@ -142,44 +145,44 @@ export const FilterModal = ({
             
             {/* Filtro per scadenza */}
             <View style={styles.filterSection}>
-              <Text style={styles.filterTitle}>Scadenza</Text>
-              <ScrollView 
-                horizontal 
+              <Text style={styles.filterTitle}>{t('taskList.filters.deadline')}</Text>
+              <ScrollView
+                horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.horizontalScrollContainer}
               >
                 <FilterChip
-                  label="Tutte"
+                  label={t('taskList.filters.all')}
                   isSelected={filtroScadenza === "Tutte"}
                   onPress={() => setFiltroScadenza("Tutte")}
                 />
                 <FilterChip
-                  label="Oggi"
+                  label={t('taskList.filters.today')}
                   isSelected={filtroScadenza === "Oggi"}
                   onPress={() => setFiltroScadenza("Oggi")}
                 />
                 <FilterChip
-                  label="Domani"
+                  label={t('taskList.filters.tomorrow')}
                   isSelected={filtroScadenza === "Domani"}
                   onPress={() => setFiltroScadenza("Domani")}
                 />
                 <FilterChip
-                  label="Dopodomani"
+                  label={t('taskList.filters.dayAfterTomorrow')}
                   isSelected={filtroScadenza === "Dopodomani"}
                   onPress={() => setFiltroScadenza("Dopodomani")}
                 />
                 <FilterChip
-                  label="Fra 3 giorni"
+                  label={t('taskList.filters.in3Days')}
                   isSelected={filtroScadenza === "Fra 3 giorni"}
                   onPress={() => setFiltroScadenza("Fra 3 giorni")}
                 />
                 <FilterChip
-                  label="Fra 7 giorni"
+                  label={t('taskList.filters.in7Days')}
                   isSelected={filtroScadenza === "Fra 7 giorni"}
                   onPress={() => setFiltroScadenza("Fra 7 giorni")}
                 />
                 <FilterChip
-                  label="Senza scadenza"
+                  label={t('taskList.filters.noDeadline')}
                   isSelected={filtroScadenza === "Senza scadenza"}
                   onPress={() => setFiltroScadenza("Senza scadenza")}
                   color="#999999"
@@ -189,7 +192,7 @@ export const FilterModal = ({
             
             {/* Ordine di visualizzazione */}
             <View style={[styles.filterSection, { borderBottomWidth: 0 }]}>
-              <Text style={styles.filterTitle}>Ordina per scadenza</Text>
+              <Text style={styles.filterTitle}>{t('taskList.filters.sortByDeadline')}</Text>
               <View style={styles.orderContainer}>
                 <TouchableOpacity
                   style={[
@@ -204,7 +207,7 @@ export const FilterModal = ({
                       ordineScadenza === "Recente" && styles.activeOrderText
                     ]}
                   >
-                    Più Recente
+                    {t('taskList.filters.mostRecent')}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -220,7 +223,7 @@ export const FilterModal = ({
                       ordineScadenza === "Vecchio" && styles.activeOrderText
                     ]}
                   >
-                    Più Vecchio
+                    {t('taskList.filters.oldest')}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -228,11 +231,11 @@ export const FilterModal = ({
           </ScrollView>
           
           <View style={styles.modalFooter}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.applyButton}
               onPress={closeWithAnimation}
             >
-              <Text style={styles.applyButtonText}>Applica Filtri</Text>
+              <Text style={styles.applyButtonText}>{t('taskList.filters.apply')}</Text>
             </TouchableOpacity>
           </View>
         </Animated.View>

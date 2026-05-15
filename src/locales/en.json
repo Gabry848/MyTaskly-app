@@ -825,7 +825,24 @@
       "emptyCompleted": "No completed tasks."
     },
     "filters": {
-      "active": "Active filters:"
+      "active": "Active filters:",
+      "title": "Filter tasks",
+      "apply": "Apply Filters",
+      "importance": "Importance",
+      "deadline": "Deadline",
+      "sortByDeadline": "Sort by deadline",
+      "all": "All",
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low",
+      "today": "Today",
+      "tomorrow": "Tomorrow",
+      "dayAfterTomorrow": "Day after tomorrow",
+      "in3Days": "In 3 days",
+      "in7Days": "In 7 days",
+      "noDeadline": "No deadline",
+      "mostRecent": "Most recent",
+      "oldest": "Oldest"
     }
   },
   "task": {

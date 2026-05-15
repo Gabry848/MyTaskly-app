@@ -825,7 +825,24 @@
       "emptyCompleted": "Non ci sono task completati."
     },
     "filters": {
-      "active": "Filtri attivi:"
+      "active": "Filtri attivi:",
+      "title": "Filtra task",
+      "apply": "Applica Filtri",
+      "importance": "Importanza",
+      "deadline": "Scadenza",
+      "sortByDeadline": "Ordina per scadenza",
+      "all": "Tutte",
+      "high": "Alta",
+      "medium": "Media",
+      "low": "Bassa",
+      "today": "Oggi",
+      "tomorrow": "Domani",
+      "dayAfterTomorrow": "Dopodomani",
+      "in3Days": "Fra 3 giorni",
+      "in7Days": "Fra 7 giorni",
+      "noDeadline": "Senza scadenza",
+      "mostRecent": "Più Recente",
+      "oldest": "Più Vecchio"
     }
   },
   "task": {
