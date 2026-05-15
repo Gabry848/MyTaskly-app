@@ -657,6 +657,57 @@
       "medium": "Media",
       "high": "Alta"
     },
+    "status": {
+      "pending": "In sospeso",
+      "inProgress": "In corso",
+      "completed": "Completato"
+    },
+    "form": {
+      "durationPresets": {
+        "min15": "15 min",
+        "min30": "30 min",
+        "hour1": "1 ora",
+        "hour2": "2 ore",
+        "hour4": "4 ore"
+      },
+      "errors": {
+        "titleRequired": "Il titolo è obbligatorio",
+        "categoryRequired": "La categoria è obbligatoria",
+        "saveFailed": "Impossibile salvare il task"
+      },
+      "errorTitle": "Errore",
+      "categoryLabel": "Categoria",
+      "categoryActionTitle": "Seleziona categoria",
+      "categoryActionMessage": "Scegli una categoria per il task",
+      "categoryPlaceholder": "Seleziona categoria",
+      "titleLabel": "Titolo",
+      "titlePlaceholder": "Inserisci il titolo",
+      "titleEditPlaceholder": "Titolo del task",
+      "descriptionLabel": "Descrizione",
+      "descriptionPlaceholder": "Inserisci la descrizione",
+      "descriptionEditPlaceholder": "Descrizione del task",
+      "deadlineLabel": "Scadenza",
+      "deadlineSimple": "Scadenza semplice",
+      "deadlineRecurring": "Ripetitività",
+      "datePlaceholder": "Seleziona data",
+      "timePlaceholder": "Ora",
+      "priorityLabel": "Priorità",
+      "statusLabel": "Stato",
+      "durationLabel": "Durata stimata (opzionale)",
+      "customDurationPlaceholder": "Personalizzata (minuti)",
+      "saveChanges": "Salva Modifiche"
+    },
+    "readOnly": {
+      "title": "Categoria in sola lettura",
+      "message": "Non puoi modificare questo task perché la categoria è condivisa con te in sola lettura.",
+      "subMessage": "Puoi solo completarlo o visualizzarne i dettagli.",
+      "confirmButton": "Ho capito"
+    },
+    "accessibility": {
+      "addTaskLabel": "Aggiungi nuova attività",
+      "addTaskHint": "Aggiungi una nuova attività",
+      "addTaskHintCategory": "Aggiungi una nuova attività alla categoria {{category}}"
+    },
     "messages": {
       "created": "Task creato con successo",
       "updated": "Task aggiornato con successo",

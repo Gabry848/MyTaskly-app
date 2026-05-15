@@ -656,6 +656,57 @@
       "medium": "Medium",
       "high": "High"
     },
+    "status": {
+      "pending": "Pending",
+      "inProgress": "In Progress",
+      "completed": "Completed"
+    },
+    "form": {
+      "durationPresets": {
+        "min15": "15 min",
+        "min30": "30 min",
+        "hour1": "1 hour",
+        "hour2": "2 hours",
+        "hour4": "4 hours"
+      },
+      "errors": {
+        "titleRequired": "Title is required",
+        "categoryRequired": "Category is required",
+        "saveFailed": "Failed to save task"
+      },
+      "errorTitle": "Error",
+      "categoryLabel": "Category",
+      "categoryActionTitle": "Select category",
+      "categoryActionMessage": "Choose a category for the task",
+      "categoryPlaceholder": "Select category",
+      "titleLabel": "Title",
+      "titlePlaceholder": "Enter title",
+      "titleEditPlaceholder": "Task title",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "Enter description",
+      "descriptionEditPlaceholder": "Task description",
+      "deadlineLabel": "Deadline",
+      "deadlineSimple": "Simple deadline",
+      "deadlineRecurring": "Recurring",
+      "datePlaceholder": "Select date",
+      "timePlaceholder": "Time",
+      "priorityLabel": "Priority",
+      "statusLabel": "Status",
+      "durationLabel": "Estimated duration (optional)",
+      "customDurationPlaceholder": "Custom (minutes)",
+      "saveChanges": "Save Changes"
+    },
+    "readOnly": {
+      "title": "Read-only category",
+      "message": "You cannot edit this task because the category is shared with you in read-only mode.",
+      "subMessage": "You can only complete it or view its details.",
+      "confirmButton": "Got it"
+    },
+    "accessibility": {
+      "addTaskLabel": "Add new activity",
+      "addTaskHint": "Add a new activity",
+      "addTaskHintCategory": "Add a new activity to the {{category}} category"
+    },
     "messages": {
       "created": "Task created successfully",
       "updated": "Task updated successfully",

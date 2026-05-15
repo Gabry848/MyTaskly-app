@@ -2,6 +2,7 @@ import React from "react";
 import { View, Text, TouchableOpacity, Modal } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { styles } from "./TaskStyles";
+import { useTranslation } from "react-i18next";
 
 export interface ReadOnlyModalProps {
   visible: boolean;
@@ -10,6 +11,7 @@ export interface ReadOnlyModalProps {
 }
 
 const ReadOnlyModal = ({ visible, onClose, taskTitle }: ReadOnlyModalProps) => {
+  const { t } = useTranslation();
   return (
     <Modal
       transparent={true}
@@ -20,7 +22,7 @@ const ReadOnlyModal = ({ visible, onClose, taskTitle }: ReadOnlyModalProps) => {
       <View style={styles.editModalOverlay}>
         <View style={styles.editModalContainer}>
           <View style={styles.editModalHeader}>
-            <Text style={styles.editModalTitle}>Categoria in sola lettura</Text>
+            <Text style={styles.editModalTitle}>{t("tasks.readOnly.title")}</Text>
             <TouchableOpacity onPress={onClose}>
               <MaterialIcons name="close" size={24} color="#333" />
             </TouchableOpacity>
@@ -37,7 +39,7 @@ const ReadOnlyModal = ({ visible, onClose, taskTitle }: ReadOnlyModalProps) => {
                 lineHeight: 24,
                 paddingHorizontal: 10
               }}>
-                Non puoi modificare questo task perché la categoria è condivisa con te in sola lettura.
+                {t("tasks.readOnly.message")}
               </Text>
               <Text style={{
                 fontSize: 14,
@@ -46,7 +48,7 @@ const ReadOnlyModal = ({ visible, onClose, taskTitle }: ReadOnlyModalProps) => {
                 marginTop: 10,
                 paddingHorizontal: 10
               }}>
-                Puoi solo completarlo o visualizzarne i dettagli.
+                {t("tasks.readOnly.subMessage")}
               </Text>
             </View>
           </View>
@@ -56,7 +58,7 @@ const ReadOnlyModal = ({ visible, onClose, taskTitle }: ReadOnlyModalProps) => {
               style={styles.saveButton}
               onPress={onClose}
             >
-              <Text style={styles.saveButtonText}>Ho capito</Text>
+              <Text style={styles.saveButtonText}>{t("tasks.readOnly.confirmButton")}</Text>
             </TouchableOpacity>
           </View>
         </View>

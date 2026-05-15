@@ -1,6 +1,7 @@
 import React from "react";
 import { Pressable, StyleSheet, Platform, View } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from "react-i18next";
 
 export interface AddTaskButtonProps {
   onPress: () => void;
@@ -10,12 +11,15 @@ export interface AddTaskButtonProps {
 }
 
 const AddTaskButton: React.FC<AddTaskButtonProps> = ({ onPress, screenWidth, categoryTitle, isInline = false }) => {
+  const { t } = useTranslation();
   return (
     <Pressable
       accessible={true}
-      accessibilityLabel="Aggiungi nuova attività"
+      accessibilityLabel={t("tasks.accessibility.addTaskLabel")}
       accessibilityRole="button"
-      accessibilityHint={categoryTitle ? `Aggiungi una nuova attività alla categoria ${categoryTitle}` : "Aggiungi una nuova attività"}
+      accessibilityHint={categoryTitle
+        ? t("tasks.accessibility.addTaskHintCategory", { category: categoryTitle })
+        : t("tasks.accessibility.addTaskHint")}
       style={({ pressed }) => [
         styles.controlsContainer,
         isInline ? styles.inlineButton : null,
