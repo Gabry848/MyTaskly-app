@@ -669,6 +669,10 @@
     "newNote": "New Note",
     "create": "Create",
     "cancel": "Cancel",
+    "colorPicker": {
+      "title": "Choose a color",
+      "close": "Close"
+    },
     "messages": {
       "created": "Note created successfully",
       "deleted": "Note deleted successfully"

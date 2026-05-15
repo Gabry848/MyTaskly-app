@@ -670,6 +670,10 @@
     "newNote": "Nuova Nota",
     "create": "Crea",
     "cancel": "Annulla",
+    "colorPicker": {
+      "title": "Scegli un colore",
+      "close": "Chiudi"
+    },
     "messages": {
       "created": "Nota creata con successo",
       "deleted": "Nota eliminata con successo"
