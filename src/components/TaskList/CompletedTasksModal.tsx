@@ -5,7 +5,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Modal,
-  ScrollView,
+  FlatList,
   Animated,
   Dimensions,
   Alert,
@@ -113,28 +113,28 @@ export const CompletedTasksModal: React.FC<CompletedTasksModalProps> = ({
               </View>
             )}
 
-            <ScrollView
-              style={styles.scrollContent}
-              contentContainerStyle={styles.scrollContentContainer}
-              showsVerticalScrollIndicator={false}
-            >
-              {console.log('CompletedTasksModal - tasks:', tasks.length, tasks)}
-              {tasks.length > 0 ? (
-                tasks.map((item, index) => {
-                  console.log('Rendering task:', index, item.title, item.status);
+            <View style={styles.tasksContainer}>
+              <FlatList
+                data={tasks}
+                keyExtractor={(item, index) => `completed-${item.id || item.task_id || index}`}
+                renderItem={({ item, index }) => {
+                  console.log('FlatList rendering task:', index, item.title);
                   return (
-                    <View key={`completed-wrapper-${index}`} style={{ marginBottom: 4 }}>
+                    <View style={{ marginBottom: 4 }}>
                       {renderTask(item, index)}
                     </View>
                   );
-                })
-              ) : (
-                <View style={styles.emptyContainer}>
-                  <MaterialIcons name="check-circle-outline" size={48} color={colors.border} />
-                  <Text style={styles.emptyText}>Nessun task completato</Text>
-                </View>
-              )}
-            </ScrollView>
+                }}
+                ListEmptyComponent={
+                  <View style={styles.emptyContainer}>
+                    <MaterialIcons name="check-circle-outline" size={48} color={colors.border} />
+                    <Text style={styles.emptyText}>Nessun task completato</Text>
+                  </View>
+                }
+                contentContainerStyle={styles.scrollContentContainer}
+                showsVerticalScrollIndicator={false}
+              />
+            </View>
           </TouchableOpacity>
         </Animated.View>
       </TouchableOpacity>
@@ -209,12 +209,13 @@ const styles = StyleSheet.create({
     color: colors.danger,
     fontFamily: 'Inter_500Medium',
   },
-  scrollContent: {
+  tasksContainer: {
     flex: 1,
     width: '100%',
   },
   scrollContentContainer: {
     paddingBottom: spacing.xxl * 2,
+    flexGrow: 1,
   },
   emptyContainer: {
     alignItems: 'center',
