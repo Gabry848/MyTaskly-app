@@ -1,20 +1,20 @@
-import React, { useState, useEffect, useMemo, useRef, useCallback, useLayoutEffect } from 'react';
-import { View, ScrollView, Alert, Animated, Easing } from 'react-native';
+import React, { useState, useEffect, useMemo, useCallback, useLayoutEffect } from 'react';
+import { View, ScrollView, Alert, TouchableOpacity } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { TouchableOpacity } from 'react-native';
 import { styles } from './styles';
 import { Task as TaskType, globalTasksRef } from './types';
 import eventEmitter, { EVENTS } from '../../utils/eventEmitter';
 import { ActiveFilters } from './ActiveFilters';
 import { FilterModal } from './FilterModal';
-import { TaskSection } from './TaskSection';
 import { AddTaskButton } from './AddTaskButton';
 import { filterTasksByDay } from './TaskUtils';
 import AddTask from '../Task/AddTask';
 import { recurringTaskService, RecurringTask, CreateRecurringTaskPayload } from '../../services/recurringTaskService';
-import { LoadingState, EmptyState, SectionHeader } from '../UI/foundation';
+import { LoadingState, EmptyState } from '../UI/foundation';
+import { CompletedTasksButton } from './CompletedTasksButton';
+import { CompletedTasksModal } from './CompletedTasksModal';
 
 export interface TaskListContainerProps {
   categoryName: string;
@@ -48,14 +48,7 @@ export const TaskListContainer = ({
   const [isLoading, setIsLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [formVisible, setFormVisible] = useState(false);
-  
-  // Stati per le sezioni collassabili
-  const [todoSectionExpanded, setTodoSectionExpanded] = useState(true);
-  const [completedSectionExpanded, setCompletedSectionExpanded] = useState(false); // Collapsed by default to hide them
-  
-  // Animated values per le animazioni di altezza
-  const todoSectionHeight = useRef(new Animated.Value(1)).current;
-  const completedSectionHeight = useRef(new Animated.Value(0)).current;
+  const [completedTasksModalVisible, setCompletedTasksModalVisible] = useState(false);
 
   const navigation = useNavigation();
 
@@ -64,7 +57,7 @@ export const TaskListContainer = ({
       title: categoryName,
       headerRight: () => (
         <TouchableOpacity
-          style={{ paddingRight: 15 }}
+          style={{ paddingHorizontal: 15, paddingVertical: 8, justifyContent: 'center', alignItems: 'center' }}
           onPress={() => setModalVisible(true)}
         >
           <Ionicons name="options-outline" size={24} color="#666666" />
@@ -324,7 +317,13 @@ export const TaskListContainer = ({
 
   // Separiamo i task in completati e non completati
   const completedTasks = useMemo(() => {
-    return tasks.filter(task => task.status === "Completato");
+    const filtered = tasks.filter(task => task.status === "Completato");
+    console.log('[TASK_LIST_CONTAINER] completedTasks calcolati:', {
+      totalTasks: tasks.length,
+      completedCount: filtered.length,
+      completedTasks: filtered.map(t => ({ id: t.id, title: t.title, status: t.status }))
+    });
+    return filtered;
   }, [tasks]);
   
   const incompleteTasks = useMemo(() => {
@@ -525,15 +524,29 @@ export const TaskListContainer = ({
     }
   };
 
-  // Funzione di animazione per le sezioni
-  const toggleSection = (isExpanded: boolean, setExpanded: React.Dispatch<React.SetStateAction<boolean>>, heightValue: Animated.Value) => {
-    setExpanded(!isExpanded);
-    Animated.timing(heightValue, {
-      toValue: isExpanded ? 0 : 1,
-      duration: 300,
-      easing: Easing.inOut(Easing.ease),
-      useNativeDriver: false
-    }).start();
+  // Funzione per eliminare tutti i task completati
+  const handleDeleteAllCompleted = async () => {
+    try {
+      // Elimina tutti i task completati in parallelo
+      await Promise.all(
+        completedTasks.map(task => taskService.deleteTask(task.id || task.task_id))
+      );
+
+      // Aggiorna lo stato locale
+      setTasks(prevTasks =>
+        prevTasks.filter(task => task.status !== "Completato")
+      );
+
+      // Aggiorna la referenza globale
+      if (globalTasksRef.tasks[categoryName]) {
+        globalTasksRef.tasks[categoryName] = globalTasksRef.tasks[categoryName].filter(
+          task => task.status !== "Completato"
+        );
+      }
+    } catch (error) {
+      console.error("Errore nell'eliminazione dei task completati:", error);
+      Alert.alert(t('itemDetailModal.error'), t('taskDelete.deleteAllCompletedError'));
+    }
   };
 
   return (
@@ -597,44 +610,48 @@ export const TaskListContainer = ({
             )}
           </View>
 
-          {/* Sezione task completati (collapsabile in basso) */}
-          {completedTasks.length > 0 && (
-            <TaskSection
-              title={t('taskList.sections.completed')}
-              isExpanded={completedSectionExpanded}
-              tasks={completedTasks}
-              animatedHeight={completedSectionHeight}
-              onToggle={() => toggleSection(completedSectionExpanded, setCompletedSectionExpanded, completedSectionHeight)}
-              renderTask={(item, index) => {
-                // Ensure every completed task has a valid ID
-                const taskId = item.id || item.task_id || `completed_fallback_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 9)}`;
-                return (
-                  <Task
-                    key={`completed-task-${taskId}`}
-                    task={{
-                      ...item,
-                      id: taskId,
-                      start_time: item.start_time || new Date().toISOString(),
-                      status: "Completato",
-                      completed: true
-                    }}
-                    onTaskDelete={handleTaskDelete}
-                    onTaskEdit={handleTaskEdit}
-                    onTaskUncomplete={handleTaskUncomplete}
-                    isOwned={isOwned}
-                    permissionLevel={permissionLevel}
-                  />
-                );
-              }}
-              emptyMessage={t('taskList.sections.emptyCompleted')}
-            />
-          )}
-
-          {/* Spazio per il pulsante flottante */}
-          <View style={{ height: 80 }} />
+          {/* Spazio per i pulsanti */}
+          <View style={{ height: 100 }} />
         </ScrollView>
       )}
-      
+
+      {/* Bottone task completati */}
+      <CompletedTasksButton
+        count={completedTasks.length}
+        onPress={() => {
+          console.log('[TASK_LIST_CONTAINER] Bottone task completati premuto, completedTasks:', completedTasks);
+          setCompletedTasksModalVisible(true);
+        }}
+      />
+
+      {/* Modal task completati */}
+      <CompletedTasksModal
+        visible={completedTasksModalVisible}
+        onClose={() => setCompletedTasksModalVisible(false)}
+        tasks={completedTasks}
+        renderTask={(item, index) => {
+          const taskId = item.id || item.task_id || `completed_fallback_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 9)}`;
+          return (
+            <Task
+              key={`completed-task-${taskId}`}
+              task={{
+                ...item,
+                id: taskId,
+                start_time: item.start_time || new Date().toISOString(),
+                status: "Completato",
+                completed: true
+              }}
+              onTaskDelete={handleTaskDelete}
+              onTaskEdit={handleTaskEdit}
+              onTaskUncomplete={handleTaskUncomplete}
+              isOwned={isOwned}
+              permissionLevel={permissionLevel}
+            />
+          );
+        }}
+        onDeleteAll={handleDeleteAllCompleted}
+      />
+
       <AddTaskButton onPress={toggleForm} />
       
       <AddTask 
