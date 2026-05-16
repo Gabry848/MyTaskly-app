@@ -317,7 +317,13 @@ export const TaskListContainer = ({
 
   // Separiamo i task in completati e non completati
   const completedTasks = useMemo(() => {
-    return tasks.filter(task => task.status === "Completato");
+    const filtered = tasks.filter(task => task.status === "Completato");
+    console.log('[TASK_LIST_CONTAINER] completedTasks calcolati:', {
+      totalTasks: tasks.length,
+      completedCount: filtered.length,
+      completedTasks: filtered.map(t => ({ id: t.id, title: t.title, status: t.status }))
+    });
+    return filtered;
   }, [tasks]);
   
   const incompleteTasks = useMemo(() => {
@@ -539,7 +545,7 @@ export const TaskListContainer = ({
       }
     } catch (error) {
       console.error("Errore nell'eliminazione dei task completati:", error);
-      Alert.alert("Errore", "Impossibile eliminare tutti i task completati. Riprova.");
+      Alert.alert(t('itemDetailModal.error'), t('taskDelete.deleteAllCompletedError'));
     }
   };
 
@@ -612,7 +618,10 @@ export const TaskListContainer = ({
       {/* Bottone task completati */}
       <CompletedTasksButton
         count={completedTasks.length}
-        onPress={() => setCompletedTasksModalVisible(true)}
+        onPress={() => {
+          console.log('[TASK_LIST_CONTAINER] Bottone task completati premuto, completedTasks:', completedTasks);
+          setCompletedTasksModalVisible(true);
+        }}
       />
 
       {/* Modal task completati */}

@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -6,15 +6,12 @@ import {
   StyleSheet,
   Modal,
   FlatList,
-  Animated,
-  Dimensions,
   Alert,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { colors, radius, elevation, spacing, typography } from '../../theme/tokens';
 import { Task as TaskType } from './types';
-
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 interface CompletedTasksModalProps {
   visible: boolean;
@@ -31,34 +28,30 @@ export const CompletedTasksModal: React.FC<CompletedTasksModalProps> = ({
   renderTask,
   onDeleteAll,
 }) => {
-  const slideAnim = useRef(new Animated.Value(0)).current;
+  const { t } = useTranslation();
 
-  React.useEffect(() => {
-    if (visible) {
-      Animated.spring(slideAnim, {
-        toValue: 0,
-        useNativeDriver: true,
-        tension: 65,
-        friction: 11,
-      }).start();
-    } else {
-      slideAnim.setValue(0);
-    }
-  }, [visible, slideAnim]);
-
-  const translateY = slideAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, SCREEN_HEIGHT],
+  console.log('[COMPLETED_TASKS_MODAL] Props ricevuti:', {
+    visible,
+    tasksCount: tasks.length,
+    tasks: tasks.map(t => ({ id: t.id, title: t.title, status: t.status })),
+    hasRenderTask: typeof renderTask === 'function'
   });
+
+  // Disabilitato animazione per debug
+  // const slideAnim = useRef(new Animated.Value(1)).current;
+  // const translateY = slideAnim.interpolate({
+  //   inputRange: [0, 1],
+  //   outputRange: [0, SCREEN_HEIGHT],
+  // });
 
   const handleDeleteAll = () => {
     Alert.alert(
-      'Elimina tutti i task completati',
-      'Sei sicuro di voler eliminare tutti i task completati? Questa azione non può essere annullata.',
+      t('categories.deleteModal.title'),
+      t('categories.deleteModal.confirmMessage') + ' ' + t('categories.deleteModal.warningMessage'),
       [
-        { text: 'Annulla', style: 'cancel' },
+        { text: t('common.buttons.cancel'), style: 'cancel' },
         {
-          text: 'Elimina',
+          text: t('common.buttons.delete'),
           style: 'destructive',
           onPress: () => {
             onDeleteAll();
@@ -73,7 +66,7 @@ export const CompletedTasksModal: React.FC<CompletedTasksModalProps> = ({
     <Modal
       visible={visible}
       transparent
-      animationType="none"
+      animationType="slide"
       onRequestClose={onClose}
     >
       <TouchableOpacity
@@ -81,21 +74,14 @@ export const CompletedTasksModal: React.FC<CompletedTasksModalProps> = ({
         activeOpacity={1}
         onPress={onClose}
       >
-        <Animated.View
-          style={[
-            styles.modalContent,
-            {
-              transform: [{ translateY }],
-            },
-          ]}
-        >
+        <View style={styles.modalContent}>
           <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
             <View style={styles.dragHandleContainer}>
               <View style={styles.dragHandle} />
             </View>
 
             <View style={styles.header}>
-              <Text style={styles.title}>Task completati</Text>
+              <Text style={styles.title}>{t('taskList.sections.completed')}</Text>
               <TouchableOpacity style={styles.closeButton} onPress={onClose}>
                 <MaterialIcons name="close" size={24} color={colors.textSecondary} />
               </TouchableOpacity>
@@ -108,20 +94,29 @@ export const CompletedTasksModal: React.FC<CompletedTasksModalProps> = ({
                   onPress={handleDeleteAll}
                 >
                   <MaterialIcons name="delete-outline" size={18} color={colors.danger} />
-                  <Text style={styles.deleteAllText}>Elimina tutti</Text>
+                  <Text style={styles.deleteAllText}>{t('taskActionMenu.delete')}</Text>
                 </TouchableOpacity>
               </View>
             )}
+
+            <Text style={{ paddingHorizontal: 16, paddingBottom: 8, color: colors.textSecondary, fontSize: 12 }}>
+              {tasks.length === 0 ? "Nessun task" : `${tasks.length} task completati`}
+            </Text>
 
             <View style={styles.tasksContainer}>
               <FlatList
                 data={tasks}
                 keyExtractor={(item, index) => `completed-${item.id || item.task_id || index}`}
                 renderItem={({ item, index }) => {
-                  console.log('FlatList rendering task:', index, item.title);
+                  console.log('[COMPLETED_TASKS_MODAL] FlatList renderItem chiamato:', {
+                    index,
+                    task: { id: item.id, title: item.title, status: item.status }
+                  });
+                  const rendered = renderTask(item, index);
+                  console.log('[COMPLETED_TASKS_MODAL] renderTask ritornato:', rendered != null ? 'jsx element' : 'null/undefined');
                   return (
                     <View style={{ marginBottom: 4 }}>
-                      {renderTask(item, index)}
+                      {rendered}
                     </View>
                   );
                 }}
@@ -136,7 +131,7 @@ export const CompletedTasksModal: React.FC<CompletedTasksModalProps> = ({
               />
             </View>
           </TouchableOpacity>
-        </Animated.View>
+        </View>
       </TouchableOpacity>
     </Modal>
   );
