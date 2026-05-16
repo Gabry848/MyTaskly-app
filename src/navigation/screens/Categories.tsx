@@ -10,7 +10,6 @@ import { StatusBar } from 'expo-status-bar';
 import { useFocusEffect } from "@react-navigation/native";
 import CategoryList from "../../components/Category/CategoryList";
 import AddCategoryButton from "../../components/Category/AddCategoryButton";
-import SearchTasksButton from "../../components/UI/SearchTasksButton";
 import GlobalTaskSearch from "../../components/Task/GlobalTaskSearch";
 import { useTranslation } from "react-i18next";
 import { TaskCacheService } from "../../services/TaskCacheService";
@@ -20,6 +19,7 @@ import {
   ScreenContainer,
   ScreenHeader,
 } from "../../components/UI/foundation";
+import { MaterialIcons } from "@expo/vector-icons";
 
 export default function Categories() {
   const { t } = useTranslation();
@@ -69,7 +69,20 @@ export default function Categories() {
     <ScreenContainer>
       <StatusBar style="dark" />
 
-      <ScreenHeader title={t("categories.title")} />
+      <ScreenHeader
+        title={t("categories.title")}
+        style={{ paddingEnd: 35 }}
+        rightActions={(
+          <TouchableOpacity
+            onPress={handleOpenSearch}
+            style={styles.searchIconButton}
+            accessibilityRole="button"
+            accessibilityLabel={t("globalTaskSearch.searchAllTasks")}
+          >
+            <MaterialIcons name="search" size={22} color="#333333" />
+          </TouchableOpacity>
+        )}
+      />
 
       <ScrollView
         style={styles.content}
@@ -85,12 +98,6 @@ export default function Categories() {
         }
       >
         <ContentContainer padded={false}>
-          <View style={styles.searchContainer}>
-            <SearchTasksButton
-              onPress={handleOpenSearch}
-              style={styles.searchButton}
-            />
-          </View>
           <CategoryList ref={categoryListRef} />
         </ContentContainer>
         <View style={styles.addButtonContainer}>
@@ -113,17 +120,23 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
   },
-  searchContainer: {
-    flexDirection: "row",
+  searchIconButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#ffffff",
+    borderWidth: 1,
+    borderColor: "#e1e5e9",
+    justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 16,
-    marginVertical: 8,
-  },
-  searchButton: {
-    flex: 1,
-    marginHorizontal: 0, // Override default margin
-    marginRight: 10,
-    marginVertical: 0, // Override default margin
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
   },
   reloadButton: {
     width: 44,

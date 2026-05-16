@@ -570,6 +570,19 @@
       "friday": "Fri",
       "saturday": "Sat",
       "sunday": "Sun"
+    },
+    "commitmentsOf": "Events for",
+    "loadingEvents": "Loading events...",
+    "noEventsForDate": "No events for this date",
+    "syncing": "Sync...",
+    "defaultCategory": "Calendar",
+    "errors": {
+      "title": "Error",
+      "completeFailed": "Unable to complete the task. Please try again.",
+      "reopenFailed": "Unable to reopen the task. Please try again.",
+      "editFailed": "Unable to edit the task. Please try again.",
+      "warningTitle": "Warning",
+      "localSaveWarning": "Task added locally but error saving to server."
     }
   },
   "calendar20": {
@@ -598,6 +611,11 @@
       "categories": "Categories",
       "showAll": "Show all",
       "settings": "Settings"
+    },
+    "loadMore": "Load more",
+    "duration": {
+      "hour": "1 hour",
+      "hours": "{{count}} hours"
     }
   },
   "statistics": {

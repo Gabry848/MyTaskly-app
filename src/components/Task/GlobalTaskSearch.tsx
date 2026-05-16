@@ -275,12 +275,23 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
   },
   header: {
+    position: "relative",
     paddingTop: 60, // Per lo spazio della status bar
     paddingHorizontal: 16,
     paddingBottom: 16,
     backgroundColor: "#ffffff",
     borderBottomWidth: 1,
     borderBottomColor: "#e1e5e9",
+  },
+  dragHandle: {
+    position: "absolute",
+    top: 32,
+    alignSelf: "center",
+    width: 44,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#d1d5db",
+    marginBottom: 12,
   },
   headerTop: {
     flexDirection: "row",
@@ -290,7 +301,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontWeight: "200",
+    fontWeight: "700",
     color: "#000000",
     fontFamily: "System",
     letterSpacing: -1.5,
@@ -302,14 +313,6 @@ const styles = StyleSheet.create({
   actionButton: {
     padding: 8,
     marginLeft: 8,
-  },
-  statsContainer: {
-    marginTop: 12,
-  },
-  statsText: {
-    fontSize: 14,
-    color: "#666666",
-    fontFamily: "System",
   },
   content: {
     flex: 1,
