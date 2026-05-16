@@ -2,8 +2,18 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import dayjs from 'dayjs';
+import { useTranslation } from 'react-i18next';
 import CalendarDay from './CalendarDay';
 import { Task } from '../../services/taskService';
+
+const MONTH_KEYS = [
+  'january', 'february', 'march', 'april', 'may', 'june',
+  'july', 'august', 'september', 'october', 'november', 'december'
+];
+
+const WEEKDAY_KEYS = [
+  'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'
+];
 
 export interface CalendarGridProps {
   selectedDate: string;
@@ -26,6 +36,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
   onPreviousMonth,
   onNextMonth
 }) => {
+  const { t } = useTranslation();
   // Gruppo gli impegni per data
   const groupTasksByDate = () => {
     const groupedTasks: Record<string, Task[]> = {};
@@ -130,7 +141,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
         </TouchableOpacity>
 
         <Text style={styles.calendarMonthTitle}>
-          {dayjs(selectedDate).format('MMMM YYYY')}
+          {t(`calendar.months.${MONTH_KEYS[dayjs(selectedDate).month()]}`)} {dayjs(selectedDate).year()}
         </Text>
 
         <TouchableOpacity onPress={onNextMonth} style={{ padding: 6 }}>
@@ -140,9 +151,9 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
       
       {/* Giorni della settimana */}
       <View style={styles.weekdaysRow}>
-        {['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'].map((day, index) => (
-          <Text key={index} style={styles.weekdayText}>
-            {day}
+        {WEEKDAY_KEYS.map((dayKey) => (
+          <Text key={dayKey} style={styles.weekdayText}>
+            {t(`calendar.days.${dayKey}`)}
           </Text>
         ))}
       </View>

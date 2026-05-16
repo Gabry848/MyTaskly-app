@@ -15,6 +15,11 @@ import AddTaskButton from '../Task/AddTaskButton';
 import { addTaskToList } from '../TaskList/types';
 import { LoadingState, EmptyState, StatusChip, AppText } from '../UI/foundation';
 
+const MONTH_KEYS = [
+  'january', 'february', 'march', 'april', 'may', 'june',
+  'july', 'august', 'september', 'october', 'november', 'december'
+];
+
 const CalendarView: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<string>(dayjs().format('YYYY-MM-DD'));
   const [tasks, setTasks] = useState<TaskType[]>([]);
@@ -292,7 +297,7 @@ const CalendarView: React.FC = () => {
       fetchTasks();
     } catch (error) {
       console.error("Errore nel completamento del task:", error);
-      Alert.alert("Errore", "Impossibile completare il task. Riprova.");
+      Alert.alert(t('calendar.errors.title'), t('calendar.errors.completeFailed'));
     }
   };
 
@@ -309,7 +314,7 @@ const CalendarView: React.FC = () => {
       fetchTasks();
     } catch (error) {
       console.error("Errore nell'annullamento del completamento del task:", error);
-      Alert.alert("Errore", "Impossibile riaprire il task. Riprova.");
+      Alert.alert(t('calendar.errors.title'), t('calendar.errors.reopenFailed'));
     }
   };
 
@@ -326,7 +331,7 @@ const CalendarView: React.FC = () => {
       fetchTasks();
     } catch (error) {
       console.error("Errore nella modifica del task:", error);
-      Alert.alert("Errore", "Impossibile modificare il task. Riprova.");
+      Alert.alert(t('calendar.errors.title'), t('calendar.errors.editFailed'));
     }
   };
 
@@ -362,8 +367,7 @@ const CalendarView: React.FC = () => {
     categoryNameParam?: string
   ) => {
     const priorityString = priority === 1 ? "Bassa" : priority === 2 ? "Media" : "Alta";
-    // Costruisci nuovo task con data di inizio dal calendario
-    const category = categoryNameParam || "Calendario";
+    const category = categoryNameParam || t('calendar.defaultCategory');
     const newTask = {
       id: Date.now(),
       title: title.trim(),
@@ -389,8 +393,8 @@ const CalendarView: React.FC = () => {
       console.error("Errore aggiunta task nel calendario:", error);
       addTaskToList(newTask, category);
       Alert.alert(
-        "Attenzione",
-        "Task aggiunto localmente ma errore nel salvataggio sul server."
+        t('calendar.errors.warningTitle'),
+        t('calendar.errors.localSaveWarning')
       );
       setShowAddTask(false);
     }
@@ -412,14 +416,14 @@ const CalendarView: React.FC = () => {
         <View style={styles.selectedDateHeader}>
           <View style={styles.titleContainer}>
             <AppText variant="subtitle" weight="300">
-              Impegni del {dayjs(selectedDate).format('DD MMMM YYYY')}
+              {t('calendar.commitmentsOf')} {dayjs(selectedDate).format('DD')} {t(`calendar.months.${MONTH_KEYS[dayjs(selectedDate).month()]}`)} {dayjs(selectedDate).year()}
             </AppText>
           </View>
           <AddTaskButton onPress={handleAddTask} screenWidth={screenWidth} isInline={true} />
         </View>
 
         {/* Componente di caricamento */}
-        <LoadingState variant="dots" label="Caricamento impegni..." />
+        <LoadingState variant="dots" label={t('calendar.loadingEvents')} />
         
         {/* Componente AddTask */}
         <AddTask 
@@ -427,7 +431,7 @@ const CalendarView: React.FC = () => {
           onClose={handleCloseAddTask}
           onSave={handleSaveTask}
           allowCategorySelection={true}
-          categoryName="Calendario"
+          categoryName={t('calendar.defaultCategory')}
           initialDate={selectedDate}
         />
       </View>
@@ -449,13 +453,13 @@ const CalendarView: React.FC = () => {
       <View style={styles.selectedDateHeader}>
         <View style={styles.titleContainer}>
           <AppText variant="subtitle" weight="300">
-            Impegni del {dayjs(selectedDate).format('DD MMMM YYYY')}
+            {t('calendar.commitmentsOf')} {dayjs(selectedDate).format('DD')} {t(`calendar.months.${MONTH_KEYS[dayjs(selectedDate).month()]}`)} {dayjs(selectedDate).year()}
           </AppText>
           {syncStatus && (syncStatus.isSyncing || syncStatus.pendingChanges > 0) && (
             <View style={styles.syncIndicator}>
               {syncStatus.isSyncing ? (
                 <StatusChip
-                  label="Sync..."
+                  label={t('calendar.syncing')}
                   tone="neutral"
                   leftIcon={<ActivityIndicator size="small" color="#666666" />}
                 />
@@ -487,7 +491,7 @@ const CalendarView: React.FC = () => {
         ) : (
           <EmptyState
             icon={<Ionicons name="calendar-outline" size={48} color="#cccccc" />}
-            title="Nessun impegno per questa data"
+            title={t('calendar.noEventsForDate')}
             style={styles.noTasksContainer}
           />
         )}
@@ -499,7 +503,7 @@ const CalendarView: React.FC = () => {
         onClose={handleCloseAddTask}
         onSave={handleSaveTask}
         allowCategorySelection={true}
-        categoryName="Calendario"
+        categoryName={t('calendar.defaultCategory')}
         initialDate={selectedDate}
       />
     </View>
