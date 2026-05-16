@@ -571,6 +571,19 @@
       "friday": "Ven",
       "saturday": "Sab",
       "sunday": "Dom"
+    },
+    "commitmentsOf": "Impegni del",
+    "loadingEvents": "Caricamento impegni...",
+    "noEventsForDate": "Nessun impegno per questa data",
+    "syncing": "Sincronizzazione...",
+    "defaultCategory": "Calendario",
+    "errors": {
+      "title": "Errore",
+      "completeFailed": "Impossibile completare il task. Riprova.",
+      "reopenFailed": "Impossibile riaprire il task. Riprova.",
+      "editFailed": "Impossibile modificare il task. Riprova.",
+      "warningTitle": "Attenzione",
+      "localSaveWarning": "Task aggiunto localmente ma errore nel salvataggio sul server."
     }
   },
   "calendar20": {
@@ -597,7 +610,13 @@
     "drawer": {
       "views": "Viste",
       "categories": "Categorie",
-      "showAll": "Mostra tutto"
+      "showAll": "Mostra tutto",
+      "settings": "Impostazioni"
+    },
+    "loadMore": "Carica altri",
+    "duration": {
+      "hour": "1 ora",
+      "hours": "{{count}} ore"
     }
   },
   "statistics": {
