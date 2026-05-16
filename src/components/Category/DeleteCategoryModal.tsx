@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 
 export interface DeleteCategoryModalProps {
   visible: boolean;
@@ -26,6 +27,7 @@ const DeleteCategoryModal: React.FC<DeleteCategoryModalProps> = ({
   onCancel,
   onConfirm,
 }) => {
+  const { t } = useTranslation();
   return (
     <Modal
       transparent={true}
@@ -36,14 +38,14 @@ const DeleteCategoryModal: React.FC<DeleteCategoryModalProps> = ({
       <View style={styles.overlay}>
         <View style={styles.container}>
 
-          <Text style={styles.title}>Elimina categoria</Text>
+          <Text style={styles.title}>{t("categories.deleteModal.title")}</Text>
 
           <Text style={styles.message}>
-            Sei sicuro di voler eliminare{" "}
+            {t("categories.deleteModal.confirmMessage")}{" "}
             <Text style={styles.categoryName}>"{categoryName}"</Text>?
           </Text>
           <Text style={styles.subMessage}>
-            Tutti i task al suo interno verranno eliminati.
+            {t("categories.deleteModal.warningMessage")}
           </Text>
 
           {/* Sezione Google Calendar — visibile solo se connesso */}
@@ -51,10 +53,10 @@ const DeleteCategoryModal: React.FC<DeleteCategoryModalProps> = ({
             <View style={styles.calendarSection}>
               <View style={styles.calendarSectionHeader}>
                 <Ionicons name="calendar-outline" size={16} color="#000000" />
-                <Text style={styles.calendarTitle}>Google Calendar</Text>
+                <Text style={styles.calendarTitle}>{t("categories.deleteModal.calendar")}</Text>
               </View>
               <Text style={styles.calendarDescription}>
-                Vuoi eliminare i task di questa categoria anche da Google Calendar?
+                {t("categories.deleteModal.calendarQuestion")}
               </Text>
 
               <View style={styles.calendarButtons}>
@@ -68,7 +70,7 @@ const DeleteCategoryModal: React.FC<DeleteCategoryModalProps> = ({
                     <ActivityIndicator size="small" color="#ffffff" />
                   ) : (
                     <Text style={styles.calendarBtnYesText}>
-                      Sì, elimina ovunque
+                      {t("categories.deleteModal.yesDeleteEverywhere")}
                     </Text>
                   )}
                 </TouchableOpacity>
@@ -80,7 +82,7 @@ const DeleteCategoryModal: React.FC<DeleteCategoryModalProps> = ({
                   activeOpacity={0.7}
                 >
                   <Text style={styles.calendarBtnNoText}>
-                    No, solo dall'app
+                    {t("categories.deleteModal.noDeleteOnlyApp")}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -97,7 +99,7 @@ const DeleteCategoryModal: React.FC<DeleteCategoryModalProps> = ({
                 activeOpacity={0.7}
               >
                 <Text style={[styles.buttonText, styles.cancelButtonText]}>
-                  Annulla
+                  {t("categories.deleteModal.cancel")}
                 </Text>
               </TouchableOpacity>
 
@@ -111,7 +113,7 @@ const DeleteCategoryModal: React.FC<DeleteCategoryModalProps> = ({
                   <ActivityIndicator size="small" color="#ffffff" />
                 ) : (
                   <Text style={[styles.buttonText, styles.deleteButtonText]}>
-                    Elimina
+                    {t("categories.deleteModal.delete")}
                   </Text>
                 )}
               </TouchableOpacity>
@@ -126,7 +128,7 @@ const DeleteCategoryModal: React.FC<DeleteCategoryModalProps> = ({
               disabled={isDeleting}
               activeOpacity={0.7}
             >
-              <Text style={styles.cancelLinkText}>Annulla</Text>
+              <Text style={styles.cancelLinkText}>{t("categories.deleteModal.cancel")}</Text>
             </TouchableOpacity>
           )}
         </View>

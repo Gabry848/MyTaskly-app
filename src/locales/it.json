@@ -508,6 +508,135 @@
       "deleted": "Categoria eliminata con successo",
       "error": "Errore",
       "emptyTitle": "Il nome della categoria non può essere vuoto"
+    },
+    "addModal": {
+      "title": "Aggiungi Categoria",
+      "name": "Nome Categoria",
+      "description": "Descrizione",
+      "namePlaceholder": "Inserisci il nome della categoria",
+      "descriptionPlaceholder": "Inserisci la descrizione",
+      "save": "Salva",
+      "saving": "Salvataggio...",
+      "cancel": "Annulla",
+      "limitReached": "Limite categorie raggiunto",
+      "limitReachedMessage": "Hai raggiunto il numero massimo di categorie per il tuo piano. Fai l'upgrade per aggiungerne altre.",
+      "addError": "Non è stato possibile aggiungere la categoria"
+    },
+    "editModal": {
+      "title": "Modifica Categoria",
+      "titleLabel": "Titolo",
+      "titlePlaceholder": "Inserisci il titolo della categoria",
+      "descriptionLabel": "Descrizione",
+      "descriptionPlaceholder": "Inserisci una descrizione (opzionale)",
+      "save": "Salva",
+      "saving": "Salvataggio...",
+      "cancel": "Annulla"
+    },
+    "deleteModal": {
+      "title": "Elimina categoria",
+      "confirmMessage": "Sei sicuro di voler eliminare",
+      "warningMessage": "Tutti i task al suo interno verranno eliminati.",
+      "calendar": "Google Calendar",
+      "calendarQuestion": "Vuoi eliminare i task di questa categoria anche da Google Calendar?",
+      "yesDeleteEverywhere": "Sì, elimina ovunque",
+      "noDeleteOnlyApp": "No, solo dall'app",
+      "cancel": "Annulla",
+      "delete": "Elimina"
+    },
+    "permissions": {
+      "denied": "Permesso negato",
+      "ownerOnlyDelete": "Solo il proprietario può eliminare questa categoria.",
+      "readOnly": "Hai solo permessi di lettura per questa categoria. Non puoi modificarla.",
+      "readOnlyAdd": "Hai solo permessi di lettura per questa categoria. Non puoi aggiungere task."
+    },
+    "delete": {
+      "error": "Errore",
+      "failed": "Impossibile eliminare la categoria. Riprova più tardi."
+    },
+    "update": {
+      "error": "Errore",
+      "failed": "Impossibile aggiornare la categoria. Riprova più tardi.",
+      "emptyTitle": "Il titolo della categoria non può essere vuoto"
+    },
+    "shared": {
+      "title": "Categoria condivisa",
+      "info": "Questa categoria è condivisa da un altro utente. Il tuo permesso: {{permission}}",
+      "permissions": {
+        "READ_ONLY": "Sola lettura",
+        "READ_WRITE": "Lettura/Scrittura"
+      },
+      "idError": "Errore",
+      "noId": "ID categoria non disponibile",
+      "success": "Successo"
+    },
+    "task": {
+      "error": "Errore",
+      "addFailed": "Impossibile aggiungere il task. Riprova più tardi.",
+      "status": "In sospeso"
+    },
+    "taskCount": "{{count}} cose da fare",
+    "share": {
+      "title": "Condividi",
+      "userEmail": "Email utente:",
+      "emailPlaceholder": "user@example.com",
+      "permissions": "Permessi:",
+      "readOnly": "Sola lettura (READ_ONLY)",
+      "readWrite": "Lettura e scrittura (READ_WRITE)",
+      "shareButton": "Condividi",
+      "cancel": "Annulla",
+      "errors": {
+        "validation": "Errore di validazione",
+        "alreadyShared": "Categoria già condivisa con questo utente",
+        "userNotFound": "Utente non trovato. Verifica l'email.",
+        "shareWithYourself": "Non puoi condividere con te stesso!",
+        "noPermission": "Non hai i permessi per condividere questa categoria",
+        "categoryNotFound": "Categoria non trovata",
+        "sessionExpired": "Sessione scaduta. Effettua nuovamente il login.",
+        "unknown": "Errore sconosciuto. Riprova più tardi."
+      },
+      "success": "Categoria condivisa con {{user}}"
+    },
+    "manageAccess": {
+      "title": "Utenti con accesso",
+      "loading": "Caricamento...",
+      "noUsers": "Nessun utente trovato",
+      "addPerson": "+ Aggiungi persona",
+      "owner": "Proprietario",
+      "readOnly": "Sola lettura",
+      "readWrite": "Lettura e scrittura",
+      "you": "(Tu)",
+      "actions": "Azioni",
+      "whatToDo": "Cosa vuoi fare con {{name}}?",
+      "changePermission": "Cambia Permesso",
+      "remove": "Rimuovi",
+      "cancel": "Annulla",
+      "confirm": "Conferma",
+      "changePermissionTitle": "Cambia Permesso",
+      "changePermissionMessage": "Vuoi cambiare il permesso di {{name}} a {{permission}}?",
+      "removeAccessTitle": "Rimuovi Accesso",
+      "removeAccessMessage": "Vuoi rimuovere l'accesso di {{name}}?",
+      "errors": {
+        "loadUsers": "Impossibile caricare gli utenti con accesso",
+        "onlyOwnerCanModify": "Solo il proprietario può modificare i permessi",
+        "onlyOwnerCanRemove": "Solo il proprietario può rimuovere utenti",
+        "shareNotFound": "Condivisione non trovata",
+        "updateFailed": "Impossibile aggiornare il permesso",
+        "removeFailed": "Impossibile rimuovere l'utente"
+      },
+      "success": {
+        "permissionUpdated": "Permesso aggiornato a {{permission}}",
+        "accessRemoved": "Accesso rimosso per {{name}}"
+      }
+    },
+    "menu": {
+      "edit": "Modifica",
+      "share": "Condividi",
+      "shareInfo": "Info Condivisione",
+      "manageAccess": "Gestisci Accesso",
+      "delete": "Elimina",
+      "deleting": "Eliminazione...",
+      "leave": "Esci",
+      "readOnly": "Solo lettura"
     }
   },
   "tasks": {
@@ -528,12 +657,68 @@
       "medium": "Media",
       "high": "Alta"
     },
+    "status": {
+      "pending": "In sospeso",
+      "inProgress": "In corso",
+      "completed": "Completato"
+    },
+    "form": {
+      "durationPresets": {
+        "min15": "15 min",
+        "min30": "30 min",
+        "hour1": "1 ora",
+        "hour2": "2 ore",
+        "hour4": "4 ore"
+      },
+      "errors": {
+        "titleRequired": "Il titolo è obbligatorio",
+        "categoryRequired": "La categoria è obbligatoria",
+        "saveFailed": "Impossibile salvare il task"
+      },
+      "errorTitle": "Errore",
+      "categoryLabel": "Categoria",
+      "categoryActionTitle": "Seleziona categoria",
+      "categoryActionMessage": "Scegli una categoria per il task",
+      "categoryPlaceholder": "Seleziona categoria",
+      "titleLabel": "Titolo",
+      "titlePlaceholder": "Inserisci il titolo",
+      "titleEditPlaceholder": "Titolo del task",
+      "descriptionLabel": "Descrizione",
+      "descriptionPlaceholder": "Inserisci la descrizione",
+      "descriptionEditPlaceholder": "Descrizione del task",
+      "deadlineLabel": "Scadenza",
+      "deadlineSimple": "Scadenza semplice",
+      "deadlineRecurring": "Ripetitività",
+      "datePlaceholder": "Seleziona data",
+      "timePlaceholder": "Ora",
+      "priorityLabel": "Priorità",
+      "statusLabel": "Stato",
+      "durationLabel": "Durata stimata (opzionale)",
+      "customDurationPlaceholder": "Personalizzata (minuti)",
+      "saveChanges": "Salva Modifiche"
+    },
+    "readOnly": {
+      "title": "Categoria in sola lettura",
+      "message": "Non puoi modificare questo task perché la categoria è condivisa con te in sola lettura.",
+      "subMessage": "Puoi solo completarlo o visualizzarne i dettagli.",
+      "confirmButton": "Ho capito"
+    },
+    "accessibility": {
+      "addTaskLabel": "Aggiungi nuova attività",
+      "addTaskHint": "Aggiungi una nuova attività",
+      "addTaskHintCategory": "Aggiungi una nuova attività alla categoria {{category}}"
+    },
     "messages": {
       "created": "Task creato con successo",
       "updated": "Task aggiornato con successo",
       "deleted": "Task eliminato con successo",
       "completed": "Task completato",
       "reopened": "Task riaperto"
+    },
+    "errors": {
+      "title": "Errore",
+      "updateStatusFailed": "Impossibile aggiornare lo stato del task. Riprova.",
+      "reopenFailed": "Impossibile riaprire il task. Riprova."
     }
   },
   "notes": {
@@ -541,6 +726,10 @@
     "newNote": "Nuova Nota",
     "create": "Crea",
     "cancel": "Annulla",
+    "colorPicker": {
+      "title": "Scegli un colore",
+      "close": "Chiudi"
+    },
     "messages": {
       "created": "Nota creata con successo",
       "deleted": "Nota eliminata con successo"
@@ -1063,5 +1252,113 @@
     "offlineWarning": "Offline. Prezzi non disponibili.",
     "offlineError": "Servizio offline o piano non disponibile.",
     "getPlan": "Ottieni {{plan}}"
+  },
+  "globalTaskSearch": {
+    "title": "Ricerca Task",
+    "searchAllTasks": "Cerca tra tutti i task",
+    "searchPlaceholder": "Cerca per titolo, descrizione, categoria...",
+    "loadingTasks": "Caricamento task...",
+    "loadingInProgress": "Caricamento in corso...",
+    "noTasksFound": "Nessun task trovato per \"{{query}}\"",
+    "noTasksAvailable": "Nessun task disponibile",
+    "startTyping": "Inizia a digitare per cercare tra i tuoi task",
+    "tasksCount": "{{filtered}} di {{total}} task",
+    "totalTasks": "{{total}} task totali",
+    "error": "Errore",
+    "loadFailed": "Impossibile caricare i task per la ricerca"
+  },
+  "taskCard": {
+    "noDeadline": "Nessuna scadenza",
+    "today": "Oggi",
+    "tomorrow": "Domani",
+    "overdue": "Scaduto",
+    "recurring": {
+      "daily": "Ogni giorno",
+      "daily_plural": "Ogni {{count}} giorni",
+      "weekly": "Ogni settimana",
+      "weekly_plural": "Ogni {{count}} settimane",
+      "weekly_days": "Ogni {{days}}",
+      "weekly_days_plural": "Ogni {{count}} settimane: {{days}}",
+      "monthly": "Ogni {{day}}° giorno del mese",
+      "monthly_plural": "Ogni {{count}} mesi il {{day}}°",
+      "label": "Ricorrente"
+    },
+    "daysOfWeek": {
+      "monday": "Lun",
+      "tuesday": "Mar",
+      "wednesday": "Mer",
+      "thursday": "Gio",
+      "friday": "Ven",
+      "saturday": "Sab",
+      "sunday": "Dom"
+    },
+    "duration": {
+      "minutes": "{{count}} min",
+      "hour": "1 ora",
+      "hours": "{{count}} ore",
+      "hourMinutes": "{{hours}}h {{minutes}}min"
+    },
+    "completion": {
+      "single": "Completato {{count}} volta",
+      "plural": "Completato {{count}} volte"
+    },
+    "priority": {
+      "high": "Alta",
+      "medium": "Media",
+      "low": "Bassa"
+    }
+  },
+  "taskActionMenu": {
+    "reopen": "Riapri impegno",
+    "edit": "Modifica",
+    "share": "Condividi",
+    "delete": "Elimina",
+    "deleting": "Eliminazione..."
+  },
+  "itemDetailModal": {
+    "success": "Successo",
+    "error": "Errore",
+    "completeTask": "Task completato",
+    "reopenTask": "Task riaperto",
+    "updateTaskError": "Impossibile aggiornare il task",
+    "deleteConfirm": "Conferma eliminazione",
+    "deleteTaskConfirm": "Sei sicuro di voler eliminare questo task?",
+    "deleteCategoryConfirm": "Sei sicuro di voler eliminare questa categoria?",
+    "deleteNoteConfirm": "Sei sicuro di voler eliminare questa nota?",
+    "deleteError": "Impossibile eliminare",
+    "itemDeleted": "Elemento eliminato"
+  },
+  "taskSharing": {
+    "notImplemented": "Funzionalità di condivisione non ancora implementata",
+    "notEnabled": "La condivisione dei task non è abilitata"
+  },
+  "taskDelete": {
+    "confirmTitle": "Elimina task",
+    "confirmMessage": "Sei sicuro di voler eliminare \"{{title}}\"?",
+    "error": "Impossibile eliminare il task. Riprova.",
+    "deleteAllCompletedError": "Impossibile eliminare tutti i task completati. Riprova."
+  },
+  "completedTasks": {
+    "buttonLabel_one": "completato",
+    "buttonLabel_other": "completati",
+    "count_one": "{{count}} task completato",
+    "count_other": "{{count}} task completati",
+    "chartTitle": "Ultimi 7 giorni",
+    "days": {
+      "sunday": "Dom",
+      "monday": "Lun",
+      "tuesday": "Mar",
+      "wednesday": "Mer",
+      "thursday": "Gio",
+      "friday": "Ven",
+      "saturday": "Sab",
+      "today": "Oggi"
+    },
+    "deleteAll": {
+      "label": "Elimina tutti",
+      "title": "Elimina tutti i task completati",
+      "message": "Sei sicuro? Tutti i task completati verranno eliminati definitivamente."
+    },
+    "comingSoon": "Prossimamente"
   }
 }

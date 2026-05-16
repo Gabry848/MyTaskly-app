@@ -14,6 +14,7 @@ import SearchBar from "../UI/SearchBar";
 import { getAllTasks, Task as TaskType } from "../../services/taskService";
 import Task from "./Task";
 import eventEmitter, { EVENTS } from '../../utils/eventEmitter';
+import { useTranslation } from "react-i18next";
 
 export interface GlobalTaskSearchProps {
   visible: boolean;
@@ -24,6 +25,7 @@ const GlobalTaskSearch: React.FC<GlobalTaskSearchProps> = ({
   visible,
   onClose,
 }) => {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
   const [allTasks, setAllTasks] = useState<TaskType[]>([]);
   const [loading, setLoading] = useState(false);
@@ -102,7 +104,7 @@ const GlobalTaskSearch: React.FC<GlobalTaskSearchProps> = ({
       setHasLoaded(true);
     } catch (error) {
       console.error("Errore nel caricamento dei task:", error);
-      Alert.alert("Errore", "Impossibile caricare i task per la ricerca");
+      Alert.alert(t("globalTaskSearch.error"), t("globalTaskSearch.loadFailed"));
     } finally {
       setLoading(false);
     }
@@ -163,7 +165,7 @@ const GlobalTaskSearch: React.FC<GlobalTaskSearchProps> = ({
       return (
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color="#000000" />
-          <Text style={styles.loadingText}>Caricamento task...</Text>
+          <Text style={styles.loadingText}>{t("globalTaskSearch.loadingTasks")}</Text>
         </View>
       );
     }
@@ -172,7 +174,7 @@ const GlobalTaskSearch: React.FC<GlobalTaskSearchProps> = ({
       return (
         <View style={styles.centerContainer}>
           <MaterialIcons name="search" size={48} color="#cccccc" />
-          <Text style={styles.emptyText}>Caricamento in corso...</Text>
+          <Text style={styles.emptyText}>{t("globalTaskSearch.loadingInProgress")}</Text>
         </View>
       );
     }
@@ -182,7 +184,7 @@ const GlobalTaskSearch: React.FC<GlobalTaskSearchProps> = ({
         <View style={styles.centerContainer}>
           <MaterialIcons name="search-off" size={48} color="#cccccc" />
           <Text style={styles.emptyText}>
-            Nessun task trovato per &quot;{searchQuery}&quot;
+            {t("globalTaskSearch.noTasksFound", { query: searchQuery })}
           </Text>
         </View>
       );
@@ -192,7 +194,7 @@ const GlobalTaskSearch: React.FC<GlobalTaskSearchProps> = ({
       return (
         <View style={styles.centerContainer}>
           <MaterialIcons name="assignment" size={48} color="#cccccc" />
-          <Text style={styles.emptyText}>Nessun task disponibile</Text>
+          <Text style={styles.emptyText}>{t("globalTaskSearch.noTasksAvailable")}</Text>
         </View>
       );
     }
@@ -201,7 +203,7 @@ const GlobalTaskSearch: React.FC<GlobalTaskSearchProps> = ({
       <View style={styles.centerContainer}>
         <MaterialIcons name="search" size={48} color="#cccccc" />
         <Text style={styles.emptyText}>
-          Inizia a digitare per cercare tra i tuoi task
+          {t("globalTaskSearch.startTyping")}
         </Text>
       </View>
     );
@@ -214,37 +216,27 @@ const GlobalTaskSearch: React.FC<GlobalTaskSearchProps> = ({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <View style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerTop}>
-            <Text style={styles.title}>Ricerca Task</Text>
-            <View style={styles.headerActions}>
-              <TouchableOpacity onPress={handleRefresh} style={styles.actionButton}>
-                <MaterialIcons name="refresh" size={24} color="#666666" />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={onClose} style={styles.actionButton}>
-                <MaterialIcons name="close" size={24} color="#666666" />
-              </TouchableOpacity>
+        <View style={styles.container}>
+          {/* Header */}
+          <View style={styles.header}>
+            <View style={styles.dragHandle} />
+            <View style={styles.headerTop}>
+              <Text style={styles.title}>{t("globalTaskSearch.title")}</Text>
+              <View style={styles.headerActions}>
+                <TouchableOpacity onPress={handleRefresh} style={styles.actionButton}>
+                  <MaterialIcons name="refresh" size={24} color="#000000" />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={onClose} style={styles.actionButton}>
+                  <MaterialIcons name="close" size={24} color="#000000" />
+                </TouchableOpacity>
+              </View>
             </View>
+
+            <SearchBar
+              onSearch={setSearchQuery}
+              placeholder={t("globalTaskSearch.searchPlaceholder")}
+            />
           </View>
-          
-          <SearchBar
-            onSearch={setSearchQuery}
-            placeholder="Cerca per titolo, descrizione, categoria..."
-          />
-          
-          {hasLoaded && (
-            <View style={styles.statsContainer}>
-              <Text style={styles.statsText}>
-                {searchQuery.trim() 
-                  ? `${filteredTasks.length} di ${allTasks.length} task`
-                  : `${allTasks.length} task totali`
-                }
-              </Text>
-            </View>
-          )}
-        </View>
 
         {/* Content */}
         <View style={styles.content}>

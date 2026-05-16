@@ -39,7 +39,9 @@ const HOURS = Array.from({ length: 24 }, (_, i) => ({
 }));
 
 // Costanti per giorni della settimana (valori 0-6)
-const WEEK_DAYS = [0, 1, 2, 3, 4, 5, 6];
+const WEEK_DAYS = [1, 2, 3, 4, 5, 6, 0];
+const toUiWeekday = (apiDay: number) => (apiDay + 1) % 7;
+const toApiWeekday = (uiDay: number) => (uiDay + 6) % 7;
 
 export default function NotificationSettingsScreen() {
   const { t } = useTranslation();
@@ -204,14 +206,17 @@ export default function NotificationSettingsScreen() {
   };
 
   const handleWeeklySummaryDay = async (day: number) => {
-    if (!weeklySummarySettings || weeklySummarySettings.day === day) return;
+    if (!weeklySummarySettings) return;
+
+    const apiDay = toApiWeekday(day);
+    if (weeklySummarySettings.day === apiDay) return;
 
     const previous = weeklySummarySettings.day;
-    setWeeklySummarySettings((prev) => prev ? { ...prev, day } : prev);
+    setWeeklySummarySettings((prev) => prev ? { ...prev, day: apiDay } : prev);
     setSavingField('weekly_day');
 
     try {
-      const updated = await updateWeeklySummarySettings({ day });
+      const updated = await updateWeeklySummarySettings({ day: apiDay });
       setWeeklySummarySettings(updated);
     } catch (error: any) {
       setWeeklySummarySettings((prev) => prev ? { ...prev, day: previous } : prev);
@@ -256,6 +261,7 @@ export default function NotificationSettingsScreen() {
   if (!settings) return null;
 
   const timezoneIsSynced = settings.timezone === deviceTimezone;
+  const selectedUiWeeklyDay = weeklySummarySettings ? toUiWeekday(weeklySummarySettings.day) : null;
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
@@ -469,7 +475,7 @@ export default function NotificationSettingsScreen() {
 
             <View style={styles.pillsRow}>
               {WEEK_DAYS.map((day) => {
-                const isSelected = weeklySummarySettings.day === day;
+                const isSelected = selectedUiWeeklyDay === day;
                 const isSaving = savingField === 'weekly_day';
                 return (
                   <TouchableOpacity

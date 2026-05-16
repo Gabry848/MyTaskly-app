@@ -120,11 +120,11 @@ const AddTask: React.FC<AddTaskProps> = ({
   const [customDuration, setCustomDuration] = useState<string>("");
 
   const DURATION_PRESETS = [
-    { label: "15 min", value: 15 },
-    { label: "30 min", value: 30 },
-    { label: "1 ora", value: 60 },
-    { label: "2 ore", value: 120 },
-    { label: "4 ore", value: 240 },
+    { label: t("tasks.form.durationPresets.min15"), value: 15 },
+    { label: t("tasks.form.durationPresets.min30"), value: 30 },
+    { label: t("tasks.form.durationPresets.hour1"), value: 60 },
+    { label: t("tasks.form.durationPresets.hour2"), value: 120 },
+    { label: t("tasks.form.durationPresets.hour4"), value: 240 },
   ];
 
   // Se initialDate è fornito, imposta la data iniziale all'apertura
@@ -190,12 +190,12 @@ const AddTask: React.FC<AddTaskProps> = ({
     let hasError = false;
 
     if (!title.trim()) {
-      setTitleError("Il titolo è obbligatorio");
+      setTitleError(t("tasks.form.errors.titleRequired"));
       hasError = true;
     }
 
     if (allowCategorySelection && !localCategory.trim()) {
-      setCategoryError("La categoria è obbligatoria");
+      setCategoryError(t("tasks.form.errors.categoryRequired"));
       hasError = true;
     }
 
@@ -269,7 +269,7 @@ const AddTask: React.FC<AddTaskProps> = ({
       }
     } catch (error) {
       console.error("Error saving task:", error);
-      Alert.alert("Error", "Failed to save task");
+      Alert.alert(t("tasks.form.errorTitle"), t("tasks.form.errors.saveFailed"));
     } finally {
       resetForm();
       handleCancel();
@@ -326,7 +326,7 @@ const AddTask: React.FC<AddTaskProps> = ({
       <View style={styles.modalOverlay}>
         <View style={styles.formContainer}>
           <View style={styles.formHeader}>
-            <Text style={styles.formTitle}>Aggiungi Task</Text>
+            <Text style={styles.formTitle}>{t("tasks.addTask")}</Text>
             <TouchableOpacity onPress={handleCancel}>
               <Ionicons name="close" size={24} color="#666666" />
             </TouchableOpacity>
@@ -335,7 +335,7 @@ const AddTask: React.FC<AddTaskProps> = ({
           <ScrollView style={styles.formContent}>
             {allowCategorySelection && (
               <>
-                <Text style={styles.inputLabel}>Categoria *</Text>
+                <Text style={styles.inputLabel}>{t("tasks.form.categoryLabel")} *</Text>
                 <TouchableOpacity
                   style={[
                     styles.categoryButton,
@@ -344,7 +344,7 @@ const AddTask: React.FC<AddTaskProps> = ({
                   onPress={() => {
                     const options = [
                       ...categoriesOptions.map(cat => cat.label),
-                      'Annulla'
+                      t("common.buttons.cancel")
                     ];
                     const cancelButtonIndex = options.length - 1;
 
@@ -352,8 +352,8 @@ const AddTask: React.FC<AddTaskProps> = ({
                       {
                         options,
                         cancelButtonIndex,
-                        title: 'Seleziona categoria',
-                        message: 'Scegli una categoria per il task',
+                        title: t("tasks.form.categoryActionTitle"),
+                        message: t("tasks.form.categoryActionMessage"),
                       },
                       (buttonIndex) => {
                         if (buttonIndex !== cancelButtonIndex) {
@@ -370,7 +370,7 @@ const AddTask: React.FC<AddTaskProps> = ({
                       !localCategory && styles.categoryPlaceholder
                     ]}
                   >
-                    {localCategory || "Seleziona categoria"}
+                    {localCategory || t("tasks.form.categoryPlaceholder")}
                   </Text>
                   <Ionicons name="chevron-down" size={20} color="#666666" />
                 </TouchableOpacity>
@@ -380,10 +380,10 @@ const AddTask: React.FC<AddTaskProps> = ({
               </>
             )}
 
-            <Text style={styles.inputLabel}>Titolo *</Text>
+            <Text style={styles.inputLabel}>{t("tasks.form.titleLabel")} *</Text>
             <TextInput
               style={[styles.input, titleError ? styles.inputError : null]}
-              placeholder="Inserisci il titolo"
+              placeholder={t("tasks.form.titlePlaceholder")}
               value={title}
               onChangeText={(text) => {
                 setTitle(text);
@@ -394,10 +394,10 @@ const AddTask: React.FC<AddTaskProps> = ({
               <Text style={styles.errorText}>{titleError}</Text>
             ) : null}
 
-            <Text style={styles.inputLabel}>Descrizione</Text>
+            <Text style={styles.inputLabel}>{t("tasks.form.descriptionLabel")}</Text>
             <TextInput
               style={[styles.input, styles.textArea]}
-              placeholder="Inserisci la descrizione"
+              placeholder={t("tasks.form.descriptionPlaceholder")}
               multiline
               numberOfLines={4}
               textAlignVertical="top"
@@ -406,7 +406,7 @@ const AddTask: React.FC<AddTaskProps> = ({
             />
 
             {/* Segmented control: Scadenza semplice / Ripetitività */}
-            <Text style={styles.inputLabel}>Scadenza</Text>
+            <Text style={styles.inputLabel}>{t("tasks.form.deadlineLabel")}</Text>
             <View style={styles.deadlineTypeContainer}>
               <TouchableOpacity
                 style={[
@@ -431,7 +431,7 @@ const AddTask: React.FC<AddTaskProps> = ({
                   styles.deadlineTypeText,
                   deadlineType === 'simple' && styles.deadlineTypeTextActive,
                 ]}>
-                  Scadenza semplice
+                  {t("tasks.form.deadlineSimple")}
                 </Text>
               </TouchableOpacity>
 
@@ -458,7 +458,7 @@ const AddTask: React.FC<AddTaskProps> = ({
                   styles.deadlineTypeText,
                   deadlineType === 'recurring' && styles.deadlineTypeTextActive,
                 ]}>
-                  Ripetitività
+                  {t("tasks.form.deadlineRecurring")}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -474,7 +474,7 @@ const AddTask: React.FC<AddTaskProps> = ({
                     <Text style={styles.datePickerText}>
                       {selectedDateTime
                         ? selectedDateTime.toLocaleDateString("it-IT")
-                        : "Seleziona data"}
+                        : t("tasks.form.datePlaceholder")}
                     </Text>
                     <Ionicons name="calendar-outline" size={20} color="#666" />
                   </TouchableOpacity>
@@ -495,7 +495,7 @@ const AddTask: React.FC<AddTaskProps> = ({
                             hour: "2-digit",
                             minute: "2-digit",
                           })
-                        : "Ora"}
+                        : t("tasks.form.timePlaceholder")}
                     </Text>
                     <Ionicons
                       name="time-outline"
@@ -534,7 +534,7 @@ const AddTask: React.FC<AddTaskProps> = ({
               </View>
             )}
 
-            <Text style={[styles.inputLabel, { marginTop: 20 }]}>Priorità</Text>
+            <Text style={[styles.inputLabel, { marginTop: 20 }]}>{t("tasks.form.priorityLabel")}</Text>
             <View style={styles.priorityContainer}>
               <TouchableOpacity
                 style={[
@@ -550,7 +550,7 @@ const AddTask: React.FC<AddTaskProps> = ({
                     priority === 1 && styles.priorityButtonTextActive,
                   ]}
                 >
-                  Bassa
+                  {t("tasks.priority.low")}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -567,7 +567,7 @@ const AddTask: React.FC<AddTaskProps> = ({
                     priority === 2 && styles.priorityButtonTextActive,
                   ]}
                 >
-                  Media
+                  {t("tasks.priority.medium")}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -584,13 +584,13 @@ const AddTask: React.FC<AddTaskProps> = ({
                     priority === 3 && styles.priorityButtonTextActive,
                   ]}
                 >
-                  Alta
+                  {t("tasks.priority.high")}
                 </Text>
               </TouchableOpacity>
             </View>
 
             {/* Duration selector */}
-            <Text style={styles.inputLabel}>Durata stimata (opzionale)</Text>
+            <Text style={styles.inputLabel}>{t("tasks.form.durationLabel")}</Text>
             <View style={styles.durationContainer}>
               {DURATION_PRESETS.map((preset) => (
                 <TouchableOpacity
@@ -623,7 +623,7 @@ const AddTask: React.FC<AddTaskProps> = ({
             <View style={styles.customDurationRow}>
               <TextInput
                 style={styles.customDurationInput}
-                placeholder="Personalizzata (minuti)"
+                placeholder={t("tasks.form.customDurationPlaceholder")}
                 keyboardType="numeric"
                 value={customDuration}
                 onChangeText={(text) => {
@@ -653,7 +653,7 @@ const AddTask: React.FC<AddTaskProps> = ({
 
           <View style={styles.formFooter}>
             <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-              <Text style={styles.saveButtonText}>Salva</Text>
+              <Text style={styles.saveButtonText}>{t("common.buttons.save")}</Text>
             </TouchableOpacity>
           </View>
           <DateTimePickerModal

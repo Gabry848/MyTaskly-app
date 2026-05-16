@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, ScrollView, StyleSheet, Alert, ActivityIndicator, Dimensions } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
 import { Task as TaskType, getAllTasks, addTask, deleteTask, updateTask, completeTask, disCompleteTask } from '../../services/taskService';
 import { TaskCacheService } from '../../services/TaskCacheService';
@@ -21,6 +22,7 @@ const MONTH_KEYS = [
 ];
 
 const CalendarView: React.FC = () => {
+  const { t } = useTranslation();
   const [selectedDate, setSelectedDate] = useState<string>(dayjs().format('YYYY-MM-DD'));
   const [tasks, setTasks] = useState<TaskType[]>([]);
   const [showAddTask, setShowAddTask] = useState(false);
@@ -344,7 +346,7 @@ const CalendarView: React.FC = () => {
       ));
     } catch (error) {
       console.error("Errore nell'eliminazione del task:", error);
-      Alert.alert("Errore", "Impossibile eliminare il task. Riprova.");
+      Alert.alert(t('itemDetailModal.error'), t('taskDelete.error'));
     }
   };
 

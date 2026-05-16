@@ -1,5 +1,6 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Modal, TextInput } from "react-native";
+import { useTranslation } from "react-i18next";
 
 export interface EditCategoryModalProps {
   visible: boolean;
@@ -22,6 +23,7 @@ const EditCategoryModal: React.FC<EditCategoryModalProps> = ({
   onDescriptionChange,
   isEditing
 }) => {
+  const { t } = useTranslation();
   return (
     <Modal
       transparent={true}
@@ -31,46 +33,46 @@ const EditCategoryModal: React.FC<EditCategoryModalProps> = ({
     >
       <View style={styles.editModalOverlay}>
         <View style={styles.editModalContainer}>
-          <Text style={styles.editModalTitle}>Modifica Categoria</Text>
-          
+          <Text style={styles.editModalTitle}>{t("categories.editModal.title")}</Text>
+
           <View style={styles.formGroup}>
-            <Text style={styles.label}>Titolo</Text>
+            <Text style={styles.label}>{t("categories.editModal.titleLabel")}</Text>
             <TextInput
               style={styles.input}
               value={title}
               onChangeText={onTitleChange}
-              placeholder="Inserisci il titolo della categoria"
+              placeholder={t("categories.editModal.titlePlaceholder")}
               autoCapitalize="none"
             />
           </View>
-          
+
           <View style={styles.formGroup}>
-            <Text style={styles.label}>Descrizione</Text>
+            <Text style={styles.label}>{t("categories.editModal.descriptionLabel")}</Text>
             <TextInput
               style={[styles.input, styles.textarea]}
               value={description}
               onChangeText={onDescriptionChange}
-              placeholder="Inserisci una descrizione (opzionale)"
+              placeholder={t("categories.editModal.descriptionPlaceholder")}
               multiline
               numberOfLines={3}
               textAlignVertical="top"
             />
           </View>
             <View style={styles.buttonContainer}>
-            <TouchableOpacity 
-              style={[styles.button, styles.cancelButton]} 
+            <TouchableOpacity
+              style={[styles.button, styles.cancelButton]}
               onPress={onClose}
             >
-              <Text style={[styles.buttonText, { color: '#000000' }]}>Annulla</Text>
+              <Text style={[styles.buttonText, { color: '#000000' }]}>{t("categories.editModal.cancel")}</Text>
             </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={[styles.button, styles.saveButton]} 
+
+            <TouchableOpacity
+              style={[styles.button, styles.saveButton]}
               onPress={onSave}
               disabled={isEditing}
             >
               <Text style={[styles.buttonText, { color: '#ffffff' }]}>
-                {isEditing ? "Salvataggio..." : "Salva"}
+                {isEditing ? t("categories.editModal.saving") : t("categories.editModal.save")}
               </Text>
             </TouchableOpacity>
           </View>

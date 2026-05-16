@@ -85,9 +85,10 @@ export const DaysRemaining = ({
   isRecurring?: boolean;
   nextOccurrence?: string;
 }) => {
+  const { t } = useTranslation();
   if (isRecurring) {
     const dateToUse = nextOccurrence || endDate;
-    const text = dateToUse ? getDaysRemainingText(dateToUse) : "Ricorrente";
+    const text = dateToUse ? getDaysRemainingText(dateToUse, t) : "Ricorrente";
     const color = dateToUse ? getDaysRemainingColor(dateToUse) : "#007AFF";
     return (
       <View style={{ flexDirection: "row", alignItems: "center" }}>
@@ -97,7 +98,9 @@ export const DaysRemaining = ({
     );
   }
 
-  const daysRemainingText = getDaysRemainingText(endDate);
+  if (!endDate) return null;
+
+  const daysRemainingText = getDaysRemainingText(endDate, t);
   const daysRemainingColor = getDaysRemainingColor(endDate);
 
   return (

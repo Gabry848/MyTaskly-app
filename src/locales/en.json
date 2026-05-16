@@ -507,6 +507,135 @@
       "deleted": "Category deleted successfully",
       "error": "Error",
       "emptyTitle": "Category name cannot be empty"
+    },
+    "addModal": {
+      "title": "Add Category",
+      "name": "Category Name",
+      "description": "Description",
+      "namePlaceholder": "Enter category name",
+      "descriptionPlaceholder": "Enter description",
+      "save": "Save",
+      "saving": "Saving...",
+      "cancel": "Cancel",
+      "limitReached": "Category limit reached",
+      "limitReachedMessage": "You have reached the maximum number of categories for your plan. Upgrade to add more.",
+      "addError": "Could not add category"
+    },
+    "editModal": {
+      "title": "Edit Category",
+      "titleLabel": "Title",
+      "titlePlaceholder": "Enter category title",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "Enter a description (optional)",
+      "save": "Save",
+      "saving": "Saving...",
+      "cancel": "Cancel"
+    },
+    "deleteModal": {
+      "title": "Delete category",
+      "confirmMessage": "Are you sure you want to delete",
+      "warningMessage": "All tasks inside will be deleted.",
+      "calendar": "Google Calendar",
+      "calendarQuestion": "Do you want to delete this category's tasks from Google Calendar as well?",
+      "yesDeleteEverywhere": "Yes, delete everywhere",
+      "noDeleteOnlyApp": "No, only from app",
+      "cancel": "Cancel",
+      "delete": "Delete"
+    },
+    "permissions": {
+      "denied": "Permission denied",
+      "ownerOnlyDelete": "Only the owner can delete this category.",
+      "readOnly": "You only have read permissions for this category. You cannot modify it.",
+      "readOnlyAdd": "You only have read permissions for this category. You cannot add tasks."
+    },
+    "delete": {
+      "error": "Error",
+      "failed": "Could not delete category. Please try again later."
+    },
+    "update": {
+      "error": "Error",
+      "failed": "Could not update category. Please try again later.",
+      "emptyTitle": "Category title cannot be empty"
+    },
+    "shared": {
+      "title": "Shared category",
+      "info": "This category is shared by another user. Your permission: {{permission}}",
+      "permissions": {
+        "READ_ONLY": "Read only",
+        "READ_WRITE": "Read/Write"
+      },
+      "idError": "Error",
+      "noId": "Category ID not available",
+      "success": "Success"
+    },
+    "task": {
+      "error": "Error",
+      "addFailed": "Could not add task. Please try again later.",
+      "status": "Pending"
+    },
+    "taskCount": "{{count}} things to do",
+    "share": {
+      "title": "Share",
+      "userEmail": "User email:",
+      "emailPlaceholder": "user@example.com",
+      "permissions": "Permissions:",
+      "readOnly": "Read only (READ_ONLY)",
+      "readWrite": "Read and write (READ_WRITE)",
+      "shareButton": "Share",
+      "cancel": "Cancel",
+      "errors": {
+        "validation": "Validation error",
+        "alreadyShared": "Category already shared with this user",
+        "userNotFound": "User not found. Please verify the email.",
+        "shareWithYourself": "You cannot share with yourself!",
+        "noPermission": "You don't have permission to share this category",
+        "categoryNotFound": "Category not found",
+        "sessionExpired": "Session expired. Please login again.",
+        "unknown": "Unknown error. Please try again later."
+      },
+      "success": "Category shared with {{user}}"
+    },
+    "manageAccess": {
+      "title": "Users with access",
+      "loading": "Loading...",
+      "noUsers": "No users found",
+      "addPerson": "+ Add person",
+      "owner": "Owner",
+      "readOnly": "Read only",
+      "readWrite": "Read and write",
+      "you": "(You)",
+      "actions": "Actions",
+      "whatToDo": "What do you want to do with {{name}}?",
+      "changePermission": "Change Permission",
+      "remove": "Remove",
+      "cancel": "Cancel",
+      "confirm": "Confirm",
+      "changePermissionTitle": "Change Permission",
+      "changePermissionMessage": "Do you want to change {{name}}'s permission to {{permission}}?",
+      "removeAccessTitle": "Remove Access",
+      "removeAccessMessage": "Do you want to remove {{name}}'s access?",
+      "errors": {
+        "loadUsers": "Could not load users with access",
+        "onlyOwnerCanModify": "Only the owner can modify permissions",
+        "onlyOwnerCanRemove": "Only the owner can remove users",
+        "shareNotFound": "Share not found",
+        "updateFailed": "Could not update permission",
+        "removeFailed": "Could not remove user"
+      },
+      "success": {
+        "permissionUpdated": "Permission updated to {{permission}}",
+        "accessRemoved": "Access removed for {{name}}"
+      }
+    },
+    "menu": {
+      "edit": "Edit",
+      "share": "Share",
+      "shareInfo": "Share Info",
+      "manageAccess": "Manage Access",
+      "delete": "Delete",
+      "deleting": "Deleting...",
+      "leave": "Leave",
+      "readOnly": "Read only"
     }
   },
   "tasks": {
@@ -527,12 +656,68 @@
       "medium": "Medium",
       "high": "High"
     },
+    "status": {
+      "pending": "Pending",
+      "inProgress": "In Progress",
+      "completed": "Completed"
+    },
+    "form": {
+      "durationPresets": {
+        "min15": "15 min",
+        "min30": "30 min",
+        "hour1": "1 hour",
+        "hour2": "2 hours",
+        "hour4": "4 hours"
+      },
+      "errors": {
+        "titleRequired": "Title is required",
+        "categoryRequired": "Category is required",
+        "saveFailed": "Failed to save task"
+      },
+      "errorTitle": "Error",
+      "categoryLabel": "Category",
+      "categoryActionTitle": "Select category",
+      "categoryActionMessage": "Choose a category for the task",
+      "categoryPlaceholder": "Select category",
+      "titleLabel": "Title",
+      "titlePlaceholder": "Enter title",
+      "titleEditPlaceholder": "Task title",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "Enter description",
+      "descriptionEditPlaceholder": "Task description",
+      "deadlineLabel": "Deadline",
+      "deadlineSimple": "Simple deadline",
+      "deadlineRecurring": "Recurring",
+      "datePlaceholder": "Select date",
+      "timePlaceholder": "Time",
+      "priorityLabel": "Priority",
+      "statusLabel": "Status",
+      "durationLabel": "Estimated duration (optional)",
+      "customDurationPlaceholder": "Custom (minutes)",
+      "saveChanges": "Save Changes"
+    },
+    "readOnly": {
+      "title": "Read-only category",
+      "message": "You cannot edit this task because the category is shared with you in read-only mode.",
+      "subMessage": "You can only complete it or view its details.",
+      "confirmButton": "Got it"
+    },
+    "accessibility": {
+      "addTaskLabel": "Add new activity",
+      "addTaskHint": "Add a new activity",
+      "addTaskHintCategory": "Add a new activity to the {{category}} category"
+    },
     "messages": {
       "created": "Task created successfully",
       "updated": "Task updated successfully",
       "deleted": "Task deleted successfully",
       "completed": "Task completed",
       "reopened": "Task reopened"
+    },
+    "errors": {
+      "title": "Error",
+      "updateStatusFailed": "Unable to update task status. Please try again.",
+      "reopenFailed": "Unable to reopen the task. Please try again."
     }
   },
   "notes": {
@@ -540,6 +725,10 @@
     "newNote": "New Note",
     "create": "Create",
     "cancel": "Cancel",
+    "colorPicker": {
+      "title": "Choose a color",
+      "close": "Close"
+    },
     "messages": {
       "created": "Note created successfully",
       "deleted": "Note deleted successfully"
@@ -1062,5 +1251,113 @@
     "offlineWarning": "Offline. Prices unavailable.",
     "offlineError": "Service offline or plan unavailable.",
     "getPlan": "Get {{plan}}"
+  },
+  "globalTaskSearch": {
+    "title": "Task Search",
+    "searchAllTasks": "Search All Tasks",
+    "searchPlaceholder": "Search by title, description, category...",
+    "loadingTasks": "Loading tasks...",
+    "loadingInProgress": "Loading in progress...",
+    "noTasksFound": "No tasks found for \"{{query}}\"",
+    "noTasksAvailable": "No tasks available",
+    "startTyping": "Start typing to search your tasks",
+    "tasksCount": "{{filtered}} of {{total}} tasks",
+    "totalTasks": "{{total}} total tasks",
+    "error": "Error",
+    "loadFailed": "Unable to load tasks for search"
+  },
+  "taskCard": {
+    "noDeadline": "No deadline",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "overdue": "Overdue",
+    "recurring": {
+      "daily": "Every day",
+      "daily_plural": "Every {{count}} days",
+      "weekly": "Every week",
+      "weekly_plural": "Every {{count}} weeks",
+      "weekly_days": "Every {{days}}",
+      "weekly_days_plural": "Every {{count}} weeks: {{days}}",
+      "monthly": "Every {{day}}st day of the month",
+      "monthly_plural": "Every {{count}} months on the {{day}}",
+      "label": "Recurring"
+    },
+    "daysOfWeek": {
+      "monday": "Mon",
+      "tuesday": "Tue",
+      "wednesday": "Wed",
+      "thursday": "Thu",
+      "friday": "Fri",
+      "saturday": "Sat",
+      "sunday": "Sun"
+    },
+    "duration": {
+      "minutes": "{{count}} min",
+      "hour": "1 hour",
+      "hours": "{{count}} hours",
+      "hourMinutes": "{{hours}}h {{minutes}}min"
+    },
+    "completion": {
+      "single": "Completed {{count}} time",
+      "plural": "Completed {{count}} times"
+    },
+    "priority": {
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    }
+  },
+  "taskActionMenu": {
+    "reopen": "Reopen task",
+    "edit": "Edit",
+    "share": "Share",
+    "delete": "Delete",
+    "deleting": "Deleting..."
+  },
+  "itemDetailModal": {
+    "success": "Success",
+    "error": "Error",
+    "completeTask": "Task completed",
+    "reopenTask": "Task reopened",
+    "updateTaskError": "Unable to update task",
+    "deleteConfirm": "Confirm deletion",
+    "deleteTaskConfirm": "Are you sure you want to delete this task?",
+    "deleteCategoryConfirm": "Are you sure you want to delete this category?",
+    "deleteNoteConfirm": "Are you sure you want to delete this note?",
+    "deleteError": "Unable to delete",
+    "itemDeleted": "Item deleted"
+  },
+  "taskSharing": {
+    "notImplemented": "Task sharing feature not implemented yet",
+    "notEnabled": "Task sharing is not enabled"
+  },
+  "taskDelete": {
+    "confirmTitle": "Delete task",
+    "confirmMessage": "Are you sure you want to delete \"{{title}}\"?",
+    "error": "Unable to delete task. Please try again.",
+    "deleteAllCompletedError": "Unable to delete all completed tasks. Please try again."
+  },
+  "completedTasks": {
+    "buttonLabel_one": "completed",
+    "buttonLabel_other": "completed",
+    "count_one": "{{count}} completed task",
+    "count_other": "{{count}} completed tasks",
+    "chartTitle": "Last 7 days",
+    "days": {
+      "sunday": "Sun",
+      "monday": "Mon",
+      "tuesday": "Tue",
+      "wednesday": "Wed",
+      "thursday": "Thu",
+      "friday": "Fri",
+      "saturday": "Sat",
+      "today": "Today"
+    },
+    "deleteAll": {
+      "label": "Delete all",
+      "title": "Delete all completed tasks",
+      "message": "Are you sure? All completed tasks will be permanently deleted."
+    },
+    "comingSoon": "Work in progress"
   }
 }

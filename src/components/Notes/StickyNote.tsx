@@ -17,6 +17,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { X, Palette } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 import { Note } from '../../services/noteService';
 import { useNotesActions } from '../../context/NotesContext';
 
@@ -48,6 +49,7 @@ export interface StickyNoteRef {
 }
 
 export const StickyNote: React.FC<StickyNoteProps> = React.memo(({ note, canvasScale }) => {
+  const { t } = useTranslation();
   const { updateNote, deleteNote, updateNotePosition } = useNotesActions();
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(note.text);
@@ -273,7 +275,7 @@ export const StickyNote: React.FC<StickyNoteProps> = React.memo(({ note, canvasS
           onPress={handleCloseColorPicker}
         >
           <View style={styles.colorPickerModal}>
-            <Text style={styles.colorPickerTitle}>Scegli un colore</Text>
+            <Text style={styles.colorPickerTitle}>{t('notes.colorPicker.title')}</Text>
             <View style={styles.colorGrid}>
               {COLORS.map((color) => (
                 <TouchableOpacity
@@ -291,7 +293,7 @@ export const StickyNote: React.FC<StickyNoteProps> = React.memo(({ note, canvasS
               style={styles.closeColorPicker}
               onPress={handleCloseColorPicker}
             >
-              <Text style={styles.closeText}>Chiudi</Text>
+              <Text style={styles.closeText}>{t('notes.colorPicker.close')}</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
@@ -373,57 +375,66 @@ const styles = StyleSheet.create({
   },
   colorPickerOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 24,
   },
   colorPickerModal: {
-    backgroundColor: 'white',
+    backgroundColor: '#ffffff',
     borderRadius: 16,
-    padding: 20,
-    width: 260,
+    padding: 24,
+    width: '85%',
+    maxWidth: 320,
     alignItems: 'center',
-    elevation: 10,
+    borderWidth: 1.5,
+    borderColor: '#e1e5e9',
+    elevation: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
   },
   colorPickerTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 16,
+    fontSize: 18,
+    fontWeight: '500',
+    color: '#000000',
+    marginBottom: 18,
+    fontFamily: 'System',
   },
   colorGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
-    gap: 8,
+    gap: 12,
+    marginBottom: 8,
   },
   colorOption: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     borderWidth: 2,
-    borderColor: '#ddd',
+    borderColor: '#e1e5e9',
   },
   selectedColor: {
-    borderColor: '#007AFF',
-    borderWidth: 3,
-    transform: [{ scale: 1.1 }],
+    borderColor: '#000000',
+    borderWidth: 2,
+    transform: [{ scale: 1.05 }],
   },
   closeColorPicker: {
-    marginTop: 16,
-    paddingVertical: 10,
-    paddingHorizontal: 24,
+    marginTop: 18,
+    paddingVertical: 12,
+    paddingHorizontal: 28,
     backgroundColor: '#f0f0f0',
-    borderRadius: 8,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#e1e5e9',
     alignItems: 'center',
   },
   closeText: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: 15,
+    color: '#000000',
     fontWeight: '500',
+    fontFamily: 'System',
   },
 });

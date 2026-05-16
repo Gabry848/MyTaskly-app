@@ -6,14 +6,7 @@ import { styles } from "./TaskStyles";
 import { PrioritySelector, StatusSelector, DatePickerButton, TimePickerButton } from "./FormComponents";
 import { RecurrenceConfig } from "./RecurrenceConfig";
 import { RecurrenceConfig as RecurrenceConfigType } from "../../types/recurringTask";
-
-const DURATION_PRESETS = [
-  { label: "15 min", value: 15 },
-  { label: "30 min", value: 30 },
-  { label: "1 ora", value: 60 },
-  { label: "2 ore", value: 120 },
-  { label: "4 ore", value: 240 },
-];
+import { useTranslation } from "react-i18next";
 
 // Componente per il modal di modifica
 const TaskEditModal = ({ 
@@ -22,6 +15,14 @@ const TaskEditModal = ({
   onClose, 
   onSave 
 }) => {
+  const { t } = useTranslation();
+  const DURATION_PRESETS = [
+    { label: t("tasks.form.durationPresets.min15"), value: 15 },
+    { label: t("tasks.form.durationPresets.min30"), value: 30 },
+    { label: t("tasks.form.durationPresets.hour1"), value: 60 },
+    { label: t("tasks.form.durationPresets.hour2"), value: 120 },
+    { label: t("tasks.form.durationPresets.hour4"), value: 240 },
+  ];
   const [editedTask, setEditedTask] = useState({
     title: "",
     description: "",
@@ -120,7 +121,7 @@ const TaskEditModal = ({
 
   const handleSave = () => {
     if (!editedTask.title.trim()) {
-      Alert.alert("Errore", "Il titolo è obbligatorio");
+      Alert.alert(t("tasks.form.errorTitle"), t("tasks.form.errors.titleRequired"));
       return;
     }
 
@@ -160,34 +161,34 @@ const TaskEditModal = ({
       <View style={styles.editModalOverlay}>
         <View style={styles.editModalContainer}>
           <View style={styles.editModalHeader}>
-            <Text style={styles.editModalTitle}>Modifica Task</Text>
+            <Text style={styles.editModalTitle}>{t("tasks.editTask")}</Text>
             <TouchableOpacity onPress={onClose}>
               <MaterialIcons name="close" size={24} color="#333" />
             </TouchableOpacity>
           </View>
           
           <ScrollView style={[styles.editModalContent, { flex: 1 }]} contentContainerStyle={{ paddingBottom: 16 }}>
-            <Text style={styles.inputLabel}>Titolo *</Text>
+            <Text style={styles.inputLabel}>{t("tasks.form.titleLabel")} *</Text>
             <TextInput
               style={styles.input}
               value={editedTask.title}
               onChangeText={(text) => setEditedTask({...editedTask, title: text})}
-              placeholder="Titolo del task"
+              placeholder={t("tasks.form.titleEditPlaceholder")}
             />
             
-            <Text style={styles.inputLabel}>Descrizione</Text>
+            <Text style={styles.inputLabel}>{t("tasks.form.descriptionLabel")}</Text>
             <TextInput
               style={[styles.input, styles.textArea]}
               value={editedTask.description}
               onChangeText={(text) => setEditedTask({...editedTask, description: text})}
-              placeholder="Descrizione del task"
+              placeholder={t("tasks.form.descriptionEditPlaceholder")}
               multiline
               numberOfLines={4}
               textAlignVertical="top"
             />
             
             {/* Segmented control: Scadenza semplice / Ripetitività */}
-            <Text style={styles.inputLabel}>Scadenza</Text>
+            <Text style={styles.inputLabel}>{t("tasks.form.deadlineLabel")}</Text>
             <View style={editStyles.deadlineTypeContainer}>
               <TouchableOpacity
                 style={[
@@ -211,7 +212,7 @@ const TaskEditModal = ({
                   editStyles.deadlineTypeText,
                   deadlineType === 'simple' && editStyles.deadlineTypeTextActive,
                 ]}>
-                  Scadenza semplice
+                  {t("tasks.form.deadlineSimple")}
                 </Text>
               </TouchableOpacity>
 
@@ -237,7 +238,7 @@ const TaskEditModal = ({
                   editStyles.deadlineTypeText,
                   deadlineType === 'recurring' && editStyles.deadlineTypeTextActive,
                 ]}>
-                  Ripetitività
+                  {t("tasks.form.deadlineRecurring")}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -250,14 +251,14 @@ const TaskEditModal = ({
                     <DatePickerButton
                       value={editedTask.end_time}
                       onPress={() => openDatePicker('end')}
-                      placeholder="Seleziona data"
+                      placeholder={t("tasks.form.datePlaceholder")}
                     />
                   </View>
                   <View style={styles.timeButton}>
                     <TimePickerButton
                       value={editedTask.end_time}
                       onPress={() => editedTask.end_time ? openTimePicker('end') : null}
-                      placeholder="Ora"
+                      placeholder={t("tasks.form.timePlaceholder")}
                     />
                   </View>
                   {editedTask.end_time && (
@@ -302,19 +303,19 @@ const TaskEditModal = ({
               />
             )}
 
-            <Text style={[styles.inputLabel, { marginTop: 20 }]}>Priorità</Text>
+            <Text style={[styles.inputLabel, { marginTop: 20 }]}>{t("tasks.form.priorityLabel")}</Text>
             <PrioritySelector
               value={editedTask.priority}
               onChange={(priority) => setEditedTask({...editedTask, priority})}
             />
-
-            <Text style={styles.inputLabel}>Stato</Text>
+            
+            <Text style={styles.inputLabel}>{t("tasks.form.statusLabel")}</Text>
             <StatusSelector
               value={editedTask.status}
               onChange={(status) => setEditedTask({...editedTask, status})}
             />
-
-            <Text style={styles.inputLabel}>Durata stimata (opzionale)</Text>
+            
+            <Text style={styles.inputLabel}>{t("tasks.form.durationLabel")}</Text>
             <View style={styles.durationContainer}>
               {DURATION_PRESETS.map((preset) => (
                 <TouchableOpacity
@@ -347,7 +348,7 @@ const TaskEditModal = ({
             <View style={styles.customDurationRow}>
               <TextInput
                 style={styles.customDurationInput}
-                placeholder="Personalizzata (minuti)"
+                placeholder={t("tasks.form.customDurationPlaceholder")}
                 keyboardType="numeric"
                 value={customDuration}
                 onChangeText={(text) => {
@@ -380,7 +381,7 @@ const TaskEditModal = ({
               style={styles.saveButton}
               onPress={handleSave}
             >
-              <Text style={styles.saveButtonText}>Salva Modifiche</Text>
+              <Text style={styles.saveButtonText}>{t("tasks.form.saveChanges")}</Text>
             </TouchableOpacity>
           </View>
         </View>

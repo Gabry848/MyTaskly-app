@@ -14,6 +14,7 @@ import {
 import categoryShareService from "../../services/categoryShareService";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { STORAGE_KEYS } from "../../constants/authConstants";
+import { useTranslation } from "react-i18next";
 
 export interface ShareCategoryDialogProps {
   visible: boolean;
@@ -30,6 +31,7 @@ const ShareCategoryDialog: React.FC<ShareCategoryDialogProps> = ({
   onClose,
   onSuccess,
 }) => {
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [permission, setPermission] = useState<"READ_ONLY" | "READ_WRITE">("READ_ONLY");
   const [loading, setLoading] = useState(false);
@@ -46,7 +48,7 @@ const ShareCategoryDialog: React.FC<ShareCategoryDialogProps> = ({
       // Validate the request
       const validation = categoryShareService.validateShareRequest(email, currentUserEmail);
       if (!validation.valid) {
-        setError(validation.error || "Errore di validazione");
+        setError(validation.error || t("categories.share.errors.validation"));
         setLoading(false);
         return;
       }
@@ -54,26 +56,26 @@ const ShareCategoryDialog: React.FC<ShareCategoryDialogProps> = ({
       // Share the category
       const result = await categoryShareService.shareCategory(categoryId, email, permission);
 
-      onSuccess(`Categoria condivisa con ${result.shared_with}`);
+      onSuccess(t("categories.share.success", { user: result.shared_with }));
       handleClose();
     } catch (err: any) {
       // Handle specific error messages
-      let errorMessage = "Errore sconosciuto. Riprova più tardi.";
+      let errorMessage = t("categories.share.errors.unknown");
 
       if (err.status === 400) {
         if (err.message.includes("already shared")) {
-          errorMessage = "Categoria già condivisa con questo utente";
+          errorMessage = t("categories.share.errors.alreadyShared");
         } else if (err.message.includes("not found")) {
-          errorMessage = "Utente non trovato. Verifica l'email.";
+          errorMessage = t("categories.share.errors.userNotFound");
         } else if (err.message.includes("yourself")) {
-          errorMessage = "Non puoi condividere con te stesso!";
+          errorMessage = t("categories.share.errors.shareWithYourself");
         }
       } else if (err.status === 403) {
-        errorMessage = "Non hai i permessi per condividere questa categoria";
+        errorMessage = t("categories.share.errors.noPermission");
       } else if (err.status === 404) {
-        errorMessage = "Categoria non trovata";
+        errorMessage = t("categories.share.errors.categoryNotFound");
       } else if (err.status === 401) {
-        errorMessage = "Sessione scaduta. Effettua nuovamente il login.";
+        errorMessage = t("categories.share.errors.sessionExpired");
       } else if (err.message) {
         errorMessage = err.message;
       }
@@ -103,15 +105,15 @@ const ShareCategoryDialog: React.FC<ShareCategoryDialogProps> = ({
         style={styles.overlay}
       >
         <View style={styles.dialog}>
-          <Text style={styles.title}>Condividi &quot;{categoryName}&quot;</Text>
+          <Text style={styles.title}>{t("categories.share.title")} &quot;{categoryName}&quot;</Text>
 
           <View style={styles.formGroup}>
-            <Text style={styles.label}>Email utente:</Text>
+            <Text style={styles.label}>{t("categories.share.userEmail")}</Text>
             <TextInput
               style={styles.input}
               value={email}
               onChangeText={setEmail}
-              placeholder="user@example.com"
+              placeholder={t("categories.share.emailPlaceholder")}
               placeholderTextColor="#999"
               keyboardType="email-address"
               autoCapitalize="none"
@@ -121,7 +123,7 @@ const ShareCategoryDialog: React.FC<ShareCategoryDialogProps> = ({
           </View>
 
           <View style={styles.formGroup}>
-            <Text style={styles.label}>Permessi:</Text>
+            <Text style={styles.label}>{t("categories.share.permissions")}:</Text>
             <View style={styles.radioGroup}>
               <TouchableOpacity
                 style={styles.radioOption}
@@ -131,7 +133,7 @@ const ShareCategoryDialog: React.FC<ShareCategoryDialogProps> = ({
                 <View style={styles.radioCircle}>
                   {permission === "READ_ONLY" && <View style={styles.radioSelected} />}
                 </View>
-                <Text style={styles.radioLabel}>Sola lettura (READ_ONLY)</Text>
+                <Text style={styles.radioLabel}>{t("categories.share.readOnly")}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -142,7 +144,7 @@ const ShareCategoryDialog: React.FC<ShareCategoryDialogProps> = ({
                 <View style={styles.radioCircle}>
                   {permission === "READ_WRITE" && <View style={styles.radioSelected} />}
                 </View>
-                <Text style={styles.radioLabel}>Lettura e scrittura (READ_WRITE)</Text>
+                <Text style={styles.radioLabel}>{t("categories.share.readWrite")}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -159,7 +161,7 @@ const ShareCategoryDialog: React.FC<ShareCategoryDialogProps> = ({
               onPress={handleClose}
               disabled={loading}
             >
-              <Text style={styles.cancelButtonText}>Annulla</Text>
+              <Text style={styles.cancelButtonText}>{t("categories.share.cancel")}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -174,7 +176,7 @@ const ShareCategoryDialog: React.FC<ShareCategoryDialogProps> = ({
               {loading ? (
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
-                <Text style={styles.primaryButtonText}>Condividi</Text>
+                <Text style={styles.primaryButtonText}>{t("categories.share.shareButton")}</Text>
               )}
             </TouchableOpacity>
           </View>

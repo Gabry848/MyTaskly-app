@@ -10,6 +10,7 @@ import ShareCategoryDialog from './ShareCategoryDialog';
 import ManageCategoryShares from './ManageCategoryShares';
 import eventEmitter, { emitCategoryDeleted, emitCategoryUpdated, emitTaskAdded , EVENTS } from '../../utils/eventEmitter';
 import GoogleCalendarService from '../../services/googleCalendarService';
+import { useTranslation } from "react-i18next";
 
 
 export interface CategoryProps {
@@ -41,6 +42,7 @@ const Category: React.FC<CategoryProps> = ({
   onEdit,
   onPressCategory
 }) => {
+  const { t } = useTranslation();
   const [showMenu, setShowMenu] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -145,8 +147,8 @@ const Category: React.FC<CategoryProps> = ({
     // Only owners can delete
     if (!isOwned) {
       Alert.alert(
-        "Permesso negato",
-        "Solo il proprietario può eliminare questa categoria."
+        t("categories.permissions.denied"),
+        t("categories.permissions.ownerOnlyDelete")
       );
       closeMenu();
       return;
@@ -183,7 +185,7 @@ const Category: React.FC<CategoryProps> = ({
     } catch (error) {
       console.error("Errore durante l'eliminazione della categoria:", error);
       setShowDeleteModal(false);
-      Alert.alert("Errore", "Impossibile eliminare la categoria. Riprova più tardi.");
+      Alert.alert(t("categories.delete.error"), t("categories.delete.failed"));
     } finally {
       setIsDeleting(false);
     }
@@ -199,8 +201,8 @@ const Category: React.FC<CategoryProps> = ({
     // Check permissions - owners and READ_WRITE users can edit
     if (!isOwned && permissionLevel === "READ_ONLY") {
       Alert.alert(
-        "Permesso negato",
-        "Hai solo permessi di lettura per questa categoria. Non puoi modificarla."
+        t("categories.permissions.denied"),
+        t("categories.permissions.readOnly")
       );
       closeMenu();
       return;
@@ -214,7 +216,7 @@ const Category: React.FC<CategoryProps> = ({
 
   const handleSaveEdit = async () => {
     if (!editName.trim()) {
-      Alert.alert("Errore", "Il titolo della categoria non può essere vuoto");
+      Alert.alert(t("categories.update.error"), t("categories.update.emptyTitle"));
       return;
     }
 
@@ -224,21 +226,21 @@ const Category: React.FC<CategoryProps> = ({
         name: editName.trim(),
         description: editDescription.trim()
       });
-      
+
       // Emetti un evento per notificare la modifica della categoria
       emitCategoryUpdated({
         name: editName.trim(),
         description: editDescription.trim(),
         oldName: title
       });
-      
+
       setShowEditModal(false);
       if (onEdit) {
         onEdit();
       }
     } catch (error) {
       console.error("Errore durante l'aggiornamento della categoria:", error);
-      Alert.alert("Errore", "Impossibile aggiornare la categoria. Riprova più tardi.");
+      Alert.alert(t("categories.update.error"), t("categories.update.failed"));
     } finally {
       setIsEditing(false);
     }
@@ -257,8 +259,10 @@ const Category: React.FC<CategoryProps> = ({
       setShowShareDialog(true);
     } else {
       Alert.alert(
-        "Categoria condivisa",
-        `Questa categoria è condivisa da un altro utente. Il tuo permesso: ${permissionLevel === "READ_ONLY" ? "Sola lettura" : "Lettura/Scrittura"}`
+        t("categories.shared.title"),
+        t("categories.shared.info", {
+          permission: t(`categories.shared.permissions.${permissionLevel}`)
+        })
       );
     }
   };
@@ -266,22 +270,22 @@ const Category: React.FC<CategoryProps> = ({
   const handleManageShares = () => {
     closeMenu();
     if (!categoryId) {
-      Alert.alert("Errore", "ID categoria non disponibile");
+      Alert.alert(t("categories.shared.idError"), t("categories.shared.noId"));
       return;
     }
     setShowManageShares(true);
   };
 
   const handleShareSuccess = (message: string) => {
-    Alert.alert("Successo", message);
+    Alert.alert(t("categories.shared.success"), message);
   };
 
   const handleAddTask = () => {
     // Check permissions before allowing task creation
     if (!isOwned && permissionLevel === "READ_ONLY") {
       Alert.alert(
-        "Permesso negato",
-        "Hai solo permessi di lettura per questa categoria. Non puoi aggiungere task."
+        t("categories.permissions.denied"),
+        t("categories.permissions.readOnlyAdd")
       );
       return;
     }
@@ -296,19 +300,19 @@ const Category: React.FC<CategoryProps> = ({
       start_time: new Date().toISOString(),
       priority: priority,
       category_name: title,
-      status: "In sospeso",
+      status: t("categories.task.status"),
       user: ""  // Campo richiesto dal server
     };
     console.log("Nuovo task:", d);
     addTask(d).then((addedTask) => {
       // Emetti un evento per notificare l'aggiunta di un nuovo task
       emitTaskAdded(addedTask || d);
-      
+
       fetchTaskCount();
-      setShowAddTask(false);  
+      setShowAddTask(false);
     }).catch(error => {
       console.error("Errore durante l'aggiunta del task:", error);
-      Alert.alert("Errore", "Impossibile aggiungere il task. Riprova più tardi.");
+      Alert.alert(t("categories.task.error"), t("categories.task.addFailed"));
     });
   };
   

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { TouchableOpacity, Animated, Alert, LayoutAnimation, Platform, UIManager, Easing } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 
 // Importa i sottocomponenti
 import TaskHeader from "./TaskHeader";
@@ -31,6 +32,8 @@ const Task = ({
   permissionLevel = "READ_WRITE",
   hideCheckbox = false,
 }) => {
+  console.log('[TASK] Rendering Task:', { id: task.id, title: task.title, status: task.status, isCompleted: task.status === "Completato" });
+
   // Stati
   const [expanded, setExpanded] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -59,6 +62,7 @@ const Task = ({
   const containerHeightAnim = useRef(new Animated.Value(0)).current;
 
   // Determina se il task è completato
+  const { t } = useTranslation();
   const isCompleted = task.status === "Completato";
   // Ottieni il colore di priorità per lo sfondo e il bordo
   const priorityBackgroundColor = getPriorityColors(task.priority);
@@ -141,6 +145,7 @@ const Task = ({
   const onComponentLayout = (event) => {
     if (componentHeight === 0) {
       const height = event.nativeEvent.layout.height;
+      console.log('[TASK] onComponentLayout:', { taskId: task.id, height, title: task.title });
       setComponentHeight(height);
       heightAnim.setValue(height);
       containerHeightAnim.setValue(height);
@@ -166,7 +171,7 @@ const Task = ({
       }
     } catch (error) {
       console.error("Errore durante la modifica dello stato del task:", error);
-      Alert.alert("Errore", "Impossibile modificare lo stato del task. Riprova.");
+      Alert.alert(t("tasks.errors.title"), t("tasks.errors.updateStatusFailed"));
     }
   };
 
@@ -302,11 +307,11 @@ const Task = ({
 
     setIsDeleting(true);
     Alert.alert(
-      "Elimina Task",
-      `Sei sicuro di voler eliminare "${task.title}"?`,
+      t("taskDelete.confirmTitle"),
+      t("taskDelete.confirmMessage", { title: task.title }),
       [
         {
-          text: "Annulla",
+          text: t("common.buttons.cancel"),
           style: "cancel",
           onPress: () => {
             setIsDeleting(false);
@@ -314,7 +319,7 @@ const Task = ({
           }
         },
         {
-          text: "Elimina",
+          text: t("common.buttons.delete"),
           style: "destructive",
           onPress: () => {
             setShowModal(false);
@@ -328,7 +333,7 @@ const Task = ({
 
   const handleShare = () => {
     setShowModal(false);
-    Alert.alert("Condivisione", "Funzionalità di condivisione non ancora implementata");
+    Alert.alert(t('taskSharing.notImplemented'), t('taskSharing.notImplemented'));
   };
 
   const handleReopen = async () => {
@@ -341,7 +346,7 @@ const Task = ({
       }
     } catch (error) {
       console.error("Errore durante la riapertura del task:", error);
-      Alert.alert("Errore", "Impossibile riaprire il task. Riprova.");
+      Alert.alert(t("tasks.errors.title"), t("tasks.errors.reopenFailed"));
     }
   };
 

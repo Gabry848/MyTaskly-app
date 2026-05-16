@@ -1,6 +1,7 @@
 import React from "react";
 import { TouchableOpacity, Text, StyleSheet, View } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 
 export interface SearchTasksButtonProps {
   onPress: () => void;
@@ -11,6 +12,8 @@ const SearchTasksButton: React.FC<SearchTasksButtonProps> = ({
   onPress,
   style,
 }) => {
+  const { t } = useTranslation();
+
   return (
     <TouchableOpacity
       style={[styles.container, style]}
@@ -24,7 +27,7 @@ const SearchTasksButton: React.FC<SearchTasksButtonProps> = ({
           color="#666666"
           style={styles.icon}
         />
-        <Text style={styles.text}>Cerca tra tutti i task</Text>
+        <Text style={styles.text}>{t("globalTaskSearch.searchAllTasks")}</Text>
         <MaterialIcons name="arrow-forward-ios" size={16} color="#cccccc" />
       </View>
     </TouchableOpacity>

@@ -7,6 +7,7 @@ import { RecurrencePattern } from "../../types/recurringTask";
 
 // Componente per selezionare la priorità
 export const PrioritySelector = ({ value, onChange }) => {
+  const { t } = useTranslation();
   return (
     <View style={styles.priorityContainer}>
       <TouchableOpacity 
@@ -20,7 +21,7 @@ export const PrioritySelector = ({ value, onChange }) => {
         <Text style={[
           styles.priorityButtonText,
           value === "Bassa" && styles.priorityButtonTextActive
-        ]}>Bassa</Text>
+        ]}>{t("tasks.priority.low")}</Text>
       </TouchableOpacity>
       
       <TouchableOpacity 
@@ -34,7 +35,7 @@ export const PrioritySelector = ({ value, onChange }) => {
         <Text style={[
           styles.priorityButtonText,
           value === "Media" && styles.priorityButtonTextActive
-        ]}>Media</Text>
+        ]}>{t("tasks.priority.medium")}</Text>
       </TouchableOpacity>
       
       <TouchableOpacity 
@@ -48,7 +49,7 @@ export const PrioritySelector = ({ value, onChange }) => {
         <Text style={[
           styles.priorityButtonText,
           value === "Alta" && styles.priorityButtonTextActive
-        ]}>Alta</Text>
+        ]}>{t("tasks.priority.high")}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -56,6 +57,7 @@ export const PrioritySelector = ({ value, onChange }) => {
 
 // Componente per selezionare lo stato
 export const StatusSelector = ({ value, onChange }) => {
+  const { t } = useTranslation();
   return (
     <View style={styles.statusContainer}>
       <TouchableOpacity 
@@ -69,7 +71,7 @@ export const StatusSelector = ({ value, onChange }) => {
         <Text style={[
           styles.priorityButtonText,
           value === "In sospeso" && styles.priorityButtonTextActive
-        ]}>In sospeso</Text>
+        ]}>{t("tasks.status.pending")}</Text>
       </TouchableOpacity>
       
       <TouchableOpacity 
@@ -83,7 +85,7 @@ export const StatusSelector = ({ value, onChange }) => {
         <Text style={[
           styles.priorityButtonText,
           value === "In corso" && styles.priorityButtonTextActive
-        ]}>In corso</Text>
+        ]}>{t("tasks.status.inProgress")}</Text>
       </TouchableOpacity>
       
       <TouchableOpacity 
@@ -97,7 +99,7 @@ export const StatusSelector = ({ value, onChange }) => {
         <Text style={[
           styles.priorityButtonText,
           value === "Completato" && styles.priorityButtonTextActive
-        ]}>Completato</Text>
+        ]}>{t("tasks.status.completed")}</Text>
       </TouchableOpacity>
     </View>
   );
