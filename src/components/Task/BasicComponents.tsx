@@ -98,6 +98,8 @@ export const DaysRemaining = ({
     );
   }
 
+  if (!endDate) return null;
+
   const daysRemainingText = getDaysRemainingText(endDate, t);
   const daysRemainingColor = getDaysRemainingColor(endDate);
 
