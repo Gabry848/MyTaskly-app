@@ -713,6 +713,11 @@
       "deleted": "Task deleted successfully",
       "completed": "Task completed",
       "reopened": "Task reopened"
+    },
+    "errors": {
+      "title": "Error",
+      "updateStatusFailed": "Unable to update task status. Please try again.",
+      "reopenFailed": "Unable to reopen the task. Please try again."
     }
   },
   "notes": {
@@ -1292,7 +1297,8 @@
     "notEnabled": "Task sharing is not enabled"
   },
   "taskDelete": {
-    "confirm": "Are you sure you want to delete the task",
+    "confirmTitle": "Delete task",
+    "confirmMessage": "Are you sure you want to delete \"{{title}}\"?",
     "error": "Unable to delete task. Please try again.",
     "deleteAllCompletedError": "Unable to delete all completed tasks. Please try again."
   }

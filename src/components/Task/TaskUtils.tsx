@@ -3,7 +3,7 @@ import { Dimensions } from "react-native";
 export const { width } = Dimensions.get("window");
 
 // Funzioni di utility per date e priorità
-export const getDaysRemainingText = (endDate) => {
+export const getDaysRemainingText = (endDate, t) => {
   if (!endDate) return "Nessuna scadenza";
 
   const today = new Date();
@@ -13,7 +13,7 @@ export const getDaysRemainingText = (endDate) => {
   const diffTime = dueDate.getTime() - today.getTime();
   const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
 
-  if (diffDays < 0) return "Scaduto";
+  if (diffDays < 0) return t ? t("taskCard.overdue") : "Scaduto";
   if (diffDays === 0) {
     const due = new Date(endDate);
     const hours = due.getHours().toString().padStart(2, "0");

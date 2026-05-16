@@ -171,7 +171,7 @@ const Task = ({
       }
     } catch (error) {
       console.error("Errore durante la modifica dello stato del task:", error);
-      Alert.alert("Errore", "Impossibile modificare lo stato del task. Riprova.");
+      Alert.alert(t("tasks.errors.title"), t("tasks.errors.updateStatusFailed"));
     }
   };
 
@@ -307,11 +307,11 @@ const Task = ({
 
     setIsDeleting(true);
     Alert.alert(
-      "Elimina Task",
-      `Sei sicuro di voler eliminare "${task.title}"?`,
+      t("taskDelete.confirmTitle"),
+      t("taskDelete.confirmMessage", { title: task.title }),
       [
         {
-          text: "Annulla",
+          text: t("common.buttons.cancel"),
           style: "cancel",
           onPress: () => {
             setIsDeleting(false);
@@ -319,7 +319,7 @@ const Task = ({
           }
         },
         {
-          text: "Elimina",
+          text: t("common.buttons.delete"),
           style: "destructive",
           onPress: () => {
             setShowModal(false);
@@ -346,7 +346,7 @@ const Task = ({
       }
     } catch (error) {
       console.error("Errore durante la riapertura del task:", error);
-      Alert.alert("Errore", "Impossibile riaprire il task. Riprova.");
+      Alert.alert(t("tasks.errors.title"), t("tasks.errors.reopenFailed"));
     }
   };
 

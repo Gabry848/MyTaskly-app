@@ -714,6 +714,11 @@
       "deleted": "Task eliminato con successo",
       "completed": "Task completato",
       "reopened": "Task riaperto"
+    },
+    "errors": {
+      "title": "Errore",
+      "updateStatusFailed": "Impossibile aggiornare lo stato del task. Riprova.",
+      "reopenFailed": "Impossibile riaprire il task. Riprova."
     }
   },
   "notes": {
@@ -1292,7 +1297,8 @@
     "notEnabled": "La condivisione dei task non è abilitata"
   },
   "taskDelete": {
-    "confirm": "Sei sicuro di voler eliminare il task",
+    "confirmTitle": "Elimina task",
+    "confirmMessage": "Sei sicuro di voler eliminare \"{{title}}\"?",
     "error": "Impossibile eliminare il task. Riprova.",
     "deleteAllCompletedError": "Impossibile eliminare tutti i task completati. Riprova."
   }
