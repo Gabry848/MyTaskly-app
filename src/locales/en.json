@@ -1301,5 +1301,28 @@
     "confirmMessage": "Are you sure you want to delete \"{{title}}\"?",
     "error": "Unable to delete task. Please try again.",
     "deleteAllCompletedError": "Unable to delete all completed tasks. Please try again."
+  },
+  "completedTasks": {
+    "buttonLabel_one": "completed",
+    "buttonLabel_other": "completed",
+    "count_one": "{{count}} completed task",
+    "count_other": "{{count}} completed tasks",
+    "chartTitle": "Last 7 days",
+    "days": {
+      "sunday": "Sun",
+      "monday": "Mon",
+      "tuesday": "Tue",
+      "wednesday": "Wed",
+      "thursday": "Thu",
+      "friday": "Fri",
+      "saturday": "Sat",
+      "today": "Today"
+    },
+    "deleteAll": {
+      "label": "Delete all",
+      "title": "Delete all completed tasks",
+      "message": "Are you sure? All completed tasks will be permanently deleted."
+    },
+    "comingSoon": "Work in progress"
   }
 }

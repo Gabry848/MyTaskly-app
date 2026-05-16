@@ -1301,5 +1301,28 @@
     "confirmMessage": "Sei sicuro di voler eliminare \"{{title}}\"?",
     "error": "Impossibile eliminare il task. Riprova.",
     "deleteAllCompletedError": "Impossibile eliminare tutti i task completati. Riprova."
+  },
+  "completedTasks": {
+    "buttonLabel_one": "completato",
+    "buttonLabel_other": "completati",
+    "count_one": "{{count}} task completato",
+    "count_other": "{{count}} task completati",
+    "chartTitle": "Ultimi 7 giorni",
+    "days": {
+      "sunday": "Dom",
+      "monday": "Lun",
+      "tuesday": "Mar",
+      "wednesday": "Mer",
+      "thursday": "Gio",
+      "friday": "Ven",
+      "saturday": "Sab",
+      "today": "Oggi"
+    },
+    "deleteAll": {
+      "label": "Elimina tutti",
+      "title": "Elimina tutti i task completati",
+      "message": "Sei sicuro? Tutti i task completati verranno eliminati definitivamente."
+    },
+    "comingSoon": "Prossimamente"
   }
 }

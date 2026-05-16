@@ -4,7 +4,7 @@ export const { width } = Dimensions.get("window");
 
 // Funzioni di utility per date e priorità
 export const getDaysRemainingText = (endDate, t) => {
-  if (!endDate) return "Nessuna scadenza";
+  if (!endDate) return "";
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
