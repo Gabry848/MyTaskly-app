@@ -22,6 +22,7 @@ import FABMenu from './FABMenu';
 import AddTask from '../Task/AddTask';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LoadingState } from '../UI/foundation';
+import { useTranslation } from 'react-i18next';
 
 dayjs.extend(isoWeek);
 
@@ -32,6 +33,7 @@ interface Calendar20ViewProps {
 }
 
 const Calendar20View: React.FC<Calendar20ViewProps> = ({ onClose }) => {
+  const { t } = useTranslation();
   const [viewType, setViewType] = useState<CalendarViewType>('month');
   const [currentDate, setCurrentDate] = useState(dayjs());
   const [rawTasks, setRawTasks] = useState<Task[]>([]);
@@ -273,7 +275,7 @@ const Calendar20View: React.FC<Calendar20ViewProps> = ({ onClose }) => {
   ) => {
     const { addTask } = await import('../../services/taskService');
     const priorityString = priority === 1 ? 'Bassa' : priority === 2 ? 'Media' : 'Alta';
-    const category = categoryNameParam || 'Calendario';
+    const category = categoryNameParam || t('calendar.defaultCategory');
     // Usa la data selezionata se disponibile, altrimenti usa la data corrente
     const taskDate = selectedDateForTask || currentDate;
     const newTask: Task = {
@@ -416,7 +418,7 @@ const Calendar20View: React.FC<Calendar20ViewProps> = ({ onClose }) => {
         }}
         onSave={handleSaveTask}
         allowCategorySelection={true}
-        categoryName="Calendario"
+        categoryName={t('calendar.defaultCategory')}
         initialDate={(selectedDateForTask || currentDate).format('YYYY-MM-DD')}
       />
     </View>

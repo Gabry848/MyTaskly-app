@@ -106,7 +106,7 @@ const AgendaView: React.FC<AgendaViewProps> = ({
       if (mins < 60) return `${mins} min`;
       const h = Math.floor(mins / 60);
       const m = mins % 60;
-      if (m === 0) return h === 1 ? '1 ora' : `${h} ore`;
+      if (m === 0) return h === 1 ? t('calendar20.duration.hour') : t('calendar20.duration.hours', { count: h });
       return `${h}h ${m}min`;
     })();
 
@@ -186,7 +186,7 @@ const AgendaView: React.FC<AgendaViewProps> = ({
       ListFooterComponent={
         <TouchableOpacity style={styles.loadMoreButton} onPress={loadMore}>
           <Ionicons name="chevron-down" size={20} color="#000000" />
-          <Text style={styles.loadMoreText}>Load more</Text>
+          <Text style={styles.loadMoreText}>{t('calendar20.loadMore')}</Text>
         </TouchableOpacity>
       }
     />
