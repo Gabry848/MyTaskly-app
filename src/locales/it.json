@@ -130,6 +130,10 @@
       "error": "Mi dispiace, si è verificato un errore. Riprova più tardi.",
       "suggestedCommand": "💡 Cosa puoi fare?"
     },
+    "quickAdd": {
+      "label": "Aggiunta rapida",
+      "sent": "Inviato"
+    },
     "sync": {
       "syncing": "Sincronizzando...",
       "offline": "Modalità offline",

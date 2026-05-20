@@ -31,6 +31,7 @@ import SyncManager from '../../services/SyncManager';
 import Badge from "../../components/UI/Badge";
 import VoiceChatModal from "../../components/BotChat/VoiceChatModal";
 import VoiceCalendarModal from "../../components/BotChat/VoiceCalendarModal";
+import QuickVoiceAdd from "../../components/BotChat/QuickVoiceAdd";
 import { useTranslation } from 'react-i18next';
 import { ChatHistory } from "../../components/BotChat/ChatHistory";
 import { useTutorialContext } from "../../contexts/TutorialContext";
@@ -887,6 +888,13 @@ const HomeScreen = () => {
                     </TouchableOpacity>
                   </View>
                 )}
+
+                <QuickVoiceAdd
+                  model={modelType}
+                  disabled={isLoading || isInputFocused}
+                  showCompactIcon={false}
+                  containerStyle={styles.quickAddContainer}
+                />
               </View>
             </Animated.View>
           )}
@@ -1202,6 +1210,9 @@ const styles = StyleSheet.create({
   suggestedCommandsContainer: {
     marginTop: 20,
     alignItems: "center",
+  },
+  quickAddContainer: {
+    marginTop: 40,
   },
   suggestedCommandButton: {
     backgroundColor: "#f8f9fa",

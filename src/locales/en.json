@@ -129,6 +129,10 @@
       "error": "Sorry, an error occurred. Please try again later.",
       "suggestedCommand": "💡 What can you do?"
     },
+    "quickAdd": {
+      "label": "Quick add",
+      "sent": "Sent"
+    },
     "sync": {
       "syncing": "Syncing...",
       "offline": "Offline mode",
