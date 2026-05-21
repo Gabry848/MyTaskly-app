@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, ScrollView, StyleSheet, Alert, ActivityIndicator, Dimensions } from 'react-native';
+import { View, ScrollView, StyleSheet, Alert, ActivityIndicator, Modal, Pressable, TouchableOpacity } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
 import { Task as TaskType, getAllTasks, addTask, deleteTask, updateTask, completeTask, disCompleteTask } from '../../services/taskService';
@@ -12,7 +12,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import CalendarGrid from './CalendarGrid';
 import Task from '../Task/Task';
 import AddTask from '../Task/AddTask';
-import AddTaskButton from '../Task/AddTaskButton';
+import QuickVoiceAdd from '../BotChat/QuickVoiceAdd';
 import { addTaskToList } from '../TaskList/types';
 import { LoadingState, EmptyState, StatusChip, AppText } from '../UI/foundation';
 
@@ -26,11 +26,9 @@ const CalendarView: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<string>(dayjs().format('YYYY-MM-DD'));
   const [tasks, setTasks] = useState<TaskType[]>([]);
   const [showAddTask, setShowAddTask] = useState(false);
+  const [voiceAddModalVisible, setVoiceAddModalVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null);
-
-  // Screen dimensions
-  const screenWidth = Dimensions.get('window').width;
 
   // Servizi
   const cacheService = useRef(TaskCacheService.getInstance()).current;
@@ -355,6 +353,65 @@ const CalendarView: React.FC = () => {
     setShowAddTask(true);
   };
 
+  const handleVoiceAddSuccess = () => {
+    fetchTasks();
+    setTimeout(() => {
+      setVoiceAddModalVisible(false);
+    }, 1150);
+  };
+
+  const renderHeaderActions = () => (
+    <View style={styles.headerActionDock}>
+      <TouchableOpacity
+        style={styles.manualAddButton}
+        onPress={handleAddTask}
+        activeOpacity={0.82}
+        accessibilityRole="button"
+        accessibilityLabel={t("tasks.accessibility.addTaskLabel")}
+        accessibilityHint={t("tasks.accessibility.addTaskHint")}
+      >
+        <Ionicons name="create-outline" size={22} color="#000000" />
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.voiceTriggerButton}
+        onPress={() => setVoiceAddModalVisible(true)}
+        activeOpacity={0.82}
+        accessibilityRole="button"
+        accessibilityLabel={t("tasks.accessibility.addTaskLabel")}
+        accessibilityHint={t("tasks.accessibility.addTaskHint")}
+      >
+        <Ionicons name="add" size={28} color="#ffffff" />
+      </TouchableOpacity>
+    </View>
+  );
+
+  const renderVoiceAddModal = () => (
+    <Modal
+      visible={voiceAddModalVisible}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setVoiceAddModalVisible(false)}
+    >
+      <View style={styles.voiceModalOverlay}>
+        <Pressable
+          style={StyleSheet.absoluteFill}
+          onPress={() => setVoiceAddModalVisible(false)}
+        />
+        <View style={styles.voiceModalContent} pointerEvents="box-none">
+          <QuickVoiceAdd
+            model="base"
+            variant="fab"
+            autoStart
+            onSuccess={handleVoiceAddSuccess}
+            onCancel={() => setVoiceAddModalVisible(false)}
+            containerStyle={styles.voiceAddFab}
+          />
+        </View>
+      </View>
+    </Modal>
+  );
+
   // Gestisce la chiusura del form
   const handleCloseAddTask = () => {
     setShowAddTask(false);
@@ -421,7 +478,7 @@ const CalendarView: React.FC = () => {
               {t('calendar.commitmentsOf')} {dayjs(selectedDate).format('DD')} {t(`calendar.months.${MONTH_KEYS[dayjs(selectedDate).month()]}`)} {dayjs(selectedDate).year()}
             </AppText>
           </View>
-          <AddTaskButton onPress={handleAddTask} screenWidth={screenWidth} isInline={true} />
+          {renderHeaderActions()}
         </View>
 
         {/* Componente di caricamento */}
@@ -436,6 +493,8 @@ const CalendarView: React.FC = () => {
           categoryName={t('calendar.defaultCategory')}
           initialDate={selectedDate}
         />
+
+        {renderVoiceAddModal()}
       </View>
     );
   }
@@ -475,7 +534,7 @@ const CalendarView: React.FC = () => {
             </View>
           )}
         </View>
-        <AddTaskButton onPress={handleAddTask} screenWidth={screenWidth} />
+        {renderHeaderActions()}
       </View>
 
       <ScrollView style={styles.taskList}>
@@ -498,6 +557,8 @@ const CalendarView: React.FC = () => {
           />
         )}
       </ScrollView>
+
+      {renderVoiceAddModal()}
 
       {/* Componente AddTask con selezione categorie abilitata */}
       <AddTask 
@@ -527,6 +588,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 5,
+    zIndex: 40,
   },
   titleContainer: {
     flex: 1,
@@ -544,6 +606,57 @@ const styles = StyleSheet.create({
   },
   noTasksContainer: {
     marginTop: 60,
+  },
+  headerActionDock: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 10,
+    minWidth: 110,
+  },
+  voiceAddFab: {
+    marginTop: 0,
+  },
+  voiceTriggerButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#000000',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  manualAddButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#ffffff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e1e5e9',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  voiceModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(18, 18, 18, 0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  voiceModalContent: {
+    minWidth: 292,
+    minHeight: 80,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   addButton: {
     backgroundColor: "#000000",

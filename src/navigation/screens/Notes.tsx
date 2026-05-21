@@ -69,7 +69,7 @@ const NotesContent: React.FC = () => {
 
 export default function Notes() {
   return (
-    <SafeAreaView style={styles.root}>
+    <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
       <NotesProvider>
         <NotesContent />
       </NotesProvider>
