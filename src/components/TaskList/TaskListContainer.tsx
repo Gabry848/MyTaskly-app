@@ -2,15 +2,16 @@ import React, { useState, useEffect, useMemo, useCallback, useLayoutEffect } fro
 import { View, ScrollView, Alert, TouchableOpacity } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { styles } from './styles';
 import { Task as TaskType, globalTasksRef } from './types';
 import eventEmitter, { EVENTS } from '../../utils/eventEmitter';
 import { ActiveFilters } from './ActiveFilters';
 import { FilterModal } from './FilterModal';
-import { AddTaskButton } from './AddTaskButton';
 import { filterTasksByDay } from './TaskUtils';
 import AddTask from '../Task/AddTask';
+import QuickVoiceAdd from '../BotChat/QuickVoiceAdd';
 import { recurringTaskService, RecurringTask, CreateRecurringTaskPayload } from '../../services/recurringTaskService';
 import { LoadingState, EmptyState } from '../UI/foundation';
 import { CompletedTasksButton } from './CompletedTasksButton';
@@ -41,6 +42,7 @@ export const TaskListContainer = ({
   taskService
 }: TaskListContainerProps) => {
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
   const [tasks, setTasks] = useState<TaskType[]>([]);
   const [filtroImportanza, setFiltroImportanza] = useState("Tutte");
   const [filtroScadenza, setFiltroScadenza] = useState("Tutte");
@@ -652,7 +654,29 @@ export const TaskListContainer = ({
         onDeleteAll={handleDeleteAllCompleted}
       />
 
-      <AddTaskButton onPress={toggleForm} />
+      <View
+        pointerEvents="box-none"
+        style={[styles.voiceAddDock, { bottom: 20 + insets.bottom }]}
+      >
+        <TouchableOpacity
+          style={styles.manualAddButton}
+          onPress={toggleForm}
+          activeOpacity={0.82}
+          accessibilityRole="button"
+          accessibilityLabel={t("tasks.accessibility.addTaskLabel")}
+          accessibilityHint={t("tasks.accessibility.addTaskHint")}
+        >
+          <Ionicons name="create-outline" size={22} color="#000000" />
+        </TouchableOpacity>
+
+        <QuickVoiceAdd
+          model="base"
+          variant="fab"
+          disabled={!isOwned && permissionLevel === "READ_ONLY"}
+          onSuccess={fetchTasks}
+          containerStyle={styles.voiceAddFab}
+        />
+      </View>
       
       <AddTask 
         visible={formVisible} 

@@ -44,6 +44,7 @@ const Calendar20View: React.FC<Calendar20ViewProps> = ({ onClose }) => {
   const [searchVisible, setSearchVisible] = useState(false);
   const [miniCalendarVisible, setMiniCalendarVisible] = useState(false);
   const [addTaskVisible, setAddTaskVisible] = useState(false);
+  const [voiceAddActive, setVoiceAddActive] = useState(false);
   const [selectedDateForTask, setSelectedDateForTask] = useState<dayjs.Dayjs | null>(null);
 
   const cacheService = useRef(TaskCacheService.getInstance()).current;
@@ -298,7 +299,7 @@ const Calendar20View: React.FC<Calendar20ViewProps> = ({ onClose }) => {
     }
     setAddTaskVisible(false);
     setSelectedDateForTask(null);
-  }, [currentDate, selectedDateForTask]);
+  }, [currentDate, selectedDateForTask, t]);
 
   const handleCategoryToggle = useCallback((categoryName: string) => {
     setEnabledCategories(prev => {
@@ -370,11 +371,15 @@ const Calendar20View: React.FC<Calendar20ViewProps> = ({ onClose }) => {
 
       {renderView()}
 
+      {voiceAddActive && <View style={styles.voiceBackdrop} />}
+
       <FABMenu
         onNewTask={() => {
           setSelectedDateForTask(null);
           setAddTaskVisible(true);
         }}
+        onVoiceStateChange={setVoiceAddActive}
+        onVoiceSuccess={fetchTasks}
       />
 
       <ViewSelector
@@ -429,6 +434,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
+  },
+  voiceBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(18, 18, 18, 0.18)',
+    zIndex: 180,
   },
 });
 

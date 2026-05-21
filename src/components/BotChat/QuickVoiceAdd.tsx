@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -29,7 +29,12 @@ interface QuickVoiceAddProps {
   model: 'base' | 'advanced';
   disabled?: boolean;
   showCompactIcon?: boolean;
+  variant?: 'pill' | 'fab';
+  autoStart?: boolean;
   containerStyle?: StyleProp<ViewStyle>;
+  onStateChange?: (state: QuickVoiceAddState) => void;
+  onSuccess?: () => void;
+  onCancel?: () => void;
 }
 
 const BAR_COUNT = 18;
@@ -38,7 +43,12 @@ const QuickVoiceAdd: React.FC<QuickVoiceAddProps> = ({
   model,
   disabled = false,
   showCompactIcon = true,
+  variant = 'pill',
+  autoStart = false,
   containerStyle,
+  onStateChange,
+  onSuccess,
+  onCancel,
 }) => {
   const { t } = useTranslation();
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
@@ -48,8 +58,14 @@ const QuickVoiceAdd: React.FC<QuickVoiceAddProps> = ({
   const recordingStartRef = useRef(0);
   const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isRecordingRef = useRef(false);
+  const autoStartedRef = useRef(false);
 
   const isExpanded = state !== 'idle';
+  const isFab = variant === 'fab';
+
+  useEffect(() => {
+    onStateChange?.(state);
+  }, [onStateChange, state]);
 
   useEffect(() => {
     Animated.spring(expandAnim, {
@@ -105,7 +121,7 @@ const QuickVoiceAdd: React.FC<QuickVoiceAddProps> = ({
     };
   }, [recorder]);
 
-  const startRecording = async () => {
+  const startRecording = useCallback(async () => {
     if (disabled || state !== 'idle') return;
 
     try {
@@ -129,7 +145,23 @@ const QuickVoiceAdd: React.FC<QuickVoiceAddProps> = ({
       Alert.alert('Errore registrazione', 'Non sono riuscito ad avviare il microfono.');
       setState('idle');
     }
-  };
+  }, [disabled, recorder, state]);
+
+  useEffect(() => {
+    if (!autoStart) {
+      autoStartedRef.current = false;
+      return;
+    }
+
+    if (autoStartedRef.current || disabled || state !== 'idle') return;
+    autoStartedRef.current = true;
+
+    const timer = setTimeout(() => {
+      startRecording();
+    }, 120);
+
+    return () => clearTimeout(timer);
+  }, [autoStart, disabled, startRecording, state]);
 
   const sendRecording = async () => {
     if (state !== 'recording') return;
@@ -154,6 +186,7 @@ const QuickVoiceAdd: React.FC<QuickVoiceAddProps> = ({
       }
 
       setState('success');
+      onSuccess?.();
       resetTimerRef.current = setTimeout(() => {
         setState('idle');
       }, 1050);
@@ -177,20 +210,29 @@ const QuickVoiceAdd: React.FC<QuickVoiceAddProps> = ({
       isRecordingRef.current = false;
       setAudioModeAsync({ allowsRecording: false }).catch(() => undefined);
       setState('idle');
+      onCancel?.();
     }
   };
 
   const width = expandAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [138, 292],
+    outputRange: [isFab ? 56 : 138, 292],
   });
   const height = expandAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [44, 64],
+    outputRange: [isFab ? 56 : 44, 64],
   });
   const borderRadius = expandAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [22, 32],
+    outputRange: [isFab ? 28 : 22, 32],
+  });
+  const backgroundColor = expandAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [isFab ? '#000000' : '#FFFFFF', '#FFFFFF'],
+  });
+  const borderColor = expandAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [isFab ? '#000000' : colors.border, colors.border],
   });
   const compactOpacity = expandAnim.interpolate({
     inputRange: [0, 0.45],
@@ -204,19 +246,25 @@ const QuickVoiceAdd: React.FC<QuickVoiceAddProps> = ({
   });
 
   return (
-    <Animated.View style={[styles.shell, containerStyle, { width, height, borderRadius }]}>
+    <Animated.View style={[styles.shell, containerStyle, { width, height, borderRadius, backgroundColor, borderColor }]}>
       <Pressable
         style={StyleSheet.absoluteFill}
         onPress={startRecording}
         disabled={disabled || state !== 'idle'}
       >
-        <Animated.View style={[styles.compactContent, { opacity: compactOpacity }]}>
-          {showCompactIcon && (
-            <Ionicons name="mic-outline" size={17} color={disabled ? colors.textTertiary : colors.textPrimary} />
+        <Animated.View style={[styles.compactContent, isFab && styles.fabCompactContent, { opacity: compactOpacity }]}>
+          {isFab ? (
+            <Ionicons name="add" size={28} color={disabled ? '#8E8E93' : '#FFFFFF'} />
+          ) : (
+            <>
+              {showCompactIcon && (
+                <Ionicons name="mic-outline" size={17} color={disabled ? colors.textTertiary : colors.textPrimary} />
+              )}
+              <Text style={[styles.compactLabel, disabled && styles.disabledText]} allowFontScaling={false}>
+                {t('home.quickAdd.label')}
+              </Text>
+            </>
           )}
-          <Text style={[styles.compactLabel, disabled && styles.disabledText]} allowFontScaling={false}>
-            {t('home.quickAdd.label')}
-          </Text>
         </Animated.View>
       </Pressable>
 
@@ -276,9 +324,7 @@ const QuickVoiceAdd: React.FC<QuickVoiceAddProps> = ({
 const styles = StyleSheet.create({
   shell: {
     marginTop: 28,
-    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: colors.border,
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.08,
@@ -293,6 +339,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 16,
+  },
+  fabCompactContent: {
+    paddingHorizontal: 0,
   },
   compactLabel: {
     color: colors.textPrimary,
